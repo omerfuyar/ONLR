@@ -89,15 +89,27 @@ Four contracts connect the parts. Each has a version, so a part can change witho
 
 ``` text
 mygame/
-  main.lua        starts the engine
-  conf.lua        gives LÖVE the project's settings
-  manifest.lua    the project's manifest
-  components/     the scripts: the component types that the user writes
-  modules/        the user's other Lua code
-  lib/            the engine, packs and libraries
-  .onlr/          the editor's own files for this project
-  .luarc.json     tells a code editor where the definitions are
-  ...             scenes, prefabs and assets, in any folders
+  main.lua                  starts the engine
+  conf.lua                  gives LÖVE the project's settings
+  manifest.lua              the project's manifest
+  components/               the scripts: the component types that the user writes
+    coin.lua                  the type components.coin
+    player/                   the type components.player, with modules of its own
+      init.lua
+      states.lua
+  shared/                   the user's Lua code that components share
+    score.lua
+  lib/                      the engine, packs and libraries
+    onlr/                     the engine
+    bump/                     a pack
+  scenes/                   scenes, prefabs and assets, in any folders of any name
+    level.scene.lua
+  prefabs/
+    coin.prefab.lua
+  images/
+    player.png
+  .onlr/                    the editor's own files for this project
+  .luarc.json               tells a code editor where the definitions are
 ```
 
 - LÖVE 11.5 reads a game's files only from the game's own folder. So the engine and the files that start it are in the project, and `love mygame` runs it.
@@ -119,8 +131,11 @@ mygame/
 
 - `onlr.conf` sets what the project's manifest holds: the window's size, the game's name and the folder of its saved files. A user who wants more of LÖVE's settings sets them in `conf.lua`, after that line.
 - The first line of `conf.lua` adds `lib/` to the places where `require` looks. LÖVE reads `conf.lua` before any other file of the game, so from then on `require("onlr")` finds the engine, and a library is loaded by the name its author gives (11.1).
-- `components/` holds the scripts, in any folders inside it. The editor offers every Lua file there when the user adds a component, and makes new scripts there.
-- `modules/` holds the user's Lua code that is not a component, such as a module that keeps the score from scene to scene. The engine does not read it: scripts load it with `require`, as in any LÖVE game.
+- `components/` holds the scripts. The editor offers them when the user adds a component, and makes new scripts there. Inside it:
+  - A Lua file is a component type: `components/coin.lua` is `components.coin`.
+  - A folder with an `init.lua` is one component type, and the other files in it are that component's own modules, which the editor does not offer: `components/player/init.lua` is `components.player`, and it loads `components.player.states` with `require`.
+  - A folder without an `init.lua` only groups what is in it: `components/enemies/bat.lua` is `components.enemies.bat`.
+- `shared/` holds the user's Lua code that is not a component and that components share: what keeps a value from scene to scene, such as a score, and functions that many scripts use. The engine does not read it: scripts load it with `require`, as in any LÖVE game. Its name is not taken; a new project has it.
 - `lib/` holds what the game uses and was not made for this game alone, each in a folder of its own: the engine in `lib/onlr/`, packs, and libraries. The user adds to it, by hand or in the editor.
 - `lib/onlr/` is the engine's. The editor replaces it when it updates the engine (3.3), so the user does not edit it.
 - `.onlr/` holds what the editor keeps for this project on this computer, such as LÖVE's definitions (4.3). It is not in git and not exported.
@@ -181,7 +196,17 @@ return {
 
 - The first line of each file names its type, such as `---@type onlr.Scene`, so a code editor with the Lua language server completes and checks its fields.
 - The types are in the engine's source, in the project's `lib/onlr/` (1). LÖVE's own definitions, from [LuaCATS/love2d](https://github.com/LuaCATS/love2d), are copied into `.onlr/`.
-- The editor writes `.luarc.json` once, when it makes the project. It names LuaJIT as the Lua version, `.onlr/` as a library, and `lib/` as a place where `require` looks (11.1).
+- The editor writes `.luarc.json` once, when it makes the project. It names LuaJIT as the Lua version, `.onlr/` as a library, and `lib/` as a place where `require` looks (11.1):
+
+  ``` json
+  {
+    "runtime.version": "LuaJIT",
+    "runtime.path": ["?.lua", "?/init.lua", "lib/?.lua", "lib/?/init.lua"],
+    "workspace.library": [".onlr"]
+  }
+  ```
+
+- A script names its own type in the same way, so a code editor knows what `object:get("components.player")` gives: `---@class components.player : onlr.Component`.
 
 ## 5. Scenes and objects
 
@@ -228,6 +253,7 @@ return {
 | `components`              | Its components, each a table of its `type` and its properties' values. |    |
 | `children`                | Its children, objects too.                                        |         |
 | `prefab`                  | The prefab it is an instance of (9).                              |         |
+| `overrides`               | In an instance, the values that differ from the prefab's (9).     |         |
 
 - The running scene is an object too, the root, which `onlr.scene.root` gives. Its components are the scene's own, and its children are the scene's objects. It has no place in the file: it is at 0, 0, not turned and not scaled.
 - So a scene's own component is a component as any other, with `self.object` as the root. It is written in the scene's file apart from the objects, and no object is made only to hold it.
@@ -406,6 +432,36 @@ The engine is many small files, each for one thing:
 
 ## 9. Prefabs
 
+``` lua
+-- prefabs/coin.prefab.lua
+---@type onlr.Prefab
+return {
+  format = 1,
+  id = "c0in",
+  name = "Coin",
+  components = {
+    { type = "onlr.sprite", image = "images/coin.png" },
+    { type = "components.coin" },
+  },
+}
+```
+
+``` lua
+-- in a scene's objects: an instance that is twice as large and worth more
+{
+  id = "t1r6",
+  name = "Big coin",
+  prefab = "prefabs/coin.prefab.lua",
+  x = 700,
+  y = 540,
+  scaleX = 2,
+  scaleY = 2,
+  overrides = {
+    c0in = { [2] = { worth = 5 } },
+  },
+},
+```
+
 - A prefab's file returns one object, with its components and children, in the format of section 5, under the type `onlr.Prefab`.
 - An instance in a scene is an object with `prefab`, the prefab's path. It has its own `id`, `name` and place. `overrides` holds the property values that differ from the prefab's, by the id of the object in the prefab and the component's place in it.
 - An instance changes values only. It adds and removes no component and no child of the prefab's; such a change is made in the prefab.
@@ -521,6 +577,46 @@ function Body:drawEditor()
 end
 
 return Body
+```
+
+``` lua
+-- lib/bump/world.lua: the scene's one world
+local onlr = require("onlr")
+local bump = require("bump")
+
+local World = {}
+
+World.cellSize = onlr.property.number(64)
+
+function World:get()
+  self.world = self.world or bump.newWorld(self.cellSize)
+  return self.world
+end
+
+return World
+```
+
+``` lua
+-- components/player.lua: the user's script, on an object that also has a bump.body
+local Player = {}
+
+function Player:load()
+  self.body = self.object:get("bump.body")
+end
+
+function Player:update(dt)
+  local x, y = self.object:toWorld(0, 0)
+  if love.keyboard.isDown("right") then
+    x = x + 200 * dt
+  end
+  self.body:move(x, y)
+end
+
+function Player:contact(other)
+  print("hit " .. other.name)
+end
+
+return Player
 ```
 
 What the sample shows of every pack:

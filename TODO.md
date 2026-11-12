@@ -30,6 +30,7 @@ What the owner wants worked on, in no fixed order.
 - **Turning objects off and on.** Whether a component hears that its object became active or not.
 - **Keeping an object through a scene change.** What outlives a scene lives in the user's modules (OVERVIEW 5). Whether an object can be kept too, such as a music player.
 - **Loading.** A scene's files are loaded when the scene loads. Open: big scenes, showing progress, and freeing what the next scene does not use.
+- **How an instance names a component.** `overrides` names a component by its place in the prefab's object (DESIGN 9). Changing the order of a prefab's components would move the values to another component. Open: naming it by its type and its count among that type.
 - **Changes to a prefab's structure in an instance.** An instance changes values only (DESIGN 9). Whether it may add a component or a child.
 - **Logic without code.** An idea for later: a panel in which the user connects nodes, as Unreal's Blueprints do, which writes a component. It needs nothing new from the engine if its output is a script.
 
@@ -97,6 +98,5 @@ What the owner wants worked on, in no fixed order.
 - **The build files.** The template's plugins, preset, test, build script, submodules, checks and Claude Code settings were removed, since nothing is built yet. When code starts, take them fresh from [OpenECS-template](https://github.com/omerfuyar/OpenECS-template), which follows OpenECS's `dev`.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, and LÖVE's package for the host.
 - **The hashes of LÖVE's packages.** DESIGN 15.2 checks downloads against hashes that ONLR ships. They are taken once from LÖVE's releases.
-- **The prototype.** `prototype/` is a sketch of a project's files for the owner's feedback. It follows DESIGN.md, which stays the truth. When code starts, it becomes the first sample or is removed.
 - **OpenECS's TODO.md** still lists this editor's open questions. Replace them there with a link to this repository.
 - **Rulesets.** `dev` and `main` have no rules in this repository yet. The owner sets them when checks exist.
