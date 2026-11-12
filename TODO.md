@@ -8,7 +8,7 @@ What the owner wants worked on, in no fixed order.
 
 - **The plan.** ONLR is being planned. No code is written until the owner says the plan is done.
 - **The engine's concepts first.** What is open under [Engine](#engine) is settled before a library's pack is designed, since packs are built on the engine.
-- **How libraries meet the engine.** No library is chosen. A first pack is designed on paper to check what the engine gives components (see [Libraries](#libraries)).
+- **Which libraries.** How a library meets the engine is designed (DESIGN 11). No library is chosen (see [Libraries](#libraries)).
 - **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
@@ -19,7 +19,9 @@ What the owner wants worked on, in no fixed order.
 - **Physics and collision.** Components that give an object a body: where the world lives, how the body moves the object, how a child of a moving object behaves, and the name under which a contact reaches a script (DESIGN 7). Open: whether they use `love.physics`, a collision library such as bump, or both as separate packs (see [Libraries](#libraries)).
 - **Particles and tile maps.** Whether the engine has components for LÖVE's particle systems, and for tile maps (see [Libraries](#libraries)).
 - **The window and the game's size.** A project has one size (DESIGN 3.2). Open: what the game does when the window has another size or is resized, whether it scales with bars or shows more, and how fullscreen and high-density screens behave.
-- **More kinds of property.** A list of values, and a group of values, such as a list of images. Whether a property can hold an object of another scene's prefab.
+- **More kinds of property.** A list of values, and a group of values, such as a list of images. A component of another object, such as a body. Whether a property can hold an object of another scene's prefab.
+- **A property's name in the inspector.** The inspector shows the name as the script writes it (DESIGN 13). Open: an option for another label, and showing `cellSize` as "Cell size".
+- **Components that need another.** A script that calls `self.object:get("bump.body")` needs the body on its object. Open: whether a type can say so, and the editor adds the other.
 - **Finding objects.** `onlr.scene.find` gives the first object of a name, and `onlr.scene.get` the first component of a type. Open: finding all of them, and whether objects have tags.
 - **Order of update.** Objects update in the tree's order (DESIGN 5). Whether a script needs a way to run before or after others.
 - **Turning objects off and on.** Whether a component hears that its object became active or not.
@@ -32,32 +34,34 @@ What the owner wants worked on, in no fixed order.
 
 - **The offscreen driver elsewhere.** It is checked on Linux with an NVIDIA card, with the system's LÖVE 11.5 and with LÖVE's own AppImage. Not checked: Windows; Intel and AMD cards; a computer with no display at all.
 - **How fast frames travel.** Reading a 1280×720 frame back takes about 1.4 ms. Sending it over TCP and showing it in a panel is not measured. If it is too slow: shared memory, or sending only when the picture changed.
-- **The pixels' order.** OpenECS's images hold pixels in another order than LÖVE's canvas gives (DESIGN 11.3). Where the change is made: a shader in the engine, or the panel.
-- **Gamepads and touch in the player.** DESIGN 11.4 covers the keyboard and the pointer. A gamepad could be read by the player itself, since SDL reads them without a window; this is not checked.
+- **The pixels' order.** OpenECS's images hold pixels in another order than LÖVE's canvas gives (DESIGN 12.4). Where the change is made: a shader in the engine, or the panel.
+- **Gamepads and touch in the player.** DESIGN 12.5 covers the keyboard and the pointer. A gamepad could be read by the player itself, since SDL reads them without a window; this is not checked.
 - **The pointer's modes.** A game that hides or grabs the pointer, or reads relative motion, in a panel.
 - **Looking into the running game.** Showing the running scene's objects and values in the objects panel and the inspector, and changing them while the game plays.
 - **Reloading while playing.** A changed script or image takes effect in the running game without a restart. Open: what happens to the values a component keeps.
 - **Pause and step.** Stopping the game's updates, and running one frame.
 - **Sound in the edit player.** Whether the edit player opens a sound device at all.
-- **Previews that move.** The edit player draws when asked and updates nothing (DESIGN 11.3). A preview of an animation or of particles needs time to pass. Open: whether a view can ask for updates of its own scene.
+- **Previews that move.** The edit player draws when asked and updates nothing (DESIGN 12.3). A preview of an animation or of particles needs time to pass. Open: whether a view can ask for updates of its own scene.
 - **Files in the files panel.** A small picture of an image file could come from the edit player, as a view, or from OpenECS's own image reader, which is faster and is not what the game draws.
-- **A debugger.** Stopping at a line and reading variables. Not planned; an error's file, line and stack are shown (DESIGN 11.2).
+- **A debugger.** Stopping at a line and reading variables. Not planned; an error's file, line and stack are shown (DESIGN 12.2).
 
 ## Editor
 
-- **The scene view's tools.** How objects are moved, turned and scaled; snapping to a grid; choosing many; choosing an object under another; what the view shows for an object with no `bounds`. The panel draws them over LÖVE's frame (DESIGN 11.3); a grid behind the objects needs the frame to keep its transparency.
+- **The scene view's tools.** How objects are moved, turned and scaled; snapping to a grid; choosing many; choosing an object under another; what the view shows for an object with no `bounds`. The panel draws them over LÖVE's frame (DESIGN 12.3); a grid behind the objects needs the frame to keep its transparency.
+- **A component's own handles.** A component draws its outline in the scene view with `drawEditor` (DESIGN 6.4). Open: changing its values there, such as dragging the corner of a body's box.
+- **Scripts in the list of components.** Adding a component takes any Lua file as a script (DESIGN 13). Open: listing the project's scripts without loading every Lua file, since loading runs a file's code.
 - **The files panel.** What it does with files: rename and move, and whether paths in scenes follow; how an image or a sound is previewed.
 - **Making a script.** A new script starts from a file with the common functions. Where that file is kept, and whether the user can change it.
 - **Assets that are missing.** What the inspector and the scene view show for a path that no longer exists.
 - **Many scenes open.** Whether two scenes can be open at once, each with an edit player, or one at a time.
 - **Text scenes in git.** The editor writes files so that changes merge (DESIGN 4.2). Not checked on a real merge.
 - **The engine in a project.** `onlr/` is a copy (DESIGN 3.1), so it is in the user's git. Whether a project could name a shared engine instead while LÖVE 11.5 reads only the game's folder.
-- **The split into plugins.** DESIGN 12 names four. It is checked again when the first is written.
+- **The split into plugins.** DESIGN 13 names four. It is checked again when the first is written.
 
 ## Export
 
 - **The Linux package on a Windows host.** LÖVE's Linux release is an AppImage, which only Linux unpacks. A Windows host needs its contents another way: ONLR hosts them as an archive, or the editor reads the AppImage's file system itself.
-- **The archive of a Linux build.** DESIGN 13.2 names a `.tar.gz` that keeps permissions. OpenECS-std's compress writes zip and gzip; writing tar is not there yet.
+- **The archive of a Linux build.** DESIGN 14.2 names a `.tar.gz` that keeps permissions. OpenECS-std's compress writes zip and gzip; writing tar is not there yet.
 - **An AppImage as a Linux build.** One file is easier to hand out than an archive. Making it needs `appimagetool`, which runs on Linux only.
 - **The Windows executable's icon and details.** Changing them means editing the executable's resources. On Linux that is done with a Windows tool under Wine today; a small writer of our own is the alternative.
 - **Windows on 32 bits and on ARM.** LÖVE 11.5 has a 32-bit package. Not planned unless asked for.
@@ -70,26 +74,26 @@ What the owner wants worked on, in no fixed order.
 
 ## Libraries
 
-- **A pack's format.** What a pack holds is in OVERVIEW 9. Not designed: its folder, its file that describes it, how a project turns it on, how it is updated, and its version. It waits for the engine's concepts.
 - **Which libraries.** None is chosen. The candidates, by the rule of OVERVIEW 9:
   - collision of boxes, through bump, which is its own small system and uses nothing of `love.physics`;
-  - physics with forces and joints, through `love.physics`, which is part of LÖVE;
+  - physics with forces and joints, through `love.physics`, which is part of LÖVE and so needs components only;
   - tile maps made with Tiled, through STI;
   - an interface inside the game, through one library such as SUIT or Slab, or components of the engine's own.
-- **A first pack on paper.** Design one pack's components without code, such as bump's, to check that what the engine gives is enough: components' functions, `object:send` and `onlr.scene.get` (DESIGN 7). What it shows to be missing is added to the engine before the pack's format is designed.
-- **What a scene shares.** A library often keeps one thing for a whole scene, such as a world of bodies. It can be a component on one object, which others find with `onlr.scene.get`. Open: whether that is enough, since a component's `load` may run before the world's.
+- **A bump pack's details.** DESIGN 11.3 shows its outline as a sample. Open if bump is chosen: a body on an object that is turned or scaled, since bump's boxes are not; which boxes a body passes through; what a body does when its object is moved without `move`; whether both objects hear of a contact.
+- **A pack's version.** A pack names its library's version (DESIGN 11.2). Open: how the editor offers a newer pack to a project that has an older one, and what happens to changes the user made in the project's copy.
+- **A pack's hints.** A library needs definitions for the code editor, as LÖVE has (DESIGN 4.3). Most libraries ship none. Open: whether a pack holds them, and who writes them.
+- **Packs from others.** A pack is a folder (DESIGN 11.2), so anyone can make one. Open: whether the editor adds a pack from a folder or an address that the user gives.
 - **What the engine covers itself.** Animation of sprites and a camera are small enough to be the engine's own, so no library is planned for them.
-- **Hints for libraries.** A pack's library needs definitions for the code editor, as LÖVE has (DESIGN 4.3). Most libraries ship none.
 
 ## LÖVE
 
 - **LÖVE 12.0.** It is not released. It changes the default font, removes functions that 11 deprecated, and builds on SDL3. When it is released: which versions a project may name, and whether the engine serves both.
-- **Many versions of LÖVE.** A project names its version (DESIGN 3.2), and packages are kept by version (DESIGN 14.2). Whether the editor serves a project of another version than the one it ships.
+- **Many versions of LÖVE.** A project names its version (DESIGN 3.2), and packages are kept by version (DESIGN 15.2). Whether the editor serves a project of another version than the one it ships.
 
 ## Tasks
 
 - **The build files.** The template's plugins, preset, test, build script, submodules, checks and Claude Code settings were removed, since nothing is built yet. When code starts, take them fresh from [OpenECS-template](https://github.com/omerfuyar/OpenECS-template), which follows OpenECS's `dev`.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, and LÖVE's package for the host.
-- **The hashes of LÖVE's packages.** DESIGN 14.2 checks downloads against hashes that ONLR ships. They are taken once from LÖVE's releases.
+- **The hashes of LÖVE's packages.** DESIGN 15.2 checks downloads against hashes that ONLR ships. They are taken once from LÖVE's releases.
 - **OpenECS's TODO.md** still lists this editor's open questions. Replace them there with a link to this repository.
 - **Rulesets.** `dev` and `main` have no rules in this repository yet. The owner sets them when checks exist.

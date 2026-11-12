@@ -7,7 +7,7 @@ This document explains how ONLR is built: its parts, the project's files, the en
 - Everything here is decided. Open questions and pending work are in [TODO.md](TODO.md).
 - Code samples are only illustrations of a file or an interface.
 - Technical terms are explained in the glossary at the end.
-- "OpenECS DESIGN" names [OpenECS's DESIGN.md](https://github.com/omerfuyar/OpenECS/blob/dev/DESIGN.md), and "OpenECS-std DESIGN" [OpenECS-std's](https://github.com/omerfuyar/OpenECS-std/blob/dev/DESIGN.md). OpenECS changes often, so this document links to them and repeats nothing of theirs. Only section 12 depends on OpenECS.
+- "OpenECS DESIGN" names [OpenECS's DESIGN.md](https://github.com/omerfuyar/OpenECS/blob/dev/DESIGN.md), and "OpenECS-std DESIGN" [OpenECS-std's](https://github.com/omerfuyar/OpenECS-std/blob/dev/DESIGN.md). OpenECS changes often, so this document links to them and repeats nothing of theirs. Only section 13 depends on OpenECS.
 
 ---
 
@@ -23,12 +23,13 @@ This document explains how ONLR is built: its parts, the project's files, the en
 8. The loop
 9. Prefabs
 10. The engine's components
-11. The player and the link
-12. The editor
-13. Export
-14. LÖVE
-15. Tests
-16. Versions and branches
+11. Libraries
+12. The player and the link
+13. The editor
+14. Export
+15. LÖVE
+16. Tests
+17. Versions and branches
 
 - Glossary
 
@@ -47,19 +48,40 @@ This document explains how ONLR is built: its parts, the project's files, the en
 
 ## 2. Parts
 
+### 2.1 Layers
+
+A game made with ONLR is built in layers. Each uses only the layers above it in this table:
+
+| Layer              | Is                                                                                  | Written by                         | Uses                           |
+| ------------------ | ----------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------ |
+| 1. LÖVE            | The runtime: the window, drawing, sound, input, physics and files.                  | LÖVE's authors                     |                                |
+| 2. Libraries       | Lua code for LÖVE games, such as a library for collision (11).                      | Their authors                      | LÖVE, or nothing               |
+| 3. The engine      | Scenes, objects, components, properties and the loop (5 to 9).                      | ONLR                               | LÖVE                           |
+| 4. Components      | What objects show and do: the engine's own (10), a pack's (11.2) and the user's scripts (6). | ONLR, a pack's author, the user | The engine, LÖVE and libraries |
+| 5. The game's data | The project file, scenes and prefabs, which name component types and hold their values (3, 4). | The user, through the editor | Component types, by name       |
+
+- The engine and the libraries do not know each other. A component is where they meet: it is called by the engine, and it calls a library.
+- All three kinds of component are the same thing to the engine. The engine's own and a pack's can do nothing that a script cannot.
+- The editor is not a layer of the game. It is another program: it reads and writes the game's data, and asks the player (12) what the components declare and how the scene looks.
+
+### 2.2 In this repository
+
 | Part    | In this repository | Is                                                              | Runs in |
 | ------- | ------------------ | --------------------------------------------------------------- | ------- |
 | Engine  | `engine/`          | The Lua library that every project holds a copy of, as `onlr/`. | LÖVE    |
-| Editor  | `plugins/`, `preset.lua` | OpenECS plugins and their preset (12).                    | OpenECS |
-| Samples | `samples/`         | Small projects, which are the tests (15).                       | Both    |
+| Editor  | `plugins/`, `preset.lua` | OpenECS plugins and their preset (13).                    | OpenECS |
+| Samples | `samples/`         | Small projects, which are the tests (16).                       | Both    |
 
-Three contracts connect the parts. Each has a version, so a part can change without the others guessing:
+### 2.3 Contracts
+
+Four contracts connect the parts. Each has a version, so a part can change without the others guessing:
 
 | Contract            | Between                    | Version                                         |
 | ------------------- | -------------------------- | ----------------------------------------------- |
 | The project's files | The editor and the engine  | `format`, a number in each file (4)             |
 | The engine's functions | The engine and scripts  | The engine's version, in the project file (3.2) |
-| The link            | The editor and the player  | A number that both send when they connect (11.2) |
+| The link            | The editor and the player  | A number that both send when they connect (12.2) |
+| A pack              | A pack and the editor      | `format`, a number in the pack's file (11.2)    |
 
 ## 3. Projects
 
@@ -71,6 +93,7 @@ mygame/
   conf.lua        gives LÖVE the project's settings
   project.lua     the project file
   onlr/           the engine
+  libraries/      libraries and packs
   .onlr/          the editor's own files for this project
   .luarc.json     tells a code editor where the definitions are
   ...             the user's scenes, prefabs, scripts and assets, in any folders
@@ -94,7 +117,8 @@ mygame/
 - `onlr.conf` sets what the project file holds: the window's size, the game's name and the folder of its saved files. A user who wants more of LÖVE's settings sets them in `conf.lua`, after that line.
 - `onlr/` is the engine's. The editor replaces it when it updates the engine (3.3), so the user does not edit it.
 - `.onlr/` holds what the editor keeps for this project on this computer, such as LÖVE's definitions (4.3). It is not in git and not exported.
-- The names `main.lua`, `conf.lua`, `project.lua`, `onlr/` and `.onlr/` are taken. Every other name is the user's.
+- `libraries/` holds the libraries that the game uses (11). It is the user's: they put their own there too.
+- The names `main.lua`, `conf.lua`, `project.lua`, `onlr/`, `libraries/` and `.onlr/` are taken. Every other name is the user's.
 
 ### 3.2 The project file
 
@@ -274,16 +298,20 @@ The engine calls the functions that a type has. All are optional.
 | `draw()`            | Each frame, with the object's place applied, so drawing at 0, 0 draws at the object.                  |
 | `destroy()`         | When its object is destroyed, or the scene ends.                                                      |
 | Any callback of LÖVE | When LÖVE sends the event, with what LÖVE gives: `keypressed(key, scancode, isrepeat)`, `mousepressed(x, y, button)` and every other one. |
-| `bounds()`          | When the editor asks for the rectangle that the component covers, in the object's own space. The scene view uses it to choose objects (11.3). |
+| `bounds()`          | When the editor asks for the rectangle that the component covers, in the object's own space. The scene view uses it to choose objects (12.3). |
+| `drawEditor(chosen)` | In the scene view, in place of `draw`, with whether the component's object is chosen (6.4).          |
 
 - The engine passes on every event that LÖVE has, by its name, so it needs no list of them, and an event of a newer LÖVE reaches scripts too.
 - A function of an object that is not `active`, or of a component that is not `enabled`, is not called.
+- A type may have more functions of its own, which other components call: `self.object:get("bump.body"):move(x, y)`.
 
 ### 6.4 In the scene view
 
 - The scene view shows a scene that does not run: no `load`, `update` or event reaches a component.
-- A type with `drawInEditor = true` has its `draw` called there. The engine's own components have it. A script leaves it out unless its `draw` needs nothing that `load` or `update` sets.
-- A `draw` that fails there marks its object in the view, and the rest draws on.
+- There the engine calls `drawEditor` in place of `draw`. A type that looks the same in the editor as in the game says so: `Sprite.drawEditor = Sprite.draw`. The engine's own components do.
+- `drawEditor` also draws what only the editor shows, such as the outline of a body or the frame of a camera. It is LÖVE code, written with the component by its author.
+- A type without `drawEditor` shows nothing in the scene view. Its `draw` is not called there, since it may need what `load` or `update` sets.
+- A `drawEditor` that fails marks its object in the view, and the rest draws on.
 
 ## 7. The engine's functions
 
@@ -299,15 +327,16 @@ The engine gives scripts few functions; the rest is LÖVE. The engine's source d
 | `onlr.scene.spawn(prefab, x, y, parent)` | Makes an instance of a prefab in the running scene (9).                      |
 | `onlr.scene.add(name, parent)`           | Makes an empty object.                                                       |
 | `object:get(type)`                       | Gives the object's first component of a type.                                |
-| `object:add(type, values)`               | Gives the object a component.                                                |
+| `object:add(type, values)`               | Gives the object a component, and returns it.                                |
 | `object:send(name, ...)`                 | Calls the function of that name in each of the object's components that has it. |
 | `object:destroy()`                       | Destroys the object and its children, when the current frame ends.           |
 | `object:toWorld(x, y)`, `object:toLocal(x, y)` | Turn a point of the object's space into the world's, and back.         |
+| `object:setWorldPosition(x, y)`          | Moves the object to a point of the world, whatever its parents' places are.  |
 
 - An object's fields are those of section 5, with `parent` and `children` as objects. A script reads and sets them: `self.object.x = 10`.
 - The functions that declare properties are in `onlr.property` (6.2).
-- `object:send` lets one component tell the others of its object what happened, under a name they agree on. A component that finds contacts calls `self.object:send("contact", other)`, and a script on the same object defines `contact(other)`.
-- The engine knows no library. A component uses one as any Lua code does: it loads the library with `require` and calls it in its own functions.
+- `onlr.scene.get` finds what a scene has one of. A component that many others need, such as the world that bodies collide in, is a component on one object, and the others find it by its type.
+- `object:send` is how a component makes an event of its own. The engine calls `keypressed` in every component when LÖVE reports a key; in the same way, a component that finds a contact calls `self.object:send("contact", other)`, and every component of that object that defines `contact(other)` is called. The name is agreed between the two components, and the engine does not know it.
 
 ## 8. The loop
 
@@ -319,7 +348,7 @@ The engine gives scripts few functions; the rest is LÖVE. The engine's source d
   5. It shows the frame.
 - So code written for plain LÖVE in `main.lua` keeps working beside the scene, such as an interface drawn in `love.draw`.
 - An error is LÖVE's: the game stops and LÖVE's error handler shows it, as in any game. A game may set its own handler, as LÖVE allows.
-- In an exported game the loop does this and nothing else. What serves the editor is in `onlr/editor/`, which the engine loads only when the editor starts it (11), and which an export leaves out (13).
+- In an exported game the loop does this and nothing else. What serves the editor is in `onlr/editor/`, which the engine loads only when the editor starts it (12), and which an export leaves out (14).
 
 ## 9. Prefabs
 
@@ -342,9 +371,147 @@ The engine has four component types. They are written as scripts are, with the f
 
 - A scene draws through its first camera that is active and enabled, in the order of the tree. A scene without one draws as plain LÖVE does, with 0, 0 at the window's top left.
 
-## 11. The player and the link
+## 11. Libraries
 
-### 11.1 The player
+### 11.1 Using a library
+
+- A library is Lua code that its author wrote for LÖVE games. The engine does not know it, and it does not know the engine (2.1).
+- A project keeps its libraries in `libraries/`. The engine adds that folder to the places where `require` looks, so a script loads a library by the name its author gives:
+
+  ``` lua
+  local bump = require("bump")
+  ```
+
+- `require("bump")` finds `libraries/bump.lua` or `libraries/bump/init.lua`. A library that the user copies in works the same way, with or without a pack.
+- A script calls the library as the library's own documentation says. ONLR puts nothing between them and renames nothing.
+
+### 11.2 Packs
+
+A pack is a library made ready for ONLR: a folder in `libraries/`, named as the library is loaded.
+
+``` text
+libraries/bump/
+  pack.lua     describes the pack
+  init.lua     gives the library to require("bump")
+  library/     the library's own files, unchanged, with its licence
+  world.lua    the component type bump.world
+  body.lua     the component type bump.body
+```
+
+``` lua
+---@type onlr.Pack
+return {
+  format = 1,
+  name = "bump",
+  description = "Collision of boxes",
+  version = "3.1.7",
+  source = "https://github.com/kikito/bump.lua",
+  license = "MIT",
+  components = { "bump.world", "bump.body" },
+}
+```
+
+- `library/` holds what the library's author ships, unchanged. A newer version of the library replaces that folder and nothing else.
+- `init.lua` is one line that returns the library, so `require("bump")` works as the library's documentation says.
+- The pack's component types are Lua files beside it. Their names start with the pack's: `bump.body` is `libraries/bump/body.lua`. They are written as scripts are (6).
+- `components` names the types that the editor offers (13).
+- A pack adds nothing to the engine and changes nothing in it. A game uses a pack's library with its components, without them, or both.
+- The editor copies a pack into a project when the user adds it, and deletes its folder when the user removes it. In the project, the pack is the project's own copy, and an export holds it.
+
+### 11.3 A pack's components
+
+A pack's components show a library in the inspector. This sample is a pack for bump, a library that keeps boxes in a world and tells which ones a moving box hits.
+
+``` lua
+-- libraries/bump/world.lua: the one world of a scene
+local onlr = require("onlr")
+local bump = require("bump")
+
+local World = {}
+
+World.cellSize = onlr.property.number(64)
+
+function World:get()
+  self.world = self.world or bump.newWorld(self.cellSize)
+  return self.world
+end
+
+return World
+```
+
+``` lua
+-- libraries/bump/body.lua: a box that collides
+local onlr = require("onlr")
+
+local Body = {}
+
+Body.width = onlr.property.number(32)
+Body.height = onlr.property.number(32)
+
+function Body:load()
+  local world = onlr.scene.get("bump.world") or onlr.scene.add("World"):add("bump.world")
+  self.world = world:get()
+  local x, y = self.object:toWorld(0, 0)
+  self.world:add(self, x, y, self.width, self.height)
+end
+
+function Body:move(x, y)
+  local actualX, actualY, hits = self.world:move(self, x, y)
+  self.object:setWorldPosition(actualX, actualY)
+  for _, hit in ipairs(hits) do
+    self.object:send("contact", hit.other.object, hit.normal.x, hit.normal.y)
+  end
+end
+
+function Body:destroy()
+  self.world:remove(self)
+end
+
+function Body:bounds()
+  return 0, 0, self.width, self.height
+end
+
+function Body:drawEditor()
+  love.graphics.rectangle("line", 0, 0, self.width, self.height)
+end
+
+return Body
+```
+
+``` lua
+-- scripts/player.lua: the user's script, on an object that also has a bump.body
+local Player = {}
+
+function Player:load()
+  self.body = self.object:get("bump.body")
+end
+
+function Player:update(dt)
+  local x, y = self.object:toWorld(0, 0)
+  if love.keyboard.isDown("right") then
+    x = x + 200 * dt
+  end
+  self.body:move(x, y)
+end
+
+function Player:contact(other)
+  print("hit " .. other.name)
+end
+
+return Player
+```
+
+What the sample shows of every pack:
+
+- **What a scene has one of** is a component on one object, such as the world. It has properties, so the inspector shows its settings. A component that needs it finds it with `onlr.scene.get`, and makes it when the scene has none, so a scene works without it being set up.
+- **What the library must be told** is told by the component, in its `load` and `destroy`. The library's own code asks for each box to be added to its world; the component does that, so the user does not.
+- **What a script asks of the library** is a function of the component: `body:move(x, y)`.
+- **What the library reports** reaches scripts with `object:send`, as a function that the script defines: `contact(other)`.
+- **What the editor shows** is `bounds`, for choosing the object, and `drawEditor`, for the outline.
+
+## 12. The player and the link
+
+### 12.1 The player
 
 - The player is LÖVE itself, unchanged, which the editor starts as a program of its own on the project's folder. An argument tells the engine that the editor started it, the mode, and where the editor listens.
 - The editor starts it with SDL's offscreen video driver, `SDL_VIDEODRIVER=offscreen`, so it opens no window and still draws with the graphics card.
@@ -352,7 +519,7 @@ The engine has four component types. They are written as scripts are, with the f
 
   | Mode | Runs                                               | Shown in                    |
   | ---- | -------------------------------------------------- | --------------------------- |
-  | Edit | Views: scenes drawn and not updated (11.3).        | The scene view and previews |
+  | Edit | Views: scenes drawn and not updated (12.3).        | The scene view and previews |
   | Play | The game.                                          | The game panel              |
 
 - The edit player runs while a project is open. Play starts a second player and Stop ends it.
@@ -360,7 +527,7 @@ The engine has four component types. They are written as scripts are, with the f
 - The player plays the game's sound itself.
 - The editor reads what the player prints, and shows it in the console.
 
-### 11.2 The link
+### 12.2 The link
 
 - The link is a TCP connection on this computer: the editor listens on a free port of `127.0.0.1`, and the engine connects to it with LuaSocket, which LÖVE ships.
 - Both send the link's version first. Versions that differ end the link with a message that says so.
@@ -370,43 +537,49 @@ The engine has four component types. They are written as scripts are, with the f
 | -------------------- | ---------------------------------------------------------------------------- |
 | A scene              | The scene to show or to run: the editor's own copy, saved or not.            |
 | A change             | One edit of a scene in the edit player, such as a moved object or a new value. |
-| A view               | Which scene to draw, from where, and at what size (11.3).                    |
+| A view               | Which scene to draw, from where, and at what size (12.3).                    |
 | Input                | In play mode: the panel's key, text, pointer and wheel events.               |
 | A question           | What a component type declares.                                              |
 | Reload               | A file of the project changed.                                               |
 
 | The engine sends     | For                                                                          |
 | -------------------- | ---------------------------------------------------------------------------- |
-| A frame              | The picture to show. In edit mode, the objects' bounds with it (11.3).       |
+| A frame              | The picture to show. In edit mode, the objects' bounds with it (12.3).       |
 | An answer            | A type's properties, or why its file does not load.                          |
 | An error             | A message with its file, line and stack.                                     |
 
-### 11.3 Views
+### 12.3 Views
 
 - The edit player only draws. It draws views: a view is a scene, the point and the zoom it is seen from, and a size.
 - The scene view is a view of the open scene. A preview is a view of a scene that the editor makes up, such as one object with one sprite. So a preview of an image, a font, a prefab or a component needs no drawing code of its own, in the editor or in the engine.
 - The edit player draws a view when the editor asks: after a change, or when the view moves. It runs no loop of frames, so it uses the processor only when something changed.
-- With each frame of a view, the engine sends every object's `bounds` (6.3) as the view shows them.
-- The panel draws what belongs to the editor over the frame: the grid, the outline of the chosen objects and their handles. It finds the object under the pointer from the bounds. So the tools of the scene view are the editor's code, and the edit player holds none of them.
+- What is drawn is split by what it depends on:
 
-### 11.4 Frames
+  | Drawn by                    | What                                                                  | Because                                                       |
+  | --------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------- |
+  | The edit player, in LÖVE    | Each component's `drawEditor` (6.4): its picture, and its own outlines. | It depends on the component, and its author writes LÖVE code. |
+  | The panel, over the frame   | The grid, the outline of the chosen objects, and their handles.        | It depends on the pointer and the tool, and is the same for every component. |
+
+- With each frame of a view, the engine sends every object's `bounds` (6.3) as the view shows them. The panel draws its part from them and finds the object under the pointer from them. So its outlines never part from the picture, and a click needs no answer from the player.
+
+### 12.4 Frames
 
 - In the player, the engine draws into a canvas instead of the window, reads the canvas back, and sends its pixels.
 - In edit mode the canvas has the view's size. In play mode it has the project's `width` and `height`, and the panel shows it scaled to fit, with its proportions kept.
 - The engine sends the pixels as OpenECS's images hold them, so the panel shows a frame without work on each pixel.
 - The engine sends a frame only when the editor has shown the last one, so a slow panel never fills the link.
 
-### 11.5 Input
+### 12.5 Input
 
 - The game panel sends its events. The engine gives them to the loop as LÖVE's events, so `keypressed` and the others run as in a window.
 - In the player, the engine also answers LÖVE's questions about the keyboard and the pointer, such as `love.keyboard.isDown` and `love.mouse.getPosition`, from what the panel sent. This is the one place where the engine stands in for functions of LÖVE, and it does so only in the player.
 
-### 11.6 What the editor learns from LÖVE
+### 12.6 What the editor learns from LÖVE
 
 - The editor never loads a script. To show a type's properties, it asks the edit player, which loads the file as the game would and answers with its `properties`.
 - When a script changes on disk, the edit player loads it again, and the editor asks again.
 
-## 12. The editor
+## 13. The editor
 
 - The editor is an OpenECS tool: a preset and plugins, in Lua unless a part needs C. The user never sees or writes them.
 - It builds on OpenECS's standard plugins (OpenECS-std DESIGN): process starts the player, net carries the link, fs watches the project, compress and hash serve export, web downloads LÖVE, and ui and draw make the panels.
@@ -416,25 +589,27 @@ The engine has four component types. They are written as scripts are, with the f
 | `onlr_project` | Holds the open project: its file, its scenes and prefabs, the chosen objects and the history. It reads and writes the files, and watches the folder. |
 | `onlr_player`  | Starts the players and speaks the link. It gives the scene view and the game panel.           |
 | `onlr_views`   | The other panels of OVERVIEW 7.                                                               |
-| `onlr_export`  | Export (13), and LÖVE's packages (14).                                                        |
+| `onlr_export`  | Export (14), and LÖVE's packages (15).                                                        |
 
+- The inspector shows the chosen object's place, then each of its components under its type's name. A component has one row for each property, in the order its type declares them: the property's name, and the control of its kind (6.2).
+- Adding a component offers the engine's types (10), the types that the project's packs name (11.2), and any Lua file of the project as a script.
 - The project's data lives in `onlr_project`, not in a panel (OpenECS OVERVIEW 9.2). Panels show it, change it through its functions, and hear of changes through its events. So two panels never differ.
 - Each change of a scene or a prefab is a record that can be undone. `onlr_project` keeps them in one history for the project.
 - A scene or a prefab with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS OVERVIEW 5.5).
 - A file of the project that changes on disk is read again. When the editor's copy has unsaved changes too, the editor asks which to keep.
 - Opening a file at a line in the user's code editor runs a command that is a setting.
 
-## 13. Export
+## 14. Export
 
-### 13.1 The `.love` file
+### 14.1 The `.love` file
 
 - A `.love` file is a zip archive of the project's folder, with `main.lua` at its root.
 - It leaves out `.onlr/`, `.luarc.json`, `onlr/editor/`, every file and folder whose name starts with a dot, and what the project file's `exclude` names.
 - The licences travel with their parts: the engine's is in `onlr/`, and a library's is in the library's folder.
 
-### 13.2 Builds
+### 14.2 Builds
 
-A build is made from the `.love` file and LÖVE's package for the platform (14.2), by copying and joining files. It runs no tool of the target's platform.
+A build is made from the `.love` file and LÖVE's package for the platform (15.2), by copying and joining files. It runs no tool of the target's platform.
 
 | Target        | The build                                                                                                         |
 | ------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -444,28 +619,28 @@ A build is made from the `.love` file and LÖVE's package for the platform (14.2
 - LÖVE runs a `.love` file that is joined to the end of its executable.
 - A build holds LÖVE's `license.txt`, which lists the licences of LÖVE and of the libraries inside it.
 
-## 14. LÖVE
+## 15. LÖVE
 
-### 14.1 Version
+### 15.1 Version
 
 - ONLR is made for LÖVE 11.5, and a project names the version it is made for (3.2).
 - The engine avoids the functions that LÖVE's development version, 12.0, removes or renames, so the move to it stays small.
 
-### 14.2 Packages
+### 15.2 Packages
 
 - A package is LÖVE for one version and one platform, as files in a folder.
 - ONLR's archive holds the package of the editor's own platform, which the player runs. On Linux it is the contents of LÖVE's AppImage, unpacked, so it runs without the system's AppImage support.
 - The package of another platform is downloaded from LÖVE's releases at the first export for it. The editor checks it against SHA-256 hashes that ONLR ships, and keeps it in the user's data folder, by version and platform.
 - A setting names a folder to use as a package instead, such as a LÖVE the user built.
 
-## 15. Tests
+## 16. Tests
 
 - The samples are the tests. A sample is a small project that shows one part of ONLR, and it has one test.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - A sample's test of the editor is an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes.
 - A change that breaks a sample changes the sample in the same piece of work.
 
-## 16. Versions and branches
+## 17. Versions and branches
 
 - The engine uses semantic versioning. A project names the engine's version it holds (3.2).
 - A file format's `format` and the link's version are numbers that change on their own, when an older part cannot read the newer.
@@ -487,6 +662,8 @@ A build is made from the `.love` file and LÖVE's package for the platform (14.2
 
 **Link.** The connection between the editor and a player.
 
+**Library.** Lua code that its author wrote for LÖVE games to use.
+
 **LuaJIT.** The implementation of Lua that LÖVE runs. Its language is Lua 5.1 with additions.
 
 **LuaLS.** The Lua language server, which completes and checks Lua code in code editors.
@@ -496,6 +673,8 @@ A build is made from the `.love` file and LÖVE's package for the platform (14.2
 **Offscreen driver.** A video driver of SDL that opens no window.
 
 **Package.** LÖVE for one version and one platform, as files in a folder.
+
+**Pack.** A library made ready for ONLR, with component types that show it in the inspector.
 
 **Player.** LÖVE, started by the editor on the project, without a window.
 
