@@ -2,33 +2,48 @@
 
 Instructions for AI agents working in this repository. Read this file fully before doing anything.
 
-This repository is the template of OpenECS's tools. OpenECS's [CLAUDE.md](https://github.com/omerfuyar/OpenECS/blob/dev/CLAUDE.md) applies here in full: how to work with the owner, the boundaries, git and writing documents. Read it first. This file names only what is different here.
+This is the only file written for agents. Everything else is written for humans. This file does not repeat project information; it tells you where to find it.
 
-A tool made from this template is its owner's own repository; its owner may keep, change or remove this file.
+ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is. OpenECS's [CLAUDE.md](https://github.com/omerfuyar/OpenECS/blob/dev/CLAUDE.md) applies here in full: how to work with the owner, the boundaries, git and writing documents. Read it first. This file names only what is different here.
 
 ## Where things are
 
-| Path                   | What it holds                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| [README.md](README.md) | Short introduction, and how to run the tool.                                                                             |
-| [GUIDE.md](GUIDE.md)   | The guide: how to make a tool from the template, one part at a time.                                                     |
-| `preset.lua`           | The tool's preset.                                                                                                       |
-| `plugins/`             | The tool's plugins, one folder each.                                                                                     |
-| `test.lua`             | The tool's test.                                                                                                         |
-| `shuild.c`             | Builds the plugins in C, with shuild.                                                                                    |
-| `dependencies/`        | Submodules: shuild and shu, which `shuild.c` builds with.                                                                |
-| `.github/`             | Checks, rulesets and the agents' check script.                                                                           |
-| `.clang-format`        | How clang-format formats the C code, as OpenECS's does.                                                                  |
-| `.clang-tidy`          | What clang-tidy checks in the C code: OpenECS-std's names for a plugin's functions, and common bugs.                     |
-| `.claude/`             | Claude Code's settings and notes: it formats each C file it edits; `notes.md` says why the tools are set up as they are. |
-| `LICENSE.md`           | The license, zlib.                                                                                                       |
+| File                       | What it holds                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------- |
+| [README.md](README.md)     | Short introduction.                                                                            |
+| [OVERVIEW.md](OVERVIEW.md) | What ONLR is: its users, scope, principles and product decisions.                              |
+| [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the player and the link, the editor, export. |
+| [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
+| `LICENSE.md`               | The license, zlib.                                                                             |
 
-OpenECS's OVERVIEW.md and DESIGN.md hold how OpenECS works. Before you propose or change anything, read their Contents, then every section the task touches.
+Before you propose or change anything, read the Contents of OVERVIEW.md and DESIGN.md, then every section the task touches.
+
+## Current stage
+
+ONLR is being planned. Planning is the work: the documents are what you make. Write no code until the owner says the plan is done.
 
 ## Differences
 
-- The template follows OpenECS's `dev`: a change to OpenECS's plugin interface changes the template in the same piece of work, so its test passes.
-- The template is not released with OpenECS: its `main` is what "Use this template" copies. `dev` is merged into `main` with a pull request that the owner reviews.
-- The guide is for people who start a tool. It explains each part the first time it appears, and links to OpenECS's documents for the details, so one source of truth stays in OpenECS.
-- Before each commit, run `.github/scripts/check.sh`: it formats the changed C files of `plugins/` and checks them with clang-tidy, and checks the changed Lua files with the Lua language server when it is installed. Both need OpenECS's release, as `shuild.c` does.
-- The files' comments explain what OpenECS does with each part, as the examples' comments do (OpenECS DESIGN.md, section 17.6).
+**The project**
+
+- LÖVE is never changed, and ONLR ships no changed LÖVE (OVERVIEW 11). Do not propose a design that needs one.
+- OpenECS changes often. Know what it and its standard plugins can do, and read them again before you rely on them: [OVERVIEW.md](https://github.com/omerfuyar/OpenECS/blob/dev/OVERVIEW.md), [DESIGN.md](https://github.com/omerfuyar/OpenECS/blob/dev/DESIGN.md) and [OpenECS-std's DESIGN.md](https://github.com/omerfuyar/OpenECS-std/blob/dev/DESIGN.md). Do not bind ONLR's design to it: only DESIGN.md's section on the editor depends on OpenECS, and it links to OpenECS's documents and repeats nothing of theirs.
+- The user of ONLR knows LÖVE, or learns it. Keep LÖVE's names and ways, so what they know stays true. They never see OpenECS's internals.
+- Before recommending a library for the engine, check LÖVE first, as OpenECS's file says of SDL. Dependencies stay few (OVERVIEW 9).
+
+**Working with the owner**
+
+- Ask whenever instructions clash, in the same batch as the other questions.
+- The owner is new to LÖVE and to engine design. Explain what a decision means for a game's author, not only what it is.
+
+**Checks**
+
+- Test little. Run a test only when a decision depends on its result, and never the same thing twice.
+- The owner runs experiments on their own computer when asked. Give exact steps: the files, the commands, and what to report back.
+- OpenECS's checks and scripts are not in this repository yet (TODO.md, Tasks). Until they are, a change is checked by reading it: links, section numbers and cross-references.
+
+**Git**
+
+- There are two long-lived branches. `dev` is the default, where work is merged. `main` holds what is stable.
+- Merge your own work into `dev`, as the owner allowed. Open the pull request from `dev` into `main` when the owner asks; the owner merges it.
+- No releases are planned, so nothing here follows OpenECS's releases or its release descriptions.
