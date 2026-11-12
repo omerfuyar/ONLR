@@ -100,7 +100,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - A script declares its properties as its fields: each with a type and a default value. The inspector shows them, a scene keeps their values, and the script reads them under the same names.
 - A property can be a number, a text or a choice, and also a file of the project, such as an image or a sound, or another object of the scene.
 - LÖVE's own callbacks keep working. A game may still define `love.update` or `love.draw` in its `main.lua`, and the engine calls them too.
-- A library for LÖVE works as in any game: the user copies it into the project and loads it with `require`.
+- A library for LÖVE works as in any game: the user copies it into the project's folder of libraries and loads it with `require`, under the name its author gives.
 
 ## 7. The editor
 
@@ -118,6 +118,8 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 | Export           | The targets, and the export's progress.                                   |
 
 - LÖVE draws the scene view and the game, so both show what the exported game shows. The editor has no renderer of its own for games.
+- A component says what it shows in the scene view, in LÖVE code. The editor adds what belongs to its tools: the grid, and the outline and handles of the chosen objects.
+- The inspector lists a component's properties in the order its script declares them. Adding a component offers the engine's, those of the project's packs, and the project's scripts.
 - The editor never runs the game's code. LÖVE does, and tells the editor what it needs, such as the properties a script declares.
 - In the scene view nothing moves: the engine draws the scene and does not update it. Play runs the game from the scenes as they are in the editor, saved or not.
 - A preview, such as of an image, a font or a prefab, is drawn by LÖVE as the scene view is.
@@ -136,9 +138,11 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 ## 9. Libraries
 
 - Any library written for LÖVE works in a project (6).
-- The engine knows no library. A library is used from components, which call it as any Lua code does.
+- The engine knows no library, and a library does not know the engine. A script calls a library as the library's own documentation says.
 - ONLR may include a library when it is widely used, simple to understand, and either maintained or small and finished. Fewer is better: each one included is one to keep working.
-- A library that ONLR includes comes as a **pack**: the library, its licence, and the components that show it in the inspector. The components are written as scripts are, so a user can write the same for any other library. A project chooses its packs.
+- A library that ONLR includes comes as a **pack**: the library, unchanged, with its licence and with components that show it in the inspector. The components are written as scripts are, so a user can write the same for any other library.
+- A pack's components are a help, not a wall. A script may use the library through them, call the library itself, or do both.
+- A project chooses its packs. The editor copies a pack into the project, where it is the project's own.
 
 ## 10. Platforms
 
