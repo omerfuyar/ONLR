@@ -1,0 +1,21 @@
+.vscode
+*.exe
+*.old
+ignore/
+ignore.*
+*.ignore
+/shuild
+*.pdb
+build/
+*.o
+*.obj
+*.shu
+*.out
+*.log
+dist/
+
+# the release of OpenECS, unpacked here, and the plugins shuild makes, with a DLL's import library on Windows
+OpenECS/
+*.so
+*.dll
+*.a

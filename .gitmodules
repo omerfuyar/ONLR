@@ -1,0 +1,6 @@
+[submodule "dependencies/shuild"]
+	path = dependencies/shuild
+	url = https://github.com/omerfuyar/shuild.git
+[submodule "dependencies/shu"]
+	path = dependencies/shu
+	url = https://github.com/omerfuyar/shu.git
