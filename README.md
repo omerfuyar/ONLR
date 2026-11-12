@@ -1,13 +1,13 @@
-# OpenECS template
+# ONLR
 
-Template of a tool made with [OpenECS](https://github.com/omerfuyar/OpenECS): a preset, a plugin in Lua and a plugin in C, a test, and a guide that goes through each part. Press "Use this template" on GitHub to make your own repository from it.
+ONLR is an editor and an engine for 2D games that run on [LÖVE](https://love2d.org). Its engine is a Lua library that gives a LÖVE game scenes, objects and components. Its editor is where you arrange them, run the game and export it.
 
-The tool is a board of notes beside a small panel in C. Unpack an [OpenECS release](https://github.com/omerfuyar/OpenECS/releases) into `OpenECS/`, then:
+ONLR means "ONLR Not Love Runtime": LÖVE stays the runtime, unchanged. A game made with ONLR is a `.love` file that any LÖVE runs.
 
-``` shell
-git submodule update --init
-cc shuild.c -o shuild && ./shuild
-OpenECS/OpenECS --fresh --preset preset.lua
-```
+ONLR is being planned. There is nothing to run yet.
 
-[GUIDE.md](GUIDE.md) explains the preset, plugins, panels, etc. and how to ship your tool.
+- [OVERVIEW.md](OVERVIEW.md): what ONLR is.
+- [DESIGN.md](DESIGN.md): how it is built.
+- [TODO.md](TODO.md): what is open.
+
+The editor is an [OpenECS](https://github.com/omerfuyar/OpenECS) tool. ONLR's license is [zlib](LICENSE.md).

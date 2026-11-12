@@ -97,7 +97,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - A script is a Lua file that returns a component. The user attaches it to objects in the editor.
 - Its functions have the names of LÖVE's callbacks, and get what LÖVE gives them: `load`, `update(dt)`, `draw`, `keypressed(key)` and every other one. Someone who knows LÖVE knows a script.
 - A script may call any function of LÖVE: `love.graphics`, `love.keyboard`, `love.audio` and the rest work as in any game.
-- A script declares its properties: each with a name, a type and a default value. The inspector shows them, a scene keeps their values, and the script reads them as its own fields.
+- A script declares its properties as its fields: each with a type and a default value. The inspector shows them, a scene keeps their values, and the script reads them under the same names.
 - A property can be a number, a text or a choice, and also a file of the project, such as an image or a sound, or another object of the scene.
 - LÖVE's own callbacks keep working. A game may still define `love.update` or `love.draw` in its `main.lua`, and the engine calls them too.
 - A library for LÖVE works as in any game: the user copies it into the project and loads it with `require`.
@@ -120,6 +120,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 - LÖVE draws the scene view and the game, so both show what the exported game shows. The editor has no renderer of its own for games.
 - The editor never runs the game's code. LÖVE does, and tells the editor what it needs, such as the properties a script declares.
 - In the scene view nothing moves: the engine draws the scene and does not update it. Play runs the game from the scenes as they are in the editor, saved or not.
+- A preview, such as of an image, a font or a prefab, is drawn by LÖVE as the scene view is.
 - A game that fails, or never returns, does not stop the editor.
 - Every change to a scene can be undone. The project has one history, whichever panel made the change.
 - The editor saves when the user asks, and asks about unsaved work before it closes.
@@ -135,9 +136,9 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 ## 9. Libraries
 
 - Any library written for LÖVE works in a project (6).
-- Physics is LÖVE's own, `love.physics`. ONLR includes no second way to collide.
+- The engine knows no library. A library is used from components, which call it as any Lua code does.
 - ONLR may include a library when it is widely used, simple to understand, and either maintained or small and finished. Fewer is better: each one included is one to keep working.
-- A library that ONLR includes comes as a **pack**: the library, its licence, and the components that show it in the inspector. A project chooses its packs.
+- A library that ONLR includes comes as a **pack**: the library, its licence, and the components that show it in the inspector. The components are written as scripts are, so a user can write the same for any other library. A project chooses its packs.
 
 ## 10. Platforms
 

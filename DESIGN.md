@@ -208,10 +208,8 @@ local onlr = require("onlr")
 ---@class Player : onlr.Component
 local Player = {}
 
-Player.properties = {
-  { name = "speed", type = "number", default = 200, description = "Pixels a second" },
-  { name = "image", type = "image" },
-}
+Player.speed = onlr.property.number(200, { description = "Pixels a second" })
+Player.image = onlr.property.image()
 
 function Player:load()
   self.jumps = 0
@@ -241,22 +239,25 @@ return Player
 
 ### 6.2 Properties
 
-- `properties` is a list, so the inspector shows the properties in the order the file gives. Each is a table of its `name`, its `type`, and optionally its `default` and a `description`, which the inspector shows.
-- A component reads a property as a field: `self.speed`. The engine sets the fields before `load`.
+- A type declares a property as a field, with a function of `onlr.property`: `Player.speed = onlr.property.number(200)`. A component reads it under the same name: `self.speed`. The engine sets the fields before `load`.
+- Each function takes the default value, then optionally a table of options: a `description`, which the inspector shows, and what the table below names.
+- The inspector shows a type's properties in the order its file declares them.
+- Each function's annotation names what the component gets, so a code editor knows that `self.speed` is a number.
+- A property with no value and no default reads as `nil`.
 
-| Type                | The inspector shows                               | The component gets                     |
-| ------------------- | ------------------------------------------------- | -------------------------------------- |
-| `bool`              | A toggle.                                         | A boolean.                             |
-| `integer`, `number` | A number field, kept in `min` and `max` if given. | A number.                              |
-| `string`            | A text field.                                     | A text.                                |
-| `choice`            | One of its `choices`.                             | The chosen text.                       |
-| `color`             | A colour.                                         | A table that `love.graphics.setColor` takes. |
-| `image`             | An image file of the project.                     | A LÖVE image.                          |
-| `sound`             | A sound file of the project.                      | A LÖVE source of its own.              |
-| `font`              | A font file of the project and a size.            | A LÖVE font.                           |
-| `file`              | Any file of the project.                          | Its path.                              |
-| `scene`, `prefab`   | A scene or a prefab of the project.               | Its path.                              |
-| `object`            | An object of the same scene.                      | The object.                            |
+| Function of `onlr.property` | The inspector shows                               | The component gets                           |
+| --------------------------- | ------------------------------------------------- | -------------------------------------------- |
+| `bool`                      | A toggle.                                         | A boolean.                                   |
+| `integer`, `number`         | A number field, kept in `min` and `max` if given. | A number.                                    |
+| `string`                    | A text field.                                     | A text.                                      |
+| `choice`                    | One of its `choices`.                             | The chosen text.                             |
+| `color`                     | A colour.                                         | A table that `love.graphics.setColor` takes. |
+| `image`                     | An image file of the project.                     | A LÖVE image.                                |
+| `sound`                     | A sound file of the project.                      | A LÖVE source of its own.                    |
+| `font`                      | A font file of the project and a size.            | A LÖVE font.                                 |
+| `file`                      | Any file of the project.                          | Its path.                                    |
+| `scene`, `prefab`           | A scene or a prefab of the project.               | Its path.                                    |
+| `object`                    | An object of the same scene.                      | The object.                                  |
 
 - A scene keeps a file as its path and an object as its id.
 - The engine loads each file once, and components that name the same file share it. A sound is the exception: each component gets its own source, so two can play at once.
@@ -273,7 +274,7 @@ The engine calls the functions that a type has. All are optional.
 | `draw()`            | Each frame, with the object's place applied, so drawing at 0, 0 draws at the object.                  |
 | `destroy()`         | When its object is destroyed, or the scene ends.                                                      |
 | Any callback of LÖVE | When LÖVE sends the event, with what LÖVE gives: `keypressed(key, scancode, isrepeat)`, `mousepressed(x, y, button)` and every other one. |
-| `bounds()`          | When the editor asks for the rectangle that the component covers, in the object's own space. The scene view uses it to choose objects. |
+| `bounds()`          | When the editor asks for the rectangle that the component covers, in the object's own space. The scene view uses it to choose objects (11.3). |
 
 - The engine passes on every event that LÖVE has, by its name, so it needs no list of them, and an event of a newer LÖVE reaches scripts too.
 - A function of an object that is not `active`, or of a component that is not `enabled`, is not called.
@@ -294,14 +295,19 @@ The engine gives scripts few functions; the rest is LÖVE. The engine's source d
 | `onlr.conf(t)`                           | Sets LÖVE's settings from the project file, from `conf.lua` (3.1).           |
 | `onlr.scene.load(path)`                  | Ends the running scene and loads another, when the current frame ends.       |
 | `onlr.scene.find(name)`                  | Gives the first object of that name.                                         |
+| `onlr.scene.get(type)`                   | Gives the scene's first component of a type, in the tree's order.            |
 | `onlr.scene.spawn(prefab, x, y, parent)` | Makes an instance of a prefab in the running scene (9).                      |
 | `onlr.scene.add(name, parent)`           | Makes an empty object.                                                       |
 | `object:get(type)`                       | Gives the object's first component of a type.                                |
 | `object:add(type, values)`               | Gives the object a component.                                                |
+| `object:send(name, ...)`                 | Calls the function of that name in each of the object's components that has it. |
 | `object:destroy()`                       | Destroys the object and its children, when the current frame ends.           |
 | `object:toWorld(x, y)`, `object:toLocal(x, y)` | Turn a point of the object's space into the world's, and back.         |
 
-An object's fields are those of section 5, with `parent` and `children` as objects. A script reads and sets them: `self.object.x = 10`.
+- An object's fields are those of section 5, with `parent` and `children` as objects. A script reads and sets them: `self.object.x = 10`.
+- The functions that declare properties are in `onlr.property` (6.2).
+- `object:send` lets one component tell the others of its object what happened, under a name they agree on. A component that finds contacts calls `self.object:send("contact", other)`, and a script on the same object defines `contact(other)`.
+- The engine knows no library. A component uses one as any Lua code does: it loads the library with `require` and calls it in its own functions.
 
 ## 8. The loop
 
@@ -344,10 +350,10 @@ The engine has four component types. They are written as scripts are, with the f
 - The editor starts it with SDL's offscreen video driver, `SDL_VIDEODRIVER=offscreen`, so it opens no window and still draws with the graphics card.
 - A player runs in one of two modes:
 
-  | Mode | Runs                                                                  | Shown in       |
-  | ---- | --------------------------------------------------------------------- | -------------- |
-  | Edit | The open scene, drawn and not updated (6.4), with what shows the choice: outlines, handles and a grid. | The scene view |
-  | Play | The game.                                                             | The game panel |
+  | Mode | Runs                                               | Shown in                    |
+  | ---- | -------------------------------------------------- | --------------------------- |
+  | Edit | Views: scenes drawn and not updated (11.3).        | The scene view and previews |
+  | Play | The game.                                          | The game panel              |
 
 - The edit player runs while a project is open. Play starts a second player and Stop ends it.
 - The player is another program, so a game that fails or never returns leaves the editor running. The editor shows what happened, and starts the player again when asked.
@@ -363,30 +369,39 @@ The engine has four component types. They are written as scripts are, with the f
 | The editor sends     | For                                                                          |
 | -------------------- | ---------------------------------------------------------------------------- |
 | A scene              | The scene to show or to run: the editor's own copy, saved or not.            |
-| A change             | One edit of the scene in the edit player, such as a moved object or a new value. |
-| Input                | The panel's key, text, pointer and wheel events, and its size.               |
-| A question           | What a component type declares; which object is at a point.                  |
+| A change             | One edit of a scene in the edit player, such as a moved object or a new value. |
+| A view               | Which scene to draw, from where, and at what size (11.3).                    |
+| Input                | In play mode: the panel's key, text, pointer and wheel events.               |
+| A question           | What a component type declares.                                              |
 | Reload               | A file of the project changed.                                               |
 
 | The engine sends     | For                                                                          |
 | -------------------- | ---------------------------------------------------------------------------- |
-| A frame              | The picture to show.                                                         |
-| An answer            | A type's properties, or why its file does not load; the object at a point.   |
+| A frame              | The picture to show. In edit mode, the objects' bounds with it (11.3).       |
+| An answer            | A type's properties, or why its file does not load.                          |
 | An error             | A message with its file, line and stack.                                     |
 
-### 11.3 Frames
+### 11.3 Views
 
-- In the player, the engine's loop draws into a canvas instead of the window, reads the canvas back, and sends its pixels.
-- In edit mode the canvas has the panel's size. In play mode it has the project's `width` and `height`, and the panel shows it scaled to fit, with its proportions kept.
+- The edit player only draws. It draws views: a view is a scene, the point and the zoom it is seen from, and a size.
+- The scene view is a view of the open scene. A preview is a view of a scene that the editor makes up, such as one object with one sprite. So a preview of an image, a font, a prefab or a component needs no drawing code of its own, in the editor or in the engine.
+- The edit player draws a view when the editor asks: after a change, or when the view moves. It runs no loop of frames, so it uses the processor only when something changed.
+- With each frame of a view, the engine sends every object's `bounds` (6.3) as the view shows them.
+- The panel draws what belongs to the editor over the frame: the grid, the outline of the chosen objects and their handles. It finds the object under the pointer from the bounds. So the tools of the scene view are the editor's code, and the edit player holds none of them.
+
+### 11.4 Frames
+
+- In the player, the engine draws into a canvas instead of the window, reads the canvas back, and sends its pixels.
+- In edit mode the canvas has the view's size. In play mode it has the project's `width` and `height`, and the panel shows it scaled to fit, with its proportions kept.
 - The engine sends the pixels as OpenECS's images hold them, so the panel shows a frame without work on each pixel.
 - The engine sends a frame only when the editor has shown the last one, so a slow panel never fills the link.
 
-### 11.4 Input
+### 11.5 Input
 
-- The panel sends its events. The engine gives them to the loop as LÖVE's events, so `keypressed` and the others run as in a window.
+- The game panel sends its events. The engine gives them to the loop as LÖVE's events, so `keypressed` and the others run as in a window.
 - In the player, the engine also answers LÖVE's questions about the keyboard and the pointer, such as `love.keyboard.isDown` and `love.mouse.getPosition`, from what the panel sent. This is the one place where the engine stands in for functions of LÖVE, and it does so only in the player.
 
-### 11.5 What the editor learns from LÖVE
+### 11.6 What the editor learns from LÖVE
 
 - The editor never loads a script. To show a type's properties, it asks the edit player, which loads the file as the game would and answers with its `properties`.
 - When a script changes on disk, the edit player loads it again, and the editor asks again.
@@ -466,7 +481,7 @@ A build is made from the `.love` file and LÖVE's package for the platform (14.2
 
 **Definition.** A LuaLS annotation that tells a code editor a type's fields or a function's parameters.
 
-**Edit player.** The player that draws the open scene for the scene view.
+**Edit player.** The player that draws views for the editor.
 
 **Frame.** One picture of the game.
 
@@ -487,3 +502,5 @@ A build is made from the `.love` file and LÖVE's package for the platform (14.2
 **SDL.** The library through which LÖVE and OpenECS use windows, input and graphics.
 
 **Transform.** LÖVE's object for a position, a rotation and a scale together.
+
+**View.** A scene as the edit player draws it: seen from a point, at a zoom and a size.
