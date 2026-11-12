@@ -3,6 +3,7 @@
 -- onlr.scene: the running scene.
 
 ---@class onlr.scene
+---@field root onlr.Object the running scene as an object: its components are the scene's own, and its children the scene's objects
 local scene = {}
 
 ---Ends the running scene and loads another, when the current frame ends.
@@ -14,7 +15,7 @@ function scene.load(path) end
 ---@return onlr.Object?
 function scene.find(name) end
 
----Gives the scene's first component of a type, in the tree's order.
+---Gives the scene's first component of a type, in the tree's order, the root's first.
 ---@generic T
 ---@param type `T` a component type, such as "bump.world"
 ---@return T?

@@ -78,9 +78,9 @@ All of the game's logic. A script may call any function of LÖVE (6).
 
 - A project is a folder. ONLR opens projects, never single files.
 - A project is a LÖVE game: LÖVE runs the folder as it is, without the editor. So a project works in git, on another computer and with any tool for LÖVE games.
-- One folder of the project, `lib`, holds what the user did not write: the engine, packs and libraries. The editor puts the engine there, and updates it when the user agrees.
-- Everything outside it is the user's own work: scenes, prefabs, scripts and assets, in any folders. A file's path in the project is its path in the game.
-- The project file holds what describes the whole game: its name, its version, its first scene, the size of its window, and the version of LÖVE it was made for.
+- One folder of the project, `lib`, holds the engine, packs and libraries. The editor puts the engine there, and updates it when the user agrees. The user adds libraries to it, by hand or in the editor.
+- Scripts are in one folder, `components`. Scenes, prefabs and assets are in any folders. A file's path in the project is its path in the game.
+- The project's manifest holds what describes the whole game: its name, its version, its first scene, the size of its window, and the version of LÖVE it was made for.
 - Every file that ONLR writes is a Lua file that returns a table. ONLR ships definition files for them, so a code editor completes and checks them.
 
 ## 5. Scenes, objects and components
@@ -90,6 +90,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - A **component** gives an object what it shows or does. Each has properties, such as a sprite's image or a player's speed. An object can have many components.
 - Objects draw in the order of the scene's tree: a parent before its children, and siblings in their order. A number on an object, `z`, orders it among its siblings.
 - A **prefab** is an object, with its children, in a file of its own. A scene holds instances of it, each with its own place and its own changed values. A script makes instances while the game runs, such as bullets and enemies.
+- A scene has components of its own too, for what the whole scene has one of, such as the world that its bodies collide in.
 - What must outlive a scene, such as a score, lives in the user's own Lua modules, as in any LÖVE game.
 
 ## 6. Scripts
@@ -114,7 +115,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 | Files            | The project's folders and files.                                          |
 | Game             | The running game.                                                         |
 | Console          | What the game prints, and its errors.                                     |
-| Project settings | What the project file holds.                                              |
+| Project settings | What the project's manifest holds.                                        |
 | Export           | The targets, and the export's progress.                                   |
 
 - LÖVE draws the scene view and the game, so both show what the exported game shows. The editor has no renderer of its own for games.
@@ -187,6 +188,8 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **`.love` file.** An archive of a game's files, which LÖVE runs.
 
+**Manifest.** A data file that describes the folder it is in: the project's, which describes the whole game, and one for the engine and for each pack.
+
 **Object.** A thing in a scene, with a name, a place, components and children.
 
 **OpenECS.** The program that provides the editor's windows, panels and plugins.
@@ -198,8 +201,6 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 **Prefab.** An object, with its children, kept in a file of its own, from which scenes and scripts make instances.
 
 **Project.** The folder of a game made with ONLR.
-
-**Project file.** The file of a project that describes the whole game.
 
 **Property.** A named, typed value of a component, which the inspector shows and a scene keeps.
 

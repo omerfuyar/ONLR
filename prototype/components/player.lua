@@ -1,7 +1,8 @@
--- A script: a Lua file that returns a component type. The user attaches it to objects in the editor.
+-- A script: a component type that the user writes. Scripts are in components/.
+-- The user attaches it to objects in the editor.
 local onlr = require("onlr")
 
----@class scripts.player : onlr.Component
+---@class components.player : onlr.Component
 local Player = {}
 
 -- Properties. The inspector shows them in this order, and the scene keeps their values.

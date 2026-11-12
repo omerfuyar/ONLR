@@ -52,7 +52,6 @@ What the owner wants worked on, in no fixed order.
 
 - **The scene view's tools.** How objects are moved, turned and scaled; snapping to a grid; choosing many; choosing an object under another; what the view shows for an object with no `bounds`. The panel draws them over LÖVE's frame (DESIGN 12.3); a grid behind the objects needs the frame to keep its transparency.
 - **A component's own handles.** A component draws its outline in the scene view with `drawEditor` (DESIGN 6.4). Open: changing its values there, such as dragging the corner of a body's box.
-- **Scripts in the list of components.** Adding a component takes any Lua file as a script (DESIGN 13). Open: listing the project's scripts without loading every Lua file, since loading runs a file's code.
 - **The files panel.** What it does with files: rename and move, and whether paths in scenes follow; how an image or a sound is previewed.
 - **Making a script.** A new script starts from a file with the common functions. Where that file is kept, and whether the user can change it.
 - **Assets that are missing.** What the inspector and the scene view show for a path that no longer exists.
@@ -85,7 +84,7 @@ What the owner wants worked on, in no fixed order.
 - **A bump pack's details.** DESIGN 11.3 shows its outline as a sample. Open if bump is chosen: a body on an object that is turned or scaled, since bump's boxes are not; which boxes a body passes through.
 - **A pack's version.** A pack names its library's version (DESIGN 11.2). Open: how the editor offers a newer pack to a project that has an older one, and what happens to changes the user made in the project's copy.
 - **A pack's hints.** A library needs definitions for the code editor, as LÖVE has (DESIGN 4.3). Most libraries ship none. Open: whether a pack holds them, and who writes them.
-- **Packs from others.** A pack is a folder (DESIGN 11.2), so anyone can make one. Open: whether the editor adds a pack from a folder or an address that the user gives.
+- **Packs from others.** A pack is a folder (DESIGN 11.2), so anyone can make one. Open: whether the editor adds a pack, or a plain library, from a folder or an address that the user gives.
 - **What the engine covers itself.** Animation of sprites and a camera are small enough to be the engine's own, so no library is planned for them.
 
 ## LÖVE

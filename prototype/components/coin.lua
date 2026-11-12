@@ -1,7 +1,7 @@
 local onlr = require("onlr")
-local score = require("scripts.score")
+local score = require("modules.score")
 
----@class scripts.coin : onlr.Component
+---@class components.coin : onlr.Component
 local Coin = {}
 
 Coin.worth = onlr.property.integer(1, { min = 1 })
