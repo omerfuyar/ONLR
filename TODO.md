@@ -19,10 +19,12 @@ What the owner wants worked on, in no fixed order.
 - **Physics and collision.** Components that give an object a body: where the world lives, how the body moves the object, how a child of a moving object behaves, and the name under which a contact reaches a script (DESIGN 7). Open: whether they use `love.physics`, a collision library such as bump, or both as separate packs (see [Libraries](#libraries)).
 - **Particles and tile maps.** Whether the engine has components for LÖVE's particle systems, and for tile maps (see [Libraries](#libraries)).
 - **The window and the game's size.** A project has one size (DESIGN 3.2). Open: what the game does when the window has another size or is resized, whether it scales with bars or shows more, and how fullscreen and high-density screens behave.
-- **More kinds of property.** A list of values, and a group of values, such as a list of images. A component of another object, such as a body. Whether a property can hold an object of another scene's prefab.
+- **More kinds of property.** A component of another object, such as a body. Whether a property can hold an object of another scene's prefab.
 - **A property's name in the inspector.** The inspector shows the name as the script writes it (DESIGN 13). Open: an option for another label, and showing `cellSize` as "Cell size".
 - **Components that need another.** A script that calls `self.object:get("bump.body")` needs the body on its object. Open: whether a type can say so, and the editor adds the other.
 - **Finding objects.** `onlr.scene.find` gives the first object of a name, and `onlr.scene.get` the first component of a type. Open: finding all of them, and whether objects have tags.
+- **Speed.** DESIGN 8.2 says how a scene is kept. It is not measured. A sample with thousands of objects is the measure, and it decides whether any part needs another way of keeping its data.
+- **Drawing state in the game.** In the scene view the engine saves and restores LÖVE's drawing state around each component (DESIGN 6.4). In the game it restores the transform only, as plain LÖVE code expects to manage its own colours. Open: whether the game restores all of it too, which is safer and costs time for every component.
 - **Order of update.** Objects update in the tree's order (DESIGN 5). Whether a script needs a way to run before or after others.
 - **Turning objects off and on.** Whether a component hears that its object became active or not.
 - **Keeping an object through a scene change.** What outlives a scene lives in the user's modules (OVERVIEW 5). Whether an object can be kept too, such as a music player.
@@ -79,7 +81,7 @@ What the owner wants worked on, in no fixed order.
   - physics with forces and joints, through `love.physics`, which is part of LÖVE and so needs components only;
   - tile maps made with Tiled, through STI;
   - an interface inside the game, through one library such as SUIT or Slab, or components of the engine's own.
-- **A bump pack's details.** DESIGN 11.3 shows its outline as a sample. Open if bump is chosen: a body on an object that is turned or scaled, since bump's boxes are not; which boxes a body passes through; what a body does when its object is moved without `move`; whether both objects hear of a contact.
+- **A bump pack's details.** DESIGN 11.3 shows its outline as a sample. Open if bump is chosen: a body on an object that is turned or scaled, since bump's boxes are not; which boxes a body passes through.
 - **A pack's version.** A pack names its library's version (DESIGN 11.2). Open: how the editor offers a newer pack to a project that has an older one, and what happens to changes the user made in the project's copy.
 - **A pack's hints.** A library needs definitions for the code editor, as LÖVE has (DESIGN 4.3). Most libraries ship none. Open: whether a pack holds them, and who writes them.
 - **Packs from others.** A pack is a folder (DESIGN 11.2), so anyone can make one. Open: whether the editor adds a pack from a folder or an address that the user gives.
@@ -95,5 +97,7 @@ What the owner wants worked on, in no fixed order.
 - **The build files.** The template's plugins, preset, test, build script, submodules, checks and Claude Code settings were removed, since nothing is built yet. When code starts, take them fresh from [OpenECS-template](https://github.com/omerfuyar/OpenECS-template), which follows OpenECS's `dev`.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, and LÖVE's package for the host.
 - **The hashes of LÖVE's packages.** DESIGN 15.2 checks downloads against hashes that ONLR ships. They are taken once from LÖVE's releases.
+- **The prototype.** `prototype/` is a sketch of a project's files for the owner's feedback. It follows DESIGN.md, which stays the truth. When code starts, it becomes the first sample or is removed.
+- **Hints for `get`.** The prototype's definitions make `object:get("bump.body")` give the type `bump.body` to a code editor. Not checked in the Lua language server.
 - **OpenECS's TODO.md** still lists this editor's open questions. Replace them there with a link to this repository.
 - **Rulesets.** `dev` and `main` have no rules in this repository yet. The owner sets them when checks exist.

@@ -1,0 +1,6 @@
+-- Not a component: a plain Lua module, as in any LÖVE game.
+-- What must outlive a scene lives in such a module, since require gives the same table every time.
+return {
+  coins = 0,
+  left = 0,
+}
