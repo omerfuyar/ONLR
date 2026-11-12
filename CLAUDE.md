@@ -14,13 +14,14 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | [OVERVIEW.md](OVERVIEW.md) | What ONLR is: its users, scope, principles and product decisions.                              |
 | [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the player and the link, the editor, export. |
 | [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
+| `prototype/`               | A sketch of a project's files, for the owner's feedback. Nothing in it runs: the engine is not written. |
 | `LICENSE.md`               | The license, zlib.                                                                             |
 
 Before you propose or change anything, read the Contents of OVERVIEW.md and DESIGN.md, then every section the task touches.
 
 ## Current stage
 
-ONLR is being planned. Planning is the work: the documents are what you make. Write no code until the owner says the plan is done.
+ONLR is being planned. Planning is the work: the documents are what you make. Write no code until the owner says the plan is done. `prototype/` is part of the plan: it shows the files that the design describes, and changes with DESIGN.md in the same piece of work.
 
 ## Differences
 

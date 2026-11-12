@@ -98,7 +98,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - Its functions have the names of LÖVE's callbacks, and get what LÖVE gives them: `load`, `update(dt)`, `draw`, `keypressed(key)` and every other one. Someone who knows LÖVE knows a script.
 - A script may call any function of LÖVE: `love.graphics`, `love.keyboard`, `love.audio` and the rest work as in any game.
 - A script declares its properties as its fields: each with a type and a default value. The inspector shows them, a scene keeps their values, and the script reads them under the same names.
-- A property can be a number, a text or a choice, and also a file of the project, such as an image or a sound, or another object of the scene.
+- A property can be a number, a text, a choice or a pair of numbers, and also a file of the project, such as an image or a sound, or another object of the scene. Properties can be put in groups and in lists.
 - LÖVE's own callbacks keep working. A game may still define `love.update` or `love.draw` in its `main.lua`, and the engine calls them too.
 - A library for LÖVE works as in any game: the user copies it into the project's folder of libraries and loads it with `require`, under the name its author gives.
 
@@ -118,7 +118,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 | Export           | The targets, and the export's progress.                                   |
 
 - LÖVE draws the scene view and the game, so both show what the exported game shows. The editor has no renderer of its own for games.
-- A component says what it shows in the scene view, in LÖVE code. The editor adds what belongs to its tools: the grid, and the outline and handles of the chosen objects.
+- A component says what it shows in the scene view, in LÖVE code. The editor adds what belongs to its tools: the grid, the outline and handles of the chosen objects, and a marker for an object that shows nothing.
 - The inspector lists a component's properties in the order its script declares them. Adding a component offers the engine's, those of the project's packs, and the project's scripts.
 - The editor never runs the game's code. LÖVE does, and tells the editor what it needs, such as the properties a script declares.
 - In the scene view nothing moves: the engine draws the scene and does not update it. Play runs the game from the scenes as they are in the editor, saved or not.
