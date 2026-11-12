@@ -7,7 +7,6 @@ return {
   id = "org.example.coinrun",
   version = "0.1.0",
   love = "11.5",
-  engine = "0.1.0",
   scene = "scenes/level.scene.lua",
   width = 1280,
   height = 720,
