@@ -78,9 +78,9 @@ All of the game's logic. A script may call any function of LÖVE (6).
 
 - A project is a folder. ONLR opens projects, never single files.
 - A project is a LÖVE game: LÖVE runs the folder as it is, without the editor. So a project works in git, on another computer and with any tool for LÖVE games.
-- The project holds the engine, in a folder of its own. The editor puts it there, and updates it when the user agrees.
-- Everything else in the folder is the user's: scenes, prefabs, scripts and assets, in any folders. A file's path in the project is its path in the game.
-- The project file holds what describes the whole game: its name, its version, its first scene, the size of its window, and the versions of LÖVE and of the engine it was made for.
+- One folder of the project, `lib`, holds what the user did not write: the engine, packs and libraries. The editor puts the engine there, and updates it when the user agrees.
+- Everything outside it is the user's own work: scenes, prefabs, scripts and assets, in any folders. A file's path in the project is its path in the game.
+- The project file holds what describes the whole game: its name, its version, its first scene, the size of its window, and the version of LÖVE it was made for.
 - Every file that ONLR writes is a Lua file that returns a table. ONLR ships definition files for them, so a code editor completes and checks them.
 
 ## 5. Scenes, objects and components

@@ -23,7 +23,8 @@ What the owner wants worked on, in no fixed order.
 - **A property's name in the inspector.** The inspector shows the name as the script writes it (DESIGN 13). Open: an option for another label, and showing `cellSize` as "Cell size".
 - **Components that need another.** A script that calls `self.object:get("bump.body")` needs the body on its object. Open: whether a type can say so, and the editor adds the other.
 - **Finding objects.** `onlr.scene.find` gives the first object of a name, and `onlr.scene.get` the first component of a type. Open: finding all of them, and whether objects have tags.
-- **Speed.** DESIGN 8.2 says how a scene is kept. It is not measured. A sample with thousands of objects is the measure, and it decides whether any part needs another way of keeping its data.
+- **Speed.** DESIGN 8.2 says how a scene is kept. A first measure, with 10,000 objects that each update and draw one image: walking the components' `update` takes a small part of the time that the calls into LÖVE for drawing take. So what is worth making faster is the number of calls into LÖVE for each drawn component, not how the engine keeps its data. A sample with thousands of objects stays as the measure.
+- **Threads.** The engine runs on LÖVE's main thread, as a LÖVE game does, and a script may use `love.thread` as in any game. Open: reading and decoding a scene's images and sounds in a thread, so that loading does not stop the picture (see Loading).
 - **Drawing state in the game.** In the scene view the engine saves and restores LÖVE's drawing state around each component (DESIGN 6.4). In the game it restores the transform only, as plain LÖVE code expects to manage its own colours. Open: whether the game restores all of it too, which is safer and costs time for every component.
 - **Order of update.** Objects update in the tree's order (DESIGN 5). Whether a script needs a way to run before or after others.
 - **Turning objects off and on.** Whether a component hears that its object became active or not.
@@ -35,7 +36,7 @@ What the owner wants worked on, in no fixed order.
 ## Player and link
 
 - **The offscreen driver elsewhere.** It is checked on Linux with an NVIDIA card, with the system's LÖVE 11.5 and with LÖVE's own AppImage. Not checked: Windows; Intel and AMD cards; a computer with no display at all.
-- **How fast frames travel.** Reading a 1280×720 frame back takes about 1.4 ms. Sending it over TCP and showing it in a panel is not measured. If it is too slow: shared memory, or sending only when the picture changed.
+- **How fast frames travel.** Reading a 1280×720 frame back takes about 1.4 ms. Sending it over TCP and showing it in a panel is not measured. If it is too slow: shared memory, sending only when the picture changed, or sending from a thread of the player.
 - **The pixels' order.** OpenECS's images hold pixels in another order than LÖVE's canvas gives (DESIGN 12.4). Where the change is made: a shader in the engine, or the panel.
 - **Gamepads and touch in the player.** DESIGN 12.5 covers the keyboard and the pointer. A gamepad could be read by the player itself, since SDL reads them without a window; this is not checked.
 - **The pointer's modes.** A game that hides or grabs the pointer, or reads relative motion, in a panel.
@@ -57,7 +58,7 @@ What the owner wants worked on, in no fixed order.
 - **Assets that are missing.** What the inspector and the scene view show for a path that no longer exists.
 - **Many scenes open.** Whether two scenes can be open at once, each with an edit player, or one at a time.
 - **Text scenes in git.** The editor writes files so that changes merge (DESIGN 4.2). Not checked on a real merge.
-- **The engine in a project.** `onlr/` is a copy (DESIGN 3.1), so it is in the user's git. Whether a project could name a shared engine instead while LÖVE 11.5 reads only the game's folder.
+- **The engine in a project.** `lib/onlr/` is a copy (DESIGN 3.1), so it is in the user's git. Whether a project could name a shared engine instead while LÖVE 11.5 reads only the game's folder.
 - **The split into plugins.** DESIGN 13 names four. It is checked again when the first is written.
 
 ## Export
@@ -98,6 +99,5 @@ What the owner wants worked on, in no fixed order.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, and LÖVE's package for the host.
 - **The hashes of LÖVE's packages.** DESIGN 15.2 checks downloads against hashes that ONLR ships. They are taken once from LÖVE's releases.
 - **The prototype.** `prototype/` is a sketch of a project's files for the owner's feedback. It follows DESIGN.md, which stays the truth. When code starts, it becomes the first sample or is removed.
-- **Hints for `get`.** The prototype's definitions make `object:get("bump.body")` give the type `bump.body` to a code editor. Not checked in the Lua language server.
 - **OpenECS's TODO.md** still lists this editor's open questions. Replace them there with a link to this repository.
 - **Rulesets.** `dev` and `main` have no rules in this repository yet. The owner sets them when checks exist.

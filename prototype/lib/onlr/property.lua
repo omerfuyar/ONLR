@@ -1,0 +1,91 @@
+---@meta onlr.property
+
+-- onlr.property: each function declares a property of a component type,
+-- and its annotation says what the component reads.
+
+---@class onlr.PropertyOptions
+---@field description? string shown in the inspector
+---@field min? number for integer and number
+---@field max? number
+---@field choices? string[] for choice
+
+---@class onlr.property
+local property = {}
+
+---@param default? boolean
+---@param options? onlr.PropertyOptions
+---@return boolean
+function property.bool(default, options) end
+
+---@param default? integer
+---@param options? onlr.PropertyOptions
+---@return integer
+function property.integer(default, options) end
+
+---@param default? number
+---@param options? onlr.PropertyOptions
+---@return number
+function property.number(default, options) end
+
+---@param default? string
+---@param options? onlr.PropertyOptions
+---@return string
+function property.string(default, options) end
+
+---@param default string one of options.choices
+---@param options onlr.PropertyOptions
+---@return string
+function property.choice(default, options) end
+
+---@param default? number[] red, green, blue and alpha, from 0 to 1
+---@param options? onlr.PropertyOptions
+---@return number[]
+function property.color(default, options) end
+
+---@param x? number
+---@param y? number
+---@param options? onlr.PropertyOptions
+---@return {x: number, y: number}
+function property.vector(x, y, options) end
+
+---@param options? onlr.PropertyOptions
+---@return love.Image?
+function property.image(options) end
+
+---@param options? onlr.PropertyOptions
+---@return love.Source?
+function property.sound(options) end
+
+---@param options? onlr.PropertyOptions
+---@return love.Font?
+function property.font(options) end
+
+---@param options? onlr.PropertyOptions
+---@return string? path
+function property.file(options) end
+
+---@param options? onlr.PropertyOptions
+---@return string? path a scene's file
+function property.scene(options) end
+
+---@param options? onlr.PropertyOptions
+---@return string? path a prefab's file
+function property.prefab(options) end
+
+---@param options? onlr.PropertyOptions
+---@return onlr.Object?
+function property.object(options) end
+
+---@generic T
+---@param fields T a table of properties
+---@param options? onlr.PropertyOptions
+---@return T
+function property.group(fields, options) end
+
+---@generic T
+---@param item T a property
+---@param options? onlr.PropertyOptions
+---@return T[]
+function property.list(item, options) end
+
+return property
