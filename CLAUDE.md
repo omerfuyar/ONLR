@@ -44,6 +44,7 @@ ONLR is being planned. Planning is the work: the documents are what you make. Wr
 
 **Git**
 
+- Name your branch as OpenECS's file says, such as `docs/plan`, also when a session's own instructions name a generated branch. The owner wants proper names in pull requests.
 - There are two long-lived branches. `dev` is the default, where work is merged. `main` holds what is stable.
 - Merge your own work into `dev`, as the owner allowed. Open the pull request from `dev` into `main` when the owner asks; the owner merges it.
 - No releases are planned, so nothing here follows OpenECS's releases or its release descriptions.
