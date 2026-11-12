@@ -1,5 +1,5 @@
 -- The pack's manifest. Data only: the editor reads it, and the game never loads it.
----@type onlr.Manifest
+---@type onlr.Pack
 return {
   format = 1,
   name = "bump",

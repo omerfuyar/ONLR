@@ -3,6 +3,11 @@
 ---@type onlr.Scene
 return {
   format = 1,
+  -- The scene's own components: what the whole scene has one of.
+  -- No object is made to hold them. To a component, self.object is the scene's root.
+  components = {
+    { type = "bump.world", cellSize = 64 },
+  },
   objects = {
     {
       id = "c8m1",
@@ -11,14 +16,6 @@ return {
       y = 360,
       components = {
         { type = "onlr.camera" },
-      },
-    },
-    {
-      -- What a scene has one of is a component of an object, as any other.
-      id = "w2x7",
-      name = "World",
-      components = {
-        { type = "bump.world", cellSize = 64 },
       },
     },
     {
@@ -31,8 +28,8 @@ return {
         { type = "onlr.sprite", image = "images/player.png" },
         -- A pack's component: lib/bump/body.lua.
         { type = "bump.body", width = 32, height = 48 },
-        -- The user's script: scripts/player.lua. Only the values that differ from its defaults.
-        { type = "scripts.player", speed = 250, jump = { height = 120 } },
+        -- The user's script: components/player.lua. Only the values that differ from its defaults.
+        { type = "components.player", speed = 250, jump = { height = 120 } },
       },
       children = {
         -- A child's place is in its parent: the shadow is 44 pixels under the player, wherever that is.

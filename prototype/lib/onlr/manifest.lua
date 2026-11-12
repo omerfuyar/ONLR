@@ -1,6 +1,6 @@
 -- The engine's manifest. Data only: the editor reads it, and the game never loads it.
 -- The engine is in lib/ as a pack is, so the editor finds its components in the same way.
----@type onlr.Manifest
+---@type onlr.Pack
 return {
   format = 1,
   name = "onlr",

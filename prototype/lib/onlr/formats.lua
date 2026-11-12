@@ -10,8 +10,7 @@
 ---@field version string
 ---@field love string
 ---@field scene string
----@field width integer
----@field height integer
+---@field window {width: integer, height: integer}
 ---@field exclude? string[]
 
 ---@class onlr.ComponentData
@@ -35,12 +34,14 @@
 
 ---@class onlr.Scene
 ---@field format integer
+---@field components? onlr.ComponentData[] the scene's own
 ---@field objects onlr.ObjectData[]
 
 ---@class onlr.Prefab : onlr.ObjectData
 ---@field format integer
 
----@class onlr.Manifest
+---The manifest of the engine and of a pack. The project's manifest is onlr.Project.
+---@class onlr.Pack
 ---@field format integer
 ---@field name string
 ---@field description string

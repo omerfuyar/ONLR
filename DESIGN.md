@@ -58,7 +58,7 @@ A game made with ONLR is built in layers. Each uses only the layers above it in 
 | 2. Libraries       | Lua code for LÖVE games, such as a library for collision (11).                      | Their authors                      | LÖVE, or nothing               |
 | 3. The engine      | Scenes, objects, components, properties and the loop (5 to 9).                      | ONLR                               | LÖVE                           |
 | 4. Components      | What objects show and do: the engine's own (10), a pack's (11.2) and the user's scripts (6). | ONLR, a pack's author, the user | The engine, LÖVE and libraries |
-| 5. The game's data | The project file, scenes and prefabs, which name component types and hold their values (3, 4). | The user, through the editor | Component types, by name       |
+| 5. The game's data | The project's manifest, scenes and prefabs, which name component types and hold their values (3, 4). | The user, through the editor | Component types, by name       |
 
 - The engine and the libraries do not know each other. A component is where they meet: it is called by the engine, and it calls a library.
 - All three kinds of component are the same thing to the engine. The engine's own and a pack's can do nothing that a script cannot.
@@ -91,11 +91,13 @@ Four contracts connect the parts. Each has a version, so a part can change witho
 mygame/
   main.lua        starts the engine
   conf.lua        gives LÖVE the project's settings
-  project.lua     the project file
-  lib/            what the user did not write: the engine, packs and libraries
+  manifest.lua    the project's manifest
+  components/     the scripts: the component types that the user writes
+  modules/        the user's other Lua code
+  lib/            the engine, packs and libraries
   .onlr/          the editor's own files for this project
   .luarc.json     tells a code editor where the definitions are
-  ...             the user's scenes, prefabs, scripts and assets, in any folders
+  ...             scenes, prefabs and assets, in any folders
 ```
 
 - LÖVE 11.5 reads a game's files only from the game's own folder. So the engine and the files that start it are in the project, and `love mygame` runs it.
@@ -115,14 +117,16 @@ mygame/
   end
   ```
 
-- `onlr.conf` sets what the project file holds: the window's size, the game's name and the folder of its saved files. A user who wants more of LÖVE's settings sets them in `conf.lua`, after that line.
+- `onlr.conf` sets what the project's manifest holds: the window's size, the game's name and the folder of its saved files. A user who wants more of LÖVE's settings sets them in `conf.lua`, after that line.
 - The first line of `conf.lua` adds `lib/` to the places where `require` looks. LÖVE reads `conf.lua` before any other file of the game, so from then on `require("onlr")` finds the engine, and a library is loaded by the name its author gives (11.1).
-- `lib/` holds what the user did not write, each in a folder of its own: the engine in `lib/onlr/`, packs, and the libraries the user copies in. Everything outside it is the user's own work.
+- `components/` holds the scripts, in any folders inside it. The editor offers every Lua file there when the user adds a component, and makes new scripts there.
+- `modules/` holds the user's Lua code that is not a component, such as a module that keeps the score from scene to scene. The engine does not read it: scripts load it with `require`, as in any LÖVE game.
+- `lib/` holds what the game uses and was not made for this game alone, each in a folder of its own: the engine in `lib/onlr/`, packs, and libraries. The user adds to it, by hand or in the editor.
 - `lib/onlr/` is the engine's. The editor replaces it when it updates the engine (3.3), so the user does not edit it.
 - `.onlr/` holds what the editor keeps for this project on this computer, such as LÖVE's definitions (4.3). It is not in git and not exported.
-- The names `main.lua`, `conf.lua`, `project.lua`, `lib/` and `.onlr/` are taken. Every other name is the user's.
+- The names `main.lua`, `conf.lua`, `manifest.lua`, `components/`, `lib/` and `.onlr/` are taken. Every other name is the user's.
 
-### 3.2 The project file
+### 3.2 The project's manifest
 
 ``` lua
 ---@type onlr.Project
@@ -133,8 +137,7 @@ return {
   version = "0.1.0",
   love = "11.5",
   scene = "scenes/menu.scene.lua",
-  width = 1280,
-  height = 720,
+  window = { width = 1280, height = 720 },
   exclude = { "notes/*" },
 }
 ```
@@ -147,8 +150,10 @@ return {
 | `version`         | The game's own version.                                                         |
 | `love`            | The version of LÖVE the game is made for.                                       |
 | `scene`           | The scene that the game starts with.                                            |
-| `width`, `height` | The size of the game's window, in pixels.                                       |
+| `window`          | The game's window, in the names of LÖVE's `t.window`: its `width` and `height`, in pixels. |
 | `exclude`         | Patterns of files that an export leaves out.                                    |
+
+- The window's size is here, and not only in `conf.lua`, since three things need it: LÖVE, before it opens the window; the editor's game panel, to draw the game at its own size (12.4); and the project settings panel, to show and change it. The editor cannot read `conf.lua`, which is code.
 
 ### 3.3 Updating the engine
 
@@ -160,7 +165,7 @@ return {
 
 ### 4.1 Rules
 
-- Every file that ONLR writes is a Lua file that returns one table: the project file, scenes and prefabs.
+- Every file that ONLR writes is a Lua file that returns one table: manifests, scenes and prefabs.
 - Such a file is plain data: numbers, texts, booleans and tables. It holds no function and computes nothing. So LuaJIT in the game and OpenECS's Lua in the editor both read it, though they are different Luas.
 - A scene's file ends with `.scene.lua`, and a prefab's with `.prefab.lua`, so the editor knows them without reading them.
 - Each file has a `format` number. The engine and the editor refuse a newer format than they know, and say so.
@@ -184,6 +189,9 @@ return {
 ---@type onlr.Scene
 return {
   format = 1,
+  components = {
+    { type = "bump.world", cellSize = 64 },
+  },
   objects = {
     {
       id = "k3f9",
@@ -192,7 +200,7 @@ return {
       y = 200,
       components = {
         { type = "onlr.sprite", image = "images/player.png" },
-        { type = "scripts.player", speed = 250 },
+        { type = "components.player", speed = 250 },
       },
       children = {
         { id = "p7c2", name = "Shadow", y = 12, components = { { type = "onlr.sprite", image = "images/shadow.png" } } },
@@ -201,6 +209,12 @@ return {
   },
 }
 ```
+
+| Field of a scene | Holds                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| `format`         | The version of this file's format.                                                 |
+| `components`     | The scene's own components: what the whole scene has one of, such as a world of bodies. |
+| `objects`        | The scene's objects.                                                               |
 
 | Field of an object        | Holds                                                             | Default |
 | ------------------------- | ----------------------------------------------------------------- | ------- |
@@ -215,9 +229,11 @@ return {
 | `children`                | Its children, objects too.                                        |         |
 | `prefab`                  | The prefab it is an instance of (9).                              |         |
 
-- A scene's `objects` are its roots. Objects update and draw in the order of the tree: a parent, then its children. Siblings go by `z`, the lowest first, then by their order in the list.
+- The running scene is an object too, the root, which `onlr.scene.root` gives. Its components are the scene's own, and its children are the scene's objects. It has no place in the file: it is at 0, 0, not turned and not scaled.
+- So a scene's own component is a component as any other, with `self.object` as the root. It is written in the scene's file apart from the objects, and no object is made only to hold it.
+- Objects update and draw in the order of the tree: a parent, then its children. Siblings go by `z`, the lowest first, then by their order in the list.
 - An object's components update and draw in their order.
-- A component's `type` is a Lua module name, as `require` takes it: `scripts.player` is `scripts/player.lua`. The engine's own types start with `onlr.` (10).
+- A component's `type` is a Lua module name, as `require` takes it: `components.player` is `components/player.lua`. The engine's own types start with `onlr.` (10).
 - The engine keeps each object's place in the world, from its own and its parents', as a LÖVE transform.
 
 ## 6. Components
@@ -330,10 +346,11 @@ The engine gives scripts few functions; the rest is LÖVE. The engine's source d
 | Function                                 | Does                                                                         |
 | ---------------------------------------- | ---------------------------------------------------------------------------- |
 | `onlr.start()`                           | Starts the engine, from `main.lua` (8).                                      |
-| `onlr.conf(t)`                           | Sets LÖVE's settings from the project file, from `conf.lua` (3.1).           |
+| `onlr.conf(t)`                           | Sets LÖVE's settings from the project's manifest, from `conf.lua` (3.1).    |
 | `onlr.scene.load(path)`                  | Ends the running scene and loads another, when the current frame ends.       |
 | `onlr.scene.find(name)`                  | Gives the first object of that name.                                         |
-| `onlr.scene.get(type)`                   | Gives the scene's first component of a type, in the tree's order.            |
+| `onlr.scene.root`                        | The running scene as an object: the root (5).                                |
+| `onlr.scene.get(type)`                   | Gives the scene's first component of a type, in the tree's order, the root's first. |
 | `onlr.scene.spawn(prefab, x, y, parent)` | Makes an instance of a prefab in the running scene (9).                      |
 | `onlr.scene.add(name, parent)`           | Makes an empty object.                                                       |
 | `object:get(type)`                       | Gives the object's first component of a type.                                |
@@ -434,7 +451,7 @@ A pack is a library made ready for ONLR: a folder in `lib/`, named as the librar
 | `world.lua`, `body.lua` | Component types, one in each file: `bump.world` and `bump.body`. | The game, when a scene names the type.   |
 
 ``` lua
----@type onlr.Manifest
+---@type onlr.Pack
 return {
   format = 1,
   name = "bump",
@@ -467,7 +484,7 @@ Body.width = onlr.property.number(32)
 Body.height = onlr.property.number(32)
 
 function Body:load()
-  local world = onlr.scene.get("bump.world") or onlr.scene.add("World"):add("bump.world")
+  local world = onlr.scene.get("bump.world") or onlr.scene.root:add("bump.world")
   self.world = world:get()
   self.x, self.y = self.object:toWorld(0, 0)
   self.world:add(self, self.x, self.y, self.width, self.height)
@@ -508,7 +525,7 @@ return Body
 
 What the sample shows of every pack:
 
-- **What a scene has one of** is a component of an object, as any other: here `bump.world`, on an object named World. It is made with the scene and ends with it, so each scene has its own, and the scene's file keeps its settings. It is not a module that lives through the whole game. A component that needs it finds it with `onlr.scene.get`, and makes it when the scene has none.
+- **What a scene has one of** is a component of the scene itself (5): here `bump.world`. It is made with the scene and ends with it, so each scene has its own, and the scene's file keeps its settings. It is not a module that lives through the whole game. A component that needs it finds it with `onlr.scene.get`, and adds it to the root when the scene has none.
 - **What the library must be told** is told by the component, in its `load` and `destroy`. bump asks for each box to be added to its world; the body does that, so the user does not.
 - **Where an object is** has one truth: the object's own place (5). A library that keeps a place of its own, as bump does for each box, holds a copy, and the pack's component keeps the copy in step. After `move`, the object takes the library's answer. When a script sets the object's place itself, the component tells the library, in its `update`.
 - **What a script asks of the library** is a function of the component: `body:move(x, y)`.
@@ -572,7 +589,7 @@ What the sample shows of every pack:
 ### 12.4 Frames
 
 - In the player, the engine draws into a canvas instead of the window, reads the canvas back, and sends its pixels.
-- In edit mode the canvas has the view's size. In play mode it has the project's `width` and `height`, and the panel shows it scaled to fit, with its proportions kept.
+- In edit mode the canvas has the view's size. In play mode it has the size that the project's manifest names, and the panel shows it scaled to fit, with its proportions kept.
 - The engine sends the pixels as OpenECS's images hold them, so the panel shows a frame without work on each pixel.
 - The engine sends a frame only when the editor has shown the last one, so a slow panel never fills the link.
 
@@ -599,7 +616,8 @@ What the sample shows of every pack:
 | `onlr_export`  | Export (14), and LÖVE's packages (15).                                                        |
 
 - The inspector shows the chosen object's place, then each of its components under its type's name. A component has one row for each property, in the order its type declares them: the property's name, and the control of its kind (6.2).
-- Adding a component offers the engine's types (10), the types that the project's packs name (11.2), and any Lua file of the project as a script.
+- Adding a component offers the engine's types (10), the types that the project's packs name (11.2), and the scripts in `components/` (3.1).
+- The objects panel shows the scene itself as its first row. Choosing it shows the scene's own components in the inspector.
 - The project's data lives in `onlr_project`, not in a panel (OpenECS OVERVIEW 9.2). Panels show it, change it through its functions, and hear of changes through its events. So two panels never differ.
 - Each change of a scene or a prefab is a record that can be undone. `onlr_project` keeps them in one history for the project.
 - A scene or a prefab with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS OVERVIEW 5.5).
@@ -611,7 +629,7 @@ What the sample shows of every pack:
 ### 14.1 The `.love` file
 
 - A `.love` file is a zip archive of the project's folder, with `main.lua` at its root.
-- It leaves out `.onlr/`, `.luarc.json`, `lib/onlr/editor/`, every file and folder whose name starts with a dot, and what the project file's `exclude` names.
+- It leaves out `.onlr/`, `.luarc.json`, `lib/onlr/editor/`, every file and folder whose name starts with a dot, and what `exclude` in the project's manifest names.
 - The licences travel with their parts: the engine's is in `lib/onlr/`, and a library's is in the library's folder.
 
 ### 14.2 Builds
@@ -676,8 +694,6 @@ A build is made from the `.love` file and LÖVE's package for the platform (15.2
 **LuaLS.** The Lua language server, which completes and checks Lua code in code editors.
 
 **LuaSocket.** A Lua library for network connections, which LÖVE ships.
-
-**Manifest.** The data file of a folder in `lib/` that tells the editor what the folder is and which component types it has.
 
 **Offscreen driver.** A video driver of SDL that opens no window.
 

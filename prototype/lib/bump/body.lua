@@ -12,8 +12,9 @@ Body.height = onlr.property.number(32, { min = 0 })
 Body.offset = onlr.property.vector(0, 0, { description = "The box's corner, from the object's place" })
 
 function Body:load()
-  -- The scene's one world: found by its type, and made when the scene has none.
-  local world = onlr.scene.get("bump.world") or onlr.scene.add("World"):add("bump.world")
+  -- The scene's one world: a component of the scene itself, found by its type.
+  -- When the scene has none, the body adds one to the scene's root.
+  local world = onlr.scene.get("bump.world") or onlr.scene.root:add("bump.world")
   self.world = world:get()
   self.x, self.y = self.object:toWorld(self.offset.x, self.offset.y)
   self.world:add(self, self.x, self.y, self.width, self.height)

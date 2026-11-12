@@ -8,6 +8,6 @@ return {
   components = {
     { type = "onlr.sprite", image = "images/coin.png" },
     { type = "bump.body", width = 16, height = 16 },
-    { type = "scripts.coin" },
+    { type = "components.coin" },
   },
 }
