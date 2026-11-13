@@ -103,50 +103,65 @@ return {
         },
       },
     },
-    -- An instance: another node file, held here as a node. It is that file's node,
-    -- with this entry laid over it. What the entry writes replaces the node's,
-    -- and what it leaves out is the node's.
-    -- This one writes its place only, so its name and its components are the coin's.
+    -- An instance: a node made from another node file, its base.
+    -- It has an id of its own and instance, which holds all that it is: the base and the changes.
+    -- A change is written under the id that the changed node has in the base's file,
+    -- and is laid over that node: what it writes replaces the base's, and the rest is the base's.
+    -- This one changes the coin's place only. c0in is the coin's first node.
     {
       id = "n4q8",
-      instance = "nodes/coin.lua",
-      posX = 400,
-      posY = 540,
+      instance = {
+        base = "nodes/coin.lua",
+        changes = {
+          c0in = {
+            posX = 400,
+            posY = 540,
+          },
+        },
+      },
     },
     {
       id = "t1r6",
-      instance = "nodes/coin.lua",
-      name = "Big coin",
-      posX = 700,
-      posY = 540,
-      sclX = 2,
-      sclY = 2,
-      -- Laid over the coin's components, name by name: this coin is worth 5.
-      components = {
-        coin = {
-          worth = 5,
-        },
-      },
-      -- Changes to the nodes under the coin. Each field is the id of one of them in the coin's file:
-      -- g1nt is the coin's glint, and this coin turns it off.
-      -- Another node of the level names that glint as t1r6/g1nt.
-      overrides = {
-        g1nt = {
-          active = false,
-        },
-      },
-      -- Nodes of this instance's own, added after the coin's children. Only this coin has a flag.
-      children = {
-        {
-          id = "f7ag",
-          name = "Flag",
-          posY = -24,
-          components = {
-            onlr = {
-              sprite = {
-                image = "images/flag.png",
+      instance = {
+        base = "nodes/coin.lua",
+        changes = {
+          -- The coin itself: a new name, a place, twice the size, and worth 5.
+          c0in = {
+            name = "Big coin",
+            posX = 700,
+            posY = 540,
+            sclX = 2,
+            sclY = 2,
+            components = {
+              coin = {
+                worth = 5,
+              },
+              -- A component that the coin's file does not have: only this coin spins.
+              spin = {
+                speed = 2,
               },
             },
+            -- Nodes of this instance's own, added after the coin's children: only this coin has a flag.
+            -- Its id is of this file, the level's.
+            children = {
+              {
+                id = "f7ag",
+                name = "Flag",
+                posY = -24,
+                components = {
+                  onlr = {
+                    sprite = {
+                      image = "images/flag.png",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          -- The coin's glint, a node under the coin: this coin turns it off.
+          -- Another node of the level names that glint as t1r6/g1nt, and this coin as t1r6.
+          g1nt = {
+            active = false,
           },
         },
       },

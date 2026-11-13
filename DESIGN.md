@@ -188,8 +188,9 @@ return {
 - So the editor asks before it replaces such a file. It knows one when it reads it: the file's text differs from what the editor would write for the same table.
 - A file is written beside the old one and then renamed over it, so it is never left half-written.
 - Fields are written in a fixed order, one on each line, and each item of a list starts on its own line. So two changes to different nodes merge in git.
-- A value that equals its default is left out, so a file holds only what the user set. In an instance, the value in the instance's node file is the default (9).
+- A value that equals its default is left out, so a file holds only what the user set. In an instance, the value in its base is the default (9).
 - A node's `id` is a short random text, which the editor gives once. Nodes are named by id wherever one refers to another, never by their place in a list.
+- An id is unique in its file, and no further. When a file holds an id twice, such as after a merge in git, the editor gives one of the two nodes a new id, and says so.
 - A field or a component type that the editor does not know is kept as it is, and written back.
 
 ### 4.3 Definitions
@@ -266,7 +267,7 @@ return {
 | Field of a node    | Holds                                                                         | Default |
 | ------------------ | ----------------------------------------------------------------------------- | ------- |
 | `id`               | Its id, unique in its file.                                                   |         |
-| `instance`         | The node file it is an instance of (9).                                       |         |
+| `instance`         | In an instance, its base and its changes (9). Such a node has `id` and `instance`, and no other field. | |
 | `name`             | Its name. Names need not be unique.                                           |         |
 | `posX`, `posY`     | Its position in its parent, in pixels.                                        | 0       |
 | `rot`              | Its angle in its parent, clockwise.                                           | 0       |
@@ -275,7 +276,6 @@ return {
 | `active`           | Whether it and its children update, draw and get events.                      | true    |
 | `components`       | Its components, by their types' names (6.1). Each is a table of its properties' values, and of `enabled`, which is true when left out. | |
 | `children`         | Its children, nodes too.                                                      |         |
-| `overrides`        | In an instance, what differs in the nodes under it (9).                       |         |
 
 - The game runs one node at a time, with all that is under it. That node is the root, which `onlr.node.root` gives, and the root with the nodes under it is the tree.
 - The game starts with the node file that the manifest names (3.2), and `onlr.node.loadRoot` puts another in its place (7). A level and a coin are node files alike: the game loads the level as its root, and the level holds the coin as an instance (9).
@@ -367,7 +367,7 @@ return Player
 
 - `group` and `list` take other properties: `onlr.property.group({ width = onlr.property.number(32), height = onlr.property.number(32) })` is read as `self.box.width`, and `onlr.property.list(onlr.property.image())` as `self.frames[1]`.
 
-- A node file keeps a file as its path, and a node as its id, or as a path of ids when the node is inside an instance (9).
+- A node file keeps a file as its path, and a node as its id, or as a path of ids when the node is inside an instance (9). When the file loads, the engine gives the component the node itself.
 - The engine loads each file once, and components that name the same file share it. A sound is the exception: each component gets its own source, so two can play at once.
 - A value of a property that the type no longer declares is kept in the node file (4.2), and the component does not get it.
 
@@ -540,43 +540,55 @@ return {
 -- in nodes/level.lua: an instance that is twice as large, worth more, and without its glint
 {
   id = "t1r6",
-  instance = "nodes/coin.lua",
-  name = "Big coin",
-  posX = 700,
-  posY = 540,
-  sclX = 2,
-  sclY = 2,
-  components = {
-    coin = {
-      worth = 5,
-    },
-  },
-  overrides = {
-    g1nt = {
-      active = false,
+  instance = {
+    base = "nodes/coin.lua",
+    changes = {
+      c0in = {
+        name = "Big coin",
+        posX = 700,
+        posY = 540,
+        sclX = 2,
+        sclY = 2,
+        components = {
+          coin = {
+            worth = 5,
+          },
+        },
+      },
+      g1nt = {
+        active = false,
+      },
     },
   },
 },
 ```
 
-- A node file holds another as an instance: a node with `instance`, the other file's path, and an `id` of its own. Any node file can be held so, as any can be loaded as the root (5).
-- The instance is the other file's node with the instance's entry laid over it: what the entry writes replaces the node's, and what it leaves out is the node's.
+- A node file holds another as an instance: a node with an `id` of its own and `instance`. Any node file can be held so, as any can be loaded as the root (5).
+- `instance` holds all that the instance is, in one table:
 
-  | In the instance's entry                                            | Is laid over                                                                             |
-  | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-  | `name`, `posX`, `posY`, `rot`, `sclX`, `sclY`, `z` and `active`    | The same field of the file's node.                                                       |
-  | `components`                                                       | The node's components, name by name: each value that the entry writes replaces that property's. |
-  | `children`                                                         | Nothing: they are nodes of the instance's own, added after the children of the file's node. |
-  | `overrides`                                                        | The nodes under the file's node. Each field is the id of one of them, in its file, and holds an entry that is laid over that node as this table says. |
+  | Field     | Holds                                                                                         |
+  | --------- | --------------------------------------------------------------------------------------------- |
+  | `base`    | The node file that the instance is made from.                                                 |
+  | `changes` | What the instance changes in the base's nodes: for each changed node, an entry under its id.  |
 
-- In the sample, the entry's own fields change the coin itself: its name, its place and its worth. `g1nt` is the id of the coin's glint, a node under the coin, so `overrides` turns that one node off.
+- The instance is the base's nodes with the changes laid over them: what a change writes replaces the base's, and what it leaves out is the base's.
+- Every node of the base is changed in the same way, the first one and those under it. In the sample, `c0in` is the coin itself and `g1nt` is its glint.
+
+  | In a change                                                     | Does                                                                                         |
+  | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+  | `name`, `posX`, `posY`, `rot`, `sclX`, `sclY`, `z` and `active` | Replaces the same field of the node.                                                         |
+  | `components`                                                    | Is laid over the node's components, name by name: each value replaces that property's. A component that the node lacks is added to it. |
+  | `children`                                                      | Adds nodes under the node, after its own children. They are nodes of the file that writes them, with ids of that file. |
+
 - A value replaces a property whole. A group is the exception (6.2): it is laid over field by field.
-- An instance changes values, and adds children. It adds no component, and removes nothing: what a node is made of is said in one place, its own file. A component in the entry that the file's node does not have is kept in the entry (4.2) and not used.
-- A node under an instance may be an instance too. The outer instance reaches into it through the `overrides` of an entry in its own `overrides`. A node file cannot hold itself, directly or through another.
-- An id is read in the file that writes it:
-  - A property that names a node holds an id of its own file. In a file that is held, it gives each instance's own node.
-  - A node inside an instance is named by a path: the instance's id, a slash, and the node's id in its own file, such as `t1r6/g1nt`.
-- A change to a node file reaches every instance of it, apart from what the instance's entry writes.
+- So an instance changes values, and adds components and children. It removes nothing: it turns a node or a component off.
+- A node of the base may be an instance too. A change names a node inside it by a path: the inner instance's id, a slash, and the node's id in that instance's base, such as `ch3st/g1nt`. The inner instance's own changes are laid over first, then the outer one's.
+- A node file cannot hold itself, directly or through another.
+- An id is read in the file that writes it, since the tree holds an id once for each instance:
+  - A property that names a node holds an id of its own file. In a base, it gives each instance's own node.
+  - From outside, a node inside an instance is named by a path too: the instance's id, a slash, and the node's id in the base, such as `t1r6/g1nt`. The instance's first node is named by the instance's id alone.
+  - Ids are for the files and the editor. The engine turns each into its node when a file loads, and a script never looks a node up by id.
+- A change to a node file reaches every instance of it, apart from what the instance's changes write.
 - An instance's nodes are nodes of the tree as the others are: `onlr.node.find` and `onlr.node.findComponent` look through them too.
 - `onlr.node.spawn` makes an instance while the game runs, and calls `load` and `enable` of its components before it returns (6.4).
 
