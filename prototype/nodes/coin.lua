@@ -1,6 +1,7 @@
 -- A node file made to be held in others: a coin. It is a node file as the level is.
 -- Node files hold instances of it, and scripts make instances while the game runs.
--- An instance changes values of these nodes and components. It adds and removes none.
+-- An instance changes values of these nodes and components, and may add children of its own.
+-- It adds no component and removes nothing.
 ---@type onlr.NodeFile
 return {
   format = 1,
@@ -29,8 +30,8 @@ return {
     {
       id = "g1nt",
       name = "Glint",
-      x = 4,
-      y = -4,
+      posX = 4,
+      posY = -4,
       components = {
         onlr = {
           sprite = {

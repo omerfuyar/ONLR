@@ -6,10 +6,10 @@
 return {
   format = 1,
   -- The file returns one node. Every other node is under it.
-  -- The manifest names this file, so the game loads this node as its scene: it is the scene's root.
+  -- The manifest names this file as the start node, so the game loads this node as its root.
   id = "l3v1",
   name = "Level",
-  -- What the whole scene has one of is a component of the root, such as the world
+  -- What the whole tree has one of is a component of the root, such as the world
   -- that its bodies collide in: no node is made only to hold it.
   components = {
     bump = {
@@ -22,8 +22,8 @@ return {
     {
       id = "c8m1",
       name = "Camera",
-      x = 640,
-      y = 360,
+      posX = 640,
+      posY = 360,
       components = {
         onlr = {
           camera = {},
@@ -35,8 +35,8 @@ return {
     {
       id = "k3f9",
       name = "Player",
-      x = 100,
-      y = 500,
+      posX = 100,
+      posY = 500,
       components = {
         -- A pack's component: lib/bump/body.lua.
         bump = {
@@ -60,12 +60,12 @@ return {
         },
       },
       children = {
-        -- A child is for what has a place of its own: the shadow is 44 pixels under the player.
+        -- A child has a place of its own: the shadow is 44 pixels under the player.
         -- Its z is added to its parent's. It is lower, so the shadow draws behind the player.
         {
           id = "p7c2",
           name = "Shadow",
-          y = 44,
+          posY = 44,
           z = -1,
           components = {
             onlr = {
@@ -80,7 +80,7 @@ return {
     {
       id = "g5d0",
       name = "Ground",
-      y = 600,
+      posY = 600,
       components = {
         bump = {
           body = {
@@ -110,28 +110,44 @@ return {
     {
       id = "n4q8",
       instance = "nodes/coin.lua",
-      x = 400,
-      y = 540,
+      posX = 400,
+      posY = 540,
     },
     {
       id = "t1r6",
       instance = "nodes/coin.lua",
       name = "Big coin",
-      x = 700,
-      y = 540,
-      scaleX = 2,
-      scaleY = 2,
+      posX = 700,
+      posY = 540,
+      sclX = 2,
+      sclY = 2,
       -- Laid over the coin's components, name by name: this coin is worth 5.
       components = {
         coin = {
           worth = 5,
         },
       },
-      -- Laid over the nodes under the coin, by their ids in the coin's file:
-      -- this coin has no glint. Another node of the level names that glint as t1r6/g1nt.
+      -- Changes to the nodes under the coin. Each field is the id of one of them in the coin's file:
+      -- g1nt is the coin's glint, and this coin turns it off.
+      -- Another node of the level names that glint as t1r6/g1nt.
       overrides = {
         g1nt = {
           active = false,
+        },
+      },
+      -- Nodes of this instance's own, added after the coin's children. Only this coin has a flag.
+      children = {
+        {
+          id = "f7ag",
+          name = "Flag",
+          posY = -24,
+          components = {
+            onlr = {
+              sprite = {
+                image = "images/flag.png",
+              },
+            },
+          },
         },
       },
     },

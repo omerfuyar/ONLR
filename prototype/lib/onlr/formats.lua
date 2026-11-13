@@ -9,7 +9,7 @@
 ---@field id string
 ---@field gameVersion string
 ---@field loveVersion string
----@field scene string the node file that the game starts with
+---@field startNode string the node file that the game starts with, as its root
 ---@field window {width: integer, height: integer}
 ---@field exclude? string[]
 
@@ -25,25 +25,26 @@
 ---What an instance changes in one node under it.
 ---@class onlr.Override
 ---@field name? string
----@field x? number
----@field y? number
----@field rotation? number
----@field scaleX? number
----@field scaleY? number
+---@field posX? number
+---@field posY? number
+---@field rot? number
+---@field sclX? number
+---@field sclY? number
 ---@field z? number
 ---@field active? boolean
 ---@field components? onlr.ComponentsData laid over the node's components, name by name
+---@field children? onlr.NodeData[] nodes of the instance's own, added under this node
 ---@field overrides? table<string, onlr.Override> when the node is an instance too
 
 ---@class onlr.NodeData
 ---@field id string
 ---@field instance? string a node file: the node is an instance of it
 ---@field name? string an instance without one has its file's
----@field x? number
----@field y? number
----@field rotation? number
----@field scaleX? number
----@field scaleY? number
+---@field posX? number
+---@field posY? number
+---@field rot? number
+---@field sclX? number
+---@field sclY? number
 ---@field z? number
 ---@field active? boolean
 ---@field components? onlr.ComponentsData

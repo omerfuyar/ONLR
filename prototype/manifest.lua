@@ -10,8 +10,8 @@ return {
   -- Two versions, each named for what it is the version of.
   gameVersion = "0.1.0",
   loveVersion = "11.5",
-  -- The node file that the game starts with: its node is the first scene.
-  scene = "nodes/level.lua",
+  -- The node file that the game starts with: its node is the first root.
+  startNode = "nodes/level.lua",
   -- In the names of LÖVE's t.window. LÖVE needs the size before it opens the window,
   -- and the project settings panel shows and changes it.
   window = {

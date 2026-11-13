@@ -3,7 +3,7 @@
 -- onlr.property: each function declares a property of a component type,
 -- and its annotation says what the component reads.
 -- When the engine loads a type, it puts each property's default in the declaration's place.
--- A component holds the values that its scene gives, and finds the others in its type.
+-- A component holds the values that its node file gives, and finds the others in its type.
 -- A property cannot be named enabled, node or needs, or as a function of its type.
 
 ---@class onlr.PropertyOptions
@@ -68,7 +68,7 @@ function property.font(options) end
 function property.file(options) end
 
 ---@param options? onlr.PropertyOptions
----@return string? path a node file, for onlr.scene.load and onlr.scene.spawn
+---@return string? path a node file, for onlr.node.loadRoot and onlr.node.spawn
 function property.nodeFile(options) end
 
 ---@param options? onlr.PropertyOptions

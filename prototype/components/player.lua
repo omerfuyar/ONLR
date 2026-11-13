@@ -24,7 +24,7 @@ Player.jump = onlr.property.group({
 -- A list: the user adds and removes rows. Read as self.footsteps[1].
 Player.footsteps = onlr.property.list(onlr.property.sound())
 
--- Once, when the node enters the scene. Every node of the scene exists by now,
+-- Once, when the node enters the tree. Every node that enters with it exists by now,
 -- and the properties are set.
 function Player:load()
   -- Another component of the same node, by its type's name. No function stands before it.

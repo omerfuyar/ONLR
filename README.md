@@ -1,6 +1,6 @@
 # ONLR
 
-ONLR is an editor and an engine for 2D games that run on [LÖVE](https://love2d.org). Its engine is a Lua library that gives a LÖVE game scenes, objects and components. Its editor is where you arrange them, run the game and export it.
+ONLR is an editor and an engine for 2D games that run on [LÖVE](https://love2d.org). Its engine is a Lua library that gives a LÖVE game nodes and components. Its editor is where you arrange them, run the game and export it.
 
 ONLR means "ONLR Not Love Runtime": LÖVE stays the runtime, unchanged. A game made with ONLR is a `.love` file that any LÖVE runs.
 

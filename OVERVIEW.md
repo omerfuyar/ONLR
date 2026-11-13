@@ -16,7 +16,7 @@ This document explains what ONLR is, what it covers, what it leaves to LÖVE and
 2. Using ONLR
 3. Scope
 4. Projects
-5. Nodes, components and scenes
+5. Nodes and components
 6. Scripts
 7. The editor
 8. Export
@@ -30,9 +30,9 @@ This document explains what ONLR is, what it covers, what it leaves to LÖVE and
 
 ## 1. Summary
 
-ONLR is an editor and an engine for 2D games that run on [LÖVE](https://love2d.org). LÖVE runs games written in Lua. It has no editor, and no nodes or scenes: a game is code.
+ONLR is an editor and an engine for 2D games that run on [LÖVE](https://love2d.org). LÖVE runs games written in Lua. It has no editor, and no nodes or components: a game is code.
 
-ONLR adds them. Its **engine** is a Lua library that gives a LÖVE game nodes, components and scenes. Its **editor** is where the user arranges them, runs the game and exports it.
+ONLR adds them. Its **engine** is a Lua library that gives a LÖVE game nodes and components. Its **editor** is where the user arranges them, runs the game and exports it.
 
 ONLR means "ONLR Not Love Runtime". LÖVE stays the runtime, and ONLR never changes it. A game made with ONLR is a `.love` file that any LÖVE runs.
 
@@ -40,7 +40,7 @@ ONLR means "ONLR Not Love Runtime". LÖVE stays the runtime, and ONLR never chan
 
 1. The user unpacks one archive and starts ONLR. Nothing else is installed: LÖVE is inside.
 2. The user makes a project, or opens one.
-3. The user opens a node file, such as a level, and the scene view shows it. The user adds nodes, moves them, and gives them components. The inspector shows the properties of each component of the chosen node, and changes them.
+3. The user opens a node file, such as a level, and the node view shows it. The user adds nodes, moves them, and gives them components. The inspector shows the properties of each component of the chosen node, and changes them.
 4. The user writes scripts in their own code editor. A script is a component. When the file is saved, the inspector shows the properties it declares.
 5. Play runs the game in a window of its own. The console shows what the game prints, and its errors. An error names its file and line, and a click opens it in the user's code editor.
 6. Export makes a `.love` file, or a build for a platform: the game with LÖVE inside, which runs with nothing installed.
@@ -53,8 +53,8 @@ The window, drawing, sound, input, physics, files and the game's loop. ONLR repl
 
 ### 3.2 What the engine adds
 
-- Nodes, components and scenes, read from the project's files (5).
-- The life of a component: when it loads, updates, draws and is destroyed (6).
+- Nodes and components, read from the project's files (5).
+- The life of a component: when it loads, starts, updates, draws and is destroyed (6).
 - Node files inside node files, and making nodes from a file while the game runs.
 - A few components of its own, for what almost every game shows: a sprite, a text, a shape and a camera.
 
@@ -80,24 +80,25 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - A project is a LÖVE game: LÖVE runs the folder as it is, without the editor. So a project works in git, on another computer and with any tool for LÖVE games.
 - One folder of the project, `lib`, holds the engine, packs and libraries. The editor puts the engine there, and updates it when the user agrees. The user adds libraries to it, by hand or in the editor.
 - Scripts are in one folder, `components`, and node files in another, `nodes`. Assets are in any folders. A file's path in the project is its path in the game.
-- The project's manifest holds what describes the whole game: its name, its version, its first scene, the size of its window, and the version of LÖVE it was made for.
+- The project's manifest holds what describes the whole game: its name, its version, the node file it starts with, the size of its window, and the version of LÖVE it was made for.
 - Every file that ONLR writes is a Lua file that returns a table. A person may write such a file too, and compute the table in it. ONLR ships definition files for them, so a code editor completes and checks them.
 
-## 5. Nodes, components and scenes
+## 5. Nodes and components
 
 - A **node** is a thing of the game: a player, a coin, a camera, a whole level. It has a name, a place (position, rotation and scale), components, and children. A child's place is in its parent, so it moves, turns and scales with it.
 - A **component** gives a node what it shows or does. Each has properties, such as a sprite's image or a player's speed. A node can have many components, one of each type. So one node is a whole player: its picture, its body and its script. A child is for what has a place of its own, such as a shadow.
 - Nodes draw in the order of a number, `z`, the lowest first. A child's `z` is added to its parent's, so a child can draw behind its parent. Nodes of the same `z` draw in the order of the tree: a parent before its children, and siblings in their order.
 - A **node file** holds one node with all that is under it: a level, a menu, a coin. There is one kind of it.
-- A node file may hold others, as **instances**: a level holds coins, and the coin is a node file of its own. An instance has its own place, and may change any value of its file's nodes and components. A script makes instances while the game runs, such as bullets and enemies.
-- The **scene** is the node that the game runs, with all that is under it. The game starts with the node file that the manifest names, and a script loads another as the scene, which ends the one that runs.
-- What a whole scene has one of, such as the world that its bodies collide in, is a component of the scene's first node, its root.
-- What must outlive a scene, such as a score, lives in the user's own Lua modules, as in any LÖVE game.
+- A node file may hold others, as **instances**: a level holds coins, and the coin is a node file of its own. An instance has its own place, may change any value of its file's nodes and components, and may have children of its own. It adds no component: what a node is made of is said in its own file. A script makes instances while the game runs, such as bullets and enemies.
+- The game runs one node at a time, with all that is under it: the **root**. The game starts with the node file that the manifest names, and a script loads another as the root, which ends the one that runs.
+- What the whole game has one of at a time, such as the world that its bodies collide in, is a component of the root.
+- What must outlive the root, such as a score, lives in the user's own Lua modules, as in any LÖVE game.
 
 ## 6. Scripts
 
 - A script is a Lua file that returns a component. The user attaches it to nodes in the editor.
 - Its functions have the names of LÖVE's callbacks, and get what LÖVE gives them: `load`, `update(dt)`, `draw`, `keypressed(key)` and every other one. Someone who knows LÖVE knows a script.
+- A few more functions follow a component through its life, in a fixed order: `enable` and `disable` when it is turned on and off, `start` before its first update, and `lateUpdate` after every update of a frame.
 - A script may call any function of LÖVE: `love.graphics`, `love.keyboard`, `love.audio` and the rest work as in any game.
 - A script declares its properties as its fields: each with a type and a default value. The inspector shows them, a node file keeps their values, and the script reads them under the same names.
 - A property can be a number, a text, a choice or a pair of numbers, and also a file of the project, such as an image or a sound, or another node of the same file. Properties can be put in groups and in lists.
@@ -111,7 +112,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 | Panel            | Shows                                                                     |
 | ---------------- | ------------------------------------------------------------------------- |
-| Scene view       | The open node file. The user chooses nodes, and moves, turns and scales them. |
+| Node view       | The open node file. The user chooses nodes, and moves, turns and scales them. |
 | Nodes            | The open node file's tree of nodes.                                       |
 | Inspector        | The chosen node's components and their properties.                        |
 | Files            | The project's folders and files.                                          |
@@ -119,13 +120,13 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 | Project settings | What the project's manifest holds.                                        |
 | Export           | The targets, and the export's progress.                                   |
 
-- LÖVE draws the scene view, as it draws the game. The editor has no renderer of its own for games.
-- A component says what it shows in the scene view, in LÖVE code. The editor adds what belongs to its tools: the grid, the outline and handles of the chosen nodes, and a marker for a node that shows nothing.
+- LÖVE draws the node view, as it draws the game. The editor has no renderer of its own for games.
+- A component says what it shows in the node view, in LÖVE code. The editor adds what belongs to its tools: the grid, the outline and handles of the chosen nodes, and a marker for a node that shows nothing.
 - The inspector lists a component's properties in the order its script declares them. Adding a component offers the engine's, those of the project's packs, and the project's scripts.
 - The editor never runs the game's code. LÖVE does, and tells the editor what it needs, such as the properties a script declares.
-- In the scene view nothing moves: the engine draws the nodes and does not update them.
-- Play saves the project, then runs the open node file as the scene, in LÖVE's own window. Stop ends it, and so does closing the window. The console, the errors and their links to files work while it runs.
-- A preview, such as of an image, a font or a node file, is drawn by LÖVE as the scene view is.
+- In the node view nothing moves: the engine draws the nodes and does not update them.
+- Play saves the project, then runs the open node file as the root, in LÖVE's own window. Stop ends it, and so does closing the window. The console, the errors and their links to files work while it runs.
+- A preview, such as of an image, a font or a node file, is drawn by LÖVE as the node view is.
 - A game that fails, or never returns, does not stop the editor.
 - Every change to a node file can be undone. The project has one history, whichever panel made the change.
 - The editor saves when the user asks and when Play starts, and asks about unsaved work before it closes. It also asks before a save replaces a file in which a person wrote code.
@@ -182,7 +183,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **Editor.** The half of ONLR in which the user arranges nodes, runs the game and exports it.
 
-**Engine.** The half of ONLR that runs inside the game: a Lua library that adds nodes, components and scenes to LÖVE.
+**Engine.** The half of ONLR that runs inside the game: a Lua library that adds nodes and components to LÖVE.
 
 **Inspector.** The panel that shows and changes the properties of the chosen node's components.
 
@@ -208,9 +209,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **Property.** A named, typed value of a component, which the inspector shows and a node file keeps.
 
-**Root.** The scene's first node, with every other node of the scene under it.
-
-**Scene.** The node that the game runs, with all that is under it.
+**Root.** The node that the game runs, with all that is under it.
 
 **Script.** A Lua file, written by the user, that returns a component.
 
