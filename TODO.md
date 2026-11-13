@@ -6,18 +6,15 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in no fixed order.
 
-- **The plan.** ONLR is being planned. No code is written until the owner says the plan is done.
-- **The Windows experiment.** The owner runs it and reports what it prints (see [Tasks](#tasks)). Remind the owner of it.
-- **Names.** The last talk before the plan is done: the engine's namespaces, functions and names all together, from the map of DESIGN 7.1. Among them: the root, which is not the top of the tree (DESIGN 5).
-- **The engine's concepts first.** What is open under [Engine](#engine) is settled before a library's package is designed, since packages are built on the engine.
+- **The first build.** The plan is done. The engine, the player, the editor and export are built from DESIGN.md, with the samples as their tests (DESIGN 16).
+- **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
 - **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
 - **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
 
-- **The camera in a scaled game.** The camera shows its point at the middle of the window (DESIGN 10). A library that scales the game, such as push, draws it at a size of its own, such as into a canvas of 320×180, so the camera's point is then off the middle. Recommended: the camera's properties `width` and `height`, 0 by default for the window's size, which such a game sets to its own. To discuss with the owner.
 - **Components for sound, animation and particles.** Ideas. Libraries come first (OVERVIEW 9): anim8, or peachy for Aseprite's files, to animate a sprite through its `quad` (DESIGN 10); ripple for sounds and their volumes; and LÖVE's own particle systems, whose settings Hot Particles edits. A sound property already streams with the option `stream` (DESIGN 6.2), and a node under the top node plays music for the whole game (DESIGN 5).
-- **Tags.** A component type serves as a tag (DESIGN 7). An idea for later: tags or groups of their own. `onlr.node.findAll` and `findAllComponents` stay so that a function that finds by tag can join them.
+- **Tags.** A component type serves as a tag (DESIGN 7). An idea for later: tags or groups of their own. `onlr.tree.findAll` and `findAllComponents` stay so that a function that finds by tag can join them.
 - **Loading.** A root's files are loaded when the root loads, and those that the next root does not name are let go (DESIGN 6.2). An idea for later: reading a big root's images and sounds in a thread, while a picture of progress shows, as love-loader and lily do.
 
 ## Player and link

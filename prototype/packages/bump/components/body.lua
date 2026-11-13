@@ -14,7 +14,7 @@ Body.offset = onlr.property.vector(0, 0, { description = "The box's corner, from
 -- Once: finds the tree's one world. It is a component of the root, found by its type.
 -- When the tree has none, the body adds one to the root.
 function Body:load()
-  local world = onlr.node.findComponent("bump.world") or onlr.node.root:add("bump.world")
+  local world = onlr.tree.findComponent("bump.world") or onlr.tree.root:addComponent("bump.world")
   self.world = world:get()
 end
 

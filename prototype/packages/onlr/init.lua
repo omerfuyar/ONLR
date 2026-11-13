@@ -13,7 +13,7 @@
 local onlr = {}
 
 onlr.loop = require("onlr.loop")
-onlr.node = require("onlr.tree")
+onlr.tree = require("onlr.tree")
 onlr.property = require("onlr.property")
 
 ---Starts the engine. Called from main.lua. It sets love.run to the engine's loop, which calls

@@ -40,9 +40,9 @@ This document explains how ONLR is built: its parts, the project's files, the en
 
 - The engine is Lua for LuaJIT, which LÖVE runs: Lua 5.1 with LuaJIT's additions. It uses no library but LÖVE.
 - The editor's plugins follow OpenECS's conventions (OpenECS DESIGN 1, OpenECS-std DESIGN 1.3).
-- Lua names use camelCase: `onlr.node.loadRoot`, `startNode`. Files and folders have lowercase names.
+- Lua names use camelCase: `onlr.tree.loadRoot`, `startNode`. Files and folders have lowercase names.
 - A node's place has short names, since scripts write them most: `posX`, `posY`, `rot`, `sclX` and `sclY`.
-- Functions of one kind share a namespace, such as `onlr.node`. What acts on a node or a component is its method.
+- Functions of one kind share a namespace, such as `onlr.tree`. What acts on a node or a component is its method.
 - The engine sets no global. A script gets it with `local onlr = require("onlr")`.
 - Every public function, type and file format of the engine has LuaLS annotations in the engine's source. They are the definitions that guide a code editor (4.3), so the source and the hints cannot differ.
 - A path in a project uses `/` and starts at the project's folder, as LÖVE's paths do: `images/player.png`.
@@ -294,8 +294,8 @@ return {
 | `components`       | Its components, by their types' names (6.1). Each is a table of its properties' values, and of `enabled`, which is true when left out. | |
 | `children`         | Its children, nodes too.                                                      |         |
 
-- The game runs one root at a time: a node, with all that is under it, which `onlr.node.root` gives. The game starts with the manifest's start node (3.2), and `onlr.node.loadRoot` puts another in its place (7). A level and a coin are node files alike: the game loads the level as its root, and the level holds the coin as an instance (9).
-- Above the root is the top node: the node of the node file that the manifest names (3.2), which the game loads once, before the first root, and keeps for the whole game. What outlives the root is under it, such as a music player or a pause menu, and the root runs as its last child. When the manifest names none, the top node is an empty node. While the top node loads, there is no root yet: `onlr.node.root` is `nil` until the first root loads.
+- The game runs one root at a time: a node, with all that is under it, which `onlr.tree.root` gives. The game starts with the manifest's start node (3.2), and `onlr.tree.loadRoot` puts another in its place (7). A level and a coin are node files alike: the game loads the level as its root, and the level holds the coin as an instance (9).
+- Above the root is the top node: the node of the node file that the manifest names (3.2), which the game loads once, before the first root, and keeps for the whole game. What outlives the root is under it, such as a music player or a pause menu, and the root runs as its last child. When the manifest names none, the top node is an empty node. While the top node loads, there is no root yet: `onlr.tree.root` is `nil` until the first root loads.
 - The top node, with all under it, is the tree. So the tree has one top, and a group on the top node holds the whole game, such as a library that scales the game to the window.
 - A script keeps a node of the root when the root changes by moving it under the top node, or under a node of the top node's own (7).
 - What a root has one of, such as the world that its bodies collide in, is a component of the root. No node is made only to hold one.
@@ -340,7 +340,7 @@ end
 
 function Player:keypressed(key)
   if key == "space" then
-    onlr.node.spawn("nodes/bullet.lua", self.node.posX, self.node.posY)
+    onlr.tree.spawn("nodes/bullet.lua", self.node.posX, self.node.posY)
   end
 end
 
@@ -411,7 +411,7 @@ return Player
 - An option that the kind does not take, such as a misspelt one, is an error when the type loads.
 - A node file keeps a file as its path, and a font as a table of its `path` and its `size`. It keeps a node, and a component, as the node's id, or as a path of ids when the node is inside an instance (9). When the file loads, the engine gives the component the node or the component itself.
 - The engine loads each file once, and components that name the same file share it. A sound is the exception: each component gets its own source, so two can play at once. When a root replaces another, the engine keeps the files that the new root names too, and lets go of the others.
-- A `nodeFile` property with `preload` loads that node file, and the files that it names, when its component's node file loads, as the files of its own properties load. The node files that their own such properties name load too. So `onlr.node.spawn` of it reads nothing from disk. A node file without it loads when it is first spawned or loaded as the root.
+- A `nodeFile` property with `preload` loads that node file, and the files that it names, when its component's node file loads, as the files of its own properties load. The node files that their own such properties name load too. So `onlr.tree.spawn` of it reads nothing from disk. A node file without it loads when it is first spawned or loaded as the root.
 - A value of a property that the type no longer declares is kept in the node file (4.2), and the component does not get it.
 - A path that names no file is an error in the game, which names the node file, the node and the property. In the node view, the component gets `nil` and its node is marked, as for a `drawEditor` that fails (6.5), and the inspector marks the path.
 
@@ -450,12 +450,12 @@ The engine calls the functions that a type has. All are optional.
 - In a frame, each function is called for the whole tree before the next one is (8.1). It goes through the tree in the tree's order, and through a node's components in theirs (5). `draw` goes in the order of drawing.
 - What starts goes in the tree's order, and what ends goes in the reverse. When many components start at once, `load` and `enable` go parents first. When many end, `disable` and `destroy` go children first, and on one node a component goes before those that it needs. So a component finds what it needs from its `load` to its `destroy`.
 - When the top node or a root loads, the engine makes all its nodes, then calls `load` of every component, then `enable` of every component that runs.
-- What a script makes exists at once: an instance from `onlr.node.spawn`, a node from `onlr.node.add`, and a component from `node:add` (7). `onlr.node.find`, `onlr.node.findComponent`, `node:getChildren()` and `components` give it, and its `load` and `enable` are called before the function that made it returns. Its `start` and its other functions are called from the next frame on. So a script sets values on what it made, and `start` finds them.
+- What a script makes exists at once: an instance from `onlr.tree.spawn`, a node from `onlr.tree.newNode`, and a component from `node:addComponent` (7). `onlr.tree.find`, `onlr.tree.findComponent`, `node:getChildren()` and `components` give it, and its `load` and `enable` are called before the function that made it returns. Its `start` and its other functions are called from the next frame on. So a script sets values on what it made, and `start` finds them.
 - `component:setEnabled` and `node:setActive` take effect at once, as making does. A component that stops running gets `disable` before the function returns, and from then on no call but `enable` or `destroy`. One that starts to run gets `enable` before the function returns, and `start` and its other functions from the next frame on. `node:setParent` does the same for the components that it starts or stops.
 - A node whose `z` `node:setZ` changed, and a node that `node:setParent` moved, draw in their new order from the frame's next draw. The other functions follow the new order from the next frame on.
 - `node:destroy()` marks the node and every node under it, and their `isDestroyed()` is true from then on. They stay in the tree, and their functions are called, until the frame ends. Then the engine calls `disable` and `destroy` of their components and takes them out of the tree. A component that holds another node asks `isDestroyed()` before it uses it.
-- `node:remove(type)` does the same to one component: it stays, and its functions are called, until the frame ends. Then the engine calls its `disable` and `destroy` and takes it off the node, and the node can get a component of that type again.
-- `onlr.node.loadRoot` does the same to every node of the root when the frame ends. Then it makes the new root in the old one's place among the top node's children. The top node and its own nodes stay.
+- `node:removeComponent(type)` does the same to one component: it stays, and its functions are called, until the frame ends. Then the engine calls its `disable` and `destroy` and takes it off the node, and the node can get a component of that type again.
+- `onlr.tree.loadRoot` does the same to every node of the root when the frame ends. Then it makes the new root in the old one's place among the top node's children. The top node and its own nodes stay.
 - What a function returns is not used. `quit` is the exception: as in LÖVE, the game does not quit when `love.quit` or a component's `quit` returns true.
 
 ### 6.5 In the node view
@@ -481,8 +481,8 @@ Player.needs = { "bump.body" }
 
 - A type names the types that its components need on their node, in `needs`.
 - The script's author writes `needs`. The engine does not work it out from the script's code.
-- A node that gets a component gets those that it needs too, each with its defaults, when the node lacks them: in the editor, when a node file loads, and at `node:add`.
-- The editor does not remove a component that another of the node needs, and names the other. `node:remove` of such a component is an error.
+- A node that gets a component gets those that it needs too, each with its defaults, when the node lacks them: in the editor, when a node file loads, and at `node:addComponent`.
+- The editor does not remove a component that another of the node needs, and names the other. `node:removeComponent` of such a component is an error.
 - A component loads, updates and draws after those that it needs (5). So its `load` finds them loaded, and `self.node.components.bump.body` is there without a check.
 - Types cannot need each other in a circle. The engine refuses such a type, and says so.
 
@@ -494,12 +494,12 @@ Every function that the engine calls in a component, and what makes it call it. 
 
 | When                                | The engine calls, in each component that has it                                   | Because of                                                          |
 | ----------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Its node enters the tree            | `load`, then `enable` if the component runs                                        | The top node or a root loading (8.1), `onlr.node.spawn`, `onlr.node.add` and `node:add` |
+| Its node enters the tree            | `load`, then `enable` if the component runs                                        | The top node or a root loading (8.1), `onlr.tree.spawn`, `onlr.tree.newNode` and `node:addComponent` |
 | Before its first frame              | `start`                                                                           | The end of the frame in which it started to run                     |
 | Each frame                          | For each event, LÖVE's callback of it; then `fixedUpdate`, `update`, `lateUpdate`; then `draw`, or `drawTree` for a group | The loop (8.1)                                     |
 | Its node is paused, or resumed      | Nothing: it keeps drawing, and gets no other call while paused                    | `node:setPaused`                                                    |
 | It stops running, or starts again   | `disable`, or `enable`                                                            | `node:setActive`, `node:setParent` and `component:setEnabled`       |
-| It leaves the tree                  | `disable` if it runs, then `destroy`, when the frame ends                         | `node:destroy`, `node:remove` and `onlr.node.loadRoot`              |
+| It leaves the tree                  | `disable` if it runs, then `destroy`, when the frame ends                         | `node:destroy`, `node:removeComponent` and `onlr.tree.loadRoot`              |
 | Another component asks              | A function of the type's own                                                      | `node:send`, or a call such as `body:move(x, y)`                    |
 | The editor draws a view             | `drawEditor` and `bounds`, and nothing else                                       | The node view (6.5, 12.3)                                           |
 
@@ -507,31 +507,31 @@ Every function that the engine calls in a component, and what makes it call it. 
 
 These are the engine's functions for scripts. The rest is LÖVE. The engine's source documents each.
 
-| Function                                         | Does                                                                                                   |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| `onlr.start()`                                   | Starts the engine, from `main.lua`: makes the engine's loop LÖVE's (8.1).                              |
-| `onlr.conf(t)`                                   | Sets LÖVE's settings from the project's manifest, from `conf.lua` (3.1).                               |
-| `onlr.loop.load()`, `onlr.loop.event(name, ...)`, `onlr.loop.update(dt)`, `onlr.loop.draw()`, `onlr.loop.endFrame()` | The steps of the engine's loop, which a game's own `love.run` calls (8.1). |
-| `onlr.node.top`, `onlr.node.root`                | The top node and the root (5).                                                                         |
-| `onlr.node.loadRoot(path)`                       | Ends the root and loads another node file as the root, when the current frame ends.                    |
-| `onlr.node.find(name)`                           | Gives the tree's first node of that name, in the tree's order (5).                                     |
-| `onlr.node.findAll(name)`                        | Gives a list of the tree's nodes of that name, in the tree's order.                                    |
-| `onlr.node.findComponent(type)`                  | Gives the tree's first component of a type, in the tree's order.                                       |
-| `onlr.node.findAllComponents(type)`              | Gives a list of the tree's components of a type, in the tree's order.                                  |
-| `onlr.node.spawn(path, x, y, parent)`            | Makes an instance of a node file at a place in its parent, and returns it (9).                         |
-| `onlr.node.add(name, parent)`                    | Makes an empty node in its parent, and returns it.                                                     |
-| `node:add(type, values)`                         | Gives the node a component of a type that it lacks, and returns it.                                    |
-| `node:remove(type)`                              | Takes the node's component of a type off it when the current frame ends (6.4).                         |
-| `node:send(name, ...)`                           | Calls the function of that name in each of the node's components that has it.                          |
-| `node:isActive()`, `node:setActive(active)`      | Whether the node runs, with all that is under it (6.4), and turns it on or off.                        |
-| `node:isPaused()`, `node:setPaused(paused)`      | Whether the node, or a node above it, is paused (6.4), and pauses or resumes it with all under it.     |
-| `node:getZ()`, `node:setZ(z)`                    | The node's `z` (5), and changes it.                                                                    |
-| `node:getParent()`, `node:getChildren()`         | The node's parent, `nil` for the top node, and the list of its children.                               |
-| `node:setParent(parent, index)`                  | Moves the node, with all that is under it, to the end of another node's children, or to `index` among them. |
-| `node:destroy()`, `node:isDestroyed()`           | Destroys the node and its children when the current frame ends, and says whether it was destroyed.     |
-| `node:toWorld(x, y)`, `node:toLocal(x, y)`       | Turn a point of the node's space into the world's, and back.                                           |
-| `node:setWorldPosition(x, y)`                    | Moves the node to a point of the world, whatever its parents' places are.                              |
-| `component:isEnabled()`, `component:setEnabled(enabled)` | Whether the component is on (6.4), and turns it on or off.                                     |
+| Function                                                                                                             | Does                                                                                                        |
+| -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `onlr.start()`                                                                                                       | Starts the engine, from `main.lua`: makes the engine's loop LÖVE's (8.1).                                   |
+| `onlr.conf(t)`                                                                                                       | Sets LÖVE's settings from the project's manifest, from `conf.lua` (3.1).                                    |
+| `onlr.loop.load()`, `onlr.loop.event(name, ...)`, `onlr.loop.update(dt)`, `onlr.loop.draw()`, `onlr.loop.endFrame()` | The steps of the engine's loop, which a game's own `love.run` calls (8.1).                                  |
+| `onlr.tree.top`, `onlr.tree.root`                                                                                    | The top node and the root (5).                                                                              |
+| `onlr.tree.loadRoot(path)`                                                                                           | Ends the root and loads another node file as the root, when the current frame ends.                         |
+| `onlr.tree.find(name)`                                                                                               | Gives the tree's first node of that name, in the tree's order (5).                                          |
+| `onlr.tree.findAll(name)`                                                                                            | Gives a list of the tree's nodes of that name, in the tree's order.                                         |
+| `onlr.tree.findComponent(type)`                                                                                      | Gives the tree's first component of a type, in the tree's order.                                            |
+| `onlr.tree.findAllComponents(type)`                                                                                  | Gives a list of the tree's components of a type, in the tree's order.                                       |
+| `onlr.tree.spawn(path, x, y, parent)`                                                                                | Makes an instance of a node file at a place in its parent, and returns it (9).                              |
+| `onlr.tree.newNode(name, parent)`                                                                                    | Makes an empty node in its parent, and returns it.                                                          |
+| `node:addComponent(type, values)`                                                                                    | Gives the node a component of a type that it lacks, and returns it.                                         |
+| `node:removeComponent(type)`                                                                                         | Takes the node's component of a type off it when the current frame ends (6.4).                              |
+| `node:send(name, ...)`                                                                                               | Calls the function of that name in each of the node's components that has it.                               |
+| `node:isActive()`, `node:setActive(active)`                                                                          | Whether the node runs, with all that is under it (6.4), and turns it on or off.                             |
+| `node:isPaused()`, `node:setPaused(paused)`                                                                          | Whether the node, or a node above it, is paused (6.4), and pauses or resumes it with all under it.          |
+| `node:getZ()`, `node:setZ(z)`                                                                                        | The node's `z` (5), and changes it.                                                                         |
+| `node:getParent()`, `node:getChildren()`                                                                             | The node's parent, `nil` for the top node, and the list of its children.                                    |
+| `node:setParent(parent, index)`                                                                                      | Moves the node, with all that is under it, to the end of another node's children, or to `index` among them. |
+| `node:destroy()`, `node:isDestroyed()`                                                                               | Destroys the node and its children when the current frame ends, and says whether it was destroyed.          |
+| `node:toWorld(x, y)`, `node:toLocal(x, y)`                                                                           | Turn a point of the node's space into the world's, and back.                                                |
+| `node:setWorldPosition(x, y)`                                                                                        | Moves the node to a point of the world, whatever its parents' places are.                                   |
+| `component:isEnabled()`, `component:setEnabled(enabled)`                                                             | Whether the component is on (6.4), and turns it on or off.                                                  |
 
 - A node's fields are `name`, its place, `posX` to `sclY`, and `components`, which holds the components themselves (6.1). A script reads and sets them as plain fields: `self.node.posX = 10`. No function stands before a component: `self.node.components.onlr.sprite`.
 - What the engine must act on when it changes is read and changed through functions, as the values of LÖVE's own objects are: whether a node is active or paused, its `z`, its parent and children, and whether a component is enabled. So a change that does more than set a value is always a call, and never looks like a plain assignment. A node file holds them as plain values (5), apart from whether a node is paused, which only a script sets.
@@ -539,11 +539,11 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 - A `parent` that is left out is the root.
 - The list that `node:getChildren()` gives is the engine's own: a script reads it and does not change it.
 - `node:setParent` keeps the node's own place, so the node moves with its new parent. To keep it where it is in the world, a script calls `node:setWorldPosition` after. A node cannot be moved under itself or a node under it, and the top node and the root cannot be moved.
-- No node has tags: a component type is one. With an empty script `enemy` on every enemy, `onlr.node.findAllComponents("enemy")` gives them all.
+- No node has tags: a component type is one. With an empty script `enemy` on every enemy, `onlr.tree.findAllComponents("enemy")` gives them all.
 - When each function takes effect is in section 6.4.
 - The functions that declare properties are in `onlr.property` (6.2). The engine's components have functions of their own, such as the camera's (10).
-- A function takes a type's name as one text, dots and all: `onlr.node.findComponent("bump.world")`.
-- `onlr.node.findComponent` finds what a root has one of. A component that many others need, such as the world that bodies collide in, is a component of the root (5), and the others find it by its type.
+- A function takes a type's name as one text, dots and all: `onlr.tree.findComponent("bump.world")`.
+- `onlr.tree.findComponent` finds what a root has one of. A component that many others need, such as the world that bodies collide in, is a component of the root (5), and the others find it by its type.
 - `node:send` is how a component makes an event of its own. The engine calls `keypressed` in every component when LÖVE reports a key; in the same way, a component that finds a contact calls `self.node:send("contact", other)`, and every component of that node that defines `contact(other)` is called. The name is agreed between the two components, and the engine does not know it.
 
 ## 8. The loop
@@ -581,7 +581,7 @@ Each file of the engine holds one thing:
 | `manifest.lua`                                      | The engine's name and its version, as a package's manifest holds them (11.2).                                                                              |
 | `init.lua`                                          | What `require("onlr")` gives: `start`, `conf`, and the namespaces of the files below. It joins them, sets where `require` looks (3.1), and does nothing else. |
 | `loop.lua`                                          | `onlr.loop`: the loop and its steps (8.1).                                                                                                                 |
-| `tree.lua`                                          | `onlr.node`: the root, the tree and its lists (8.2).                                                                                                       |
+| `tree.lua`                                          | `onlr.tree`: the root, the tree and its lists (8.2).                                                                                                       |
 | `node.lua`                                          | Nodes and their functions (7).                                                                                                                             |
 | `property.lua`                                      | `onlr.property` (6.2).                                                                                                                                     |
 | `data.lua`                                          | Reading data files (4), and loading the files that properties name.                                                                                        |
@@ -682,8 +682,8 @@ return {
 - A change or a reference that names no node, such as after a merge in git, is an error in the game, which names the node file and the id, as a path that names no file is (6.2). The editor clears such names when it deletes a node (13.6).
 - A change to a node file reaches every instance of it, apart from what the instance's changes write.
 - When the base later gets a component that an instance added, what the instance wrote is from then on a change of the base's component. Nothing else is needed.
-- An instance's nodes are nodes of the tree as the others are: `onlr.node.find` and `onlr.node.findComponent` look through them too.
-- `onlr.node.spawn` makes an instance while the game runs, and calls `load` and `enable` of its components before it returns (6.4).
+- An instance's nodes are nodes of the tree as the others are: `onlr.tree.find` and `onlr.tree.findComponent` look through them too.
+- `onlr.tree.spawn` makes an instance while the game runs, and calls `load` and `enable` of its components before it returns (6.4).
 
 ## 10. The engine's components
 
@@ -694,12 +694,13 @@ The engine has four component types. They are written as scripts are, with the f
 | `onlr.sprite` | An image, or a part of one.                                                                         |
 | `onlr.text`   | A text in a font.                                                                                   |
 | `onlr.shape`  | A rectangle, a circle, a line or a polygon, filled or as an outline.                                |
-| `onlr.camera` | A view: it draws its node and all under it as a group (5), moved, turned and zoomed so that the window's centre shows its point. |
+| `onlr.camera` | A view: it draws its node and all under it as a group (5), moved, turned and zoomed so that the middle of its screen shows its point. |
 
 - A camera shows only what is under its node. So a level puts its world under a node with the camera, and what stays on the screen, such as a score, beside that node. The score draws at the window's pixels, and the camera does not move it.
 - What no camera holds draws as plain LÖVE does, with 0, 0 at the window's top left.
+- A camera's screen is what it draws into, of the size of its `width` and `height`: the window when they are 0, as they are by default. A library that scales the game draws it at a size of its own, such as 320 by 180, which the camera's `width` and `height` then name.
 - A camera's properties move it, not its node's place, which moves the world under it. A script follows the player by setting them in `lateUpdate`: `camera.posX, camera.posY = player.posX, player.posY`.
-- `camera:toWorld(x, y)` turns a point of the window, such as the pointer's, into the point of the world that the camera shows there, in the space of `node:toWorld` (7). `camera:toWindow(x, y)` turns it back. So a click finds its place in the level: `camera:toWorld(love.mouse.getPosition())`.
+- `camera:toWorld(x, y)` turns a point of the camera's screen into the point of the world that the camera shows there, in the space of `node:toWorld` (7). `camera:toScreen(x, y)` turns it back. So a click finds its place in the level: `camera:toWorld(love.mouse.getPosition())`. In a game that a library scales, the library first turns the pointer's place into the game's, such as with push's `toGame`.
 - A package of a camera library gives a component that draws a group in the same way (11).
 
 Their properties use LÖVE's names wherever LÖVE has one:
@@ -722,9 +723,10 @@ Their properties use LÖVE's names wherever LÖVE has one:
 |               | `points`          | `list` of `vector`                            |            | A line's points, or a polygon's corners, in the node's space.                                    |
 |               | `lineWidth`       | `number`                                      | 1          | The width of a line and of an outline, as `love.graphics.setLineWidth`.                          |
 |               | `color`           | `color`                                       | white      | The shape's colour.                                                                              |
-| `onlr.camera` | `posX`, `posY`    | `number`                                      | 0          | The point, in its node's space, that the window's centre shows.                                  |
+| `onlr.camera` | `posX`, `posY`    | `number`                                      | 0          | The point, in its node's space, that the middle of its screen shows.                             |
 |               | `rot`             | `number`                                      | 0          | Its angle, clockwise. What it shows turns the other way.                                         |
 |               | `zoom`            | `number`                                      | 1          | How large the camera shows its nodes: 2 is twice as large.                                       |
+|               | `width`, `height` | `number`                                      | 0          | The size of its screen, in pixels. 0 is the window's.                                            |
 
 - Each has `bounds` and `drawEditor` (6.3). A camera's `drawEditor` draws the frame of what it shows.
 
@@ -792,7 +794,7 @@ Body.width = onlr.property.number(32)
 Body.height = onlr.property.number(32)
 
 function Body:load()
-  local world = onlr.node.findComponent("bump.world") or onlr.node.root:add("bump.world")
+  local world = onlr.tree.findComponent("bump.world") or onlr.tree.root:addComponent("bump.world")
   self.world = world:get()
 end
 
@@ -880,7 +882,7 @@ return Player
 
 What the sample shows of every package:
 
-- **What a root has one of** is a component of the root (5): here `bump.world`. It is made with the root and ends with it, so each root has its own, and its node file keeps its settings. It is not a module that lives through the whole game. A component that needs it finds it with `onlr.node.findComponent`, and adds it to the root when the tree has none. A second world, of a node file that is held in another, is not used.
+- **What a root has one of** is a component of the root (5): here `bump.world`. It is made with the root and ends with it, so each root has its own, and its node file keeps its settings. It is not a module that lives through the whole game. A component that needs it finds it with `onlr.tree.findComponent`, and adds it to the root when the tree has none. A second world, of a node file that is held in another, is not used.
 - **What the library must be told** is told by the component, in its `enable` and `disable` (6.4). bump asks for each box to be added to its world; the body does that while it runs, so the user does not, and a node that is turned off collides with nothing.
 - **Where a node is** has one truth: the node's own place (5). A library that keeps a place of its own, as bump does for each box, holds a copy, and the package's component keeps the copy in step. After `move`, the node takes the library's answer. When a script sets the node's place itself, the component tells the library, in its `update`.
 - **What a script asks of the library** is a function of the component: `body:move(x, y)`. The script names the body in `needs` (6.6), so its node always has one.

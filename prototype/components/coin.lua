@@ -19,14 +19,14 @@ function Coin:contact(other)
   -- and stay in the tree until then.
   self.node:destroy()
   -- A component type is a tag: every coin of the tree has this script.
-  for _, coin in ipairs(onlr.node.findAllComponents("coin")) do
+  for _, coin in ipairs(onlr.tree.findAllComponents("coin")) do
     if not coin.node:isDestroyed() then
       return
     end
   end
   if self.next then
     -- Ends the root and loads another, when the frame ends.
-    onlr.node.loadRoot(self.next)
+    onlr.tree.loadRoot(self.next)
   end
 end
 

@@ -89,7 +89,7 @@ function property.font(options) end
 function property.file(options) end
 
 ---@param options? onlr.NodeFileOptions
----@return string? path a node file, for onlr.node.loadRoot and onlr.node.spawn
+---@return string? path a node file, for onlr.tree.loadRoot and onlr.tree.spawn
 function property.nodeFile(options) end
 
 ---@param options? onlr.PropertyOptions

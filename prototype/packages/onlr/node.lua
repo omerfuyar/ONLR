@@ -25,13 +25,13 @@ local Node = {}
 ---@param type `T` a type's name, dots and all: "bump.world"
 ---@param values? table the properties' values
 ---@return T
-function Node:add(type, values) end
+function Node:addComponent(type, values) end
 
 ---Takes the node's component of a type off it, when the current frame ends:
 ---until then it stays, and its functions are called; then its disable and destroy are called.
 ---Removing a component that another of the node needs is an error.
 ---@param type string a type's name, dots and all: "shield"
-function Node:remove(type) end
+function Node:removeComponent(type) end
 
 ---Calls the function of that name in each of the node's components that has it.
 ---@param name string

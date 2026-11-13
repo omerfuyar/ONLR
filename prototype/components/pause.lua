@@ -13,8 +13,8 @@ function Pause:keypressed(key)
   if key ~= "escape" then
     return
   end
-  local paused = not onlr.node.root:isPaused()
-  onlr.node.root:setPaused(paused)
+  local paused = not onlr.tree.root:isPaused()
+  onlr.tree.root:setPaused(paused)
   self.node.components.onlr.text:setEnabled(paused)
 end
 
