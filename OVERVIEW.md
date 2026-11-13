@@ -129,7 +129,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 - In the node view nothing moves: the engine draws the nodes and does not update them.
 - Play saves the project, then runs the game from its start node, in LÖVE's own window, and Play This File runs the node file in focus as the root. Pause stops the game, and Step runs one frame of it. Stop ends it, and so does closing the window. The console, the errors and their links to files work while it runs.
 - A preview of a node file is drawn by LÖVE as the node view is.
-- Each panel comes from a plugin, and none is built into the editor. Panels that need nothing of ONLR, such as the files panel and the asset viewer, are made for any OpenECS tool, and are part of OpenECS's standard plugins. ONLR's own panels are built from the same generic parts.
+- Each panel comes from a plugin, and none is built into the editor. Panels that need nothing of ONLR, such as the files panel, the asset viewer and the console, are made for any OpenECS tool, and are part of OpenECS's standard plugins. ONLR's own panels are built from the same generic parts.
 - A game that fails, or never returns, does not stop the editor.
 - Every change to a node file can be undone. The project has one history, whichever panel made the change.
 - The editor saves when the user asks and when Play starts, and asks about unsaved work before it closes. It also asks before a save replaces a file in which a person wrote code.

@@ -11,7 +11,7 @@
 ---@field loveVersion string
 ---@field startNode string the node file that the game starts with, as its root
 ---@field topNode? string the node file of the top node, which the game keeps above every root; an empty node when left out
----@field window {width: integer, height: integer}
+---@field window {width: integer, height: integer, [string]: any} as LÖVE's t.window, with any other field of it, such as resizable
 ---@field defaultFilter? "linear"|"nearest" as love.graphics.setDefaultFilter; linear when left out
 ---@field fixedRate? number how many times a second fixedUpdate is called; 60 when left out
 ---@field exclude? string[]

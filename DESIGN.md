@@ -131,7 +131,7 @@ mygame/
 - `nodes/` holds the node files (5). Every Lua file in it, in any folder of it, is one: `nodes/level.lua`.
 - `shared/` holds the user's Lua code that is not a component and that components share: what keeps a value when the root changes, such as a score, and functions that many scripts use. The engine does not read it: scripts load it with `require`, as in any LÖVE game. Its name is not taken; a new project has it.
 - `lib/` holds what the game uses and was not made for this game alone, each in a folder of its own: the engine in `lib/onlr/`, packs, and libraries. The user adds to it, by hand or in the editor.
-- `lib/onlr/` is the engine's. The editor replaces it when it updates the engine (3.3), so the user does not edit it.
+- `lib/onlr/` is the engine's. The editor replaces it when it updates the engine (3.3), so the user does not edit it. Each project holds its own copy, so `love mygame` runs it and an export holds it.
 - `.onlr/` holds what the editor keeps for this project on this computer, such as LÖVE's definitions (4.3). It is not exported, and not in git: when the editor makes the project, it writes a `.gitignore` that names it.
 - The names `main.lua`, `conf.lua`, `manifest.lua`, `components/`, `nodes/`, `lib/` and `.onlr/` are taken. Every other name is the user's.
 
@@ -167,7 +167,7 @@ return {
 | `loveVersion`     | The version of LÖVE the game is made for.                                       |
 | `startNode`       | The node file that the game starts with, as its root (5).                       |
 | `topNode`         | The node file of the top node, which the game loads once and keeps, and under which each root runs (5). An empty node when left out. |
-| `window`          | The game's window, in the names of LÖVE's `t.window`: its `width` and `height`, in pixels. |
+| `window`          | The game's window, as LÖVE's `t.window`, with its names: `width` and `height` in pixels, and any other field of it, such as `resizable`, `fullscreen` or `highdpi`. The engine adds none of its own. |
 | `defaultFilter`   | How images are scaled, as `love.graphics.setDefaultFilter` takes it: `linear`, LÖVE's default, or `nearest`, which keeps pixel art sharp. The engine sets it in both players, before anything loads (12.1). |
 | `fixedRate`       | How many times a second `fixedUpdate` is called (6.3). 60 when left out.        |
 | `exclude`         | Patterns of files that an export leaves out. In a pattern, `*` stands for any part of a name, `**` for any folders, and a pattern that ends with `/` names a folder. |
@@ -708,6 +708,7 @@ A pack is a folder in `lib/`, named as the library is loaded.
 | `init.lua`              | Code: one line that returns the library.                        | The game, at `require("bump")`.           |
 | `library/`              | The library's own files, unchanged, with its licence.           | The game, through `init.lua`.             |
 | `world.lua`, `body.lua` | Component types, one in each file: `bump.world` and `bump.body`. | The game, when a node file names the type. |
+| `definitions.lua`       | The library's definitions (4.3), written with the pack, since most libraries ship none. | A code editor only.                       |
 
 ``` lua
 ---@type onlr.Pack
@@ -731,6 +732,8 @@ return {
 - `components` names the types that the editor offers (13), by their files' names: inside the pack, its own name is not repeated. A node file and a script name a type in full, as `bump.body`, since they are read outside the pack.
 - A pack adds nothing to the engine and changes nothing in it. A game uses a pack's library with its components, without them, or both.
 - The editor copies a pack into a project when the user adds it, and deletes its folder when the user removes it. In the project, the pack is the project's own copy, and an export holds it.
+- The editor adds a pack from ONLR's own, or from a folder that the user chooses, so anyone can make one.
+- When ONLR ships a newer version of a pack that a project holds, the editor offers it. Updating replaces the pack's folder, after the editor has named the files that the user changed in it.
 
 ### 11.3 A pack's components
 
@@ -863,6 +866,7 @@ What the sample shows of every pack:
 - The play player is LÖVE as an exported game runs it: the window, the keyboard, the pointer, the gamepads and the sound are LÖVE's own, and the engine stands in for nothing.
 - What a mode draws into is the one difference between the modes. Starting a player, the link, the console and the errors are the same code for both, so the editor's other parts do not know where the game is drawn.
 - A player is another program, so a game that fails or never returns leaves the editor running. The editor shows what happened, and starts the player again when asked.
+- The editor gives the edit player two seconds for each answer. When it does not answer, as when a `drawEditor` never returns, or the game's code fails before the engine has loaded, the editor ends it, shows in the console what it printed, and starts it again at the next change. A view that stops it twice in a row is not drawn again until the user asks.
 - The editor reads what a player prints, and shows it in the console. In a player, the engine turns off the buffer of the game's output, so each line shows when it is printed.
 
 ### 12.2 The link
@@ -883,7 +887,8 @@ What the sample shows of every pack:
 
 | The engine sends | From            | For                                                            |
 | ---------------- | --------------- | -------------------------------------------------------------- |
-| A frame          | The edit player | The picture of a view, and the nodes' bounds with it (12.3). |
+| A frame          | The edit player | The picture of a view (12.4).                                  |
+| Bounds           | The edit player | The nodes' bounds and places, when they change (12.3).         |
 | An answer        | The edit player | A type's properties, or why its file does not load (12.5).     |
 | An error         | Both players    | A message with its file, line and stack.                       |
 
@@ -899,13 +904,15 @@ What the sample shows of every pack:
   | The edit player, in LÖVE    | Each component's `drawEditor` (6.5): its picture, and its own outlines. | It depends on the component, and its author writes LÖVE code. |
   | The panel, over the frame   | The grid, the outline of the chosen nodes, and their handles.        | It depends on the pointer and the tool, and is the same for every component. |
 
-- With each frame of a view, the engine sends every node's `bounds` (6.3) as the view shows them. The panel draws its part from them and finds the node under the pointer from them. So its outlines never part from the picture, and a click needs no answer from the player.
+- The engine sends every node's `bounds` (6.3), in the node's own space, with the node's place in the world: when a node file loads, and when its nodes change, not with each frame. The panel places them in the view itself, so moving the view sends nothing, and a turned node's outline turns with it. The panel draws its part from them and finds the node under the pointer from them, so a click needs no answer from the player.
 - A node without `bounds` covers no rectangle, such as one whose only component is a script. The panel draws a small marker at its place, so it can be seen and chosen.
 
 ### 12.4 Frames
 
 - The engine draws a view into a canvas of the view's size, reads the canvas back, and sends its pixels.
 - The engine sends a frame only when the editor has shown the last one, so a slow panel never fills the link.
+- LÖVE holds a pixel as red, green, blue and alpha, and OpenECS's images as blue, green, red and alpha. The engine draws the view's canvas once more through a shader that swaps red and blue, then reads it back. So the graphics card does it, and the panel takes the pixels as they come.
+- The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13).
 
 ### 12.5 What the editor learns from LÖVE
 
@@ -918,7 +925,7 @@ What the sample shows of every pack:
 - The editor is an OpenECS tool: a preset and plugins, in Lua unless a part needs C. The user never sees or writes them.
 - It builds on OpenECS's standard plugins (OpenECS-std DESIGN): process starts the players, net carries the link, fs watches the project, compress and hash serve export, web downloads LÖVE, and ui and draw make the panels.
 - Every panel is a panel type that a plugin registers (OpenECS DESIGN 4), and the preset only places them. No panel is built into the editor, so the user opens, moves and groups them as in any OpenECS tool.
-- A panel that needs nothing of ONLR, such as the files panel and the asset viewer, is a plugin that knows nothing of ONLR and serves any OpenECS tool. It belongs in OpenECS-std, as its settings window does (OpenECS-std DESIGN 12).
+- A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a plugin that knows nothing of ONLR and serves any OpenECS tool. It belongs in OpenECS-std, as its settings window does (OpenECS-std DESIGN 12).
 - A panel of ONLR's own, such as the inspector or the nodes panel, is built from generic parts, such as ui's elements. A part that it needs and that knows nothing of ONLR is added to the standard plugin that it belongs to, not written inside ONLR, and not worked around.
 - The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, a video with video, and a text with syntax.
 
@@ -926,7 +933,7 @@ What the sample shows of every pack:
 | -------------- | --------------------------------------------------------------------------------------------- |
 | `onlr_project` | Holds the open project: its manifest, its node files, the chosen nodes and the history. It reads and writes the files, and watches the folder. |
 | `onlr_player`  | Starts the players and speaks the link. It gives the node view, and the functions Play, Play This File, Pause, Step and Stop. |
-| `onlr_views`   | The other panels of ONLR's own: the nodes panel, the inspector, the console and the project settings. |
+| `onlr_views`   | The other panels of ONLR's own: the nodes panel, the inspector and the project settings. |
 | `onlr_export`  | Export (14), and LÖVE's packages (15).                                                        |
 
 - The inspector shows the chosen node's place, then each of its components under its type's name. A component has one row for each property: its `label`, or else its name in words, `cellSize` as "Cell size", and the control of its kind (6.2).
@@ -934,6 +941,10 @@ What the sample shows of every pack:
 - The types that adding a component offers come from three places: the engine's manifest (8.3), the manifests of the project's packs (11.2), and the Lua files of `components/` (3.1).
 - Many node files can be open at once, each in a node view of its own. One edit player draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
 - The nodes panel shows the tree of the node file whose view has the focus, from its first node.
+- The node view has three tools, as Unity and Godot have: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The panel draws them over the frame (12.3).
+- A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node in a rectangle.
+- Snapping to a grid is a toggle. The grid's size is a setting of the project, kept in `.onlr/`.
+- The console is a log whose lines may name a file and a line, which a click opens in the user's code editor.
 - The editor does not tell a level from a coin. Any node file can be the start node and can be held in another (5, 9), so the manifest's start node is chosen from every node file.
 - Duplicating or pasting nodes gives the copies new ids. A property of a copy that names another node of the copies names that node's copy; one that names a node outside them is kept.
 - A new script starts from ONLR's template: the type's table, empty functions for `load`, `update` and `draw`, and `return`.
@@ -941,6 +952,9 @@ What the sample shows of every pack:
 - Each change of a node file is a record that can be undone. `onlr_project` keeps them in one history for the project.
 - A node file with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS OVERVIEW 5.5).
 - Play saves every node file with changes, and the manifest, before it starts the play player (12.1). So the game that plays is the project's files, and the play player is sent none.
+- The files panel shows the project's folder, apart from what starts with a dot. It makes folders, scripts and node files, renames and moves them, and deletes them after asking, with the node files that name them. A deleted file goes to the system's trash.
+- Opening a file opens a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
+- Dragging an image from the files panel into the node view makes a node with a sprite of it, and dragging a node file makes an instance of it (9).
 - When the files panel renames or moves a file, the editor changes every path and type name that names it, in every node file and in the manifest.
 - A file of the project that changes on disk is read again. When the editor's copy has unsaved changes too, the editor asks which to keep.
 - Opening a file at a line in the user's code editor runs a command that is a setting.
@@ -952,6 +966,7 @@ What the sample shows of every pack:
 - A `.love` file is a zip archive of the project's folder, with `main.lua` at its root.
 - The user chooses the folder that an export is written to, and the editor keeps it for the project in `.onlr/`. A folder inside the project is left out of every export, as `exclude`'s files are.
 - It leaves out every file and folder whose name starts with a dot, such as `.onlr/` and `.luarc.json`, and what `exclude` in the project's manifest names.
+- It holds every other file, as it is. The editor does not leave out a file that no node file names, since a script may name it in a text. Scripts stay source: LuaJIT's bytecode is tied to its version.
 - The licences travel with their parts: the engine's is in `lib/onlr/`, and a library's is in the library's folder.
 
 ### 14.2 Builds
