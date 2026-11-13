@@ -54,6 +54,7 @@ check.run(function()
 
   -- An event: LÖVE's handler, which calls the game's own callback, then the components' function of that name.
   love.event.push("keypressed", "a", "a", false)
+  ---@diagnostic disable-next-line: param-type-mismatch
   love.event.push("ping", 5)
   check.frames(1)
   local lines = log.take()

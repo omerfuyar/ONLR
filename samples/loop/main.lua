@@ -17,6 +17,7 @@ function love.keypressed(key)
 end
 
 -- An event of the game's own goes through love.handlers, as a library's does.
+---@diagnostic disable-next-line: undefined-field
 function love.handlers.ping(value)
   log.add("love.handlers.ping " .. value)
 end
