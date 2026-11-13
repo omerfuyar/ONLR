@@ -102,6 +102,8 @@ function Node:setWorldPosition(x, y) end
 ---What every component has. A type also defines the functions it wants called, here in the order
 ---of a component's life: load(), enable(), start(), then each frame any callback of LÖVE,
 ---fixedUpdate(dt), update(dt), lateUpdate(dt) and draw(), and at its end disable() and destroy().
+---A type that has drawGroup(draw) draws its node and all under it as a group: the engine calls it
+---in place of drawing them, and draw draws them, so it sets up before and ends after.
 ---For the editor: bounds() and drawEditor(chosen).
 ---A type names the types that it needs on its node: Type.needs = { "bump.body" }.
 ---Its properties are plain fields, which other components read and set too: other.components.coin.worth.
