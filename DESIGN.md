@@ -903,7 +903,7 @@ What the sample shows of every package:
 
 ### 12.1 The player
 
-- The editor starts LÖVE itself, unchanged, as a program of its own on the project's folder. Arguments tell the engine that the editor started it, the mode, where the editor listens, and where the player's files are.
+- The editor starts LÖVE itself, unchanged, as a program of its own on the project's folder. Arguments tell the engine that the editor started it, the mode, where the editor listens, and where the player's files are: `--onlr-player=FOLDER`, `--onlr-mode=edit` or `play`, `--onlr-port=PORT`, and for Play This File `--onlr-start=PATH`.
 - The player's files are the Lua code that serves the editor: the link and the views. They are in ONLR's own folder, and no project holds them. The engine loads them with Lua's own `loadfile`, which reads any path, where LÖVE's file functions read only the game's folder (3.1). So a project and its exports hold nothing of the editor, and both ends of the link are of one version of ONLR.
 - A player runs in one of two modes:
 
@@ -926,29 +926,34 @@ What the sample shows of every package:
 ### 12.2 The link
 
 - The link is a TCP connection on this computer: the editor listens on a free port of `127.0.0.1`, and the engine connects to it with LuaSocket, which LÖVE ships. Each player has a link of its own.
-- A message is a Lua table written as text, and may carry a block of bytes after it, such as a frame's pixels. Each message starts with the sizes of both.
+- A message is a Lua table written as text, and may carry a block of bytes after it, such as a frame's pixels. Each message starts with a line of the sizes of both, in bytes: `52 0`, then the text, then the block.
+- A message's `type` names it. The tables below give each message's type, and the player's files document its fields.
+- When a player has connected, it sends `hello`, with its mode and the engine's version.
 
-| The editor sends | To              | For                                                                                                                |
-| ---------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
-| A file           | The edit player | A node file as the editor holds it, saved or not. The edit player reads it in place of the project's file.         |
-| A change         | The edit player | One edit of such a file, such as a moved node or a new value.                                                    |
-| A view           | The edit player | Which node file to draw, from where, and at what size (12.3).                                                        |
-| Shown            | The edit player | The editor has shown the last frame (12.4).                                                                        |
-| A question       | The edit player | What a component type declares (12.5).                                                                             |
-| Reload           | The edit player | A file of the project that is not Lua changed, such as an image.                                                   |
-| Stop             | The play player | The game ends.                                                                                                     |
-| Pause, Step, Resume | The play player | The game stops, runs one frame, or goes on (12.1).                                                           |
-| Watch            | The play player | Which running nodes to send, or none (12.6).                                                                       |
-| A running change | The play player | A new value for a running node (12.6).                                                                             |
+| The editor sends | Type                      | To              | For                                                                                                        |
+| ---------------- | ------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
+| A file           | `file`                    | The edit player | A node file as the editor holds it, saved or not. The edit player reads it in place of the project's file. |
+| A change         | `change`                  | The edit player | One edit of a node's own fields in such a file, such as a moved node.                                      |
+| A view           | `view`                    | The edit player | Which node file to draw, from where, at what size, and which nodes are chosen (12.3).                      |
+| Shown            | `shown`                   | The edit player | The editor has shown the last frame (12.4).                                                                |
+| A question       | `question`                | The edit player | What a component type declares (12.5).                                                                     |
+| Reload           | `reload`                  | The edit player | A file of the project that is not Lua changed, such as an image.                                           |
+| Stop             | `stop`                    | Both players    | The player ends.                                                                                           |
+| Pause, Step, Resume | `pause`, `step`, `resume` | The play player | The game stops, runs one frame, or goes on (12.1).                                                      |
+| Watch            | `watch`                   | The play player | Which running nodes to send, or none (12.6).                                                               |
+| A running change | `set`                     | The play player | A new value for a running node (12.6).                                                                     |
 
-| The engine sends | From            | For                                                            |
-| ---------------- | --------------- | -------------------------------------------------------------- |
-| A frame          | The edit player | The picture of a view (12.4).                                  |
-| Bounds           | The edit player | The nodes' bounds and places, when they change (12.3).         |
-| An answer        | The edit player | A type's properties, or why its file does not load (12.5).     |
-| The tree         | The play player | The running tree's nodes, when it changes (12.6).              |
-| Values           | The play player | The watched nodes' places and values (12.6).                   |
-| An error         | Both players    | A message with its file, line and stack.                       |
+| The engine sends | Type     | From            | For                                                            |
+| ---------------- | -------- | --------------- | -------------------------------------------------------------- |
+| A frame          | `frame`  | The edit player | The picture of a view (12.4).                                  |
+| Bounds           | `bounds` | The edit player | The nodes' bounds and places, when they change (12.3).         |
+| An answer        | `answer` | The edit player | A type's properties, or why its file does not load (12.5).     |
+| The tree         | `tree`   | The play player | The running tree's nodes, when it changes (12.6).              |
+| Values           | `values` | The play player | The watched nodes' places and values (12.6).                   |
+| An error         | `error`  | Both players    | A message with its file, line and stack.                       |
+
+- A change carries a node's own fields only: its name, its place, its `z` and whether it is active. The edit player sets them on the view's nodes, so a drag draws at once. For any other edit, such as a component's value, the editor sends the file again, and the edit player makes the views' nodes anew.
+- A node file that does not load leaves its view empty, and its error names the view.
 
 ### 12.3 Views
 
@@ -970,7 +975,7 @@ What the sample shows of every package:
 - The engine draws a view into a canvas of the view's size, reads the canvas back, and sends its pixels.
 - The engine sends a frame only when the editor has shown the last one, so a slow panel never fills the link.
 - LÖVE holds a pixel as red, green, blue and alpha, and OpenECS's images as blue, green, red and alpha. The engine draws the view's canvas once more through a shader that swaps red and blue, then reads it back. So the graphics card does it, and the panel takes the pixels as they come.
-- The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13.3).
+- The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13.3). A frame's colours are multiplied by their alpha, as LÖVE's canvases hold them.
 
 ### 12.5 What the editor learns from LÖVE
 
@@ -985,6 +990,7 @@ What the sample shows of every package:
 - For the chosen nodes, the engine sends their places and their components' values ten times a second. A reference is sent as what it names: a file as its path, and a node or a component as the node's number.
 - A value that the user changes is sent to the play player, which sets it between two frames, as a script sets a field. A node's active and a component's enabled are set through their functions (7).
 - The engine sends none of it unless the editor asks, and an exported game holds none of it (8.1).
+- A game that sets its own `love.run` does not run the engine's loop (8.1). The play player then reads the link when the game's frame ends, and Pause and Step do nothing.
 
 ## 13. The editor
 
@@ -1106,6 +1112,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
 - The tests share one helper, `samples/check.lua`. Before a test runs, the sample gets the helper and the engine in its `packages/`, as a project holds the engine (3.1). The repository does not keep those copies.
+- The player and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both players on other samples, and speaks the link with them.
 - A sample's test of the editor is an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes.
 - One sample has thousands of nodes. It is the measure of speed: its test reports the time of a frame.
 - A change that breaks a sample changes the sample in the same piece of work.

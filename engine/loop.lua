@@ -17,6 +17,9 @@ local rest = 0
 ---@type {frame: fun()?, paused: boolean?, step: boolean?}?
 loop._player = nil
 
+-- Whether the engine's own love.run runs, and not a game's.
+loop._running = false
+
 ---Loads the top node and the first root. Called once, after love.load.
 function loop.load()
   tree._load()
@@ -69,6 +72,7 @@ function loop.run()
     love.load(love.arg.parseGameArguments(arg), arg)
   end
   loop.load()
+  loop._running = true
   if love.timer then
     love.timer.step()
   end

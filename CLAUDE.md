@@ -15,6 +15,7 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the player and the link, the editor, export. |
 | [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
 | `engine/`                  | The engine: the Lua library that every project holds as `packages/onlr/` (DESIGN.md, section 8.3). |
+| `player/`                  | The player's files: the link and the views, which the engine loads when the editor starts LÖVE (DESIGN.md, section 12). |
 | `samples/`                 | Small projects, which are the tests, and `check.lua`, the tests' helper (DESIGN.md, section 16). |
 | `.github/`                 | Checks, and the scripts that agents and CI run: `check.sh` and `test.sh`. `scripts/assets/` makes the samples' images and sounds. |
 | `.claude/`                 | Claude Code's settings, its hook for cloud sessions, and `notes.md`: why the tools are set up as they are. |

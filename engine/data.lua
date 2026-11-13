@@ -99,6 +99,11 @@ local function get(key, make)
   return entry
 end
 
+-- What each loaded object was loaded from: an image's or a sound's path, and a font's path and size.
+-- The play player sends a reference as what it names (DESIGN 12.6).
+---@type table<any, string|table>
+data.paths = setmetatable({}, { __mode = "k" })
+
 ---Whether a path names a file of the game.
 ---@param path string
 ---@return boolean
@@ -149,6 +154,11 @@ function data.load(kind, path, option)
     entry = loaded[key] or get(key, function()
       return data.read(path --[[@as string]])
     end)
+  end
+  if kind == "image" or kind == "sound" then
+    data.paths[entry.value] = path
+  elseif kind == "font" then
+    data.paths[entry.value] = { path = path, size = option }
   end
   return entry.value, key
 end
