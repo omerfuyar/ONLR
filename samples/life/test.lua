@@ -88,6 +88,14 @@ check.run(function()
   check.fails(function() a.components.group.member = {} end, "cannot be changed", "an empty table of components cannot be changed")
   check.fails(function() a:addComponent("log") end, "already has", "a second component of a type")
 
+  -- Types that the engine refuses.
+  check.fails(function() a:addComponent("circle_a") end, "need each other in a circle", "types that need each other")
+  check.fails(function() a:addComponent("both") end, "both both.lua and the folder both/", "a file and a folder of one name")
+  check.fails(function() a:addComponent("both.inner") end, "both both.lua and the folder both/", "and the types in that folder")
+  check.fails(function() a:addComponent("badname") end, "cannot be named node", "a property with a taken name")
+  check.fails(function() a:addComponent("not-a-name") end, "each part of it is a name in Lua", "a name that is no name in Lua")
+  check.fails(function() a:addComponent("nothing") end, "no component type nothing", "a type without a file")
+
   -- addComponent: needs are added with it, and load and enable are called before it returns.
   b:setActive(true)
   log.take()
