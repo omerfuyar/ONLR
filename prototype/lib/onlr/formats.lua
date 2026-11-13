@@ -9,16 +9,20 @@
 ---@field id string
 ---@field gameVersion string
 ---@field loveVersion string
----@field scene string the scene that the game starts with
+---@field scene string the node file that the game starts with
 ---@field window {width: integer, height: integer}
 ---@field exclude? string[]
 
+---A component's entry: its properties' values.
 ---@class onlr.ComponentData
----@field type string a component type, as require takes it
 ---@field enabled? boolean true when left out
 ---@field [string] any the properties' values
 
----What an instance changes in one object under its root.
+---A node's components, by their types' names. A dot in a name is a table in a table:
+---bump.body is bump = { body = { ... } }.
+---@alias onlr.ComponentsData table<string, onlr.ComponentData | table<string, onlr.ComponentData>>
+
+---What an instance changes in one node under it.
 ---@class onlr.Override
 ---@field name? string
 ---@field x? number
@@ -28,13 +32,13 @@
 ---@field scaleY? number
 ---@field z? number
 ---@field active? boolean
----@field components? onlr.ComponentData[] laid over the object's components, by type
----@field overrides? table<string, onlr.Override> when the object is an instance too
+---@field components? onlr.ComponentsData laid over the node's components, name by name
+---@field overrides? table<string, onlr.Override> when the node is an instance too
 
----@class onlr.ObjectData
+---@class onlr.NodeData
 ---@field id string
----@field scene? string a scene's file: the object is an instance of that scene
----@field name? string an instance without one has its scene's
+---@field instance? string a node file: the node is an instance of it
+---@field name? string an instance without one has its file's
 ---@field x? number
 ---@field y? number
 ---@field rotation? number
@@ -42,13 +46,13 @@
 ---@field scaleY? number
 ---@field z? number
 ---@field active? boolean
----@field components? onlr.ComponentData[]
----@field children? onlr.ObjectData[]
----@field overrides? table<string, onlr.Override> in an instance: by the ids of the objects under its root
+---@field components? onlr.ComponentsData
+---@field children? onlr.NodeData[]
+---@field overrides? table<string, onlr.Override> in an instance: by the ids of the nodes under it
 
----A scene's file: one object, the root, and the format's number beside its fields.
----The colon only tells a code editor that a scene has an object's fields too.
----@class onlr.Scene : onlr.ObjectData
+---A node file: one node, and the format's number beside its fields.
+---The colon only tells a code editor that the file has a node's fields too.
+---@class onlr.NodeFile : onlr.NodeData
 ---@field format integer
 
 ---The manifest of the engine and of a pack. The project's manifest is onlr.Project.

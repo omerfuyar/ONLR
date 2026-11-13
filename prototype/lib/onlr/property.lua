@@ -4,7 +4,7 @@
 -- and its annotation says what the component reads.
 -- When the engine loads a type, it puts each property's default in the declaration's place.
 -- A component holds the values that its scene gives, and finds the others in its type.
--- A property cannot be named type, enabled or object, or as a function of its type.
+-- A property cannot be named enabled, node or needs, or as a function of its type.
 
 ---@class onlr.PropertyOptions
 ---@field description? string shown in the inspector
@@ -68,12 +68,12 @@ function property.font(options) end
 function property.file(options) end
 
 ---@param options? onlr.PropertyOptions
----@return string? path a scene's file, for onlr.scene.load and onlr.scene.spawn
-function property.scene(options) end
+---@return string? path a node file, for onlr.scene.load and onlr.scene.spawn
+function property.nodeFile(options) end
 
 ---@param options? onlr.PropertyOptions
----@return onlr.Object?
-function property.object(options) end
+---@return onlr.Node? a node of the same file
+function property.node(options) end
 
 ---@generic T
 ---@param fields T a table of properties
