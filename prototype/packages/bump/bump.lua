@@ -18,6 +18,12 @@ function World:add(item, x, y, w, h) end
 ---@param item any
 function World:remove(item) end
 
+---Moves an item to a place, without checking what it hits.
+---@param item any
+---@param x number
+---@param y number
+function World:update(item, x, y) end
+
 ---Moves an item toward a place, and stops it where it hits another.
 ---@param item any
 ---@param goalX number

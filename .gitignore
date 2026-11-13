@@ -19,3 +19,7 @@ OpenECS/
 *.so
 *.dll
 *.a
+
+# the copies of the engine and of the tests' helper that test.sh puts into each sample
+/samples/*/packages/onlr/
+/samples/*/packages/check.lua

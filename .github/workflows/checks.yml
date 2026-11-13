@@ -1,0 +1,65 @@
+# Checks every change to dev and main: the Lua annotations of every Lua file, and the samples' tests of the engine in LÖVE.
+# The samples are the tests (DESIGN.md, section 16): each one runs in LÖVE with SDL's offscreen driver, checks itself and quits with a status.
+name: Checks
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+# a new push to a branch or a pull request cancels its older run, whose result no longer counts
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-linux:
+    name: Test (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # EGL, with Mesa drawing in software, lets LÖVE draw with SDL's offscreen driver on a runner without a graphics card
+      - name: Install EGL
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libegl-mesa0 libgl1-mesa-dri
+
+      # LÖVE's AppImage, unpacked, as ONLR's archive holds it (DESIGN.md, section 15.2)
+      - name: Install LÖVE
+        run: |
+          curl -sSL -o "$RUNNER_TEMP/love.AppImage" https://github.com/love2d/love/releases/download/11.5/love-11.5-x86_64.AppImage
+          chmod +x "$RUNNER_TEMP/love.AppImage"
+          (cd "$RUNNER_TEMP" && ./love.AppImage --appimage-extract > /dev/null)
+          echo "LOVE=$RUNNER_TEMP/squashfs-root/AppRun" >> "$GITHUB_ENV"
+
+      - name: Run the samples' tests
+        run: .github/scripts/test.sh
+
+  lua:
+    name: Lua (LuaLS)
+    runs-on: ubuntu-24.04
+    env:
+      LUALS_VERSION: 3.15.0
+      LOVE2D_DEFINITIONS: c630dd883cda128a19d850bd5e3911110b271609
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Lua language server
+        run: |
+          mkdir -p "$RUNNER_TEMP/luals"
+          curl -sSL "https://github.com/LuaLS/lua-language-server/releases/download/$LUALS_VERSION/lua-language-server-$LUALS_VERSION-linux-x64.tar.gz" | tar -xz -C "$RUNNER_TEMP/luals"
+
+      # LÖVE's definitions, from LuaCATS, which .luarc.json names: the check finds code that misuses LÖVE
+      - name: Get LÖVE's definitions
+        run: |
+          git clone -q https://github.com/LuaCATS/love2d build/love2d
+          git -C build/love2d checkout -q "$LOVE2D_DEFINITIONS"
+
+      - name: Check the Lua files
+        run: |
+          "$RUNNER_TEMP/luals/bin/lua-language-server" --check="$GITHUB_WORKSPACE" --checklevel=Warning --logpath="$RUNNER_TEMP/luals-log" | tee luals.log
+          grep -q "no problems found" luals.log
