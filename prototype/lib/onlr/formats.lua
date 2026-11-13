@@ -15,11 +15,26 @@
 
 ---@class onlr.ComponentData
 ---@field type string a component type, as require takes it
+---@field enabled? boolean true when left out
 ---@field [string] any the properties' values
+
+---What an instance changes in one object inside its prefab.
+---@class onlr.Override
+---@field name? string
+---@field x? number
+---@field y? number
+---@field rotation? number
+---@field scaleX? number
+---@field scaleY? number
+---@field z? number
+---@field active? boolean
+---@field components? onlr.ComponentData[] laid over the object's components, by type
+---@field overrides? table<string, onlr.Override> when the object is an instance too
 
 ---@class onlr.ObjectData
 ---@field id string
----@field name string
+---@field prefab? string a prefab's file: the object is an instance of it
+---@field name? string an instance without one has the prefab's
 ---@field x? number
 ---@field y? number
 ---@field rotation? number
@@ -29,8 +44,7 @@
 ---@field active? boolean
 ---@field components? onlr.ComponentData[]
 ---@field children? onlr.ObjectData[]
----@field prefab? string
----@field overrides? table
+---@field overrides? table<string, onlr.Override> in an instance: by the ids of the objects inside the prefab
 
 ---@class onlr.Scene
 ---@field format integer

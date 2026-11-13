@@ -10,5 +10,8 @@ return {
   license = "MIT",
   -- The component types that the editor offers, by their files' names:
   -- world is lib/bump/world.lua, and a scene names it bump.world.
-  components = { "world", "body" },
+  components = {
+    "world",
+    "body",
+  },
 }

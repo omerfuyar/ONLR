@@ -2,6 +2,9 @@
 
 -- onlr.property: each function declares a property of a component type,
 -- and its annotation says what the component reads.
+-- When the engine loads a type, it puts each property's default in the declaration's place.
+-- A component holds the values that its scene gives, and finds the others in its type.
+-- A property cannot be named type, enabled or object, or as a function of its type.
 
 ---@class onlr.PropertyOptions
 ---@field description? string shown in the inspector
