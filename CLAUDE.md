@@ -14,14 +14,14 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | [OVERVIEW.md](OVERVIEW.md) | What ONLR is: its users, scope, principles and product decisions.                              |
 | [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the player and the link, the editor, export. |
 | [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
-| `prototype/`               | A sketch of a project's files, for the owner's feedback. Its engine is definitions only. Keep it in step with DESIGN.md. |
+| `prototype/`               | A sketch of a project's files, from the planning. Its engine is definitions only. The first sample replaces it, and it is then deleted. |
 | `LICENSE.md`               | The license, zlib.                                                                             |
 
 Before you propose or change anything, read the Contents of OVERVIEW.md and DESIGN.md, then every section the task touches.
 
 ## Current stage
 
-ONLR is being planned. Planning is the work: the documents are what you make. Write no code until the owner says the plan is done.
+The plan is done, and the implementation has started. Build it in small milestones, and keep DESIGN.md in step with the code: when the code shows a better way, or a gap, write the decision into DESIGN.md in the same piece of work, and tell the owner. Add each new part of the repository to the table above.
 
 ## Differences
 
@@ -43,9 +43,10 @@ ONLR is being planned. Planning is the work: the documents are what you make. Wr
 
 **Checks**
 
-- Test little. Run a test only when a decision depends on its result, and never the same thing twice.
+- The samples are the tests (DESIGN 16). Run the tests of what a change touches before each push, and all of them before a pull request.
+- Run an experiment only when a decision depends on its result, and never the same one twice.
 - The owner runs experiments on their own computer when asked. Give exact steps: the files, the commands, and what to report back.
-- OpenECS's checks and scripts are not in this repository yet (TODO.md, Tasks). Until they are, a change is checked by reading it: links, section numbers and cross-references.
+- OpenECS's checks and scripts are not in this repository yet (TODO.md, Tasks). Until they are, run the tests by hand, and check documents by reading them: links, section numbers and cross-references.
 
 **Git**
 

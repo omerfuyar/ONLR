@@ -21,7 +21,7 @@ return {
   },
   children = {
     -- The world is under a node with a camera: the camera draws this node and all under it
-    -- as a group, moved so that the window's centre shows its point.
+    -- as a group, moved so that the middle of its screen, the window, shows its point.
     -- A script moves the camera by its properties, not by the node's place.
     {
       id = "w0r1dn",
