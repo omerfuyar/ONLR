@@ -54,13 +54,13 @@ This document explains how ONLR is built: its parts, the project's files, the en
 
 A game made with ONLR is built in layers. Each uses only the layers above it in this table:
 
-| Layer              | Is                                                                                  | Written by                         | Uses                           |
-| ------------------ | ----------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------ |
-| 1. LÖVE            | The runtime: the window, drawing, sound, input, physics and files.                  | LÖVE's authors                     |                                |
-| 2. Libraries       | Lua code for LÖVE games, such as a library for collision (11).                      | Their authors                      | LÖVE, or nothing               |
-| 3. The engine      | Nodes, components, properties and the loop (5 to 9).                              | ONLR                               | LÖVE                           |
-| 4. Components      | What nodes show and do: the engine's own (10), a pack's (11.2) and the user's scripts (6). | ONLR, a pack's author, the user | The engine, LÖVE and libraries |
-| 5. The game's data | The project's manifest and node files, which name component types and hold their values (3, 4). | The user, through the editor | Component types, by name       |
+| Layer              | Is                                                                                              | Written by                      | Uses                           |
+| ------------------ | ----------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------ |
+| 1. LÖVE            | The runtime: the window, drawing, sound, input, physics and files.                              | LÖVE's authors                  |                                |
+| 2. Libraries       | Lua code for LÖVE games, such as a library for collision (11).                                  | Their authors                   | LÖVE, or nothing               |
+| 3. The engine      | Nodes, components, properties and the loop (5 to 9).                                            | ONLR                            | LÖVE                           |
+| 4. Components      | What nodes show and do: the engine's own (10), a pack's (11.2) and the user's scripts (6).      | ONLR, a pack's author, the user | The engine, LÖVE and libraries |
+| 5. The game's data | The project's manifest and node files, which name component types and hold their values (3, 4). | The user, through the editor    | Component types, by name       |
 
 - The engine and the libraries do not know each other. A component is where they meet: it is called by the engine, and it calls a library.
 - All three kinds of component are the same thing to the engine. The engine's own and a pack's can do nothing that a script cannot.
@@ -174,7 +174,7 @@ return {
 
 ### 4.1 Rules
 
-- Every file that ONLR writes is a Lua file that returns one table: manifests and node files.
+- Every data file that ONLR writes is a Lua file that returns one table: the manifests and the node files.
 - The table is plain data: numbers, texts, booleans and tables, and no function.
 - The engine and the editor each read a file by running it, with their own Lua: LuaJIT in the game, and the editor's Lua. The file runs with Lua's basic functions and its `string`, `table` and `math` libraries, and nothing else. It cannot reach LÖVE, the engine, the editor or another file.
 - So a file that a person writes may compute its table, such as a manifest that works out the window's size. Its code must be Lua that both run.
@@ -231,7 +231,7 @@ return {
       id = "k3f9",
       name = "Player",
       posX = 100,
-      posY = 200,
+      posY = 500,
       components = {
         onlr = {
           sprite = {
@@ -246,7 +246,7 @@ return {
         {
           id = "p7c2",
           name = "Shadow",
-          posY = 12,
+          posY = 44,
           z = -1,
           components = {
             onlr = {
@@ -398,9 +398,9 @@ The engine calls the functions that a type has. All are optional.
 - A component runs while it is `enabled`, and its node and every node above that are `active`. Only a component that runs gets `start`, events, `update`, `lateUpdate` and `draw`.
 - `load` and `destroy` are called once each, whatever the node and the component are set to. They make and free what the component holds.
 - `enable` and `disable` are called each time the component starts and stops running, so every `enable` has its `disable`. What a component gives to others while it runs, such as a body's box in its world, is given in `enable` and taken back in `disable`.
-- `start` is called once, in the first frame in which the component runs, before that frame's `update`.
+- `start` is called once, in the first frame in which the component runs, before that frame's events and `update`.
 - In a frame, each function is called for the whole tree before the next one is (8.1). It goes through the tree in the tree's order, and through a node's components in theirs (5). `draw` goes in the order of drawing.
-- When a root loads, the engine makes all its nodes, then calls `load` and `enable` of each component.
+- When a root loads, the engine makes all its nodes, then calls `load` of every component, then `enable` of every component that runs, each in the tree's order.
 - What a script makes exists at once: an instance from `onlr.node.spawn`, a node from `onlr.node.add`, and a component from `node:add` (7). `onlr.node.find`, `onlr.node.findComponent`, `children` and `components` give it, and its `load` and `enable` are called before the function that made it returns. Its `start` and its other functions are called from the next frame on. So a script sets values on what it made, and `start` finds them.
 - `node:destroy()` marks the node. It stays in the tree, and its functions are called, until the frame ends. Then the engine calls `disable` and `destroy` of its children's components, then of its own, and takes them out of the tree.
 - `onlr.node.loadRoot` does the same to every node of the tree when the frame ends. Then it makes the new root.
@@ -465,9 +465,9 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 ### 8.1 A frame
 
 - `onlr.start` sets `love.run`, LÖVE's own loop, which a game may replace. The engine's loop does what LÖVE's does, and adds the tree:
-  1. It calls `love.load`, if the game defines it, then loads the manifest's start node as the root.
-  2. For each event, it calls the game's own callback, such as `love.keypressed`, then the components' function of that name.
-  3. It calls `start` of the components that run and have not had it.
+  1. It calls `love.load`, if the game defines it, then loads the first root: the manifest's start node, or the node file that Play names (12.1).
+  2. It calls `start` of the components that run and have not had it.
+  3. For each event, it calls the game's own callback, such as `love.keypressed`, then the components' function of that name.
   4. It calls `love.update(dt)`, then the components' `update`, then their `lateUpdate`.
   5. It clears the window, calls the components' `draw` through the camera (10), in the order of drawing (5), then `love.draw()`, which draws over the nodes in the window's own space.
   6. It shows the frame.
@@ -487,16 +487,17 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 
 Each file of the engine holds one thing:
 
-| In `lib/onlr/`                                      | Holds                                                                               |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `manifest.lua`                                      | The engine's name, its version and its component types, as a pack's does (11.2).    |
+| In `lib/onlr/`                                      | Holds                                                                                                                                                      |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `manifest.lua`                                      | The engine's name, its version and its component types, as a pack's does (11.2).                                                                           |
 | `init.lua`                                          | What `require("onlr")` gives: `start`, `conf`, and the namespaces of the files below. It joins them, sets where `require` looks (3.1), and does nothing else. |
-| `loop.lua`                                          | The loop (8.1).                                                                     |
-| `tree.lua`                                          | `onlr.node`: the root, the tree and its lists (8.2).                                |
-| `node.lua`                                        | Nodes and their functions (7).                                                    |
-| `property.lua`                                      | `onlr.property` (6.2).                                                              |
-| `data.lua`                                          | Reading data files (4), and loading the files that properties name.                 |
-| `sprite.lua`, `text.lua`, `shape.lua`, `camera.lua` | The engine's components (10), one in each file.                                     |
+| `loop.lua`                                          | The loop (8.1).                                                                                                                                            |
+| `tree.lua`                                          | `onlr.node`: the root, the tree and its lists (8.2).                                                                                                       |
+| `node.lua`                                          | Nodes and their functions (7).                                                                                                                             |
+| `property.lua`                                      | `onlr.property` (6.2).                                                                                                                                     |
+| `data.lua`                                          | Reading data files (4), and loading the files that properties name.                                                                                        |
+| `formats.lua`                                       | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
+| `sprite.lua`, `text.lua`, `shape.lua`, `camera.lua` | The engine's components (10), one in each file.                                                                                                            |
 
 - The engine is in `lib/` as a pack is, with a manifest that names its component types. So the editor finds the engine's components and a pack's in one way.
 - `conf.lua` loads the engine before LÖVE has loaded its modules for drawing, input and the rest (3.1): only its file functions are sure to be there. So no file of the engine uses another part of LÖVE while it loads, only when its functions run.
@@ -537,7 +538,7 @@ return {
 ```
 
 ``` lua
--- in nodes/level.lua: an instance that is twice as large, worth more, and without its glint
+-- in nodes/level.lua: an instance that is twice as large, worth more, and with its glint off
 {
   id = "t1r6",
   instance = {

@@ -1,7 +1,7 @@
 -- A node file, as the editor writes it: one field on each line, in a fixed order.
 -- The user arranges it in the editor and does not edit it by hand.
 -- The comments are this prototype's: the editor writes none.
--- A value that equals its default is left out: a node without x is at 0.
+-- A value that equals its default is left out: a node without posX is at 0.
 ---@type onlr.NodeFile
 return {
   format = 1,

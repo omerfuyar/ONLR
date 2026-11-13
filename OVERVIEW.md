@@ -81,7 +81,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - One folder of the project, `lib`, holds the engine, packs and libraries. The editor puts the engine there, and updates it when the user agrees. The user adds libraries to it, by hand or in the editor.
 - Scripts are in one folder, `components`, and node files in another, `nodes`. Assets are in any folders. A file's path in the project is its path in the game.
 - The project's manifest holds what describes the whole game: its name, its version, the node file it starts with, the size of its window, and the version of LÖVE it was made for.
-- Every file that ONLR writes is a Lua file that returns a table. A person may write such a file too, and compute the table in it. ONLR ships definition files for them, so a code editor completes and checks them.
+- Every data file that ONLR writes, the manifest and the node files, is a Lua file that returns a table. A person may write such a file too, and compute the table in it. ONLR ships definition files for them, so a code editor completes and checks them.
 
 ## 5. Nodes and components
 
@@ -100,7 +100,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - Its functions have the names of LÖVE's callbacks, and get what LÖVE gives them: `load`, `update(dt)`, `draw`, `keypressed(key)` and every other one. Someone who knows LÖVE knows a script.
 - A few more functions follow a component through its life, in a fixed order: `enable` and `disable` when it is turned on and off, `start` before its first update, and `lateUpdate` after every update of a frame.
 - A script may call any function of LÖVE: `love.graphics`, `love.keyboard`, `love.audio` and the rest work as in any game.
-- A script declares its properties as its fields: each with a type and a default value. The inspector shows them, a node file keeps their values, and the script reads them under the same names.
+- A script declares its properties as its fields: each with a kind and a default value. The inspector shows them, a node file keeps their values, and the script reads them under the same names.
 - A property can be a number, a text, a choice or a pair of numbers, and also a file of the project, such as an image or a sound, or another node of the same file. Properties can be put in groups and in lists.
 - A script reaches the other components of its node by their names, and says which ones it needs. The editor then adds them with it.
 - LÖVE's own callbacks keep working. A game may still define `love.update` or `love.draw` in its `main.lua`, and the engine calls them too.
@@ -110,15 +110,15 @@ All of the game's logic. A script may call any function of LÖVE (6).
 
 The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs and moved into windows. Its panels:
 
-| Panel            | Shows                                                                     |
-| ---------------- | ------------------------------------------------------------------------- |
-| Node view       | The open node file. The user chooses nodes, and moves, turns and scales them. |
-| Nodes            | The open node file's tree of nodes.                                       |
-| Inspector        | The chosen node's components and their properties.                        |
-| Files            | The project's folders and files.                                          |
-| Console          | What the game prints, and its errors.                                     |
-| Project settings | What the project's manifest holds.                                        |
-| Export           | The targets, and the export's progress.                                   |
+| Panel            | Shows                                                                         |
+| ---------------- | ----------------------------------------------------------------------------- |
+| Node view        | The open node file. The user chooses nodes, and moves, turns and scales them. |
+| Nodes            | The open node file's tree of nodes.                                           |
+| Inspector        | The chosen node's components and their properties.                            |
+| Files            | The project's folders and files.                                              |
+| Console          | What the game prints, and its errors.                                         |
+| Project settings | What the project's manifest holds.                                            |
+| Export           | The targets, and the export's progress.                                       |
 
 - LÖVE draws the node view, as it draws the game. The editor has no renderer of its own for games.
 - A component says what it shows in the node view, in LÖVE code. The editor adds what belongs to its tools: the grid, the outline and handles of the chosen nodes, and a marker for a node that shows nothing.
@@ -163,7 +163,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 5. **One renderer.** LÖVE draws everything the user sees of a game, in the editor too.
 6. **The engine's components are written as the user's are.** They use only what a script can use.
 7. **Parts stand alone.** The engine knows no library and nothing of the editor, and a library does not know the engine. The editor knows a game by its files and by what LÖVE tells it.
-8. **Files are Lua tables.** Every file of ONLR is a Lua file that returns a table, with definitions that guide a code editor.
+8. **Files are Lua tables.** Every data file of ONLR is a Lua file that returns a table, with definitions that guide a code editor.
 9. **Few dependencies.** A library is included only when it earns its place (9).
 10. **Easy to set up.** One archive holds everything that making and running a game needs.
 11. **Do not lose what is not understood.** A field or a component that the editor does not know is kept when it writes a file.
