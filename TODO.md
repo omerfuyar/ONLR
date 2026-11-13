@@ -22,8 +22,8 @@ What the owner wants worked on, in no fixed order.
 
 ## Player and link
 
-- **The edit player on Windows.** SDL's offscreen driver gets OpenGL only through EGL, and LÖVE's runtime for Windows holds no `libEGL.dll`. So the edit player most likely does not start on Windows as DESIGN 12.1 starts it on Linux. The owner's experiment tells (see [Tasks](#tasks)). None of these ways is checked:
-  - A normal window that the engine hides at once, with SDL's `SDL_HideWindow` through LuaJIT's FFI. The engine draws into a canvas, with the same OpenGL as the exported game. The window may flash when it opens. Recommended to try first.
+- **The edit player on Windows.** SDL's offscreen driver gets OpenGL only through EGL, and LÖVE's runtime for Windows holds no `libEGL.dll`. The owner's experiment showed it, with LÖVE 11.5 and an NVIDIA card: with the offscreen driver LÖVE stops with "Could not initialize OpenGL / GLES library", and shows a message box that waits for a click; with SDL's normal driver it gets OpenGL 3.3. So the edit player does not start on Windows as DESIGN 12.1 starts it on Linux. None of these ways is checked:
+  - A normal window that the engine hides at once, with SDL's `SDL_HideWindow` through LuaJIT's FFI. The engine draws into a canvas, with the same OpenGL as the exported game. The window may flash when it opens. Recommended; the next experiment tries it (see [Tasks](#tasks)).
   - A normal window that LÖVE's own functions move off the screen or minimize. It needs no FFI, and the window shows in the task bar.
   - ANGLE's `libEGL.dll` and `libGLESv2.dll` beside LÖVE's files in ONLR's archive. LÖVE itself stays unchanged. The edit player then draws with OpenGL ES over Direct3D, not with the OpenGL of the exported game, so a shader may look different in the node view. The offscreen driver also asks EGL for its list of devices, which ANGLE may not give.
 - **The offscreen driver elsewhere.** It is checked on Linux with an NVIDIA card, with the system's LÖVE 11.5 and with LÖVE's own AppImage, and on a computer with no display and no graphics card, where Mesa draws in software. It needs the system's EGL library. Not checked: Intel and AMD cards.
@@ -102,23 +102,43 @@ What the owner wants worked on, in no fixed order.
 
 ## Tasks
 
-- **The Windows experiment.** It tells whether LÖVE's runtime for Windows runs without a window (see [Player and link](#player-and-link)). The first run did not tell: PowerShell's `set` makes a variable of PowerShell's own, not one of the environment, so both runs used SDL's normal driver. They showed OpenGL 3.3 on an NVIDIA card. The owner runs it again, in PowerShell:
-  1. In `C:\t\main.lua`, put these lines. The new ones print the variable as LÖVE sees it, and the driver that SDL uses:
+- **The Windows experiment.** It tells whether the edit player can run on Windows in a window that the engine hides (see [Player and link](#player-and-link)). The owner runs it in the command prompt:
+  1. Put these lines in `C:\t\main.lua`, in place of the old ones. They hide LÖVE's window through SDL, draw into a canvas, read it back, and wait three seconds before they quit:
 
      ``` lua
      io.stdout:setvbuf("no")
      local ffi = require("ffi")
-     ffi.cdef("const char *SDL_GetCurrentVideoDriver(void);")
-     print("variable", os.getenv("SDL_VIDEODRIVER"))
-     print("driver", ffi.string(ffi.load("SDL2").SDL_GetCurrentVideoDriver()))
-     print(love.graphics.getRendererInfo())
-     print(love.window.getMode())
+     ffi.cdef([[
+     typedef struct SDL_Window SDL_Window;
+     SDL_Window *SDL_GL_GetCurrentWindow(void);
+     void SDL_HideWindow(SDL_Window *window);
+     ]])
+     local sdl = ffi.load("SDL2")
+     sdl.SDL_HideWindow(sdl.SDL_GL_GetCurrentWindow())
+     print("visible", love.window.isVisible())
+
+     local canvas = love.graphics.newCanvas(1280, 720)
+     love.graphics.setCanvas(canvas)
+     love.graphics.clear(0, 0, 0, 0)
+     love.graphics.setColor(1, 0, 0, 1)
+     love.graphics.rectangle("fill", 0, 0, 10, 10)
+     love.graphics.setCanvas()
+     local pixels = canvas:newImageData()
+     print("inside", pixels:getPixel(5, 5))
+     print("outside", pixels:getPixel(20, 20))
+
+     local start = love.timer.getTime()
+     for _ = 1, 100 do
+       pixels = canvas:newImageData()
+     end
+     print("ms for one read", (love.timer.getTime() - start) * 10)
+
+     love.timer.sleep(3)
      love.event.quit()
      ```
 
-  2. In LÖVE's folder, run `$env:SDL_VIDEODRIVER = "offscreen"`, then `.\lovec.exe C:\t`.
-  3. Run `Remove-Item Env:SDL_VIDEODRIVER`, then `.\lovec.exe C:\t` again.
-  4. Report everything that each run prints, any error, and whether a window showed, even for a moment.
+  2. Open a new command prompt, so that `SDL_VIDEODRIVER` is not set, go to LÖVE's folder, and run `lovec.exe C:\t`.
+  3. Report everything that it prints, any error, and whether a window or a button in the task bar showed during those three seconds, even for a moment.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. They are the owner's too, so they change when that is the better solution:
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
   - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the player on Linux and `cmd /c` on Windows.
