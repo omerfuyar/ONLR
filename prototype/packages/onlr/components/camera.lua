@@ -18,6 +18,15 @@ Camera.zoom = onlr.property.number(1, { min = 0.01, description = "2 shows its n
 ---@param draw fun()
 function Camera:drawTree(draw) end
 
+-- Turns a point of the window, such as the pointer's, into the point of the world that the camera
+-- shows there, in the space of node:toWorld: camera:toWorld(love.mouse.getPosition()).
+---@return number x, number y
+function Camera:toWorld(x, y) end
+
+-- Turns a point of the world into the window's point where the camera shows it.
+---@return number x, number y
+function Camera:toWindow(x, y) end
+
 -- In the node view, the frame of what it shows.
 function Camera:drawEditor(chosen) end
 function Camera:bounds() end

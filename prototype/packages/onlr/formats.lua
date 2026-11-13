@@ -45,7 +45,7 @@
 ---All that an instance is: its base, and what it changes in the base's nodes.
 ---@class onlr.InstanceData
 ---@field base string a node file
----@field changes? table<string, onlr.Change> by the changed node's id in the base's file, or by a path into an instance inside the base
+---@field changes? table<string, onlr.Change> by a path of ids, in brackets: the changed node's id in the base's file, ["c0in7x"], or a path into an instance inside the base, ["ch3st9/g1nt4k"]
 
 ---A node's entry. An instance has id and instance, and no other field.
 ---@class onlr.NodeData
@@ -63,6 +63,7 @@
 ---@field children? onlr.NodeData[]
 
 ---A node file: one node, and the format's number beside its fields.
+---Its node may be an instance, which makes the file a variant of the instance's base.
 ---The colon only tells a code editor that the file has a node's fields too.
 ---@class onlr.NodeFile : onlr.NodeData
 ---@field format integer

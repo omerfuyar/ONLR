@@ -27,6 +27,12 @@ local Node = {}
 ---@return T
 function Node:add(type, values) end
 
+---Takes the node's component of a type off it, when the current frame ends:
+---until then it stays, and its functions are called; then its disable and destroy are called.
+---Removing a component that another of the node needs is an error.
+---@param type string a type's name, dots and all: "shield"
+function Node:remove(type) end
+
 ---Calls the function of that name in each of the node's components that has it.
 ---@param name string
 ---@param ... any
@@ -40,6 +46,16 @@ function Node:isActive() end
 ---enable or disable of the components that start or stop is called before it returns.
 ---@param active boolean
 function Node:setActive(active) end
+
+---Whether the node, or a node above it, is paused.
+---@return boolean
+function Node:isPaused() end
+
+---Pauses or resumes the node, with all under it. A paused node still draws, and its components get
+---no start, events, fixedUpdate, update or lateUpdate. Pausing calls neither enable nor disable.
+---A node file does not hold it: every node starts unpaused.
+---@param paused boolean
+function Node:setPaused(paused) end
 
 ---The node's order in drawing, added to its parent's.
 ---@return number
@@ -96,6 +112,7 @@ function Node:setWorldPosition(x, y) end
 ---@field player? player
 ---@field coin? coin
 ---@field counter? counter
+---@field pause? pause
 ---@field spin? spin
 ---@field music? music
 ---@field bump {body: bump.body?, world: bump.world?}

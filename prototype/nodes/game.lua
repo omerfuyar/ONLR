@@ -19,5 +19,23 @@ return {
         },
       },
     },
+    -- Escape pauses the level and shows this text. The root comes after this node in the tree,
+    -- so the text has a z of its own, to draw over the level. Its text is off until the game is paused.
+    {
+      id = "p4u5em",
+      name = "Pause",
+      posX = 600,
+      posY = 340,
+      z = 100,
+      components = {
+        onlr = {
+          text = {
+            enabled = false,
+            text = "Paused",
+          },
+        },
+        pause = {},
+      },
+    },
   },
 }
