@@ -93,7 +93,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - A node file may hold others, as **instances**: a level holds coins, and the coin is a node file of its own. An instance is made from that file, its base, and may change it freely: any value of its nodes and components, and components and children of its own. What it does not want of its base, it turns off. A script makes instances while the game runs, such as bullets and enemies.
 - The game runs one node at a time, with all that is under it: the **root**. The game starts with the node file that the manifest names, and a script loads another as the root, which ends the one that runs.
 - What a root has one of, such as the world that its bodies collide in, is a component of the root.
-- What must outlive the root, such as a music player or a pause menu, is a **kept node**: the manifest names node files that the game loads once, before the first root, and keeps beside every root. A value such as a score may also live in the user's own Lua modules, as in any LÖVE game.
+- What must outlive the root, such as a music player or a pause menu, is under the **top node**: the manifest names its node file, which the game loads once and keeps, and each root runs under it. A component on it reaches the whole game, such as a library that scales the game to the window. A value such as a score may also live in the user's own Lua modules, as in any LÖVE game.
 
 ## 6. Scripts
 
@@ -197,8 +197,6 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **Instance.** A node that was made from another node file.
 
-**Kept node.** A node of a node file that the game loads once and keeps beside every root.
-
 **LÖVE.** A free framework that runs 2D games written in Lua.
 
 **`.love` file.** An archive of a game's files, which LÖVE runs.
@@ -219,8 +217,10 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **Property.** A named, typed value of a component, which the inspector shows and a node file keeps.
 
-**Root.** The node that the game runs, with all that is under it.
+**Root.** The node that the game runs under the top node, with all that is under it, until a script loads another.
 
 **Script.** A Lua file, written by the user, that returns a component.
 
 **Target.** What an export makes: a `.love` file, or a build for one platform.
+
+**Top node.** The node that the game loads once and keeps, above every root.

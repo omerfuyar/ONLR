@@ -1,15 +1,16 @@
 ---@meta onlr.tree
 
--- onlr.node: the root, which is the node that the game runs, and the tree.
--- The tree is the kept nodes, which the manifest names and the game keeps, and the root,
--- with all under them. Its order is the kept nodes', in the manifest's order, then the root's.
+-- onlr.node: the top node, the root, which is the node that the game runs, and the tree.
+-- The tree is the top node, which the manifest names and the game keeps, with all under it.
+-- The root runs as the top node's last child, so the tree's order is the top node's own nodes, then the root's.
 
 ---@class onlr.node
+---@field top onlr.Node the top node: the node of the manifest's topNode, or an empty node
 ---@field root onlr.Node the root: the node of the node file that was loaded last
 local node = {}
 
 ---Ends the root and loads another node file as the root, when the current frame ends.
----The kept nodes stay.
+---The new root takes the old one's place among the top node's children. The top node and its own nodes stay.
 ---@param path string a node file, such as "nodes/menu.lua"
 function node.loadRoot(path) end
 

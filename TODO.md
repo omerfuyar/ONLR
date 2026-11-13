@@ -8,19 +8,16 @@ What the owner wants worked on, in no fixed order.
 
 - **The plan.** ONLR is being planned. No code is written until the owner says the plan is done.
 - **The Windows experiment.** The owner runs it and reports what it prints (see [Tasks](#tasks)). Remind the owner of it.
-- **To discuss with the owner.** The whole frame as a group (see [Engine](#engine)). Later, when the owner asks: names, the engine's namespaces, functions and names all together.
+- **To discuss with the owner.** Later, when the owner asks: names, the engine's namespaces, functions and names all together. Among them: the root, which is not the top of the tree (DESIGN 5).
 - **The engine's concepts first.** What is open under [Engine](#engine) is settled before a library's pack is designed, since packs are built on the engine.
 - **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
 - **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
 
-- **The whole frame as a group.** A library that scales the game to the window, such as push, draws everything through it: the kept nodes, the root and `love.draw`. A group holds only what is under its node (DESIGN 5), and no node is above both the kept nodes and the root. To discuss with the owner:
-  - The manifest names one node file as the game's top node, in place of the kept nodes. The game loads it once and keeps it, its children are what the kept nodes are now, and each root loads as its last child. A group on it holds the whole game. Godot does the same: its autoloads and its current scene are children of one root. Recommended, since it removes the kept nodes' own rules and the tree has one top.
-  - The kept nodes stay, and a game that scales sets its own `love.run`, which calls `onlr.loop.draw()` between the library's start and finish (DESIGN 8.1). It needs nothing new, but asks every such game to copy LÖVE's loop.
-- **The window and the game's size.** A library scales the game when the window has another size (see [Libraries](#libraries)), through the whole frame (above). Open: how fullscreen and high-density screens behave. What stays on the screen, such as a score, is a node that no camera holds (DESIGN 10).
+- **The window and the game's size.** A library scales the game when the window has another size (see [Libraries](#libraries)), through a group on the top node (DESIGN 5). Open: how fullscreen and high-density screens behave. What stays on the screen, such as a score, is a node that no camera holds (DESIGN 10).
 - **From the window to the world.** The pointer's place, which `love.mouse.getPosition` and `mousepressed` give, is in the window's pixels. A node's place is in the world, which a camera moves, turns and zooms (DESIGN 10). To know which node a click is on, a script turns the pointer's place into the camera's group, and back for the other way. A camera library has such functions, such as gamera's `cam:toWorld`, and so does a scaling library, such as push's `push:toGame`. The camera's two functions wait for the talk on names.
-- **Components for sound, animation and particles.** Ideas. Libraries come first (OVERVIEW 9): anim8, or peachy for Aseprite's files, to animate a sprite through its `quad` (DESIGN 10); ripple for sounds and their volumes; and LÖVE's own particle systems, whose settings Hot Particles edits. A sound property already streams with the option `stream` (DESIGN 6.2), and a kept node plays music for the whole game (DESIGN 5).
+- **Components for sound, animation and particles.** Ideas. Libraries come first (OVERVIEW 9): anim8, or peachy for Aseprite's files, to animate a sprite through its `quad` (DESIGN 10); ripple for sounds and their volumes; and LÖVE's own particle systems, whose settings Hot Particles edits. A sound property already streams with the option `stream` (DESIGN 6.2), and a node under the top node plays music for the whole game (DESIGN 5).
 - **Tags.** A component type serves as a tag (DESIGN 7). An idea for later: tags or groups of their own. `onlr.node.findAll` and `findAllComponents` stay so that a function that finds by tag can join them.
 - **Loading.** A root's files are loaded when the root loads, and those that the next root does not name are let go (DESIGN 6.2). An idea for later: reading a big root's images and sounds in a thread, while a picture of progress shows, as love-loader and lily do.
 
@@ -91,7 +88,7 @@ What the owner wants worked on, in no fixed order.
   | Tile maps from Tiled        | STI; cartographer                              | STI draws a map through a canvas of its own, so a pack draws its layers itself, to follow the camera.   |
   | Animation of a sprite sheet | anim8; peachy                                  | anim8 gives a quad for each frame, which `onlr.sprite` takes. peachy reads Aseprite's files.           |
   | Camera                      | gamera; hump's camera                          | Both turn a point of the window into the world's. hump's other parts take LÖVE's callbacks; its camera does not. |
-  | Scaling to the window       | push; shove; maid64                            | Each wraps the whole frame (see [Engine](#engine)). maid64 is for pixel art only.                      |
+  | Scaling to the window       | push; shove; maid64                            | Each draws a group on the top node (DESIGN 5). maid64 is for pixel art only.                           |
   | Tweens and timers           | flux; tween.lua; hump's timer; tick            | Each is called from a component's `update`.                                                            |
   | Input                       | baton                                          | Turns keys, buttons and sticks into a game's own actions.                                              |
   | Sound                       | ripple                                         | Groups sounds by tags, with a volume for each.                                                         |

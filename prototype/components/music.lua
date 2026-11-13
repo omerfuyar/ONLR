@@ -1,4 +1,4 @@
--- A script on a kept node: it plays music for the whole game.
+-- A script on a node under the top node: it plays music for the whole game.
 local onlr = require("onlr")
 
 ---@class music : onlr.Component

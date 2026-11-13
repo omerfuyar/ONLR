@@ -49,7 +49,7 @@ function Node:getZ() end
 ---@param z number
 function Node:setZ(z) end
 
----The node's parent: nil for the root and for a kept node.
+---The node's parent: nil for the top node.
 ---@return onlr.Node?
 function Node:getParent() end
 
@@ -60,7 +60,8 @@ function Node:getChildren() end
 ---Moves the node, with all that is under it, to the end of another node's children, or to index among them.
 ---It keeps its own place, so it moves with its new parent; setWorldPosition after keeps it where it is.
 ---Components that it starts or stops get enable or disable at once.
----A node of the root that is moved under a kept node stays when the root changes.
+---A node of the root that is moved under the top node, or under one of the top node's own nodes, stays when the root changes.
+---The top node and the root cannot be moved.
 ---@param parent onlr.Node not the node itself, nor one under it
 ---@param index? integer
 function Node:setParent(parent, index) end
@@ -102,7 +103,7 @@ function Node:setWorldPosition(x, y) end
 ---What every component has. A type also defines the functions it wants called, here in the order
 ---of a component's life: load(), enable(), start(), then each frame any callback of LÖVE,
 ---fixedUpdate(dt), update(dt), lateUpdate(dt) and draw(), and at its end disable() and destroy().
----A type that has drawGroup(draw) draws its node and all under it as a group: the engine calls it
+---A type that has drawTree(draw) draws its node and all under it as a group: the engine calls it
 ---in place of drawing them, and draw draws them, so it sets up before and ends after.
 ---For the editor: bounds() and drawEditor(chosen).
 ---A type names the types that it needs on its node: Type.needs = { "bump.body" }.

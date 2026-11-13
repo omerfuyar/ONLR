@@ -16,7 +16,7 @@ Camera.zoom = onlr.property.number(1, { min = 0.01, description = "2 shows its n
 -- The engine calls it in place of drawing the group, and gives it draw, which draws the group.
 -- In the node view it is not called, so the camera does not move the view.
 ---@param draw fun()
-function Camera:drawGroup(draw) end
+function Camera:drawTree(draw) end
 
 -- In the node view, the frame of what it shows.
 function Camera:drawEditor(chosen) end

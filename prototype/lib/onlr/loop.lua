@@ -7,7 +7,7 @@
 ---@class onlr.loop
 local loop = {}
 
----Loads the kept nodes and the first root. Called once, after love.load.
+---Loads the top node and the first root. Called once, after love.load.
 function loop.load() end
 
 ---Calls the components' function of an event's name, after LÖVE's handler of it.
@@ -20,7 +20,7 @@ function loop.event(name, ...) end
 ---@param dt number seconds since the last frame
 function loop.update(dt) end
 
----Calls the components' draw in the order of drawing, and each group's drawGroup in its place. Called before love.draw.
+---Calls the components' draw in the order of drawing, and each group's drawTree in its place. Called before love.draw.
 function loop.draw() end
 
 ---Takes out what was destroyed, loads a new root if a script asked for one,
