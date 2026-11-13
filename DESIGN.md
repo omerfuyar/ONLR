@@ -197,7 +197,7 @@ return {
 - The editor writes data only: the table's values. A save writes the whole file again, so code and comments that a person wrote in it are not kept.
 - So the editor asks before it replaces such a file. It knows one when it reads it: the file's text differs from what the editor would write for the same table. The ends of lines are not compared, so a file whose line ends git changed on Windows is not taken for one that a person wrote.
 - A file is written beside the old one and then renamed over it, so it is never left half-written.
-- A file is written in one way only, so the same table always gives the same text, and two changes to different nodes merge in git:
+- A file is written in one way only, so the same table always gives the same text, and changes to different nodes, or to fields on lines apart, merge in git:
   - One field on each line, indented by two spaces, and each item of a list on its own line. Lines end with LF.
   - A node's fields in the order of section 5's table, after `format`, and a manifest's in the order of section 3.2's. The fields of every other table, such as a node's components and a component's values, in the order of their names.
   - A whole number from -2^53 to 2^53 without a point, such as `250`. Any other number with the fewest digits that read back as the same number, such as `0.1`, and an endless one as `math.huge`. So LuaJIT and the editor's Lua read the same value.
@@ -205,6 +205,7 @@ return {
 - A value that equals its default is left out, so a file holds only what the user set. In an instance, the value in its base is the default (9).
 - A node's `id` is six random characters, lowercase letters and digits, the first a letter, so it is a name in Lua: `c0in7x = { ... }`. The editor gives it once. Nodes are named by id wherever one refers to another, never by their place in a list.
 - An id is unique in its file, and no further. When a file holds an id twice, such as after a merge in git, the editor gives one of the two nodes a new id, and says so.
+- Two changes on neighbouring lines, such as a node's `name` and its `posX`, and two nodes added at the end of one list of children conflict in git, as in any text. A node file with git's marks of a conflict does not load: the node view shows the error, and the user resolves it in a text editor.
 - A field or a component type that the editor does not know is kept as it is, and written back.
 - LuaJIT cannot read a node file of much more than 30,000 nodes. The editor warns well before a file gets there. A tile map is one component, not a node for each tile.
 
