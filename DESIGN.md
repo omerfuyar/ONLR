@@ -187,6 +187,7 @@ return {
 - Every data file that ONLR writes is a Lua file that returns one table: the manifests and the node files.
 - The table is plain data: numbers, texts, booleans and tables, and no function.
 - The engine and the editor each read a file by running it, with their own Lua: LuaJIT in the game, and the editor's Lua. The file runs with Lua's basic functions and its `string`, `table` and `math` libraries, and nothing else. It cannot reach LÖVE, the engine, the editor or another file.
+- The basic functions are those that compute: `assert`, `error`, `getmetatable`, `ipairs`, `next`, `pairs`, `pcall`, `rawequal`, `rawget`, `rawset`, `select`, `setmetatable`, `tonumber`, `tostring`, `type`, `unpack` and `xpcall`. Those that load code or reach outside are left out, such as `require`, `load`, `dofile` and `print`. Each file gets its own copies of the three libraries, so it changes nothing for another file.
 - So a file that a person writes may compute its table, such as a manifest that works out the window's size. Its code must be Lua that both run.
 - A file's kind is known by its folder, without reading it: a node file is in `nodes/`, as a script is in `components/` (3.1). No file's name has a second ending.
 - Each file has a `format` number. The engine and the editor read only the one that they know, and say so of another (17).
@@ -358,6 +359,7 @@ return Player
 - The engine looks for a type in the project's `components/` first, then in the packages'. So a script cannot have the name of the engine or of a package, and the editor says so.
 - Each part of a type's name is a name in Lua, since a script reads it so: `components.enemies.bat`. The editor makes no file or folder in `components/` whose name is not one, and the engine refuses such a type.
 - A node has at most one component of a type. Giving it a second is an error.
+- The engine loads a type's file with `require`, under the name that its path gives: `components.player`, or `packages.bump.components.body`. So a script that loads a type's file the same way gets the same table.
 - A node keeps its components in `components`, by their types' names. A dot in a name is a table in a table: `bump.body` is `components.bump.body`. A node file writes them so (5), and a script reads them so: `self.node.components.bump.body`.
 - In the game, `components` holds a table for the engine's name, for each package's and for each folder of `components/`, also on a node that has none of their types. Such a table is empty and cannot be changed. Reading any other name from `components`, or from one of its tables, is an error. So `self.node.components.bump.body` is `nil` on a node without a body, and a misspelt name, such as `components.plyer` or `components.bmup.body`, is an error.
 - Each component of a node is a table of its own, which finds its functions in its type. So `self` is the component, and what a function keeps in `self` belongs to that one node.
@@ -370,7 +372,7 @@ return Player
 - When the engine loads a type, it reads these declarations, then puts each property's default in the declaration's place. From then on `Player.speed` is 200, and a property without a default is `nil`.
 - A component reads a property under the same name: `self.speed`. It holds the values that its node file gives, which the engine sets before `load`, and finds the others in its type. A default that is a table, such as a colour, is copied into each component, so changing one changes no other.
 - A property is a plain field of the component, so another component reads and sets it the same way: `self.node.components.player.speed`, or another node's `other.components.coin.worth`.
-- Each function takes the default value, then optionally a table of options (below). A kind that names a file, a node or a component has no default and takes the options only. `component` takes the type's name first, `vector` its two numbers, `group` a table of properties, and `list` one property.
+- Each function takes the default value, then optionally a table of options (below). A default that is left out is false for `bool`, 0 for a number, an empty text for `string`, the first choice for `choice`, white for `color` and an empty list for `list`. A kind that names a file, a node or a component has no default and takes the options only. `component` takes the type's name first, `vector` its two numbers, `group` a table of properties, and `list` one property.
 - Each declaration gets a number when its function is called. The inspector shows a type's properties by that number, which is the order its file declares them in.
 - Each function's annotation names what the component gets, so a code editor knows that `self.speed` is a number.
 - A property cannot be named `enabled`, `node` or `needs`, which a component or its type has (6.1, 6.6), or as a function of its type.
@@ -409,8 +411,9 @@ return Player
   | `preload`     | `nodeFile`                | The node file loads with the component's own, so a spawn of it waits for no file (below). |
 
 - An option that the kind does not take, such as a misspelt one, is an error when the type loads.
+- A node file keeps a colour as a list of four numbers, and a vector as a table of `x` and `y`. A value of another kind than its property's is an error, as a path that names no file is (below).
 - A node file keeps a file as its path, and a font as a table of its `path` and its `size`. It keeps a node, and a component, as the node's id, or as a path of ids when the node is inside an instance (9). When the file loads, the engine gives the component the node or the component itself.
-- The engine loads each file once, and components that name the same file share it. A sound is the exception: each component gets its own source, so two can play at once. When a root replaces another, the engine keeps the files that the new root names too, and lets go of the others.
+- The engine loads each file once, and components that name the same file share it. A sound is the exception: each component gets its own source, so two can play at once. When a root replaces another, the engine keeps the files that the new root names too, and lets go of the others. It lets go of files at no other time: a file that a destroyed node named stays loaded until the root changes.
 - A `nodeFile` property with `preload` loads that node file, and the files that it names, when its component's node file loads, as the files of its own properties load. The node files that their own such properties name load too. So `onlr.tree.spawn` of it reads nothing from disk. A node file without it loads when it is first spawned or loaded as the root.
 - A value of a property that the type no longer declares is kept in the node file (4.2), and the component does not get it.
 - A path that names no file is an error in the game, which names the node file, the node and the property. In the node view, the component gets `nil` and its node is marked, as for a `drawEditor` that fails (6.5), and the inspector marks the path.
@@ -443,7 +446,7 @@ The engine calls the functions that a type has. All are optional.
 
 - A component's life is `load`, `enable`, `start`, then each frame its events, `fixedUpdate`, `update`, `lateUpdate` and `draw`, and at its end `disable` and `destroy`.
 - A component runs while it is `enabled`, and its node and every node above that are `active`. Only a component that runs gets `start`, events, `fixedUpdate`, `update`, `lateUpdate`, `draw` and `drawTree`. A node whose `drawTree` does not run draws as a node without one.
-- A script can pause a node with `node:setPaused` (7). Then the node and every node under it still draw, and their components get no `start`, events, `fixedUpdate`, `update` or `lateUpdate` until it is resumed. Pausing is not turning off: `enable` and `disable` are not called. So a pause menu under the top node pauses the root, and the level stays on the screen behind it. A node file does not hold it: every node starts unpaused.
+- A script can pause a node with `node:setPaused` (7). Then the node and every node under it still draw, and their components get no `start`, events, `fixedUpdate`, `update` or `lateUpdate` until it is resumed. Pausing takes effect at once, and a resumed component gets its functions from the next frame on, as one that starts to run does. Pausing is not turning off: `enable` and `disable` are not called. So a pause menu under the top node pauses the root, and the level stays on the screen behind it. A node file does not hold it: every node starts unpaused.
 - `load` and `destroy` are called once each, whatever the node and the component are set to. They make and free what the component holds.
 - `enable` and `disable` are called each time the component starts and stops running, so every `enable` has its `disable`. What a component gives to others while it runs, such as a body's box in its world, is given in `enable` and taken back in `disable`.
 - `start` is called once, before the component's first events and `update`: when the frame in which it started to run ends, or, in the top node and the first root, when both have loaded (8.1).
@@ -453,7 +456,7 @@ The engine calls the functions that a type has. All are optional.
 - What a script makes exists at once: an instance from `onlr.tree.spawn`, a node from `onlr.tree.newNode`, and a component from `node:addComponent` (7). `onlr.tree.find`, `onlr.tree.findComponent`, `node:getChildren()` and `components` give it, and its `load` and `enable` are called before the function that made it returns. Its `start` and its other functions are called from the next frame on. So a script sets values on what it made, and `start` finds them.
 - `component:setEnabled` and `node:setActive` take effect at once, as making does. A component that stops running gets `disable` before the function returns, and from then on no call but `enable` or `destroy`. One that starts to run gets `enable` before the function returns, and `start` and its other functions from the next frame on. `node:setParent` does the same for the components that it starts or stops.
 - A node whose `z` `node:setZ` changed, and a node that `node:setParent` moved, draw in their new order from the frame's next draw. The other functions follow the new order from the next frame on.
-- `node:destroy()` marks the node and every node under it, and their `isDestroyed()` is true from then on. They stay in the tree, and their functions are called, until the frame ends. Then the engine calls `disable` and `destroy` of their components and takes them out of the tree. A component that holds another node asks `isDestroyed()` before it uses it.
+- `node:destroy()` marks the node and every node under it, and their `isDestroyed()` is true from then on. The top node and the root are not destroyed so: `onlr.tree.loadRoot` ends the root. They stay in the tree, and their functions are called, until the frame ends. Then the engine calls `disable` and `destroy` of their components and takes them out of the tree. A component that holds another node asks `isDestroyed()` before it uses it.
 - `node:removeComponent(type)` does the same to one component: it stays, and its functions are called, until the frame ends. Then the engine calls its `disable` and `destroy` and takes it off the node, and the node can get a component of that type again.
 - `onlr.tree.loadRoot` does the same to every node of the root when the frame ends. Then it makes the new root in the old one's place among the top node's children. The top node and its own nodes stay.
 - What a function returns is not used. `quit` is the exception: as in LÖVE, the game does not quit when `love.quit` or a component's `quit` returns true.
@@ -518,11 +521,11 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 | `onlr.tree.findAll(name)`                                                                                            | Gives a list of the tree's nodes of that name, in the tree's order.                                         |
 | `onlr.tree.findComponent(type)`                                                                                      | Gives the tree's first component of a type, in the tree's order.                                            |
 | `onlr.tree.findAllComponents(type)`                                                                                  | Gives a list of the tree's components of a type, in the tree's order.                                       |
-| `onlr.tree.spawn(path, x, y, parent)`                                                                                | Makes an instance of a node file at a place in its parent, and returns it (9).                              |
+| `onlr.tree.spawn(path, x, y, parent)`                                                                                | Makes an instance of a node file at a place in its parent, the file's own when left out, and returns it (9). |
 | `onlr.tree.newNode(name, parent)`                                                                                    | Makes an empty node in its parent, and returns it.                                                          |
 | `node:addComponent(type, values)`                                                                                    | Gives the node a component of a type that it lacks, and returns it.                                         |
 | `node:removeComponent(type)`                                                                                         | Takes the node's component of a type off it when the current frame ends (6.4).                              |
-| `node:send(name, ...)`                                                                                               | Calls the function of that name in each of the node's components that has it.                               |
+| `node:send(name, ...)`                                                                                               | Calls the function of that name in each of the node's components that runs and has it.                      |
 | `node:isActive()`, `node:setActive(active)`                                                                          | Whether the node runs, with all that is under it (6.4), and turns it on or off.                             |
 | `node:isPaused()`, `node:setPaused(paused)`                                                                          | Whether the node, or a node above it, is paused (6.4), and pauses or resumes it with all under it.          |
 | `node:getZ()`, `node:setZ(z)`                                                                                        | The node's `z` (5), and changes it.                                                                         |
@@ -544,6 +547,8 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 - The functions that declare properties are in `onlr.property` (6.2). The engine's components have functions of their own, such as the camera's (10).
 - A function takes a type's name as one text, dots and all: `onlr.tree.findComponent("bump.world")`.
 - `onlr.tree.findComponent` finds what a root has one of. A component that many others need, such as the world that bodies collide in, is a component of the root (5), and the others find it by its type.
+- `node:addComponent` takes the properties' values as the component gets them, such as a LÖVE image. An image, a sound and a font may also be given as a node file holds them, such as a path.
+- `node:send` is a call, as `body:move(x, y)` is: it reaches every component of the node that runs, paused or not, and one that was made in the same frame.
 - `node:send` is how a component makes an event of its own. The engine calls `keypressed` in every component when LÖVE reports a key; in the same way, a component that finds a contact calls `self.node:send("contact", other)`, and every component of that node that defines `contact(other)` is called. The name is agreed between the two components, and the engine does not know it.
 
 ## 8. The loop
@@ -566,10 +571,11 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 ### 8.2 How the tree is kept
 
 - A node is a Lua table with the fields of section 7. A component is a Lua table of its own values, which finds its type's functions and defaults through a metatable. A script reads and sets their fields as plain fields, and the engine does not watch them.
+- What the engine keeps of a node is in fields of the node whose names start with an underscore, which are the engine's. What it keeps of a component is in a record of its own, outside the component, so every field of a component is the script's.
 - What changes which functions run, or their order, is not a field: a node's `active`, whether it is paused, its `z`, parent and children, and a component's `enabled`. The engine keeps them, and a script reaches them through functions (7), so the engine knows of each change when it is made.
 - All nodes share one metatable, and the components of a type share one, so LuaJIT compiles a script's code once for every component that runs it.
-- For each function name, the engine keeps one flat list of the tree's components that have that function, in the order of the tree. The list of `draw` is in the order of drawing instead, and each group has one of its own (5). A frame walks the list of `update` and the list of `draw`, and an event walks the list of its name. So the engine walks no tree and asks no component what it has while the game runs, and a node costs a frame nothing for what its components do not define.
-- The lists change only when a component starts or stops running, when a node is paused or resumed, when a node is moved, or when a `z` changes, at the moments that section 6.4 names.
+- For each function that a frame calls, the engine keeps one flat list of the tree's components that have that function, in the order of the tree: for `fixedUpdate`, `update` and `lateUpdate`, and for each event from the first time LÖVE sends it. The list of `draw` is in the order of drawing instead, and each group has one of its own (5). A frame walks the list of `update` and the list of `draw`, and an event walks the list of its name. So the engine walks no tree and asks no component what it has while the game runs, and a node costs a frame nothing for what its components do not define.
+- The lists change only when a component starts or stops running, when a node is paused or resumed, when a node is moved, or when a `z` changes, at the moments that section 6.4 names. A component that stops is skipped at once. A list that changed is built again from the tree the next time it is walked, so a frame in which nothing changed builds none.
 - A node's place is plain fields, which the engine does not watch. It compares them when it uses the node's place in the world: to draw, and in `toWorld`, `toLocal` and `setWorldPosition`. Each node keeps that place as a LÖVE transform, and the engine works it out again only for a node whose place, or whose parent's transform, differs from the one it used last.
 
 ### 8.3 The engine's files
@@ -583,10 +589,14 @@ Each file of the engine holds one thing:
 | `loop.lua`                                          | `onlr.loop`: the loop and its steps (8.1).                                                                                                                 |
 | `tree.lua`                                          | `onlr.tree`: the root, the tree and its lists (8.2).                                                                                                       |
 | `node.lua`                                          | Nodes and their functions (7).                                                                                                                             |
-| `property.lua`                                      | `onlr.property` (6.2).                                                                                                                                     |
+| `component.lua`                                     | Component types (6.1): finding and loading a type's file, and a node's `components`.                                                                       |
+| `life.lua`                                          | The life of components (6.4), and the lists that a frame walks (8.2).                                                                                      |
+| `build.lua`                                         | Making nodes from node files: instances, their changes and ids (9).                                                                                        |
+| `property.lua`                                      | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
 | `data.lua`                                          | Reading data files (4), and loading the files that properties name.                                                                                        |
 | `formats.lua`                                       | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
 | `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua` and `camera.lua`.                                                   |
+| `license.txt`                                       | The engine's licence, which an export holds (14.1).                                                                                                        |
 
 - The engine is in `packages/` as a package is, with its components in `components/`. So the editor finds the engine's components and a package's in one way. Its source carries its own definitions (4.3), so it needs no definitions file.
 - `conf.lua` loads the engine before LÖVE has loaded its modules for drawing, input and the rest (3.1): only its file functions are sure to be there. So no file of the engine uses another part of LÖVE while it loads, only when its functions run.
@@ -1094,8 +1104,10 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 - The samples are the tests. A sample is a small project that shows one part of ONLR, and it has one test.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
+- That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
+- The tests share one helper, `samples/check.lua`. Before a test runs, the sample gets the helper and the engine in its `packages/`, as a project holds the engine (3.1). The repository does not keep those copies.
 - A sample's test of the editor is an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes.
-- One sample has thousands of nodes. It is the measure of speed.
+- One sample has thousands of nodes. It is the measure of speed: its test reports the time of a frame.
 - A change that breaks a sample changes the sample in the same piece of work.
 
 ## 17. Versions and branches

@@ -22,6 +22,7 @@ local life = {}
 ---@field removing boolean node:removeComponent was called on it
 ---@field removed boolean it was taken out, or is being taken out, of the tree
 ---@field holds string[] the keys of the files that it holds
+---@field entry table? its entry in its group's order of drawing
 
 ---@type table<onlr.Component, onlr.Record>
 life.records = {}
@@ -333,27 +334,42 @@ function life.startWaiting()
   end
 end
 
+-- The frame functions that each type has, among those that lists are kept for. It is worked out again when a new name is walked.
+local walkedVersion = 0
+
+local function namesOf(info)
+  if info.walkedVersion ~= walkedVersion then
+    local names = {}
+    for name in pairs(walked) do
+      if info.table[name] then
+        names[#names + 1] = name
+      end
+    end
+    info.walked, info.walkedVersion = names, walkedVersion
+  end
+  return info.walked
+end
+
 -- Builds every list of frame functions again from the tree.
 local function rebuild()
-  local names = {}
   for name in pairs(walked) do
-    names[#names + 1] = name
     lists[name] = {}
   end
   local function walk(node)
-    for _, r in ipairs(node._records) do
+    local records = node._records
+    for i = 1, #records do
+      local r = records[i]
       if r.live then
-        local component = r.component
-        for _, name in ipairs(names) do
-          if component[name] then
-            local list = lists[name]
-            list[#list + 1] = r
-          end
+        local names = namesOf(r.type)
+        for j = 1, #names do
+          local list = lists[names[j]]
+          list[#list + 1] = r
         end
       end
     end
-    for _, child in ipairs(node._children) do
-      walk(child)
+    local children = node._children
+    for i = 1, #children do
+      walk(children[i])
     end
   end
   if life.top then
@@ -368,6 +384,7 @@ end
 function life.call(name, ...)
   if not walked[name] then
     walked[name] = true
+    walkedVersion = walkedVersion + 1
     listsDirty = true
   end
   if listsDirty then
@@ -429,40 +446,77 @@ local function newGroup(node, trees)
   return group
 end
 
-local function byOrder(a, b)
-  if a.z ~= b.z then
-    return a.z < b.z
+-- Puts a group's entries in the order of drawing: by z, and in the tree's order within one z.
+-- The entries come in the tree's order, so they are split by z and joined again, the lowest z first.
+local function order(group)
+  local entries = group.entries
+  local sorted = true
+  for i = 2, #entries do
+    if entries[i].z < entries[i - 1].z then
+      sorted = false
+      break
+    end
   end
-  return a.seq < b.seq
+  if sorted then
+    return
+  end
+  local byZ, zs = {}, {}
+  for i = 1, #entries do
+    local entry = entries[i]
+    local bucket = byZ[entry.z]
+    if not bucket then
+      bucket = {}
+      byZ[entry.z] = bucket
+      zs[#zs + 1] = entry.z
+    end
+    bucket[#bucket + 1] = entry
+  end
+  table.sort(zs)
+  local out = {}
+  for _, z in ipairs(zs) do
+    local bucket = byZ[z]
+    for i = 1, #bucket do
+      out[#out + 1] = bucket[i]
+    end
+  end
+  group.entries = out
 end
 
 local function rebuildDraw()
-  local seq = 0
   local groups = {}
   local function walk(node, group, z)
     z = z + node._z
+    local records = node._records
     local trees
-    for _, r in ipairs(node._records) do
-      if r.drawn and r.component.drawTree then
+    for i = 1, #records do
+      local r = records[i]
+      if r.drawn and r.type.table.drawTree then
         trees = trees or {}
         trees[#trees + 1] = r
       end
     end
     if trees then
       local inner = newGroup(node, trees)
-      seq = seq + 1
-      group.entries[#group.entries + 1] = { group = inner, z = z, seq = seq }
+      group.entries[#group.entries + 1] = { group = inner, z = z }
       groups[#groups + 1] = inner
       group = inner
     end
-    for _, r in ipairs(node._records) do
-      if r.drawn and r.component.draw then
-        seq = seq + 1
-        group.entries[#group.entries + 1] = { record = r, z = z, seq = seq }
+    local entries = group.entries
+    for i = 1, #records do
+      local r = records[i]
+      if r.drawn and r.type.table.draw then
+        local entry = r.entry
+        if not entry then
+          entry = { record = r }
+          r.entry = entry
+        end
+        entry.z = z
+        entries[#entries + 1] = entry
       end
     end
-    for _, child in ipairs(node._children) do
-      walk(child, group, z)
+    local children = node._children
+    for i = 1, #children do
+      walk(children[i], group, z)
     end
   end
   topGroup = newGroup(nil, {})
@@ -471,13 +525,7 @@ local function rebuildDraw()
     walk(life.top, topGroup, 0)
   end
   for _, group in ipairs(groups) do
-    local entries = group.entries
-    for i = 2, #entries do
-      if entries[i].z < entries[i - 1].z then
-        table.sort(entries, byOrder)
-        break
-      end
-    end
+    order(group)
   end
   drawDirty = false
 end

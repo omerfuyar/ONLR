@@ -38,6 +38,8 @@ local component = {}
 ---@field properties {name: string, decl: onlr.Declaration}[] in the order its file declares them
 ---@field needs string[] the types that its components need on their node (DESIGN 6.6)
 ---@field meta table the metatable that its components share
+---@field walked string[]? the frame functions that it has, which the lists keep
+---@field walkedVersion integer?
 
 -- Names that a property cannot have, since a component or its type has them (DESIGN 6.2).
 local RESERVED = { enabled = true, node = true, needs = true, isEnabled = true, setEnabled = true }
