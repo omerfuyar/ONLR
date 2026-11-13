@@ -1,4 +1,5 @@
 -- A node file, as the editor writes it: one field on each line, in a fixed order.
+-- A node's fields are in the order of DESIGN.md's table of them; every other table's, by their names.
 -- The user arranges it in the editor and does not edit it by hand.
 -- The comments are this prototype's: the editor writes none.
 -- A value that equals its default is left out: a node without posX is at 0.
@@ -7,7 +8,7 @@ return {
   format = 1,
   -- The file returns one node. Every other node is under it.
   -- The manifest names this file as the start node, so the game loads this node as its root.
-  id = "l3v1",
+  id = "l3v1q0",
   name = "Level",
   -- What the whole tree has one of is a component of the root, such as the world
   -- that its bodies collide in: no node is made only to hold it.
@@ -20,7 +21,7 @@ return {
   },
   children = {
     {
-      id = "c8m1",
+      id = "c8m1ca",
       name = "Camera",
       posX = 640,
       posY = 360,
@@ -33,7 +34,7 @@ return {
     -- One node is the whole player: its body, its script and its picture are components.
     -- A script reads them as self.node.components.bump.body and self.node.components.onlr.sprite.
     {
-      id = "k3f9",
+      id = "k3f9pl",
       name = "Player",
       posX = 100,
       posY = 500,
@@ -41,8 +42,8 @@ return {
         -- A pack's component: lib/bump/body.lua.
         bump = {
           body = {
-            width = 32,
             height = 48,
+            width = 32,
           },
         },
         -- One of the engine's own components: lib/onlr/sprite.lua.
@@ -53,17 +54,17 @@ return {
         },
         -- The user's script: components/player.lua. Only the values that differ from its defaults.
         player = {
-          speed = 250,
           jump = {
             height = 120,
           },
+          speed = 250,
         },
       },
       children = {
         -- A child has a place of its own: the shadow is 44 pixels under the player.
         -- Its z is added to its parent's. It is lower, so the shadow draws behind the player.
         {
-          id = "p7c2",
+          id = "p7c2sh",
           name = "Shadow",
           posY = 44,
           z = -1,
@@ -78,27 +79,27 @@ return {
       },
     },
     {
-      id = "g5d0",
+      id = "g5d0gr",
       name = "Ground",
       posY = 600,
       components = {
         bump = {
           body = {
-            width = 1280,
             height = 120,
+            width = 1280,
           },
         },
         onlr = {
           shape = {
-            kind = "rectangle",
-            width = 1280,
-            height = 120,
             color = {
               0.2,
               0.6,
               0.3,
               1,
             },
+            height = 120,
+            kind = "rectangle",
+            width = 1280,
           },
         },
       },
@@ -107,13 +108,13 @@ return {
     -- It has an id of its own and instance, which holds all that it is: the base and the changes.
     -- A change is written under the id that the changed node has in the base's file,
     -- and is laid over that node: what it writes replaces the base's, and the rest is the base's.
-    -- This one changes the coin's place only. c0in is the coin's first node.
+    -- This one changes the coin's place only. c0in7x is the coin's first node.
     {
-      id = "n4q8",
+      id = "n4q8wm",
       instance = {
         base = "nodes/coin.lua",
         changes = {
-          c0in = {
+          c0in7x = {
             posX = 400,
             posY = 540,
           },
@@ -121,12 +122,12 @@ return {
       },
     },
     {
-      id = "t1r6",
+      id = "t1r6bz",
       instance = {
         base = "nodes/coin.lua",
         changes = {
           -- The coin itself: a new name, a place, twice the size, and worth 5.
-          c0in = {
+          c0in7x = {
             name = "Big coin",
             posX = 700,
             posY = 540,
@@ -145,7 +146,7 @@ return {
             -- Its id is of this file, the level's.
             children = {
               {
-                id = "f7ag",
+                id = "f7ag2e",
                 name = "Flag",
                 posY = -24,
                 components = {
@@ -159,8 +160,8 @@ return {
             },
           },
           -- The coin's glint, a node under the coin: this coin turns it off.
-          -- Another node of the level names that glint as t1r6/g1nt, and this coin as t1r6.
-          g1nt = {
+          -- Another node of the level names that glint as t1r6bz/g1nt4k, and this coin as t1r6bz.
+          g1nt4k = {
             active = false,
           },
         },

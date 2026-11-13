@@ -101,7 +101,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - A few more functions follow a component through its life, in a fixed order: `enable` and `disable` when it is turned on and off, `start` before its first update, and `lateUpdate` after every update of a frame.
 - A script may call any function of LÖVE: `love.graphics`, `love.keyboard`, `love.audio` and the rest work as in any game.
 - A script declares its properties as its fields: each with a kind and a default value. The inspector shows them, a node file keeps their values, and the script reads them under the same names.
-- A property can be a number, a text, a choice or a pair of numbers, and also a file of the project, such as an image or a sound, or another node of the same file. Properties can be put in groups and in lists.
+- A property can be a number, a text, a choice or a pair of numbers, and also a file of the project, such as an image or a sound, or another node of the same file, or a component of one. Properties can be put in groups and in lists.
 - A script reaches the other components of its node by their names, and says which ones it needs. The editor then adds them with it.
 - LÖVE's own callbacks keep working. A game may still define `love.update` or `love.draw` in its `main.lua`, and the engine calls them too.
 - A library for LÖVE works as in any game: the user copies it into the project's folder of libraries and loads it with `require`, under the name its author gives.

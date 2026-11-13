@@ -15,8 +15,8 @@ return {
   -- In the names of LÖVE's t.window. LÖVE needs the size before it opens the window,
   -- and the project settings panel shows and changes it.
   window = {
-    width = 1280,
     height = 720,
+    width = 1280,
   },
   exclude = {
     "notes/*",

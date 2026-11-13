@@ -21,6 +21,31 @@ function node.find(name) end
 ---@return T?
 function node.findComponent(type) end
 
+---Gives a list of the tree's nodes of that name, in the tree's order.
+---@param name string
+---@return onlr.Node[]
+function node.findAll(name) end
+
+---Gives a list of the tree's components of a type, in the tree's order.
+---A component type is a tag: an empty script enemy on every enemy, and findAllComponents("enemy").
+---@generic T
+---@param type `T`
+---@return T[]
+function node.findAllComponents(type) end
+
+---Turns a point of the window into a point of the world, through the camera that the tree draws through.
+---local x, y = onlr.node.fromWindow(love.mouse.getPosition())
+---@param x number
+---@param y number
+---@return number x, number y
+function node.fromWindow(x, y) end
+
+---Turns a point of the world into a point of the window: where a node shows on the screen.
+---@param x number
+---@param y number
+---@return number x, number y
+function node.toWindow(x, y) end
+
 ---Makes an instance of a node file in the tree, and returns it.
 ---It exists at once: load and enable of its components are called before spawn returns.
 ---Their start is called in the next frame, so it finds the values that the script sets after spawn.

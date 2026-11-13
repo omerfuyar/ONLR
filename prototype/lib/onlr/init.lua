@@ -7,6 +7,7 @@
 -- conf.lua loads it before LÖVE's modules for drawing and input are there,
 -- so no file of the engine uses them while it loads.
 -- In this prototype every file of the engine is definitions only: functions without code.
+-- The engine's components, sprite.lua to camera.lua, declare their properties as a script does.
 
 ---@class onlr
 local onlr = {}
