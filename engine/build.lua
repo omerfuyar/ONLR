@@ -1,6 +1,6 @@
 -- Making nodes from node files (DESIGN 5 and 9): plain nodes, instances with their changes, and variants.
--- It works in two steps. First it makes every node, and notes for each component the values that the file
--- and each change of an instance give it. Then it makes the components and gives them their values,
+-- It works in steps. First it makes every node, and notes for each component the values that the file
+-- and each change of an instance give it. Then it makes every component, and then gives them their values,
 -- so a property that names a node finds it, wherever in the file that node is.
 
 local data = require("onlr.data")
@@ -15,7 +15,7 @@ local build = {}
 ---@class onlr.BuildContext
 ---@field lenient boolean? in the node view: a problem is noted on its node, and the rest is made
 ---@field stack table<string, boolean> the node files that are being made, to find one that holds itself
----@field todo onlr.Node[] the nodes whose components wait for the second step
+---@field todo onlr.Node[] the nodes whose components wait for the next steps
 
 ---The nodes of one node file, as one instance of it holds them: ids are read in the file that writes them (DESIGN 9).
 ---@class onlr.Scope
@@ -261,8 +261,9 @@ local function preload(path, ctx, name, seen)
   entries(fileData)
 end
 
--- The second step: makes a node's components, with those that they need, and gives them their values.
-local function finish(node, ctx)
+-- The second step: makes a node's components, with those that they need. Their values wait for the third step,
+-- since a property may name a component of a node that comes later.
+local function make(node, ctx)
   local layers = node._layers
   node._layers = nil
   -- For each type, the values that each layer gives it, the file's own first.
@@ -301,8 +302,17 @@ local function finish(node, ctx)
   end
 
   for _, name in ipairs(names) do
-    local info = component.type(name)
-    local r = component.make(node, info)
+    component.make(node, component.type(name))
+  end
+  node._layers = byType
+end
+
+-- The third step: gives a node's components their values.
+local function assign(node, ctx)
+  local byType = node._layers
+  node._layers = nil
+  for _, r in ipairs(node._records) do
+    local info, name = r.type, r.type.name
     local c = r.component
     ---@type onlr.ValueContext
     local vctx = { file = node._file, node = node.name, holds = r.holds, lenient = ctx.lenient }
@@ -345,7 +355,10 @@ function build.file(path, lenient)
   local ctx = { lenient = lenient or life.mode == "edit", stack = {}, todo = {} }
   local first, scope = buildFile(path, {}, ctx)
   for _, node in ipairs(ctx.todo) do
-    finish(node, ctx)
+    make(node, ctx)
+  end
+  for _, node in ipairs(ctx.todo) do
+    assign(node, ctx)
   end
   return first, scope
 end

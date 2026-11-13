@@ -32,7 +32,7 @@ local property = require("onlr.property")
 ---@field _id string? its id in its node file
 ---@field _path string? its path of ids from the node file that was loaded
 ---@field _file string? the node file that wrote it
----@field _layers table[]? its components' values, while its node file is made
+---@field _layers table? its components' values, while its node file is made
 ---@field _errors string[]? what was wrong with it, in the node view
 ---@field _a number the place in the world, as a matrix
 ---@field _b number
