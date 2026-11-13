@@ -200,11 +200,11 @@ return {
 - A file is written in one way only, so the same table always gives the same text, and changes to different nodes, or to fields on lines apart, merge in git:
   - One field on each line, indented by two spaces, and each item of a list on its own line. Lines end with LF.
   - A node's fields in the order of section 5's table, after `format`, and so are the fields of an instance's change (9). A manifest's fields are in the order of section 3.2's table, with LÖVE's other settings in the order of their names. The fields of every other table, such as a node's components and a component's values, are in the order of their names.
-  - A key that is not a name in Lua, such as a path of ids (9), is written in brackets: `["ch3st9/g1nt4k"] = {`.
+  - A key that is a name in Lua is written as it is, and any other in brackets. The keys of an instance's `changes` are paths of ids (9), and are always in brackets: `["c0in7x"] = {` and `["ch3st9/g1nt4k"] = {`.
   - A whole number from -2^53 to 2^53 without a point, such as `250`. Any other number with the fewest digits that read back as the same number, such as `0.1`, and an endless one as `math.huge`. So LuaJIT and the editor's Lua read the same value.
   - A text in double quotes, with `\\`, `\"` and `\n`, and every other byte below 32 as three digits, such as `\009`. So both Luas read the same text.
 - A value that equals its default is left out, so a file holds only what the user set. In an instance, the value in its base is the default (9).
-- A node's `id` is six random characters, lowercase letters and digits, the first a letter, and not a word that Lua reserves, such as `return`, so it is a name in Lua: `c0in7x = { ... }`. The editor gives it once. Nodes are named by id wherever one refers to another, never by their place in a list.
+- A node's `id` is six random characters, lowercase letters and digits, such as `c0in7x`. The editor gives it once. Nodes are named by id wherever one refers to another, never by their place in a list.
 - An id is unique in its file, and no further. When a file holds an id twice, such as after a merge in git, the editor gives one of the two nodes a new id, and says so.
 - Two changes on neighbouring lines, such as a node's `name` and its `posX`, and two nodes added at the end of one list of children conflict in git, as in any text. A node file with git's marks of a conflict does not load: the node view shows the error, and the user resolves it in a text editor.
 - A field or a component type that the editor does not know is kept as it is, and written back.
@@ -304,6 +304,7 @@ return {
 - The engine does not order by y. A game seen from above, which draws what is lower on the screen later, sets a node's `z` from its `posY` in a script, and the next draw follows it (6.4).
 - A node can draw as a **group**, when one of its components has the function `drawTree(draw)` (6.3). Then the node and all under it draw together, at the node's place in the order of drawing, and by `z` among themselves. The engine calls `drawTree` in place of drawing them, and gives it `draw`, which draws them. So the component sets something up before they draw and ends it after: a camera's view (10), a canvas, a shader, or a library that works in the same way.
 - Any node can be a group, at any depth, and a group can hold others. A group's nodes draw nowhere else, whatever their `z`: a child with a `z` of 100 draws over the rest of its group, not over what is outside it.
+- `drawTree` may call `draw` more than once, such as once for each half of the window in a game for two players, or not at all. Each call draws the group's nodes once, so a group costs what drawing its nodes that many times costs, and one call costs no more than drawing them without a group.
 - A node with two such components draws through both, the first in the order of their names outermost.
 - A node's components load, update and draw in the order of their names, and each after those that it needs (6.6). A node does not set another order: what must draw in another order is a child with a `z` of its own.
 - The engine keeps each node's place in the world, from its own and its parents', as a LÖVE transform.
@@ -355,9 +356,10 @@ return Player
   | The engine's own    | `onlr.`, then its path in the engine's `components/`: `onlr.sprite`. | `packages/onlr/components/sprite.lua` (10) |
 
 - The engine looks for a type in the project's `components/` first, then in the packages'. So a script cannot have the name of the engine or of a package, and the editor says so.
+- Each part of a type's name is a name in Lua, since a script reads it so: `components.enemies.bat`. The editor makes no file or folder in `components/` whose name is not one, and the engine refuses such a type.
 - A node has at most one component of a type. Giving it a second is an error.
 - A node keeps its components in `components`, by their types' names. A dot in a name is a table in a table: `bump.body` is `components.bump.body`. A node file writes them so (5), and a script reads them so: `self.node.components.bump.body`.
-- In the game, `components` holds a table for the engine's name, for each package's and for each folder of `components/`, also on a node that has none of their types. Such a table is empty and cannot be changed. So `self.node.components.bump.body` is `nil` on a node without a body, and a misspelt name, such as `components.bmup.body`, is an error.
+- In the game, `components` holds a table for the engine's name, for each package's and for each folder of `components/`, also on a node that has none of their types. Such a table is empty and cannot be changed. Reading any other name from `components`, or from one of its tables, is an error. So `self.node.components.bump.body` is `nil` on a node without a body, and a misspelt name, such as `components.plyer` or `components.bmup.body`, is an error.
 - Each component of a node is a table of its own, which finds its functions in its type. So `self` is the component, and what a function keeps in `self` belongs to that one node.
 - `self.node` is the node. `self:setEnabled(false)` turns the component off, and `self:isEnabled()` says whether it is on (6.4). The engine gives every type these two functions.
 - A type does not inherit another. What two types share is a module that both load (3.1), or a component of its own that both find on the node.
@@ -368,7 +370,7 @@ return Player
 - When the engine loads a type, it reads these declarations, then puts each property's default in the declaration's place. From then on `Player.speed` is 200, and a property without a default is `nil`.
 - A component reads a property under the same name: `self.speed`. It holds the values that its node file gives, which the engine sets before `load`, and finds the others in its type. A default that is a table, such as a colour, is copied into each component, so changing one changes no other.
 - A property is a plain field of the component, so another component reads and sets it the same way: `self.node.components.player.speed`, or another node's `other.components.coin.worth`.
-- Each function takes the default value, then optionally a table of options: a `description`, which the inspector shows, a `label`, which it shows in place of the name (13), and what the table below names. A kind that names a file, a node or a component has no default and takes the options only. `component` takes the type's name first, and `vector` takes its two numbers.
+- Each function takes the default value, then optionally a table of options (below). A kind that names a file, a node or a component has no default and takes the options only. `component` takes the type's name first, `vector` its two numbers, `group` a table of properties, and `list` one property.
 - Each declaration gets a number when its function is called. The inspector shows a type's properties by that number, which is the order its file declares them in.
 - Each function's annotation names what the component gets, so a code editor knows that `self.speed` is a number.
 - A property cannot be named `enabled`, `node` or `needs`, which a component or its type has (6.1, 6.6), or as a function of its type.
@@ -381,9 +383,9 @@ return Player
 | `choice`                    | One of its `choices`.                             | The chosen text.                             |
 | `color`                     | A colour.                                         | A table that `love.graphics.setColor` takes. |
 | `image`                     | An image file of the project.                     | A LÖVE image.                                |
-| `sound`                     | A sound file of the project.                      | A LÖVE source of its own. With the option `stream`, LÖVE streams it, as music needs; without, it decodes the whole sound when it loads. |
+| `sound`                     | A sound file of the project.                      | A LÖVE source of its own.                    |
 | `font`                      | A font file of the project and a size.            | A LÖVE font. Without a file, LÖVE's default font at that size. |
-| `file`                      | Any file of the project.                          | Its path.                                    |
+| `file`                      | A file of the project, of the endings in `extensions` if given. | Its path.                      |
 | `nodeFile`                  | A node file of the project.                       | Its path.                                    |
 | `node`                      | A node of the same file.                          | The node.                                    |
 | `component`                 | A node of the same file that has a component of the type. | That component.                      |
@@ -393,8 +395,23 @@ return Player
 
 - A kind is a value or a reference. A value is held in the node file as it is: `bool`, `integer`, `number`, `string`, `choice`, `color`, `vector`, `group` and `list`. A reference names something else of the project: `image`, `sound`, `font`, `file`, `nodeFile`, `node` and `component`.
 - `group` and `list` take other properties: `onlr.property.group({ width = onlr.property.number(32), height = onlr.property.number(32) })` is read as `self.box.width`, and `onlr.property.list(onlr.property.image())` as `self.frames[1]`.
+- The options:
+
+  | Option        | Taken by                  | Is                                                                                       |
+  | ------------- | ------------------------- | ---------------------------------------------------------------------------------------- |
+  | `description` | Every kind                | A text that the inspector shows with the property.                                       |
+  | `label`       | Every kind                | What the inspector shows in place of the name (13.4).                                      |
+  | `min`, `max`  | `integer`, `number`       | The least and the most value. The inspector keeps the value between them; the engine does not check it. |
+  | `choices`     | `choice`, which needs it  | The texts to choose from.                                                                |
+  | `stream`      | `sound`                   | LÖVE streams the file while it plays, as music needs, in place of decoding it whole when it loads. |
+  | `size`        | `font`                    | The size that the property starts with. 12, LÖVE's own, when left out.                    |
+  | `extensions`  | `file`                    | The endings of the files that the inspector offers, such as `{ "json", "lua" }`. Every file when left out. |
+  | `preload`     | `nodeFile`                | The node file loads with the component's own, so a spawn of it waits for no file (below). |
+
+- An option that the kind does not take, such as a misspelt one, is an error when the type loads.
 - A node file keeps a file as its path, and a font as a table of its `path` and its `size`. It keeps a node, and a component, as the node's id, or as a path of ids when the node is inside an instance (9). When the file loads, the engine gives the component the node or the component itself.
 - The engine loads each file once, and components that name the same file share it. A sound is the exception: each component gets its own source, so two can play at once. When a root replaces another, the engine keeps the files that the new root names too, and lets go of the others.
+- A `nodeFile` property with `preload` loads that node file, and the files that it names, when its component's node file loads, as the files of its own properties load. The node files that their own such properties name load too. So `onlr.node.spawn` of it reads nothing from disk. A node file without it loads when it is first spawned or loaded as the root.
 - A value of a property that the type no longer declares is kept in the node file (4.2), and the component does not get it.
 - A path that names no file is an error in the game, which names the node file, the node and the property. In the node view, the component gets `nil` and its node is marked, as for a `drawEditor` that fails (6.5), and the inspector marks the path.
 
@@ -426,6 +443,7 @@ The engine calls the functions that a type has. All are optional.
 
 - A component's life is `load`, `enable`, `start`, then each frame its events, `fixedUpdate`, `update`, `lateUpdate` and `draw`, and at its end `disable` and `destroy`.
 - A component runs while it is `enabled`, and its node and every node above that are `active`. Only a component that runs gets `start`, events, `fixedUpdate`, `update`, `lateUpdate`, `draw` and `drawTree`. A node whose `drawTree` does not run draws as a node without one.
+- A script can pause a node with `node:setPaused` (7). Then the node and every node under it still draw, and their components get no `start`, events, `fixedUpdate`, `update` or `lateUpdate` until it is resumed. Pausing is not turning off: `enable` and `disable` are not called. So a pause menu under the top node pauses the root, and the level stays on the screen behind it. A node file does not hold it: every node starts unpaused.
 - `load` and `destroy` are called once each, whatever the node and the component are set to. They make and free what the component holds.
 - `enable` and `disable` are called each time the component starts and stops running, so every `enable` has its `disable`. What a component gives to others while it runs, such as a body's box in its world, is given in `enable` and taken back in `disable`.
 - `start` is called once, before the component's first events and `update`: when the frame in which it started to run ends, or, in the top node and the first root, when both have loaded (8.1).
@@ -436,6 +454,7 @@ The engine calls the functions that a type has. All are optional.
 - `component:setEnabled` and `node:setActive` take effect at once, as making does. A component that stops running gets `disable` before the function returns, and from then on no call but `enable` or `destroy`. One that starts to run gets `enable` before the function returns, and `start` and its other functions from the next frame on. `node:setParent` does the same for the components that it starts or stops.
 - A node whose `z` `node:setZ` changed, and a node that `node:setParent` moved, draw in their new order from the frame's next draw. The other functions follow the new order from the next frame on.
 - `node:destroy()` marks the node and every node under it, and their `isDestroyed()` is true from then on. They stay in the tree, and their functions are called, until the frame ends. Then the engine calls `disable` and `destroy` of their components and takes them out of the tree. A component that holds another node asks `isDestroyed()` before it uses it.
+- `node:remove(type)` does the same to one component: it stays, and its functions are called, until the frame ends. Then the engine calls its `disable` and `destroy` and takes it off the node, and the node can get a component of that type again.
 - `onlr.node.loadRoot` does the same to every node of the root when the frame ends. Then it makes the new root in the old one's place among the top node's children. The top node and its own nodes stay.
 - What a function returns is not used. `quit` is the exception: as in LÖVE, the game does not quit when `love.quit` or a component's `quit` returns true.
 
@@ -446,6 +465,7 @@ The engine calls the functions that a type has. All are optional.
 - `drawEditor` also draws what only the editor shows, such as the outline of a body or the frame of a camera. It is LÖVE code, written with the component by its author.
 - There the engine does not call `drawTree`: a group's nodes draw through the node view alone. So a camera does not move the view, and a group's shader shows only in the game.
 - A type without `drawEditor` shows nothing in the node view. Its `draw` is not called there, since it may need what `load` or `update` sets.
+- `drawEditor` may keep in `self` what it builds from the component's values, such as a map read from a file. When a value of the component changes, the edit player makes the component anew from the node file's values, so what it kept is built again from the new ones.
 - A `drawEditor` that fails marks its node in the view, and the rest draws on.
 - `drawEditor` is code, so it can do anything. The node view is kept safe from it:
   - The engine saves all of LÖVE's drawing state before each `drawEditor` and restores it after, so a colour or a shader that one component sets does not reach the next.
@@ -462,11 +482,28 @@ Player.needs = { "bump.body" }
 - A type names the types that its components need on their node, in `needs`.
 - The script's author writes `needs`. The engine does not work it out from the script's code.
 - A node that gets a component gets those that it needs too, each with its defaults, when the node lacks them: in the editor, when a node file loads, and at `node:add`.
-- The editor does not remove a component that another of the node needs. It names the other.
+- The editor does not remove a component that another of the node needs, and names the other. `node:remove` of such a component is an error.
 - A component loads, updates and draws after those that it needs (5). So its `load` finds them loaded, and `self.node.components.bump.body` is there without a check.
 - Types cannot need each other in a circle. The engine refuses such a type, and says so.
 
 ## 7. The engine's functions
+
+### 7.1 A map
+
+Every function that the engine calls in a component, and what makes it call it. A type defines those that it needs (6.3). A script calls the engine's own functions (7.2), and LÖVE's.
+
+| When                                | The engine calls, in each component that has it                                   | Because of                                                          |
+| ----------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Its node enters the tree            | `load`, then `enable` if the component runs                                        | The top node or a root loading (8.1), `onlr.node.spawn`, `onlr.node.add` and `node:add` |
+| Before its first frame              | `start`                                                                           | The end of the frame in which it started to run                     |
+| Each frame                          | For each event, LÖVE's callback of it; then `fixedUpdate`, `update`, `lateUpdate`; then `draw`, or `drawTree` for a group | The loop (8.1)                                     |
+| Its node is paused, or resumed      | Nothing: it keeps drawing, and gets no other call while paused                    | `node:setPaused`                                                    |
+| It stops running, or starts again   | `disable`, or `enable`                                                            | `node:setActive`, `node:setParent` and `component:setEnabled`       |
+| It leaves the tree                  | `disable` if it runs, then `destroy`, when the frame ends                         | `node:destroy`, `node:remove` and `onlr.node.loadRoot`              |
+| Another component asks              | A function of the type's own                                                      | `node:send`, or a call such as `body:move(x, y)`                    |
+| The editor draws a view             | `drawEditor` and `bounds`, and nothing else                                       | The node view (6.5, 12.3)                                           |
+
+### 7.2 Functions for scripts
 
 These are the engine's functions for scripts. The rest is LÖVE. The engine's source documents each.
 
@@ -484,8 +521,10 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 | `onlr.node.spawn(path, x, y, parent)`            | Makes an instance of a node file at a place in its parent, and returns it (9).                         |
 | `onlr.node.add(name, parent)`                    | Makes an empty node in its parent, and returns it.                                                     |
 | `node:add(type, values)`                         | Gives the node a component of a type that it lacks, and returns it.                                    |
+| `node:remove(type)`                              | Takes the node's component of a type off it when the current frame ends (6.4).                         |
 | `node:send(name, ...)`                           | Calls the function of that name in each of the node's components that has it.                          |
 | `node:isActive()`, `node:setActive(active)`      | Whether the node runs, with all that is under it (6.4), and turns it on or off.                        |
+| `node:isPaused()`, `node:setPaused(paused)`      | Whether the node, or a node above it, is paused (6.4), and pauses or resumes it with all under it.     |
 | `node:getZ()`, `node:setZ(z)`                    | The node's `z` (5), and changes it.                                                                    |
 | `node:getParent()`, `node:getChildren()`         | The node's parent, `nil` for the top node, and the list of its children.                               |
 | `node:setParent(parent, index)`                  | Moves the node, with all that is under it, to the end of another node's children, or to `index` among them. |
@@ -495,14 +534,14 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 | `component:isEnabled()`, `component:setEnabled(enabled)` | Whether the component is on (6.4), and turns it on or off.                                     |
 
 - A node's fields are `name`, its place, `posX` to `sclY`, and `components`, which holds the components themselves (6.1). A script reads and sets them as plain fields: `self.node.posX = 10`. No function stands before a component: `self.node.components.onlr.sprite`.
-- What the engine must act on when it changes is read and changed through functions, as the values of LÖVE's own objects are: whether a node is active, its `z`, its parent and children, and whether a component is enabled. So a change that does more than set a value is always a call, and never looks like a plain assignment. A node file holds them as plain values (5).
+- What the engine must act on when it changes is read and changed through functions, as the values of LÖVE's own objects are: whether a node is active or paused, its `z`, its parent and children, and whether a component is enabled. So a change that does more than set a value is always a call, and never looks like a plain assignment. A node file holds them as plain values (5), apart from whether a node is paused, which only a script sets.
 - A node's `id` and `instance` are only the files' (9).
 - A `parent` that is left out is the root.
 - The list that `node:getChildren()` gives is the engine's own: a script reads it and does not change it.
 - `node:setParent` keeps the node's own place, so the node moves with its new parent. To keep it where it is in the world, a script calls `node:setWorldPosition` after. A node cannot be moved under itself or a node under it, and the top node and the root cannot be moved.
 - No node has tags: a component type is one. With an empty script `enemy` on every enemy, `onlr.node.findAllComponents("enemy")` gives them all.
 - When each function takes effect is in section 6.4.
-- The functions that declare properties are in `onlr.property` (6.2).
+- The functions that declare properties are in `onlr.property` (6.2). The engine's components have functions of their own, such as the camera's (10).
 - A function takes a type's name as one text, dots and all: `onlr.node.findComponent("bump.world")`.
 - `onlr.node.findComponent` finds what a root has one of. A component that many others need, such as the world that bodies collide in, is a component of the root (5), and the others find it by its type.
 - `node:send` is how a component makes an event of its own. The engine calls `keypressed` in every component when LÖVE reports a key; in the same way, a component that finds a contact calls `self.node:send("contact", other)`, and every component of that node that defines `contact(other)` is called. The name is agreed between the two components, and the engine does not know it.
@@ -527,10 +566,10 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 ### 8.2 How the tree is kept
 
 - A node is a Lua table with the fields of section 7. A component is a Lua table of its own values, which finds its type's functions and defaults through a metatable. A script reads and sets their fields as plain fields, and the engine does not watch them.
-- What changes which functions run, or their order, is not a field: a node's `active`, `z`, parent and children, and a component's `enabled`. The engine keeps them, and a script reaches them through functions (7), so the engine knows of each change when it is made.
+- What changes which functions run, or their order, is not a field: a node's `active`, whether it is paused, its `z`, parent and children, and a component's `enabled`. The engine keeps them, and a script reaches them through functions (7), so the engine knows of each change when it is made.
 - All nodes share one metatable, and the components of a type share one, so LuaJIT compiles a script's code once for every component that runs it.
 - For each function name, the engine keeps one flat list of the tree's components that have that function, in the order of the tree. The list of `draw` is in the order of drawing instead, and each group has one of its own (5). A frame walks the list of `update` and the list of `draw`, and an event walks the list of its name. So the engine walks no tree and asks no component what it has while the game runs, and a node costs a frame nothing for what its components do not define.
-- The lists change only when a component starts or stops running, when a node is moved, or when a `z` changes, at the moments that section 6.4 names.
+- The lists change only when a component starts or stops running, when a node is paused or resumed, when a node is moved, or when a `z` changes, at the moments that section 6.4 names.
 - A node's place is plain fields, which the engine does not watch. It compares them when it uses the node's place in the world: to draw, and in `toWorld`, `toLocal` and `setWorldPosition`. Each node keeps that place as a LÖVE transform, and the engine works it out again only for a node whose place, or whose parent's transform, differs from the one it used last.
 
 ### 8.3 The engine's files
@@ -594,7 +633,7 @@ return {
   instance = {
     base = "nodes/coin.lua",
     changes = {
-      c0in7x = {
+      ["c0in7x"] = {
         name = "Big coin",
         posX = 700,
         posY = 540,
@@ -606,7 +645,7 @@ return {
           },
         },
       },
-      g1nt4k = {
+      ["g1nt4k"] = {
         active = false,
       },
     },
@@ -615,6 +654,7 @@ return {
 ```
 
 - A node file holds another as an instance: a node with an `id` of its own and `instance`. Any node file can be held so, as any can be loaded as the root (5).
+- A node file's first node may be an instance too. The file is then a variant of its base, such as `nodes/bigcoin.lua`, a coin that is worth 5. A variant is held and loaded as any node file, and a change to its base reaches it.
 - `instance` holds all that the instance is, in one table:
 
   | Field     | Holds                                                                                         |
@@ -639,6 +679,7 @@ return {
   - A property that names a node holds an id of its own file. In a base, it gives each instance's own node.
   - From outside, a node inside an instance is named by a path too: the instance's id, a slash, and the node's id in the base, such as `t1r6bz/g1nt4k`. The instance's first node is named by the instance's id alone.
   - Ids are for the files and the editor. The engine turns each into its node when a file loads, and a script never looks a node up by id.
+- A change or a reference that names no node, such as after a merge in git, is an error in the game, which names the node file and the id, as a path that names no file is (6.2). The editor clears such names when it deletes a node (13.6).
 - A change to a node file reaches every instance of it, apart from what the instance's changes write.
 - When the base later gets a component that an instance added, what the instance wrote is from then on a change of the base's component. Nothing else is needed.
 - An instance's nodes are nodes of the tree as the others are: `onlr.node.find` and `onlr.node.findComponent` look through them too.
@@ -658,6 +699,7 @@ The engine has four component types. They are written as scripts are, with the f
 - A camera shows only what is under its node. So a level puts its world under a node with the camera, and what stays on the screen, such as a score, beside that node. The score draws at the window's pixels, and the camera does not move it.
 - What no camera holds draws as plain LÖVE does, with 0, 0 at the window's top left.
 - A camera's properties move it, not its node's place, which moves the world under it. A script follows the player by setting them in `lateUpdate`: `camera.posX, camera.posY = player.posX, player.posY`.
+- `camera:toWorld(x, y)` turns a point of the window, such as the pointer's, into the point of the world that the camera shows there, in the space of `node:toWorld` (7). `camera:toWindow(x, y)` turns it back. So a click finds its place in the level: `camera:toWorld(love.mouse.getPosition())`.
 - A package of a camera library gives a component that draws a group in the same way (11).
 
 Their properties use LÖVE's names wherever LÖVE has one:
@@ -728,12 +770,12 @@ return {
 
 - The manifest and `init.lua` stay two files. The editor reads the manifest as any data file (4.1), which cannot load the library. So the manifest describes the package and holds none of its code.
 - `library/` holds what the library's author ships. A newer version of the library replaces that folder and nothing else.
-- A component type is one file, since its name is its file's (6.1). The names start with the package's: `bump.body` is `packages/bump/components/body.lua`. The types are written as scripts are (6), and the editor offers every one of them (13).
+- A component type is one file, since its name is its file's (6.1). The names start with the package's: `bump.body` is `packages/bump/components/body.lua`. The types are written as scripts are (6), and the editor offers every one of them (13.4).
 - A node file of a package is named by its path, as the project's are: `packages/bump/nodes/box.lua`.
 - A package adds nothing to the engine and changes nothing in it. A game uses a package's library with its components, without them, or both.
 - The editor copies a package into a project when the user adds it, and deletes its folder when the user removes it. In the project, the package is the project's own copy, and an export holds it.
 - The editor adds a package from ONLR's own, or from a folder that the user chooses, so anyone can make one.
-- When ONLR ships a newer version of a package that a project holds, the editor offers it. Updating replaces the package's folder, after the editor has named the files that the user changed in it.
+- The user does not change a package in the project, as they do not change the engine (3.1). To change one of its components, they copy it into `components/` under another name. When ONLR ships a newer version of a package that a project holds, the editor offers it, and updating replaces the package's folder whole.
 
 ### 11.3 A package's components
 
@@ -855,13 +897,13 @@ What the sample shows of every package:
 
   | Mode | Runs                                        | Draws into                                     |
   | ---- | ------------------------------------------- | ---------------------------------------------- |
-  | Edit | Views: node files drawn and not updated (12.3). | Frames for the node view and previews (12.4). |
+  | Edit | Views: node files drawn and not updated (12.3). | Frames for the node views (12.4).              |
   | Play | The game.                                   | LÖVE's own window.                             |
 
-- The edit player runs while a project is open, and has no window.
+- The edit player runs while a project is open, and has no window that the user sees.
 - LÖVE starts every game by running its `conf.lua` and `main.lua`, so the edit player runs them too, and the code of each script that is outside its functions when the editor asks about the script (12.5). It does not call `love.load`, nor a component's `load` or `update` (6.5). So what both the game and the node view need, such as the default filter, is in the manifest (3.2), and the engine sets it in both players.
-- In the edit player, the engine sets LÖVE's volume to 0, so a sound that the game's code plays there is not heard. On Linux the editor starts it with SDL's offscreen video driver, `SDL_VIDEODRIVER=offscreen`, so it opens no window and still draws with the graphics card.
-- Play saves the project (13), then starts a second player with the manifest's start node as its first root, as an exported game starts. Play This File does the same with the node file of the node view that has the focus. The top node runs above it (5). When the file in focus is the top node's, Play This File plays as Play does. Stop ends it, and so does closing its window.
+- In the edit player, the engine sets LÖVE's volume to 0, so a sound that the game's code plays there is not heard. On Linux the editor starts it with SDL's offscreen video driver, `SDL_VIDEODRIVER=offscreen`, so it opens no window and still draws with the graphics card. On Windows that driver cannot start LÖVE, whose runtime there has no EGL. So there LÖVE opens its window, and the player's files hide it as soon as the engine loads them, with SDL's `SDL_HideWindow` through LuaJIT's FFI. The edit player then draws into canvases, as on Linux.
+- Play saves the project (13.6), then starts a second player with the manifest's start node as its first root, as an exported game starts. Play This File does the same with the node file of the node view that has the focus. The top node runs above it (5). When the file in focus is the top node's, Play This File plays as Play does. Stop ends it, and so does closing its window.
 - Pause stops the game, and Step runs one frame of it. While it is paused, the engine's loop handles LÖVE's events for LÖVE alone, such as quit, and draws, but calls nothing of steps 2 and 3 of a frame (8.1). Step runs those steps once, with `dt` of one fixed step (3.2), so it runs one `fixedUpdate`. Resume goes on.
 - The play player is LÖVE as an exported game runs it: the window, the keyboard, the pointer, the gamepads and the sound are LÖVE's own, and the engine stands in for nothing.
 - What a mode draws into is the one difference between the modes. Starting a player, the link, the console and the errors are the same code for both, so the editor's other parts do not know where the game is drawn.
@@ -899,7 +941,7 @@ What the sample shows of every package:
 ### 12.3 Views
 
 - The edit player only draws, and what it draws are views.
-- A node view is a view of an open node file, and a preview of a node file is a view of it. Other files, such as an image or a sound, are shown by the asset viewer (13) as the files they are; how the game draws them shows in the node view.
+- A node view shows a view of an open node file. Other files, such as an image or a sound, are shown by the asset viewer (13.1) as the files they are; how the game draws them shows in the node view.
 - The edit player draws a view when the editor asks: after a change, or when the view moves. It runs no loop of frames, so it uses the processor only when something changed.
 - What is drawn is split by what it depends on:
 
@@ -916,7 +958,7 @@ What the sample shows of every package:
 - The engine draws a view into a canvas of the view's size, reads the canvas back, and sends its pixels.
 - The engine sends a frame only when the editor has shown the last one, so a slow panel never fills the link.
 - LÖVE holds a pixel as red, green, blue and alpha, and OpenECS's images as blue, green, red and alpha. The engine draws the view's canvas once more through a shader that swaps red and blue, then reads it back. So the graphics card does it, and the panel takes the pixels as they come.
-- The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13).
+- The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13.3).
 
 ### 12.5 What the editor learns from LÖVE
 
@@ -934,43 +976,80 @@ What the sample shows of every package:
 
 ## 13. The editor
 
+### 13.1 Plugins and panels
+
 - The editor is an OpenECS tool: a preset and plugins, in Lua unless a part needs C. The user never sees or writes them.
 - It builds on OpenECS's standard plugins (OpenECS-std DESIGN): process starts the players, net carries the link, fs watches the project, compress and hash serve export, web downloads LÖVE, and ui and draw make the panels.
 - Every panel is a panel type that a plugin registers (OpenECS DESIGN 4), and the preset only places them. No panel is built into the editor, so the user opens, moves and groups them as in any OpenECS tool.
 - A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a plugin that knows nothing of ONLR and serves any OpenECS tool. It belongs in OpenECS-std, as its settings window does (OpenECS-std DESIGN 12).
 - A panel of ONLR's own, such as the inspector or the nodes panel, is built from generic parts, such as ui's elements. A part that it needs and that knows nothing of ONLR is added to the standard plugin that it belongs to, not written inside ONLR, and not worked around.
-- The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, and a text with syntax. It shows no video, since OpenECS-std's video does not read LÖVE's Ogg Theora.
 
 | Plugin         | Does                                                                                          |
 | -------------- | --------------------------------------------------------------------------------------------- |
-| `onlr_project` | Holds the open project: its manifest, its node files, the chosen nodes and the history. It reads and writes the files, and watches the folder. |
+| `onlr_project` | Holds the open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. |
 | `onlr_player`  | Starts the players and speaks the link. It gives the node view, and the functions Play, Play This File, Pause, Step and Stop. |
 | `onlr_views`   | The other panels of ONLR's own: the nodes panel, the inspector, the tools and the project settings. |
 | `onlr_export`  | Export (14), and LÖVE's runtimes (15).                                                        |
 
+- The project's data lives in `onlr_project`, not in a panel (OpenECS OVERVIEW 9.2). Panels show it, change it through its functions, and hear of changes through its events.
+- Every panel can be open many times. What belongs to the project is one, in `onlr_project`: its files, the chosen nodes, the chosen tool, snapping and the history. So two node views of one file show the same nodes, two inspectors show the same chosen nodes, and a change made in one panel shows in every other at once.
+- What belongs to one panel is its own state (OpenECS OVERVIEW 5.4): where a node view looks from and its zoom, which nodes a nodes panel has open, and which components an inspector has folded.
+- The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, and a text with syntax. It shows no video, since OpenECS-std's video does not read LÖVE's Ogg Theora.
+- The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting.
+
+### 13.2 Projects
+
+- ONLR's preset gives OpenECS an `open` function (OpenECS DESIGN 13.6), so a project's folder named on the command line opens.
+- The menu has New Project, which asks for an empty folder, Open Project, which asks for a folder, and the projects opened last.
+- The editor holds one project at a time. Opening another closes the one that is open, after asking about unsaved work.
+- A new project holds the files that section 3.1 says the editor writes, the engine in `packages/onlr/`, empty `components/` and `shared/` folders, and `nodes/start.lua`, an empty node. Its manifest names that file as the start node, and the folder's name as the game's `name` and `id`.
+
+### 13.3 The node view
+
+- Many node files can be open at once, each in a node view of its own. One edit player draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
+- The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
+- A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node in a rectangle.
+- Snapping to a grid is a toggle. The grid's size is a setting of the project, kept in `.onlr/`.
+- The node view draws the window's frame: a rectangle from 0, 0, of the size of the manifest's `window`. So the user sees where the nodes that no camera holds show, such as a score.
+- Dragging an image from the files panel into the node view makes a node with a sprite of it, and dragging a node file makes an instance of it (9).
+- The editor does not tell a level from a coin. Any node file can be the start node and can be held in another (5, 9), so the manifest's start node is chosen from every node file.
+
+### 13.4 The nodes panel and the inspector
+
+- The nodes panel shows the tree of the node file whose view has the focus, from its first node.
 - The inspector shows the chosen node's own fields (5): its name, its place, its `z` and whether it is active. Then it shows each of its components under its type's name. A component has one row for each property: its `label`, or else its name in words, `cellSize` as "Cell size", and the control of its kind (6.2).
+- With many nodes chosen, the inspector shows the fields and the components that all of them have. A value that differs among them shows empty, and a change sets it on all of them, as one change of the history.
 - A reference (6.2) is set by dragging onto its row what it names: a file from the files panel, or a node from the nodes panel or the node view. A value is typed or chosen with its control, and is not dragged in the node view.
 - A type or a property that the editor does not find, such as after a script was renamed outside the editor, shows in the inspector as the node file writes it. The user can give its values to another type or property. Until then they are kept (4.2).
 - The types that adding a component offers are the files of the project's `components/` (3.1), and of the `components/` of the engine and of each package (11.2).
-- Many node files can be open at once, each in a node view of its own. One edit player draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
-- The nodes panel shows the tree of the node file whose view has the focus, from its first node.
-- The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and the node view follows the tool chosen there.
-- A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node in a rectangle.
-- Snapping to a grid is a toggle. The grid's size is a setting of the project, kept in `.onlr/`.
-- The console is a log whose lines may name a file and a line, which a click opens in the user's code editor.
-- The editor does not tell a level from a coin. Any node file can be the start node and can be held in another (5, 9), so the manifest's start node is chosen from every node file.
 - Duplicating or pasting nodes gives the copies new ids. A property of a copy that names another node of the copies names that node's copy; one that names a node outside them is kept.
 - A new script starts from ONLR's template: the type's table, empty functions for `load`, `update` and `draw`, and `return`.
-- The project's data lives in `onlr_project`, not in a panel (OpenECS OVERVIEW 9.2). Panels show it, change it through its functions, and hear of changes through its events. So two panels never differ.
-- Each change of a node file is a record that can be undone. `onlr_project` keeps them in one history for the project.
-- A node file with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS OVERVIEW 5.5).
-- Play saves every node file with changes, and the manifest, before it starts the play player (12.1). So the game that plays is the project's files, and the play player is sent none.
+
+### 13.5 Instances
+
+- The nodes panel shows an instance's nodes, from its base, marked as an instance's. A change to one of them, from any panel, is written as a change of the instance (9).
+- The inspector marks every value that an instance's change sets. A click on the mark puts back the base's value, and takes it out of the change.
+- Open Base opens the base's node file in a node view.
+- A node that comes from the base cannot be deleted or moved in the instance, since an instance removes nothing (9). The editor offers to turn it off instead.
+- Save as Node File writes the chosen node, with all under it, to a new node file, and puts an instance of it in its place, as one change of the history. A property of the old file that named one of those nodes names it through the instance (9). A property among them that named a node outside them is left out of the new file, and set by a change of the instance, which names the old file's node. Undoing it puts the nodes back, and leaves the new file.
+- New Variant makes a node file whose first node is an instance of the chosen node file (9).
+
+### 13.6 Changes and saving
+
+- Each change of a node file or of the manifest is a record that can be undone. `onlr_project` keeps them in one history for the project. One record can change many files, such as a deleted node and the properties that named it.
+- Deleting a node, with all under it, also clears every property that names one of those nodes or one of their components, and drops every change of an instance that names one of them, in every node file of the project, in the same record. Removing a component clears the properties that name it in the same way. So no file names a node that is gone.
+- When the editor reads a file that names a node that does not exist, such as after a merge in git, the inspector marks the property or the change, and offers to clear it (9).
+- Undoing or redoing a change of a file that no node view shows opens a view of it.
+- A node file with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS OVERVIEW 5.5). A file that no view shows keeps its changes until the next save, and the editor asks about them before it closes the project.
+- When a file goes back to what is on disk, because the user does not save its changes, or keeps a change made outside the editor, every record that changed it is taken out of the history.
+- Play saves every node file with changes, and the manifest, before it starts the play player (12.1). So the game that plays is the project's files, and the play player is sent none. One game plays at a time: Play while a game plays stops it first.
+- A file of the project that changes on disk is read again. When the editor's copy has unsaved changes too, the editor asks which to keep.
+
+### 13.7 Files
+
 - The files panel shows the project's folder, apart from what starts with a dot. It makes folders, scripts and node files, renames and moves them, and deletes them after asking. The question names the node files that name the file. A deleted file goes to the system's trash.
 - Opening a file opens a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
-- Dragging an image from the files panel into the node view makes a node with a sprite of it, and dragging a node file makes an instance of it (9).
-- When the files panel renames or moves a file, the editor changes every path and type name that names it, in every node file and in the manifest.
-- A file of the project that changes on disk is read again. When the editor's copy has unsaved changes too, the editor asks which to keep.
-- Opening a file at a line in the user's code editor runs a command that is a setting.
+- Renaming, moving and deleting files are not in the history. Before a rename or a move, the editor saves every file with changes. Then it renames the file, changes every path and type name that names it, in every node file and in the manifest, and saves them. The user undoes it by renaming or moving the file back, and gets a deleted file back from the system's trash.
 
 ## 14. Export
 
@@ -1078,5 +1157,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 **Top node.** The node that the game loads once and keeps, above every root.
 
 **Tree.** The nodes that the game runs: the top node and all under it, the root too.
+
+**Variant.** A node file whose first node is an instance of another node file.
 
 **View.** A node file as the edit player draws it: seen from a point, at a zoom and a size.

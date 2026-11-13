@@ -118,7 +118,7 @@ return {
           instance = {
             base = "nodes/coin.lua",
             changes = {
-              c0in7x = {
+              ["c0in7x"] = {
                 posX = 400,
                 posY = 540,
               },
@@ -131,7 +131,8 @@ return {
             base = "nodes/coin.lua",
             changes = {
               -- The coin itself: a new name, a place, twice the size, and worth 5.
-              c0in7x = {
+              -- A key of changes is a path of ids, so it is always in brackets.
+              ["c0in7x"] = {
                 name = "Big coin",
                 posX = 700,
                 posY = 540,
@@ -165,7 +166,7 @@ return {
               },
               -- The coin's glint, a node under the coin: this coin turns it off.
               -- Another node of the level names that glint as t1r6bz/g1nt4k, and this coin as t1r6bz.
-              g1nt4k = {
+              ["g1nt4k"] = {
                 active = false,
               },
             },

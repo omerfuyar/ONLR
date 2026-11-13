@@ -92,10 +92,11 @@ What LÖVE or a library already does stays there too, with no part of the engine
 - Nodes draw in the order of a number, `z`, the lowest first. A child's `z` is added to its parent's, so a child can draw behind its parent. Nodes of the same `z` draw in the order of the tree: a parent before its children, and siblings in their order.
 - A node can draw as a **group**, with all under it, through one of its components: a camera shows the world under its node, and a score beside that node stays on the screen.
 - A **node file** holds one node with all that is under it: a level, a menu, a coin. There is one kind of it.
-- A node file may hold others, as **instances**: a level holds coins, and the coin is a node file of its own. An instance is made from that file, its base, and may change it freely: any value of its nodes and components, and components and children of its own. What it does not want of its base, it turns off. A script makes instances while the game runs, such as bullets and enemies.
+- A node file may hold others, as **instances**: a level holds coins, and the coin is a node file of its own. An instance is made from that file, its base, and may change it freely: any value of its nodes and components, and components and children of its own. What it does not want of its base, it turns off. A node file may itself be an instance of another, a **variant**: a big coin is the coin, worth more. A script makes instances while the game runs, such as bullets and enemies.
 - The game runs one node at a time, with all that is under it: the **root**. The game starts with the node file that the manifest names, and a script loads another as the root, which ends the one that runs.
 - What a root has one of, such as the world that its bodies collide in, is a component of the root.
 - What must outlive the root, such as a music player or a pause menu, is under the **top node**: the manifest names its node file, which the game loads once and keeps, and each root runs under it. A component on it reaches the whole game, such as a library that scales the game to the window. A value such as a score may also live in the user's own Lua modules, as in any LÖVE game.
+- A script can pause a node: it and all under it still draw, and nothing in them updates. So a pause menu under the top node pauses the root, and the level stays on the screen behind it.
 
 ## 6. Scripts
 
@@ -132,10 +133,11 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 - In the node view nothing moves: the engine draws the nodes and does not update them.
 - Play saves the project, then runs the game from its start node, in LÖVE's own window, and Play This File runs the node file in focus as the root. Pause stops the game, and Step runs one frame of it. Stop ends it, and so does closing the window. The console, the errors and their links to files work while it runs.
 - While the game plays, the nodes panel and the inspector show its running nodes. A value changed there changes the game until it stops, and never a file.
-- A preview of a node file is drawn by LÖVE as the node view is.
 - Each panel comes from a plugin, and none is built into the editor. Panels that need nothing of ONLR, such as the files panel, the asset viewer and the console, are made for any OpenECS tool, and are part of OpenECS's standard plugins. ONLR's own panels are built from the same generic parts.
 - A game that fails, or never returns, does not stop the editor.
-- Every change to a node file can be undone. The project has one history, whichever panel made the change.
+- Any panel can be open many times, and all show the same project: a change made in one shows in every other at once.
+- An instance shows the nodes of its base. The inspector marks the values that the instance changes, and a click puts back the base's value.
+- Every change to a node file or to the project's settings can be undone. The project has one history, whichever panel made the change.
 - The editor saves when the user asks and when Play starts, and asks about unsaved work before it closes. It also asks before a save replaces a file in which a person wrote code.
 - When a file of the project changes outside the editor, such as a script that the user saves or a branch that git checks out, the editor reads it again.
 
@@ -154,7 +156,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 - For a job that a library does well, ONLR includes the library before it writes its own. The engine gets a component of its own only for a job that no such library does.
 - A library that ONLR includes comes as a package. The library in it is unchanged. Its components are written as scripts are, so a user can write the same for any other library.
 - A package's components are a help, not a wall. A script may use the library through them, call the library itself, or do both.
-- A project chooses its packages. The editor copies a package into the project, where it is the project's own.
+- A project chooses its packages. The editor copies a package into the project, and replaces it when ONLR ships a newer one. So the user does not change a package: to change one of its components, they copy it into their scripts under another name.
 
 ## 10. Platforms
 
@@ -228,3 +230,5 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 **Target.** What an export makes: a `.love` file, or a build for one platform.
 
 **Top node.** The node that the game loads once and keeps, above every root.
+
+**Variant.** A node file that is an instance of another node file.
