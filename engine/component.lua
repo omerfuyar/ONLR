@@ -28,6 +28,7 @@ local component = {}
 ---without their types: node.components.bump.body is nil on a node without a body, and components.bmup.body is an error.
 ---@class onlr.Components
 ---@field onlr {sprite: onlr.sprite?, text: onlr.text?, shape: onlr.shape?, camera: onlr.camera?}
+---@field [string] any a script's component, or the table of a package or of a folder
 
 ---A component type, as the engine keeps it.
 ---@class onlr.Type
@@ -58,14 +59,14 @@ end
 ---@class onlr.Space
 ---@field names table<string, true|onlr.Space|string>
 ---@field path string the names before it, with their dots, such as "bump."
----@field package string? the package whose components it holds
+---@field owner string? the package whose components it holds
 ---@field meta table? the metatable of its tables in components
 ---@field empty table? the empty table that stands for it on a node without its types
 
 local root
 
 local function newSpace(path, package)
-  return { names = {}, path = path, package = package }
+  return { names = {}, path = path, owner = package }
 end
 
 local function scan(dir, space)
@@ -85,7 +86,7 @@ local function scan(dir, space)
       elseif space.names[item] == true then
         space.names[item] = ("both %s.lua and the folder %s/ are in %s"):format(item, item, dir)
       elseif space.names[item] == nil then
-        local inner = newSpace(space.path .. item .. ".", space.package)
+        local inner = newSpace(space.path .. item .. ".", space.owner)
         space.names[item] = inner
         scan(full, inner)
       end
@@ -172,7 +173,7 @@ local function know(name)
   for i = 1, #parts - 1 do
     local entry = space.names[parts[i]]
     if type(entry) ~= "table" then
-      entry = newSpace(space.path .. parts[i] .. ".", space.package)
+      entry = newSpace(space.path .. parts[i] .. ".", space.owner)
       space.names[parts[i]] = entry
     end
     space = entry
@@ -201,7 +202,7 @@ local function find(name)
   end
   local first = component.space().names[parts[1]]
   local candidates
-  if type(first) == "table" and first.package and #parts > 1 then
+  if type(first) == "table" and first.owner and #parts > 1 then
     local rest = table.concat(parts, "/", 2)
     local dir = "packages/" .. parts[1] .. "/components/"
     candidates = { dir .. rest .. ".lua", dir .. rest .. "/init.lua" }

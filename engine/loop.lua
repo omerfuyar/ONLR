@@ -65,6 +65,7 @@ end
 ---@return fun(): any
 function loop.run()
   if love.load then
+    ---@diagnostic disable-next-line: undefined-field
     love.load(love.arg.parseGameArguments(arg), arg)
   end
   loop.load()
@@ -91,6 +92,7 @@ function loop.run()
             return a or 0
           end
         elseif not paused then
+          ---@diagnostic disable-next-line: undefined-field
           love.handlers[name](a, b, c, d, e, f)
           loop.event(name, a, b, c, d, e, f)
         end

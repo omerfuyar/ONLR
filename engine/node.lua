@@ -18,6 +18,38 @@ local property = require("onlr.property")
 ---@field sclX number its scale in its parent
 ---@field sclY number
 ---@field components onlr.Components the node's components, by their types' names: node.components.bump.body
+---@field _parent onlr.Node? the engine's, as every field below: read them through the node's functions
+---@field _children onlr.Node[]
+---@field _records onlr.Record[] its components' records, in the order they run in
+---@field _byType table<string, onlr.Component> its components by their types' names, dots and all
+---@field _active boolean its own active
+---@field _paused boolean its own paused
+---@field _z number
+---@field _activeIn boolean it and every node above it are active
+---@field _pausedIn boolean it or a node above it is paused
+---@field _destroyed boolean
+---@field _gone boolean? it was taken out of the tree
+---@field _id string? its id in its node file
+---@field _path string? its path of ids from the node file that was loaded
+---@field _file string? the node file that wrote it
+---@field _layers table[]? its components' values, while its node file is made
+---@field _errors string[]? what was wrong with it, in the node view
+---@field _a number the place in the world, as a matrix
+---@field _b number
+---@field _c number
+---@field _d number
+---@field _tx number
+---@field _ty number
+---@field _wv integer the version of that matrix
+---@field _ws integer? the draw that worked it out last
+---@field _tv integer? the version that _transform holds
+---@field _transform love.Transform?
+---@field _px number? the place that the matrix was worked out from
+---@field _py number?
+---@field _pr number?
+---@field _psx number?
+---@field _psy number?
+---@field _ppv integer?
 local Node = {}
 
 local meta = { __index = Node }
@@ -75,10 +107,14 @@ end
 ---@param node onlr.Node
 ---@return boolean
 local function inTree(node)
-  while node._parent do
-    node = node._parent
+  local up = node
+  while up do
+    if up == life.top then
+      return true
+    end
+    up = up._parent
   end
-  return node == life.top
+  return false
 end
 nodes.inTree = inTree
 

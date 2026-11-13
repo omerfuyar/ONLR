@@ -6,7 +6,10 @@ local log = require("shared.log")
 check.run(function()
   local tree = onlr.tree
   local root = tree.root
-  local a, b, c = tree.find("A"), tree.find("B"), tree.find("C")
+  local function find(name)
+    return assert(tree.find(name))
+  end
+  local a, b, c = find("A"), find("B"), find("C")
 
   -- The top node loads first, then the root. All load before any enable, and start comes when both have loaded.
   check.equal(log.take(), {
@@ -40,7 +43,7 @@ check.run(function()
   -- Turning a node off takes effect at once, children first; on again, parents first, with updates from the next frame.
   a:setActive(false)
   check.equal(log.take(), { "A1.disable", "A.disable" }, "setActive(false)")
-  check.equal(tree.find("A1"):isActive(), false, "a node under a node that is off")
+  check.equal(find("A1"):isActive(), false, "a node under a node that is off")
   a:setActive(true)
   check.equal(log.take(), { "A.enable", "A1.enable" }, "setActive(true)")
   check.frames(1)
@@ -106,7 +109,7 @@ check.run(function()
 
   -- destroy: the node is marked at once, and ends when the frame ends, children first.
   a:destroy()
-  check.equal(a:isDestroyed() and tree.find("A1"):isDestroyed(), true, "marked at once")
+  check.equal(a:isDestroyed() and find("A1"):isDestroyed(), true, "marked at once")
   check.equal(tree.find("A"), a, "it stays in the tree until the frame ends")
   check.frames(1)
   lines = log.take()

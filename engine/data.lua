@@ -116,7 +116,7 @@ end
 ---kind is "image", "font", "sound" or "node". A sound is the source that each component clones,
 ---a font is a path and a size, and a node file is its table.
 ---@param kind "image"|"font"|"sound"|"node"
----@param path string?
+---@param path string? nil only for a font
 ---@param option any the font's size, or whether a sound streams
 ---@return any value
 ---@return string key
@@ -126,7 +126,7 @@ function data.load(kind, path, option)
   if kind == "image" then
     key = "image:" .. tostring(path)
     entry = loaded[key] or (need(path) or get(key, function()
-      return love.graphics.newImage(path)
+      return love.graphics.newImage(path --[[@as string]])
     end))
   elseif kind == "font" then
     key = "font:" .. (path or "") .. ":" .. tostring(option)
@@ -142,12 +142,12 @@ function data.load(kind, path, option)
   elseif kind == "sound" then
     key = "sound:" .. tostring(path) .. (option and ":stream" or "")
     entry = loaded[key] or (need(path) or get(key, function()
-      return love.audio.newSource(path, option and "stream" or "static")
+      return love.audio.newSource(path --[[@as string]], option and "stream" or "static")
     end))
   else
     key = "node:" .. tostring(path)
     entry = loaded[key] or get(key, function()
-      return data.read(path)
+      return data.read(path --[[@as string]])
     end)
   end
   return entry.value, key

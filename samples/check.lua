@@ -81,7 +81,7 @@ function check.equal(actual, expected, what)
 end
 
 ---Checks that a function raises an error whose message holds a text, and gives the message.
----@param fn fun()
+---@param fn fun(): any
 ---@param text string
 ---@param what string
 ---@return string?
@@ -116,7 +116,7 @@ end
 ---@param dt? number 1/60 when left out
 function check.fixedTime(dt)
   love.timer.step = function()
-    return dt or 1 / 60
+    return dt or (1 / 60)
   end
 end
 
