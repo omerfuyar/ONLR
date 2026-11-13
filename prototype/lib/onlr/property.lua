@@ -68,12 +68,8 @@ function property.font(options) end
 function property.file(options) end
 
 ---@param options? onlr.PropertyOptions
----@return string? path a scene's file
+---@return string? path a scene's file, for onlr.scene.load and onlr.scene.spawn
 function property.scene(options) end
-
----@param options? onlr.PropertyOptions
----@return string? path a prefab's file
-function property.prefab(options) end
 
 ---@param options? onlr.PropertyOptions
 ---@return onlr.Object?

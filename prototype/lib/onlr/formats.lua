@@ -7,9 +7,9 @@
 ---@field format integer
 ---@field name string
 ---@field id string
----@field version string
----@field love string
----@field scene string
+---@field gameVersion string
+---@field loveVersion string
+---@field scene string the scene that the game starts with
 ---@field window {width: integer, height: integer}
 ---@field exclude? string[]
 
@@ -18,7 +18,7 @@
 ---@field enabled? boolean true when left out
 ---@field [string] any the properties' values
 
----What an instance changes in one object inside its prefab.
+---What an instance changes in one object under its root.
 ---@class onlr.Override
 ---@field name? string
 ---@field x? number
@@ -33,8 +33,8 @@
 
 ---@class onlr.ObjectData
 ---@field id string
----@field prefab? string a prefab's file: the object is an instance of it
----@field name? string an instance without one has the prefab's
+---@field scene? string a scene's file: the object is an instance of that scene
+---@field name? string an instance without one has its scene's
 ---@field x? number
 ---@field y? number
 ---@field rotation? number
@@ -44,14 +44,11 @@
 ---@field active? boolean
 ---@field components? onlr.ComponentData[]
 ---@field children? onlr.ObjectData[]
----@field overrides? table<string, onlr.Override> in an instance: by the ids of the objects inside the prefab
+---@field overrides? table<string, onlr.Override> in an instance: by the ids of the objects under its root
 
----@class onlr.Scene
----@field format integer
----@field components? onlr.ComponentData[] the scene's own
----@field objects onlr.ObjectData[]
-
----@class onlr.Prefab : onlr.ObjectData
+---A scene's file: one object, the root, and the format's number beside its fields.
+---The colon only tells a code editor that a scene has an object's fields too.
+---@class onlr.Scene : onlr.ObjectData
 ---@field format integer
 
 ---The manifest of the engine and of a pack. The project's manifest is onlr.Project.

@@ -1,6 +1,6 @@
 -- The component type bump.world: bump's world, as a component.
 -- bump's world is bump's own list of boxes. It is not the scene and knows nothing of objects.
--- It is one of the scene's own components, so each scene has its own world,
+-- It is a component of the scene's root, so each scene has its own world,
 -- and the scene's file keeps the world's settings.
 local onlr = require("onlr")
 local bump = require("bump")
