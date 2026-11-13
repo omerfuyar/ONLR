@@ -14,7 +14,6 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | [OVERVIEW.md](OVERVIEW.md) | What ONLR is: its users, scope, principles and product decisions.                              |
 | [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the player and the link, the editor, export. |
 | [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
-| `prototype/`               | A sketch of a project's files, from the planning. Its engine is definitions only. The first sample replaces it, and it is then deleted. |
 | `engine/`                  | The engine: the Lua library that every project holds as `packages/onlr/` (DESIGN.md, section 8.3). |
 | `samples/`                 | Small projects, which are the tests, and `check.lua`, the tests' helper (DESIGN.md, section 16). |
 | `.github/`                 | Checks, and the scripts that agents and CI run: `check.sh` and `test.sh`. `scripts/assets/` makes the samples' images and sounds. |

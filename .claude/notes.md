@@ -10,4 +10,5 @@ Notes for agents and the owner that belong in no other document: why the tools a
 - `.luarc.json` names LuaJIT for every Lua file, the plugins too: they run in OpenECS's Lua 5.5, so they keep to what both have. It turns off `duplicate-set-field`, since every sample defines `love.conf` and some define `love.draw`.
 - `.luarc.json` names `build/love2d/library`, LÖVE's definitions from LuaCATS, at the commit that `checks.yml` names in `LOVE2D_DEFINITIONS`, and `OpenECS/include`, where the editor's plugins find the `ecs` module.
 - `check.sh` checks Lua files with LuaLS over the whole folder and prints only the named files' problems, because LuaLS 3.15 finds nothing in a file that it checks alone.
+- `.luarc.json` leaves every folder named `library` out of the check: a package's `library/` holds its library unchanged.
 - The copies of the engine that `test.sh` puts into each sample are ignored by git, so LuaLS does not see each class twice.
