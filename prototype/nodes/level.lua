@@ -10,7 +10,7 @@ return {
   -- The manifest names this file as the start node, so the game loads this node as its root.
   id = "l3v1q0",
   name = "Level",
-  -- What the whole tree has one of is a component of the root, such as the world
+  -- What the root has one of is a component of the root, such as the world
   -- that its bodies collide in: no node is made only to hold it.
   components = {
     bump = {
@@ -175,12 +175,14 @@ return {
     },
     -- Beside the world, so no camera holds it: it draws at the window's pixels and stays on the screen.
     -- It comes after the world in the tree, so it draws over it.
+    -- The engine's text shows it, and the script counter sets the text.
     {
       id = "s9c0re",
       name = "Score",
       posX = 16,
       posY = 16,
       components = {
+        counter = {},
         onlr = {
           text = {
             text = "Coins: 0",

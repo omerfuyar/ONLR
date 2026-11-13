@@ -10,19 +10,21 @@ local Coin = {}
 Coin.worth = onlr.property.integer(1, { min = 1 })
 Coin.next = onlr.property.nodeFile({ description = "The node file to load as the root when the last coin is taken" })
 
-function Coin:load()
-  score.left = score.left + 1
-end
-
 function Coin:contact(other)
-  if other.name ~= "Player" then
+  if other.name ~= "Player" or self.node:isDestroyed() then
     return
   end
   score.coins = score.coins + self.worth
-  score.left = score.left - 1
-  -- Marks the node. It and its children are destroyed when the frame ends.
+  -- Marks the node. It and its children are destroyed when the frame ends,
+  -- and stay in the tree until then.
   self.node:destroy()
-  if score.left == 0 and self.next then
+  -- A component type is a tag: every coin of the tree has this script.
+  for _, coin in ipairs(onlr.node.findAllComponents("coin")) do
+    if not coin.node:isDestroyed() then
+      return
+    end
+  end
+  if self.next then
     -- Ends the root and loads another, when the frame ends.
     onlr.node.loadRoot(self.next)
   end

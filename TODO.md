@@ -76,7 +76,7 @@ What the owner wants worked on, in no fixed order.
   | Collision of boxes          | bump.lua; slick; HC                            | bump's boxes do not turn. slick and HC take polygons that turn. slick's licence is MPL-2.0, which asks that changes to its own files stay open. |
   | Physics                     | `love.physics`; breezefield                    | `love.physics` is part of LÖVE and needs components only. breezefield makes it shorter to use.         |
   | Tile maps from Tiled        | STI; cartographer                              | STI draws a map through a canvas of its own, so a package draws its layers itself, to follow the camera.   |
-  | Animation of a sprite sheet | anim8; peachy                                  | anim8 gives a quad for each frame, which `onlr.sprite` takes. peachy reads Aseprite's files.           |
+  | Animation of a sprite sheet | anim8; peachy                                  | anim8 gives a LÖVE quad for each frame, whose rectangle a script copies into `onlr.sprite`'s `quad`. peachy reads Aseprite's files.           |
   | Camera                      | gamera; hump's camera                          | Both turn a point of the window into the world's. hump's other parts take LÖVE's callbacks; its camera does not. |
   | Scaling to the window       | push; shove; maid64                            | Each draws a group on the top node (DESIGN 5). maid64 is for pixel art only.                           |
   | Tweens and timers           | flux; tween.lua; hump's timer; tick            | Each is called from a component's `update`.                                                            |
@@ -102,20 +102,23 @@ What the owner wants worked on, in no fixed order.
 
 ## Tasks
 
-- **The Windows experiment.** It tells whether LÖVE's runtime for Windows runs without a window (see [Player and link](#player-and-link)). The owner runs it:
-  1. Unpack `love-11.5-win64.zip`, from LÖVE's releases, to `C:\love`.
-  2. Make the file `C:\t\main.lua` with these lines:
+- **The Windows experiment.** It tells whether LÖVE's runtime for Windows runs without a window (see [Player and link](#player-and-link)). The first run did not tell: PowerShell's `set` makes a variable of PowerShell's own, not one of the environment, so both runs used SDL's normal driver. They showed OpenGL 3.3 on an NVIDIA card. The owner runs it again, in PowerShell:
+  1. In `C:\t\main.lua`, put these lines. The new ones print the variable as LÖVE sees it, and the driver that SDL uses:
 
      ``` lua
      io.stdout:setvbuf("no")
+     local ffi = require("ffi")
+     ffi.cdef("const char *SDL_GetCurrentVideoDriver(void);")
+     print("variable", os.getenv("SDL_VIDEODRIVER"))
+     print("driver", ffi.string(ffi.load("SDL2").SDL_GetCurrentVideoDriver()))
      print(love.graphics.getRendererInfo())
      print(love.window.getMode())
      love.event.quit()
      ```
 
-  3. In the command prompt, run `set SDL_VIDEODRIVER=offscreen`, then `C:\love\lovec.exe C:\t`.
-  4. In a new command prompt, run only `C:\love\lovec.exe C:\t`.
-  5. Report everything that each run prints.
+  2. In LÖVE's folder, run `$env:SDL_VIDEODRIVER = "offscreen"`, then `.\lovec.exe C:\t`.
+  3. Run `Remove-Item Env:SDL_VIDEODRIVER`, then `.\lovec.exe C:\t` again.
+  4. Report everything that each run prints, any error, and whether a window showed, even for a moment.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. They are the owner's too, so they change when that is the better solution:
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
   - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the player on Linux and `cmd /c` on Windows.
@@ -123,6 +126,7 @@ What the owner wants worked on, in no fixed order.
   - ui: a tree that chooses many nodes and drags them, for the nodes panel.
   - fs: watching the folders inside a folder, for the project's folder.
   - The files panel, the asset viewer and the console, as first-party plugins, as its settings window is (DESIGN 13).
+  - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: what the inspector and the nodes panel need and ui lacks, found when they are written.

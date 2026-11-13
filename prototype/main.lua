@@ -8,5 +8,5 @@ require("packages.onlr").start()
 -- Plain LÖVE code keeps working beside the nodes. The engine calls these too:
 -- love.update before the components' update, love.draw after the nodes, over them.
 function love.draw()
-  love.graphics.print("Coins: " .. require("shared.score").coins, 10, 10)
+  love.graphics.print("FPS: " .. love.timer.getFPS(), 1200, 10)
 end

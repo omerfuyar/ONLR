@@ -95,6 +95,7 @@ function Node:setWorldPosition(x, y) end
 ---@class onlr.Components
 ---@field player? player
 ---@field coin? coin
+---@field counter? counter
 ---@field spin? spin
 ---@field music? music
 ---@field bump {body: bump.body?, world: bump.world?}
