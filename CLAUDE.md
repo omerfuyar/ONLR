@@ -14,6 +14,7 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | [OVERVIEW.md](OVERVIEW.md) | What ONLR is: its users, scope, principles and product decisions.                              |
 | [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the player and the link, the editor, export. |
 | [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
+| `prototype/`               | A sketch of a project's files, for the owner's feedback. Its engine is definitions only. Keep it in step with DESIGN.md. |
 | `LICENSE.md`               | The license, zlib.                                                                             |
 
 Before you propose or change anything, read the Contents of OVERVIEW.md and DESIGN.md, then every section the task touches.
@@ -27,7 +28,10 @@ ONLR is being planned. Planning is the work: the documents are what you make. Wr
 **The project**
 
 - LÖVE is never changed, and ONLR ships no changed LÖVE (OVERVIEW 11). Do not propose a design that needs one.
+- Composition over inheritance, everywhere: in the engine, in the editor and in what users are given (OVERVIEW 11).
+- Never be afraid of removing code and breaking things. ONLR has no users yet: delete a concept, a format or a whole design when a better one is found, and keep nothing for compatibility. Give versions little thought.
 - OpenECS changes often. Know what it and its standard plugins can do, and read them again before you rely on them: [OVERVIEW.md](https://github.com/omerfuyar/OpenECS/blob/dev/OVERVIEW.md), [DESIGN.md](https://github.com/omerfuyar/OpenECS/blob/dev/DESIGN.md) and [OpenECS-std's DESIGN.md](https://github.com/omerfuyar/OpenECS-std/blob/dev/DESIGN.md). Do not bind ONLR's design to it: only DESIGN.md's section on the editor depends on OpenECS, and it links to OpenECS's documents and repeats nothing of theirs.
+- OpenECS-std is the owner's too, and may change. When changing a standard plugin is the better solution, propose the change instead of working around the plugin, and note it in TODO.md, Tasks.
 - The user of ONLR knows LÖVE, or learns it. Keep LÖVE's names and ways, so what they know stays true. They never see OpenECS's internals.
 - Before recommending a library for the engine, check LÖVE first, as OpenECS's file says of SDL. Dependencies stay few (OVERVIEW 9).
 

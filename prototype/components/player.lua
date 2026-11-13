@@ -20,7 +20,8 @@ Player.jump = onlr.property.group({
 -- A list: the user adds and removes rows. Read as self.footsteps[1].
 Player.footsteps = onlr.property.list(onlr.property.sound())
 
--- Once, when the object enters the running scene. The properties are set by now.
+-- Once, when the object enters the running scene. Every object of the scene exists by now,
+-- and the properties are set.
 function Player:load()
   -- Another component of the same object. The body is the pack's; move is its function.
   self.body = self.object:get("bump.body")

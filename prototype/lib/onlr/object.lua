@@ -9,7 +9,7 @@
 ---@field rotation number in radians, clockwise
 ---@field scaleX number
 ---@field scaleY number
----@field z number its order among its siblings
+---@field z number its order in drawing, added to its parent's
 ---@field active boolean
 ---@field parent onlr.Object?
 ---@field children onlr.Object[]
@@ -21,7 +21,7 @@ local Object = {}
 ---@return T?
 function Object:get(type) end
 
----Gives the object a component, and returns it.
+---Gives the object a component, and returns it. Its load is called before add returns.
 ---@generic T
 ---@param type `T`
 ---@param values? table the properties' values
@@ -33,7 +33,8 @@ function Object:add(type, values) end
 ---@param ... any
 function Object:send(name, ...) end
 
----Destroys the object and its children, when the current frame ends.
+---Marks the object. It and its children are destroyed when the current frame ends:
+---destroy of the children's components is called, then of its own.
 function Object:destroy() end
 
 ---Turns a point of the object's space into the world's.
@@ -49,6 +50,8 @@ function Object:setWorldPosition(x, y) end
 
 ---What every component has. A type also defines the functions it wants called:
 ---load(), update(dt), draw(), destroy(), any callback of LÖVE, bounds(), drawEditor(chosen).
+---A type does not inherit another: the colon in a type's annotation only tells a code editor
+---that its components have these fields.
 ---@class onlr.Component
 ---@field object onlr.Object
 ---@field enabled boolean

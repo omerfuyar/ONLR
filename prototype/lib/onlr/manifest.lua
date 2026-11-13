@@ -9,5 +9,10 @@ return {
   source = "https://github.com/omerfuyar/ONLR",
   license = "zlib",
   -- By their files' names: sprite is lib/onlr/sprite.lua, and a scene names it onlr.sprite.
-  components = { "sprite", "text", "shape", "camera" },
+  components = {
+    "sprite",
+    "text",
+    "shape",
+    "camera",
+  },
 }

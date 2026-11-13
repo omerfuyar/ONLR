@@ -21,17 +21,18 @@ function scene.find(name) end
 ---@return T?
 function scene.get(type) end
 
----Makes an instance of a prefab in the running scene.
+---Makes an instance of a prefab in the running scene, and returns it.
+---It exists at once, and load of its components is called before spawn returns.
 ---@param prefab string a prefab's file
----@param x? number
+---@param x? number in its parent
 ---@param y? number
----@param parent? onlr.Object
+---@param parent? onlr.Object the root when left out
 ---@return onlr.Object
 function scene.spawn(prefab, x, y, parent) end
 
----Makes an empty object.
+---Makes an empty object, and returns it.
 ---@param name string
----@param parent? onlr.Object
+---@param parent? onlr.Object the root when left out
 ---@return onlr.Object
 function scene.add(name, parent) end
 
