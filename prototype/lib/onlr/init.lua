@@ -12,10 +12,12 @@
 ---@class onlr
 local onlr = {}
 
+onlr.loop = require("onlr.loop")
 onlr.node = require("onlr.tree")
 onlr.property = require("onlr.property")
 
----Starts the engine. Called from main.lua.
+---Starts the engine. Called from main.lua. It sets love.run to the engine's loop, which calls
+---the steps of onlr.loop; a game that sets its own love.run calls them itself.
 function onlr.start() end
 
 ---Sets LÖVE's settings from the project's manifest. Called from conf.lua.

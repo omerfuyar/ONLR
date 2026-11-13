@@ -12,12 +12,19 @@ return {
   loveVersion = "11.5",
   -- The node file that the game starts with: its node is the first root.
   startNode = "nodes/level.lua",
+  -- Node files that the game loads once, before the first root, and keeps beside every root.
+  keptNodes = {
+    "nodes/music.lua",
+  },
   -- In the names of LÖVE's t.window. LÖVE needs the size before it opens the window,
   -- and the project settings panel shows and changes it.
   window = {
     height = 720,
     width = 1280,
   },
+  -- As love.graphics.setDefaultFilter. The engine sets it in the game and in the node view,
+  -- so pixel art is sharp in both. love.load runs only in the game.
+  defaultFilter = "nearest",
   exclude = {
     "notes/*",
   },

@@ -10,7 +10,10 @@
 ---@field gameVersion string
 ---@field loveVersion string
 ---@field startNode string the node file that the game starts with, as its root
+---@field keptNodes? string[] node files that the game loads once, before the first root, and keeps
 ---@field window {width: integer, height: integer}
+---@field defaultFilter? "linear"|"nearest" as love.graphics.setDefaultFilter; linear when left out
+---@field fixedRate? number how many times a second fixedUpdate is called; 60 when left out
 ---@field exclude? string[]
 
 ---A component's entry: its properties' values.
