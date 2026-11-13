@@ -59,18 +59,18 @@ A game made with ONLR is built in layers. Each uses only the layers above it in 
 | 1. LÖVE            | The runtime: the window, drawing, sound, input, physics and files.                              | LÖVE's authors                  |                                |
 | 2. Libraries       | Lua code for LÖVE games, such as a library for collision (11).                                  | Their authors                   | LÖVE, or nothing               |
 | 3. The engine      | Nodes, components, properties and the loop (5 to 9).                                            | ONLR                            | LÖVE                           |
-| 4. Components      | What nodes show and do: the engine's own (10), a pack's (11.2) and the user's scripts (6).      | ONLR, a pack's author, the user | The engine, LÖVE and libraries |
+| 4. Components      | What nodes show and do: the engine's own (10), a package's (11.2) and the user's scripts (6).      | ONLR, a package's author, the user | The engine, LÖVE and libraries |
 | 5. The game's data | The project's manifest and node files, which name component types and hold their values (3, 4). | The user, through the editor    | Component types, by name       |
 
 - The engine and the libraries do not know each other. A component is where they meet: it is called by the engine, and it calls a library.
-- All three kinds of component are the same thing to the engine. The engine's own and a pack's can do nothing that a script cannot.
+- All three kinds of component are the same thing to the engine. The engine's own and a package's can do nothing that a script cannot.
 - The editor is not a layer of the game. It is another program: it reads and writes the game's data, and asks the player (12) what the components declare and how the nodes look.
 
 ### 2.2 In this repository
 
 | Part           | In this repository       | Is                                                                                | Runs in |
 | -------------- | ------------------------ | --------------------------------------------------------------------------------- | ------- |
-| Engine         | `engine/`                | The Lua library that every project holds a copy of, as `lib/onlr/`.               | LÖVE    |
+| Engine         | `engine/`                | The Lua library that every project holds a copy of, as `packages/onlr/`.               | LÖVE    |
 | Player's files | `player/`                | The Lua code that the engine loads when the editor starts it: the link and the views (12). No project holds it. | LÖVE    |
 | Editor         | `plugins/`, `preset.lua` | OpenECS plugins and their preset (13).                                            | OpenECS |
 | Samples        | `samples/`               | Small projects, which are the tests (16).                                         | Both    |
@@ -91,9 +91,9 @@ mygame/
       states.lua
   shared/                   the user's Lua code that components share
     score.lua
-  lib/                      the engine, packs and libraries
+  packages/                 the engine, packages and libraries
     onlr/                     the engine
-    bump/                     a pack
+    bump/                     a package
   nodes/                    the node files
     level.lua
     coin.lua
@@ -111,18 +111,18 @@ mygame/
   -- main.lua
   -- Code outside functions runs in the editor too, when it draws the node view.
   -- The game's own start goes in love.load.
-  require("lib.onlr").start()
+  require("packages.onlr").start()
   ```
 
   ``` lua
   -- conf.lua
   function love.conf(t)
-    require("lib.onlr").conf(t)
+    require("packages.onlr").conf(t)
   end
   ```
 
-- `onlr.conf` sets what the project's manifest holds: the window's size, the game's name and the folder of its saved files. A user who wants more of LÖVE's settings sets them in `conf.lua`, after that line.
-- Both files load the engine as `lib.onlr`, which LÖVE finds in the project's folder as it is. When the engine loads, it adds `lib/` to the places where `require` looks, and answers to the name `onlr` too. LÖVE reads `conf.lua` before any other file of the game, so from then on a script writes `require("onlr")`, and a library is loaded by the name its author gives (11.1).
+- `onlr.conf` gives LÖVE the settings that the project's manifest holds (3.2). So LÖVE's settings are changed in the manifest, by the project settings panel or by hand, and neither the user nor the editor changes `conf.lua`.
+- Both files load the engine as `packages.onlr`, which LÖVE finds in the project's folder as it is. When the engine loads, it adds `packages/` to the places where `require` looks, and answers to the name `onlr` too. LÖVE reads `conf.lua` before any other file of the game, so from then on a script writes `require("onlr")`, and a library is loaded by the name its author gives (11.1).
 - `components/` holds the scripts. The editor offers them when the user adds a component, and makes new scripts there. Inside it:
   - A Lua file is a component type: `components/coin.lua` is `coin`.
   - A folder with an `init.lua` is one component type, and the other files in it are that component's own modules, which the editor does not offer: `components/player/init.lua` is `player`, and it loads `components.player.states` with `require`.
@@ -130,10 +130,10 @@ mygame/
   - A file and a folder of one name cannot be side by side, such as `enemies.lua` and `enemies/`, since the name would be a type and a group at once (6.1). The editor says so, and the engine refuses both.
 - `nodes/` holds the node files (5). Every Lua file in it, in any folder of it, is one: `nodes/level.lua`.
 - `shared/` holds the user's Lua code that is not a component and that components share: what keeps a value when the root changes, such as a score, and functions that many scripts use. The engine does not read it: scripts load it with `require`, as in any LÖVE game. Its name is not taken; a new project has it.
-- `lib/` holds what the game uses and was not made for this game alone, each in a folder of its own: the engine in `lib/onlr/`, packs, and libraries. The user adds to it, by hand or in the editor.
-- `lib/onlr/` is the engine's. The editor replaces it when it updates the engine (3.3), so the user does not edit it. Each project holds its own copy, so `love mygame` runs it and an export holds it.
+- `packages/` holds what the game uses and was not made for this game alone, each in a folder of its own: the engine in `packages/onlr/`, packages, and libraries. The user adds to it, by hand or in the editor.
+- `packages/onlr/` is the engine's. The editor replaces it when it updates the engine (3.3), so the user does not edit it. Each project holds its own copy, so `love mygame` runs it and an export holds it.
 - `.onlr/` holds what the editor keeps for this project on this computer, such as LÖVE's definitions (4.3). It is not exported, and not in git: when the editor makes the project, it writes a `.gitignore` that names it.
-- The names `main.lua`, `conf.lua`, `manifest.lua`, `components/`, `nodes/`, `lib/` and `.onlr/` are taken. Every other name is the user's.
+- The names `main.lua`, `conf.lua`, `manifest.lua`, `components/`, `nodes/`, `packages/` and `.onlr/` are taken. Every other name is the user's.
 
 ### 3.2 The project's manifest
 
@@ -168,16 +168,17 @@ return {
 | `startNode`       | The node file that the game starts with, as its root (5).                       |
 | `topNode`         | The node file of the top node, which the game loads once and keeps, and under which each root runs (5). An empty node when left out. |
 | `window`          | The game's window, as LÖVE's `t.window`, with its names: `width` and `height` in pixels, and any other field of it, such as `resizable`, `fullscreen` or `highdpi`. The engine adds none of its own. |
+| `modules`, `audio`, `console` and LÖVE's other settings | As in LÖVE's `t`, under LÖVE's names. LÖVE's `identity` is `id`, and its `version` is `loveVersion`. |
 | `defaultFilter`   | How images are scaled, as `love.graphics.setDefaultFilter` takes it: `linear`, LÖVE's default, or `nearest`, which keeps pixel art sharp. The engine sets it in both players, before anything loads (12.1). |
 | `fixedRate`       | How many times a second `fixedUpdate` is called (6.3). 60 when left out.        |
 | `exclude`         | Patterns of files that an export leaves out. In a pattern, `*` stands for any part of a name, `**` for any folders, and a pattern that ends with `/` names a folder. |
 
-- The window's size is here, and not only in `conf.lua`, since two things need it: LÖVE, before it opens the window, and the project settings panel, to show and change it. The editor does not run `conf.lua`, which is the game's code.
+- LÖVE's settings are here, and not in `conf.lua`, since two things need them: LÖVE, before it opens the window, and the project settings panel, to show and change them. The editor does not run `conf.lua`, which is the game's code.
 
 ### 3.3 Updating the engine
 
-- The editor ships one version of the engine, and works on a project that holds that version. The engine's manifest in `lib/onlr/` names its version (8.3).
-- When the editor opens a project that holds another version, it asks the user, then replaces `lib/onlr/`. If the user declines, the project stays closed.
+- The editor ships one version of the engine, and works on a project that holds that version. The engine's manifest in `packages/onlr/` names its version (8.3).
+- When the editor opens a project that holds another version, it asks the user, then replaces `packages/onlr/`. If the user declines, the project stays closed.
 
 ## 4. Data files
 
@@ -210,13 +211,13 @@ return {
 ### 4.3 Definitions
 
 - The first line of each file names its type, such as `---@type onlr.NodeFile`, so a code editor with the Lua language server completes and checks its fields.
-- The types are in the engine's source, in the project's `lib/onlr/` (1). LÖVE's own definitions, from [LuaCATS/love2d](https://github.com/LuaCATS/love2d), are copied into `.onlr/`.
-- The editor writes `.luarc.json` once, when it makes the project. It names LuaJIT as the Lua version, `.onlr/` as a library, and `lib/` as a place where `require` looks (11.1):
+- The types are in the engine's source, in the project's `packages/onlr/` (1). LÖVE's own definitions, from [LuaCATS/love2d](https://github.com/LuaCATS/love2d), are copied into `.onlr/`.
+- The editor writes `.luarc.json` once, when it makes the project. It names LuaJIT as the Lua version, `.onlr/` as a library, and `packages/` as a place where `require` looks (11.1):
 
   ``` json
   {
     "runtime.version": "LuaJIT",
-    "runtime.path": ["?.lua", "?/init.lua", "lib/?.lua", "lib/?/init.lua"],
+    "runtime.path": ["?.lua", "?/init.lua", "packages/?.lua", "packages/?/init.lua"],
     "workspace.library": [".onlr"]
   }
   ```
@@ -348,13 +349,13 @@ return Player
   | Type                | Its name                                   | Its file                    |
   | ------------------- | ------------------------------------------ | --------------------------- |
   | A script            | Its path in `components/`: `player`, `enemies.bat`. | `components/player.lua` (3.1) |
-  | A pack's            | The pack's name, then its file's: `bump.body`. | `lib/bump/body.lua` (11.2) |
-  | The engine's own    | `onlr.`, then its file's: `onlr.sprite`.   | `lib/onlr/sprite.lua` (10)  |
+  | A package's         | The package's name, then its path in the package's `components/`: `bump.body`. | `packages/bump/components/body.lua` (11.2) |
+  | The engine's own    | `onlr.`, then its path in the engine's `components/`: `onlr.sprite`. | `packages/onlr/components/sprite.lua` (10) |
 
-- The engine looks for a type in `components/` first, then in `lib/`. So a script cannot have the name of the engine or of a pack, and the editor says so.
+- The engine looks for a type in the project's `components/` first, then in the packages'. So a script cannot have the name of the engine or of a package, and the editor says so.
 - A node has at most one component of a type. Giving it a second is an error.
 - A node keeps its components in `components`, by their types' names. A dot in a name is a table in a table: `bump.body` is `components.bump.body`. A node file writes them so (5), and a script reads them so: `self.node.components.bump.body`.
-- In the game, `components` holds a table for the engine's name, for each pack's and for each folder of `components/`, also on a node that has none of their types. Such a table is empty and cannot be changed. So `self.node.components.bump.body` is `nil` on a node without a body, and a misspelt name, such as `components.bmup.body`, is an error.
+- In the game, `components` holds a table for the engine's name, for each package's and for each folder of `components/`, also on a node that has none of their types. Such a table is empty and cannot be changed. So `self.node.components.bump.body` is `nil` on a node without a body, and a misspelt name, such as `components.bmup.body`, is an error.
 - Each component of a node is a table of its own, which finds its functions in its type. So `self` is the component, and what a function keeps in `self` belongs to that one node.
 - `self.node` is the node. `self:setEnabled(false)` turns the component off, and `self:isEnabled()` says whether it is on (6.4). The engine gives every type these two functions.
 - A type does not inherit another. What two types share is a module that both load (3.1), or a component of its own that both find on the node.
@@ -388,6 +389,7 @@ return Player
 | `group`                     | The properties it holds, under one heading.       | A table with a field for each.               |
 | `list`                      | Rows of one kind, which the user adds and removes. | A list of what that kind gives.             |
 
+- A kind is a value or a reference. A value is held in the node file as it is: `bool`, `integer`, `number`, `string`, `choice`, `color`, `vector`, `group` and `list`. A reference names something else of the project: `image`, `sound`, `font`, `file`, `nodeFile`, `node` and `component`.
 - `group` and `list` take other properties: `onlr.property.group({ width = onlr.property.number(32), height = onlr.property.number(32) })` is read as `self.box.width`, and `onlr.property.list(onlr.property.image())` as `self.frames[1]`.
 
 - A node file keeps a file as its path, and a font as a table of its `path` and its `size`. It keeps a node, and a component, as the node's id, or as a path of ids when the node is inside an instance (9). When the file loads, the engine gives the component the node or the component itself.
@@ -534,9 +536,9 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 
 Each file of the engine holds one thing:
 
-| In `lib/onlr/`                                      | Holds                                                                                                                                                      |
+| In `packages/onlr/`                                 | Holds                                                                                                                                                      |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `manifest.lua`                                      | The engine's name, its version and its component types, as a pack's does (11.2).                                                                           |
+| `manifest.lua`                                      | The engine's name and its version, as a package's manifest holds them (11.2).                                                                              |
 | `init.lua`                                          | What `require("onlr")` gives: `start`, `conf`, and the namespaces of the files below. It joins them, sets where `require` looks (3.1), and does nothing else. |
 | `loop.lua`                                          | `onlr.loop`: the loop and its steps (8.1).                                                                                                                 |
 | `tree.lua`                                          | `onlr.node`: the root, the tree and its lists (8.2).                                                                                                       |
@@ -544,9 +546,9 @@ Each file of the engine holds one thing:
 | `property.lua`                                      | `onlr.property` (6.2).                                                                                                                                     |
 | `data.lua`                                          | Reading data files (4), and loading the files that properties name.                                                                                        |
 | `formats.lua`                                       | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
-| `sprite.lua`, `text.lua`, `shape.lua`, `camera.lua` | The engine's components (10), one in each file.                                                                                                            |
+| `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua` and `camera.lua`.                                                   |
 
-- The engine is in `lib/` as a pack is, with a manifest that names its component types. So the editor finds the engine's components and a pack's in one way.
+- The engine is in `packages/` as a package is, with its components in `components/`. So the editor finds the engine's components and a package's in one way. Its source carries its own definitions (4.3), so it needs no definitions file.
 - `conf.lua` loads the engine before LÖVE has loaded its modules for drawing, input and the rest (3.1): only its file functions are sure to be there. So no file of the engine uses another part of LÖVE while it loads, only when its functions run.
 
 ## 9. Instances
@@ -655,7 +657,7 @@ The engine has four component types. They are written as scripts are, with the f
 - A camera shows only what is under its node. So a level puts its world under a node with the camera, and what stays on the screen, such as a score, beside that node. The score draws at the window's pixels, and the camera does not move it.
 - What no camera holds draws as plain LÖVE does, with 0, 0 at the window's top left.
 - A camera's properties move it, not its node's place, which moves the world under it. A script follows the player by setting them in `lateUpdate`: `camera.posX, camera.posY = player.posX, player.posY`.
-- A pack of a camera library gives a component that draws a group in the same way (11).
+- A package of a camera library gives a component that draws a group in the same way (11).
 
 Their properties use LÖVE's names wherever LÖVE has one:
 
@@ -688,30 +690,31 @@ Their properties use LÖVE's names wherever LÖVE has one:
 ### 11.1 Using a library
 
 - A library is Lua code that its author wrote for LÖVE games. The engine does not know it, and it does not know the engine (2.1).
-- A project keeps its libraries in `lib/`, where `require` looks (3.1), so a script loads a library by the name its author gives:
+- A project keeps its libraries in `packages/`, where `require` looks (3.1), so a script loads a library by the name its author gives:
 
   ``` lua
   local bump = require("bump")
   ```
 
-- `require("bump")` finds `lib/bump.lua` or `lib/bump/init.lua`. A library that the user copies in works the same way, with or without a pack.
-- The file's name is what `require` looks for. A library whose repository is a folder with its file inside, such as `bump.lua/bump.lua`, is copied so that the file is `lib/bump.lua`.
+- `require("bump")` finds `packages/bump.lua` or `packages/bump/init.lua`. A library that the user copies in works the same way, with or without a package.
+- The file's name is what `require` looks for. A library whose repository is a folder with its file inside, such as `bump.lua/bump.lua`, is copied so that the file is `packages/bump.lua`.
 - A script calls the library as the library's own documentation says. ONLR puts nothing between them and renames nothing.
 
-### 11.2 Packs
+### 11.2 Packages
 
-A pack is a folder in `lib/`, named as the library is loaded.
+A package is a folder in `packages/`, named as the library is loaded. It holds what a project holds, in the same folders.
 
-| In `lib/bump/`          | Is                                                              | Read by                                   |
+| In `packages/bump/`     | Is                                                              | Read by                                   |
 | ----------------------- | --------------------------------------------------------------- | ----------------------------------------- |
-| `manifest.lua`          | The manifest, which describes the pack (4.1).                   | The editor. The game never loads it.      |
+| `manifest.lua`          | The manifest, which describes the package (4.1).                | The editor. The game never loads it.      |
 | `init.lua`              | Code: one line that returns the library.                        | The game, at `require("bump")`.           |
+| `bump.lua`              | The library's definitions (4.3), named as the package, and written with it, since most libraries ship none. | A code editor only. |
 | `library/`              | The library's own files, unchanged, with its licence.           | The game, through `init.lua`.             |
-| `world.lua`, `body.lua` | Component types, one in each file: `bump.world` and `bump.body`. | The game, when a node file names the type. |
-| `definitions.lua`       | The library's definitions (4.3), written with the pack, since most libraries ship none. | A code editor only.                       |
+| `components/`           | Component types, one in each file: `world.lua` is `bump.world`, and `body.lua` is `bump.body`. | The game, when a node file names the type. |
+| `nodes/`                | Node files that the package ships, which a project holds as instances (9). | The game and the editor, as the project's node files. |
 
 ``` lua
----@type onlr.Pack
+---@type onlr.Package
 return {
   format = 1,
   name = "bump",
@@ -719,28 +722,24 @@ return {
   version = "3.1.7",
   source = "https://github.com/kikito/bump.lua",
   license = "MIT",
-  components = {
-    "world",
-    "body",
-  },
 }
 ```
 
-- The manifest and `init.lua` stay two files. The editor reads the manifest as any data file (4.1), which cannot load the library. So the manifest describes the pack and holds none of its code.
+- The manifest and `init.lua` stay two files. The editor reads the manifest as any data file (4.1), which cannot load the library. So the manifest describes the package and holds none of its code.
 - `library/` holds what the library's author ships. A newer version of the library replaces that folder and nothing else.
-- A component type is one file, since its name is its file's (6.1). The names start with the pack's: `bump.body` is `lib/bump/body.lua`. The types are written as scripts are (6).
-- `components` names the types that the editor offers (13), by their files' names: inside the pack, its own name is not repeated. A node file and a script name a type in full, as `bump.body`, since they are read outside the pack.
-- A pack adds nothing to the engine and changes nothing in it. A game uses a pack's library with its components, without them, or both.
-- The editor copies a pack into a project when the user adds it, and deletes its folder when the user removes it. In the project, the pack is the project's own copy, and an export holds it.
-- The editor adds a pack from ONLR's own, or from a folder that the user chooses, so anyone can make one.
-- When ONLR ships a newer version of a pack that a project holds, the editor offers it. Updating replaces the pack's folder, after the editor has named the files that the user changed in it.
+- A component type is one file, since its name is its file's (6.1). The names start with the package's: `bump.body` is `packages/bump/components/body.lua`. The types are written as scripts are (6), and the editor offers every one of them (13).
+- A node file of a package is named by its path, as the project's are: `packages/bump/nodes/box.lua`.
+- A package adds nothing to the engine and changes nothing in it. A game uses a package's library with its components, without them, or both.
+- The editor copies a package into a project when the user adds it, and deletes its folder when the user removes it. In the project, the package is the project's own copy, and an export holds it.
+- The editor adds a package from ONLR's own, or from a folder that the user chooses, so anyone can make one.
+- When ONLR ships a newer version of a package that a project holds, the editor offers it. Updating replaces the package's folder, after the editor has named the files that the user changed in it.
 
-### 11.3 A pack's components
+### 11.3 A package's components
 
-A pack's components show a library in the inspector. The sample is a pack for bump, a library that keeps boxes in a world of its own and tells which ones a moving box hits. bump's world is not the tree: it is bump's own list of boxes, and it knows nothing of nodes.
+A package's components show a library in the inspector. The sample is a package for bump, a library that keeps boxes in a world of its own and tells which ones a moving box hits. bump's world is not the tree: it is bump's own list of boxes, and it knows nothing of nodes.
 
 ``` lua
--- lib/bump/body.lua: a box that collides
+-- packages/bump/components/body.lua: a box that collides
 local onlr = require("onlr")
 
 ---@class bump.body : onlr.Component
@@ -793,7 +792,7 @@ return Body
 ```
 
 ``` lua
--- lib/bump/world.lua: the tree's one world
+-- packages/bump/components/world.lua: the tree's one world
 local onlr = require("onlr")
 local bump = require("bump")
 
@@ -836,11 +835,11 @@ end
 return Player
 ```
 
-What the sample shows of every pack:
+What the sample shows of every package:
 
 - **What a root has one of** is a component of the root (5): here `bump.world`. It is made with the root and ends with it, so each root has its own, and its node file keeps its settings. It is not a module that lives through the whole game. A component that needs it finds it with `onlr.node.findComponent`, and adds it to the root when the tree has none. A second world, of a node file that is held in another, is not used.
 - **What the library must be told** is told by the component, in its `enable` and `disable` (6.4). bump asks for each box to be added to its world; the body does that while it runs, so the user does not, and a node that is turned off collides with nothing.
-- **Where a node is** has one truth: the node's own place (5). A library that keeps a place of its own, as bump does for each box, holds a copy, and the pack's component keeps the copy in step. After `move`, the node takes the library's answer. When a script sets the node's place itself, the component tells the library, in its `update`.
+- **Where a node is** has one truth: the node's own place (5). A library that keeps a place of its own, as bump does for each box, holds a copy, and the package's component keeps the copy in step. After `move`, the node takes the library's answer. When a script sets the node's place itself, the component tells the library, in its `update`.
 - **What a script asks of the library** is a function of the component: `body:move(x, y)`. The script names the body in `needs` (6.6), so its node always has one.
 - **What the library reports** reaches scripts with `node:send`, as a function that the script defines: `contact(other)`. Both nodes of a contact are told.
 - **What the editor shows** is `bounds`, for choosing the node, and `drawEditor`, for the outline.
@@ -884,12 +883,16 @@ What the sample shows of every pack:
 | Reload           | The edit player | A file of the project changed.                                                                                     |
 | Stop             | The play player | The game ends.                                                                                                     |
 | Pause, Step, Resume | The play player | The game stops, runs one frame, or goes on (12.1).                                                           |
+| Watch            | The play player | Which running nodes to send, or none (12.6).                                                                       |
+| A running change | The play player | A new value for a running node (12.6).                                                                             |
 
 | The engine sends | From            | For                                                            |
 | ---------------- | --------------- | -------------------------------------------------------------- |
 | A frame          | The edit player | The picture of a view (12.4).                                  |
 | Bounds           | The edit player | The nodes' bounds and places, when they change (12.3).         |
 | An answer        | The edit player | A type's properties, or why its file does not load (12.5).     |
+| The tree         | The play player | The running tree's nodes, when it changes (12.6).              |
+| Values           | The play player | The watched nodes' places and values (12.6).                   |
 | An error         | Both players    | A message with its file, line and stack.                       |
 
 ### 12.3 Views
@@ -920,6 +923,14 @@ What the sample shows of every pack:
 - When any Lua file of the project changes on disk, the editor starts the edit player again, which takes about a tenth of a second, and asks again. So nothing of the old code stays in it.
 - While the edit player is down, such as after an error in `main.lua`, the node view shows the error, and the inspector shows the values that the node file holds, without their kinds.
 
+### 12.6 The running game
+
+- While the game plays, the nodes panel and the inspector can show the running tree in place of a node file, as Unity's do. A change made there changes the running game only, and is gone at Stop. The panels mark that they show the running game.
+- The editor asks the play player for the tree. The engine sends each node's name, its children and its components' types, and sends the tree again when it changes, at most four times a second. A running node has no id of a file (9), so the engine gives each a number for the link.
+- For the chosen nodes, the engine sends their places and their components' values ten times a second. A reference is sent as what it names: a file as its path, and a node or a component as the node's number.
+- A value that the user changes is sent to the play player, which sets it between two frames, as a script sets a field. A node's active and a component's enabled are set through their functions (7).
+- The engine sends none of it unless the editor asks, and an exported game holds none of it (8.1).
+
 ## 13. The editor
 
 - The editor is an OpenECS tool: a preset and plugins, in Lua unless a part needs C. The user never sees or writes them.
@@ -927,21 +938,22 @@ What the sample shows of every pack:
 - Every panel is a panel type that a plugin registers (OpenECS DESIGN 4), and the preset only places them. No panel is built into the editor, so the user opens, moves and groups them as in any OpenECS tool.
 - A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a plugin that knows nothing of ONLR and serves any OpenECS tool. It belongs in OpenECS-std, as its settings window does (OpenECS-std DESIGN 12).
 - A panel of ONLR's own, such as the inspector or the nodes panel, is built from generic parts, such as ui's elements. A part that it needs and that knows nothing of ONLR is added to the standard plugin that it belongs to, not written inside ONLR, and not worked around.
-- The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, a video with video, and a text with syntax.
+- The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, and a text with syntax. It shows no video, since OpenECS-std's video does not read LÖVE's Ogg Theora.
 
 | Plugin         | Does                                                                                          |
 | -------------- | --------------------------------------------------------------------------------------------- |
 | `onlr_project` | Holds the open project: its manifest, its node files, the chosen nodes and the history. It reads and writes the files, and watches the folder. |
 | `onlr_player`  | Starts the players and speaks the link. It gives the node view, and the functions Play, Play This File, Pause, Step and Stop. |
 | `onlr_views`   | The other panels of ONLR's own: the nodes panel, the inspector and the project settings. |
-| `onlr_export`  | Export (14), and LÖVE's packages (15).                                                        |
+| `onlr_export`  | Export (14), and LÖVE's runtimes (15).                                                        |
 
 - The inspector shows the chosen node's place, then each of its components under its type's name. A component has one row for each property: its `label`, or else its name in words, `cellSize` as "Cell size", and the control of its kind (6.2).
+- A reference (6.2) is set by dragging onto its row what it names: a file from the files panel, or a node from the nodes panel or the node view. A value is typed or chosen with its control, and is not dragged in the node view.
 - A type or a property that the editor does not find, such as after a script was renamed outside the editor, shows in the inspector as the node file writes it. The user can give its values to another type or property. Until then they are kept (4.2).
-- The types that adding a component offers come from three places: the engine's manifest (8.3), the manifests of the project's packs (11.2), and the Lua files of `components/` (3.1).
+- The types that adding a component offers are the files of the project's `components/` (3.1), and of the `components/` of the engine and of each package (11.2).
 - Many node files can be open at once, each in a node view of its own. One edit player draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
 - The nodes panel shows the tree of the node file whose view has the focus, from its first node.
-- The node view has three tools, as Unity and Godot have: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The panel draws them over the frame (12.3).
+- The node view has three tools, as Unity and Godot have: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and the node view follows the tool chosen there.
 - A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node in a rectangle.
 - Snapping to a grid is a toggle. The grid's size is a setting of the project, kept in `.onlr/`.
 - The console is a log whose lines may name a file and a line, which a click opens in the user's code editor.
@@ -967,11 +979,11 @@ What the sample shows of every pack:
 - The user chooses the folder that an export is written to, and the editor keeps it for the project in `.onlr/`. A folder inside the project is left out of every export, as `exclude`'s files are.
 - It leaves out every file and folder whose name starts with a dot, such as `.onlr/` and `.luarc.json`, and what `exclude` in the project's manifest names.
 - It holds every other file, as it is. The editor does not leave out a file that no node file names, since a script may name it in a text. Scripts stay source: LuaJIT's bytecode is tied to its version.
-- The licences travel with their parts: the engine's is in `lib/onlr/`, and a library's is in the library's folder.
+- The licences travel with their parts: the engine's is in `packages/onlr/`, and a library's is in the library's folder.
 
 ### 14.2 Builds
 
-A build is made from the `.love` file and LÖVE's package for the platform (15.2), by copying and joining files. It runs no tool of the target's platform.
+A build is made from the `.love` file and LÖVE's runtime for the platform (15.2), by copying and joining files. It runs no tool of the target's platform.
 
 | Target        | The build                                                                                                         |
 | ------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -979,20 +991,22 @@ A build is made from the `.love` file and LÖVE's package for the platform (15.2
 | Windows x86_64 | `love.exe` with the `.love` file joined to its end, named after the game, beside LÖVE's libraries, in a zip archive. |
 
 - LÖVE runs a `.love` file that is joined to the end of its executable.
+- A Windows build keeps LÖVE's icon and details.
 - A build holds LÖVE's `license.txt`, which lists the licences of LÖVE and of the libraries inside it.
 
 ## 15. LÖVE
 
 ### 15.1 Version
 
-- ONLR is made for LÖVE 11.5, and a project names the version it is made for (3.2).
+- ONLR is made for LÖVE 11.5, and a project names the version it is made for (3.2). Each version of ONLR serves one version of LÖVE. When a project names another, the editor offers to move it to ONLR's, as it does for the engine (3.3).
 - The engine avoids the functions that LÖVE's development version, 12.0, removes or renames, so the move to it stays small.
 
-### 15.2 Packages
+### 15.2 Runtimes
 
-- ONLR's archive holds the package of the editor's own platform, which the players run. On Linux it is the contents of LÖVE's AppImage, unpacked, so it runs without the system's AppImage support.
-- The package of another platform is downloaded from LÖVE's releases at the first export for it. The editor checks it against SHA-256 hashes that ONLR ships, and keeps it in the user's data folder, by version and platform.
-- A setting names a folder to use as a package instead, such as a LÖVE the user built.
+- A runtime is LÖVE for one version and one platform, as files in a folder.
+- ONLR's archive holds the runtime of the editor's own platform, which the players run. On Linux it is the contents of LÖVE's AppImage, unpacked, so it runs without the system's AppImage support.
+- The runtime of another platform is downloaded at the first export for it: from LÖVE's releases, and for Linux from ONLR, which hosts the AppImage's contents as a `.tar.gz`, since only Linux unpacks an AppImage. The editor checks it against SHA-256 hashes that ONLR ships, and keeps it in the user's data folder, by version and platform.
+- A setting names a folder to use as a runtime instead, such as a LÖVE the user built.
 
 ## 16. Tests
 
@@ -1040,9 +1054,7 @@ A build is made from the `.love` file and LÖVE's package for the platform (15.2
 
 **Offscreen driver.** A video driver of SDL that opens no window.
 
-**Pack.** A library made ready for ONLR, with component types that show it in the inspector.
-
-**Package.** LÖVE for one version and one platform, as files in a folder.
+**Package.** A library made ready for ONLR: a folder of `packages/` with the library, its components and its node files.
 
 **Play player.** The player that runs the game when the user plays it.
 
@@ -1055,6 +1067,8 @@ A build is made from the `.love` file and LÖVE's package for the platform (15.2
 **Quad.** LÖVE's object for a rectangle of an image, with which LÖVE draws only that part of it.
 
 **Root.** The node that the game runs under the top node, with all that is under it, until a script loads another in its place.
+
+**Runtime.** LÖVE for one version and one platform, as files in a folder.
 
 **SDL.** The library through which LÖVE and OpenECS use windows, input and graphics.
 

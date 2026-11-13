@@ -18,7 +18,12 @@ return {
   -- and the project settings panel shows and changes it.
   window = {
     height = 720,
+    resizable = true,
     width = 1280,
+  },
+  -- Any other of LÖVE's settings, under LÖVE's names: this game uses no physics.
+  modules = {
+    physics = false,
   },
   -- As love.graphics.setDefaultFilter. The engine sets it in the game and in the node view,
   -- so pixel art is sharp in both. love.load runs only in the game.

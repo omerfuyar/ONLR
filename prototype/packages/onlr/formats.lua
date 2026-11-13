@@ -12,6 +12,10 @@
 ---@field startNode string the node file that the game starts with, as its root
 ---@field topNode? string the node file of the top node, which the game keeps above every root; an empty node when left out
 ---@field window {width: integer, height: integer, [string]: any} as LÖVE's t.window, with any other field of it, such as resizable
+---@field modules? table<string, boolean> as LÖVE's t.modules
+---@field audio? table as LÖVE's t.audio
+---@field console? boolean as LÖVE's t.console
+---@field gammacorrect? boolean as LÖVE's t.gammacorrect
 ---@field defaultFilter? "linear"|"nearest" as love.graphics.setDefaultFilter; linear when left out
 ---@field fixedRate? number how many times a second fixedUpdate is called; 60 when left out
 ---@field exclude? string[]
@@ -63,12 +67,12 @@
 ---@class onlr.NodeFile : onlr.NodeData
 ---@field format integer
 
----The manifest of the engine and of a pack. The project's manifest is onlr.Project.
----@class onlr.Pack
+---The manifest of the engine and of a package. The project's manifest is onlr.Project.
+---A package's component types are the files of its components/, so the manifest does not name them.
+---@class onlr.Package
 ---@field format integer
 ---@field name string
 ---@field description string
 ---@field version string
 ---@field source string
 ---@field license string
----@field components string[] by their files' names

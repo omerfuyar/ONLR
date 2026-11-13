@@ -1,5 +1,5 @@
 {
   "runtime.version": "LuaJIT",
-  "runtime.path": ["?.lua", "?/init.lua", "lib/?.lua", "lib/?/init.lua"],
+  "runtime.path": ["?.lua", "?/init.lua", "packages/?.lua", "packages/?/init.lua"],
   "workspace.library": [".onlr"]
 }
