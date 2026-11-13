@@ -10,6 +10,7 @@ Body.width = onlr.property.number(32, { min = 0 })
 Body.height = onlr.property.number(32, { min = 0 })
 -- A vector: two numbers in one row. Read as self.offset.x.
 Body.offset = onlr.property.vector(0, 0, { description = "The box's corner, from the node's place" })
+Body.solid = onlr.property.bool(true, { description = "Other bodies stop at it. They pass through one that is not solid, and are still told of the contact" })
 
 -- Once: finds the tree's one world. It is a component of the root, found by its type.
 -- When the tree has none, the body adds one to the root.
@@ -27,20 +28,32 @@ end
 -- Each time the body stops running, and before it is destroyed.
 -- So a node that is turned off collides with nothing.
 function Body:disable()
-  self.world:remove(self)
+  if self.world:hasItem(self) then
+    self.world:remove(self)
+  end
 end
 
 -- Not called by the engine: scripts call it. The box goes as far as bump lets it,
 -- and the node takes bump's answer.
+-- What bump does when a moving box meets another: it slides along a solid one, and crosses any other.
+local function meet(_, other)
+  return other.solid and "slide" or "cross"
+end
+
 function Body:move(x, y)
   local hits
-  self.x, self.y, hits = self.world:move(self, x + self.offset.x, y + self.offset.y)
+  self.x, self.y, hits = self.world:move(self, x + self.offset.x, y + self.offset.y, meet)
   self.node:setWorldPosition(self.x - self.offset.x, self.y - self.offset.y)
   for _, hit in ipairs(hits) do
     -- Calls contact(...) in each component of the node that defines it.
     self.node:send("contact", hit.other.node, hit.normal.x, hit.normal.y)
     hit.other.node:send("contact", self.node, -hit.normal.x, -hit.normal.y)
   end
+end
+
+-- A body that was turned off while it was told of a contact is no longer in bump's world.
+function Body:destroy()
+  self.world = nil
 end
 
 -- The node's place is the truth, and bump's box is a copy.

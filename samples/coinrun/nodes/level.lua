@@ -1,7 +1,7 @@
 -- A node file, as the editor writes it: one field on each line, in a fixed order.
 -- A node's fields are in the order of DESIGN.md's table of them; every other table's, by their names.
 -- The user arranges it in the editor and does not edit it by hand.
--- The comments are this prototype's: the editor writes none.
+-- The comments are this sample's: the editor writes none.
 -- A value that equals its default is left out: a node without posX is at 0.
 ---@type onlr.NodeFile
 return {
@@ -61,6 +61,7 @@ return {
               jump = {
                 height = 120,
               },
+              jumpSound = "sounds/jump.wav",
               speed = 250,
             },
           },

@@ -14,11 +14,14 @@ return {
     bump = {
       body = {
         height = 16,
+        solid = false,
         width = 16,
       },
     },
-    -- The script components/coin.lua, with every value at its default.
-    coin = {},
+    -- The script components/coin.lua: when the last coin is taken, it loads this node file as the root.
+    coin = {
+      next = "nodes/win.lua",
+    },
     onlr = {
       sprite = {
         image = "images/coin.png",

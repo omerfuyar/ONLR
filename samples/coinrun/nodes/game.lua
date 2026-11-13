@@ -15,7 +15,7 @@ return {
       name = "Music",
       components = {
         music = {
-          track = "sounds/theme.ogg",
+          track = "sounds/theme.wav",
         },
       },
     },
