@@ -12,10 +12,8 @@ return {
   loveVersion = "11.5",
   -- The node file that the game starts with: its node is the first root.
   startNode = "nodes/level.lua",
-  -- Node files that the game loads once, before the first root, and keeps beside every root.
-  keptNodes = {
-    "nodes/music.lua",
-  },
+  -- The node file of the top node, which the game loads once and keeps, and under which each root runs.
+  topNode = "nodes/game.lua",
   -- In the names of LÖVE's t.window. LÖVE needs the size before it opens the window,
   -- and the project settings panel shows and changes it.
   window = {

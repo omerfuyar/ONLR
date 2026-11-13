@@ -146,9 +146,7 @@ return {
   gameVersion = "0.1.0",
   loveVersion = "11.5",
   startNode = "nodes/menu.lua",
-  keptNodes = {
-    "nodes/music.lua",
-  },
+  topNode = "nodes/game.lua",
   window = {
     height = 720,
     width = 1280,
@@ -168,7 +166,7 @@ return {
 | `gameVersion`     | The game's own version.                                                         |
 | `loveVersion`     | The version of LÖVE the game is made for.                                       |
 | `startNode`       | The node file that the game starts with, as its root (5).                       |
-| `keptNodes`       | The node files that the game loads once, before the first root, and keeps for the whole game (5). |
+| `topNode`         | The node file of the top node, which the game loads once and keeps, and under which each root runs (5). An empty node when left out. |
 | `window`          | The game's window, in the names of LÖVE's `t.window`: its `width` and `height`, in pixels. |
 | `defaultFilter`   | How images are scaled, as `love.graphics.setDefaultFilter` takes it: `linear`, LÖVE's default, or `nearest`, which keeps pixel art sharp. The engine sets it in both players, before anything loads (12.1). |
 | `fixedRate`       | How many times a second `fixedUpdate` is called (6.3). 60 when left out.        |
@@ -293,14 +291,15 @@ return {
 | `components`       | Its components, by their types' names (6.1). Each is a table of its properties' values, and of `enabled`, which is true when left out. | |
 | `children`         | Its children, nodes too.                                                      |         |
 
-- The game runs one root at a time: a node, with all that is under it, which `onlr.node.root` gives. The game starts with the node file that the manifest names (3.2), and `onlr.node.loadRoot` puts another in its place (7). A level and a coin are node files alike: the game loads the level as its root, and the level holds the coin as an instance (9).
-- Beside the root run the kept nodes, which the manifest names: each the node of a node file that the game loads once, before the first root, and keeps for the whole game, such as a music player or a pause menu. A script keeps a node of the root when the root changes by moving it under a kept node (7).
-- The kept nodes and the root, with the nodes under them, are the tree.
+- The game runs one root at a time: a node, with all that is under it, which `onlr.node.root` gives. The game starts with the manifest's start node (3.2), and `onlr.node.loadRoot` puts another in its place (7). A level and a coin are node files alike: the game loads the level as its root, and the level holds the coin as an instance (9).
+- Above the root is the top node: the node of the node file that the manifest names (3.2), which the game loads once, before the first root, and keeps for the whole game. What outlives the root is under it, such as a music player or a pause menu, and the root runs as its last child. When the manifest names none, the top node is an empty node.
+- The top node, with all under it, is the tree. So the tree has one top, and a group on the top node holds the whole game, such as a library that scales the game to the window.
+- A script keeps a node of the root when the root changes by moving it under the top node, or under a node of the top node's own (7).
 - What a root has one of, such as the world that its bodies collide in, is a component of the root. No node is made only to hold one.
-- Nodes update, and get events, in the order of the tree: the kept nodes in the manifest's order, then the root; and in each, a parent, then its children, and siblings in the order of their list. `z` plays no part in it. So what must update before every other node, such as what reads the input for the whole game, is a component of a kept node.
+- Nodes update, and get events, in the order of the tree: a parent, then its children, and siblings in the order of their list, so the top node's own nodes before the root. `z` plays no part in it. So what must update before every other node, such as what reads the input for the whole game, is a component of the top node.
 - Nodes draw by `z`, the lowest first. A node's z is its own added to its parent's, so a child with a negative `z` draws behind its parent. Nodes of the same z draw in the order of the tree.
 - The engine does not order by y. A game seen from above, which draws what is lower on the screen later, sets a node's `z` from its `posY` in a script, and the next draw follows it (6.4).
-- A node can draw as a **group**, when one of its components has the function `drawGroup(draw)` (6.3). Then the node and all under it draw together, at the node's place in the order of drawing, and by `z` among themselves. The engine calls `drawGroup` in place of drawing them, and gives it `draw`, which draws them. So the component sets something up before they draw and ends it after: a camera's view (10), a canvas, a shader, or a library that works in the same way.
+- A node can draw as a **group**, when one of its components has the function `drawTree(draw)` (6.3). Then the node and all under it draw together, at the node's place in the order of drawing, and by `z` among themselves. The engine calls `drawTree` in place of drawing them, and gives it `draw`, which draws them. So the component sets something up before they draw and ends it after: a camera's view (10), a canvas, a shader, or a library that works in the same way.
 - Any node can be a group, at any depth, and a group can hold others. A group's nodes draw nowhere else, whatever their `z`: a child with a `z` of 100 draws over the rest of its group, not over what is outside it.
 - A node with two such components draws through both, the first in the order of their names outermost.
 - A node's components load, update and draw in the order of their names, and each after those that it needs (6.6). A node does not set another order: what must draw in another order is a child with a `z` of its own.
@@ -410,7 +409,7 @@ The engine calls the functions that a type has. All are optional.
 | `update(dt)`         | Each frame, with the seconds since the last one.                                                      |
 | `lateUpdate(dt)`     | Each frame, after every `update`. What follows another node, such as a camera, moves here.           |
 | `draw()`             | Each frame, with the node's place applied, so drawing at 0, 0 draws at the node.                     |
-| `drawGroup(draw)`    | Each frame, in place of drawing its node and all under it, with a function that draws them (5).      |
+| `drawTree(draw)`     | Each frame, in place of drawing its node and all under it, with a function that draws them (5).      |
 | `disable()`          | When the component stops running: each time it is turned off, and before `destroy`.                  |
 | `destroy()`          | Once, when its node is destroyed, or the root that it is in is replaced.                              |
 | `bounds()`           | When the editor asks for the rectangle that the component covers, in the node's own space. The node view uses it to choose nodes (12.3). |
@@ -423,18 +422,18 @@ The engine calls the functions that a type has. All are optional.
 ### 6.4 When functions are called
 
 - A component's life is `load`, `enable`, `start`, then each frame its events, `fixedUpdate`, `update`, `lateUpdate` and `draw`, and at its end `disable` and `destroy`.
-- A component runs while it is `enabled`, and its node and every node above that are `active`. Only a component that runs gets `start`, events, `fixedUpdate`, `update`, `lateUpdate`, `draw` and `drawGroup`. A node whose `drawGroup` does not run draws as a node without one.
+- A component runs while it is `enabled`, and its node and every node above that are `active`. Only a component that runs gets `start`, events, `fixedUpdate`, `update`, `lateUpdate`, `draw` and `drawTree`. A node whose `drawTree` does not run draws as a node without one.
 - `load` and `destroy` are called once each, whatever the node and the component are set to. They make and free what the component holds.
 - `enable` and `disable` are called each time the component starts and stops running, so every `enable` has its `disable`. What a component gives to others while it runs, such as a body's box in its world, is given in `enable` and taken back in `disable`.
-- `start` is called once, before the component's first events and `update`: when the frame in which it started to run ends, or, in a root or a kept node that the game starts with, when they have loaded (8.1).
+- `start` is called once, before the component's first events and `update`: when the frame in which it started to run ends, or, in the top node and the first root, when both have loaded (8.1).
 - In a frame, each function is called for the whole tree before the next one is (8.1). It goes through the tree in the tree's order, and through a node's components in theirs (5). `draw` goes in the order of drawing.
 - What starts goes in the tree's order, and what ends goes in the reverse. When many components start at once, `load` and `enable` go parents first. When many end, `disable` and `destroy` go children first, and on one node a component goes before those that it needs. So a component finds what it needs from its `load` to its `destroy`.
-- When a root or a kept node loads, the engine makes all its nodes, then calls `load` of every component, then `enable` of every component that runs.
+- When the top node or a root loads, the engine makes all its nodes, then calls `load` of every component, then `enable` of every component that runs.
 - What a script makes exists at once: an instance from `onlr.node.spawn`, a node from `onlr.node.add`, and a component from `node:add` (7). `onlr.node.find`, `onlr.node.findComponent`, `node:getChildren()` and `components` give it, and its `load` and `enable` are called before the function that made it returns. Its `start` and its other functions are called from the next frame on. So a script sets values on what it made, and `start` finds them.
 - `component:setEnabled` and `node:setActive` take effect at once, as making does. A component that stops running gets `disable` before the function returns, and from then on no call but `enable` or `destroy`. One that starts to run gets `enable` before the function returns, and `start` and its other functions from the next frame on. `node:setParent` does the same for the components that it starts or stops.
 - A node whose `z` `node:setZ` changed, and a node that `node:setParent` moved, draw in their new order from the frame's next draw. The other functions follow the new order from the next frame on.
 - `node:destroy()` marks the node and every node under it, and their `isDestroyed()` is true from then on. They stay in the tree, and their functions are called, until the frame ends. Then the engine calls `disable` and `destroy` of their components and takes them out of the tree. A component that holds another node asks `isDestroyed()` before it uses it.
-- `onlr.node.loadRoot` does the same to every node of the root when the frame ends. Then it makes the new root. The kept nodes stay.
+- `onlr.node.loadRoot` does the same to every node of the root when the frame ends. Then it makes the new root in the old one's place among the top node's children. The top node and its own nodes stay.
 - What a function returns is not used. `quit` is the exception: as in LÖVE, the game does not quit when `love.quit` or a component's `quit` returns true.
 
 ### 6.5 In the node view
@@ -442,7 +441,7 @@ The engine calls the functions that a type has. All are optional.
 - The node view shows nodes that do not run: no `load`, `update` or event reaches a component.
 - There the engine calls `drawEditor` in place of `draw`. A type that looks the same in the editor as in the game says so: `Sprite.drawEditor = Sprite.draw`. The engine's own components do.
 - `drawEditor` also draws what only the editor shows, such as the outline of a body or the frame of a camera. It is LÖVE code, written with the component by its author.
-- There the engine does not call `drawGroup`: a group's nodes draw through the node view alone. So a camera does not move the view, and a group's shader shows only in the game.
+- There the engine does not call `drawTree`: a group's nodes draw through the node view alone. So a camera does not move the view, and a group's shader shows only in the game.
 - A type without `drawEditor` shows nothing in the node view. Its `draw` is not called there, since it may need what `load` or `update` sets.
 - A `drawEditor` that fails marks its node in the view, and the rest draws on.
 - `drawEditor` is code, so it can do anything. The node view is kept safe from it:
@@ -473,7 +472,7 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 | `onlr.start()`                                   | Starts the engine, from `main.lua`: makes the engine's loop LÖVE's (8.1).                              |
 | `onlr.conf(t)`                                   | Sets LÖVE's settings from the project's manifest, from `conf.lua` (3.1).                               |
 | `onlr.loop.load()`, `onlr.loop.event(name, ...)`, `onlr.loop.update(dt)`, `onlr.loop.draw()`, `onlr.loop.endFrame()` | The steps of the engine's loop, which a game's own `love.run` calls (8.1). |
-| `onlr.node.root`                                 | The root (5).                                                                                          |
+| `onlr.node.top`, `onlr.node.root`                | The top node and the root (5).                                                                         |
 | `onlr.node.loadRoot(path)`                       | Ends the root and loads another node file as the root, when the current frame ends.                    |
 | `onlr.node.find(name)`                           | Gives the tree's first node of that name, in the tree's order (5).                                     |
 | `onlr.node.findAll(name)`                        | Gives a list of the tree's nodes of that name, in the tree's order.                                    |
@@ -485,7 +484,7 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 | `node:send(name, ...)`                           | Calls the function of that name in each of the node's components that has it.                          |
 | `node:isActive()`, `node:setActive(active)`      | Whether the node runs, with all that is under it (6.4), and turns it on or off.                        |
 | `node:getZ()`, `node:setZ(z)`                    | The node's `z` (5), and changes it.                                                                    |
-| `node:getParent()`, `node:getChildren()`         | The node's parent, `nil` for the root and a kept node, and the list of its children.                   |
+| `node:getParent()`, `node:getChildren()`         | The node's parent, `nil` for the top node, and the list of its children.                               |
 | `node:setParent(parent, index)`                  | Moves the node, with all that is under it, to the end of another node's children, or to `index` among them. |
 | `node:destroy()`, `node:isDestroyed()`           | Destroys the node and its children when the current frame ends, and says whether it was destroyed.     |
 | `node:toWorld(x, y)`, `node:toLocal(x, y)`       | Turn a point of the node's space into the world's, and back.                                           |
@@ -497,7 +496,7 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 - A node's `id` and `instance` are only the files' (9).
 - A `parent` that is left out is the root.
 - The list that `node:getChildren()` gives is the engine's own: a script reads it and does not change it.
-- `node:setParent` keeps the node's own place, so the node moves with its new parent. To keep it where it is in the world, a script calls `node:setWorldPosition` after. A node cannot be moved under itself or a node under it, and a root or a kept node cannot be moved.
+- `node:setParent` keeps the node's own place, so the node moves with its new parent. To keep it where it is in the world, a script calls `node:setWorldPosition` after. A node cannot be moved under itself or a node under it, and the top node and the root cannot be moved.
 - No node has tags: a component type is one. With an empty script `enemy` on every enemy, `onlr.node.findAllComponents("enemy")` gives them all.
 - When each function takes effect is in section 6.4.
 - The functions that declare properties are in `onlr.property` (6.2).
@@ -510,10 +509,10 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 ### 8.1 A frame
 
 - `onlr.start` sets `love.run`, LÖVE's own loop. The engine's loop does what LÖVE's does, and adds the tree. Each step that it adds is a function of `onlr.loop`, so a game that sets its own `love.run` calls them from its own loop:
-  1. It calls `love.load`, if the game defines it, then `onlr.loop.load()`, which loads the kept nodes and the first root: the manifest's start node, or the node file that Play names (12.1).
+  1. It calls `love.load`, if the game defines it, then `onlr.loop.load()`, which loads the top node and the first root: the manifest's start node, or the node file that Play names (12.1).
   2. For each event, it calls LÖVE's handler of it, as LÖVE's loop does, which calls the game's own callback, such as `love.keypressed`. Then `onlr.loop.event(name, ...)` calls the components' function of that name.
   3. It calls `love.update(dt)`, then `onlr.loop.update(dt)`, which calls the components' `fixedUpdate` as often as the time asks (6.3), then their `update`, then their `lateUpdate`.
-  4. It clears the window and calls `onlr.loop.draw()`, which calls the components' `draw` in the order of drawing, and each group's `drawGroup` in its place (5). Then it calls `love.draw()`, which draws over the nodes in the window's own space.
+  4. It clears the window and calls `onlr.loop.draw()`, which calls the components' `draw` in the order of drawing, and each group's `drawTree` in its place (5). Then it calls `love.draw()`, which draws over the nodes in the window's own space.
   5. It shows the frame.
   6. It calls `onlr.loop.endFrame()`, which takes out what was destroyed, loads a new root if a script asked for one, and calls `start` of the components that started to run (6.4).
 - The events go through LÖVE's own table of handlers, `love.handlers`, as in LÖVE's loop. So a library that adds to it, such as one that draws an interface and hears the keys, works as in any game.
@@ -859,7 +858,7 @@ What the sample shows of every pack:
 - The edit player runs while a project is open, and has no window.
 - LÖVE starts every game by running its `conf.lua` and `main.lua`, so the edit player runs them too, and the code of each script that is outside its functions when the editor asks about the script (12.5). It does not call `love.load`, nor a component's `load` or `update` (6.5). So what both the game and the node view need, such as the default filter, is in the manifest (3.2), and the engine sets it in both players.
 - In the edit player, the engine sets LÖVE's volume to 0, so a sound that the game's code plays there is not heard. On Linux the editor starts it with SDL's offscreen video driver, `SDL_VIDEODRIVER=offscreen`, so it opens no window and still draws with the graphics card.
-- Play saves the project (13), then starts a second player with the manifest's start node as its first root, as an exported game starts. Play This File does the same with the node file of the node view that has the focus. The kept nodes run beside it (5). Stop ends it, and so does closing its window.
+- Play saves the project (13), then starts a second player with the manifest's start node as its first root, as an exported game starts. Play This File does the same with the node file of the node view that has the focus. The top node runs above it (5). When the file in focus is the top node's, Play This File plays as Play does. Stop ends it, and so does closing its window.
 - Pause stops the game, and Step runs one frame of it. While it is paused, the engine's loop handles LÖVE's events for LÖVE alone, such as quit, and draws, but calls nothing of steps 2 and 3 of a frame (8.1). Step runs those steps once, with `dt` of one fixed step (3.2), so it runs one `fixedUpdate`. Resume goes on.
 - The play player is LÖVE as an exported game runs it: the window, the keyboard, the pointer, the gamepads and the sound are LÖVE's own, and the engine stands in for nothing.
 - What a mode draws into is the one difference between the modes. Starting a player, the link, the console and the errors are the same code for both, so the editor's other parts do not know where the game is drawn.
@@ -1010,7 +1009,7 @@ A build is made from the `.love` file and LÖVE's package for the platform (15.2
 
 **Frame.** One picture that LÖVE draws: of the game, or of a view.
 
-**Group.** A node that draws with all under it as one, through a component's `drawGroup`.
+**Group.** A node that draws with all under it as one, through a component's `drawTree`.
 
 **Library.** Lua code that its author wrote for LÖVE games to use.
 
@@ -1040,12 +1039,14 @@ A build is made from the `.love` file and LÖVE's package for the platform (15.2
 
 **Quad.** LÖVE's object for a rectangle of an image, with which LÖVE draws only that part of it.
 
-**Root.** The node that the game runs, with all that is under it, until a script loads another in its place. The kept nodes run beside it.
+**Root.** The node that the game runs under the top node, with all that is under it, until a script loads another in its place.
 
 **SDL.** The library through which LÖVE and OpenECS use windows, input and graphics.
 
 **Transform.** LÖVE's object for a position, a rotation and a scale together.
 
-**Tree.** The nodes that the game runs: the kept nodes and the root, and all that is under them.
+**Top node.** The node that the game loads once and keeps, above every root.
+
+**Tree.** The nodes that the game runs: the top node and all under it, the root too.
 
 **View.** A node file as the edit player draws it: seen from a point, at a zoom and a size.
