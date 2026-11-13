@@ -22,8 +22,8 @@
 ---bump.body is bump = { body = { ... } }.
 ---@alias onlr.ComponentsData table<string, onlr.ComponentData | table<string, onlr.ComponentData>>
 
----What an instance changes in one node under it.
----@class onlr.Override
+---What an instance changes in one node of its base.
+---@class onlr.Change
 ---@field name? string
 ---@field posX? number
 ---@field posY? number
@@ -32,14 +32,19 @@
 ---@field sclY? number
 ---@field z? number
 ---@field active? boolean
----@field components? onlr.ComponentsData laid over the node's components, name by name
+---@field components? onlr.ComponentsData laid over the node's components, name by name; one that the node lacks is added
 ---@field children? onlr.NodeData[] nodes of the instance's own, added under this node
----@field overrides? table<string, onlr.Override> when the node is an instance too
 
+---All that an instance is: its base, and what it changes in the base's nodes.
+---@class onlr.InstanceData
+---@field base string a node file
+---@field changes? table<string, onlr.Change> by the changed node's id in the base's file, or by a path into an instance inside the base
+
+---A node's entry. An instance has id and instance, and no other field.
 ---@class onlr.NodeData
----@field id string
----@field instance? string a node file: the node is an instance of it
----@field name? string an instance without one has its file's
+---@field id string unique in its file
+---@field instance? onlr.InstanceData
+---@field name? string
 ---@field posX? number
 ---@field posY? number
 ---@field rot? number
@@ -49,7 +54,6 @@
 ---@field active? boolean
 ---@field components? onlr.ComponentsData
 ---@field children? onlr.NodeData[]
----@field overrides? table<string, onlr.Override> in an instance: by the ids of the nodes under it
 
 ---A node file: one node, and the format's number beside its fields.
 ---The colon only tells a code editor that the file has a node's fields too.

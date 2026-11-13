@@ -51,6 +51,7 @@ function Node:setWorldPosition(x, y) end
 ---@class onlr.Components
 ---@field player? player
 ---@field coin? coin
+---@field spin? spin
 ---@field bump? {body: bump.body?, world: bump.world?}
 ---@field onlr? table the engine's own: sprite, text, shape and camera
 

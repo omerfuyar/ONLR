@@ -89,7 +89,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - A **component** gives a node what it shows or does. Each has properties, such as a sprite's image or a player's speed. A node can have many components, one of each type. So one node is a whole player: its picture, its body and its script. A child is for what has a place of its own, such as a shadow.
 - Nodes draw in the order of a number, `z`, the lowest first. A child's `z` is added to its parent's, so a child can draw behind its parent. Nodes of the same `z` draw in the order of the tree: a parent before its children, and siblings in their order.
 - A **node file** holds one node with all that is under it: a level, a menu, a coin. There is one kind of it.
-- A node file may hold others, as **instances**: a level holds coins, and the coin is a node file of its own. An instance has its own place, may change any value of its file's nodes and components, and may have children of its own. It adds no component: what a node is made of is said in its own file. A script makes instances while the game runs, such as bullets and enemies.
+- A node file may hold others, as **instances**: a level holds coins, and the coin is a node file of its own. An instance is made from that file, its base, and may change it freely: any value of its nodes and components, and components and children of its own. A script makes instances while the game runs, such as bullets and enemies.
 - The game runs one node at a time, with all that is under it: the **root**. The game starts with the node file that the manifest names, and a script loads another as the root, which ends the one that runs.
 - What the whole game has one of at a time, such as the world that its bodies collide in, is a component of the root.
 - What must outlive the root, such as a score, lives in the user's own Lua modules, as in any LÖVE game.
@@ -172,6 +172,8 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 ## Glossary
 
 **Asset.** A file of a project that a game shows or plays, such as an image, a sound or a font.
+
+**Base.** The node file that an instance is made from.
 
 **Build.** A game with LÖVE inside, for one platform.
 
