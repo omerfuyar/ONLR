@@ -4,11 +4,11 @@
 return {
   format = 1,
   name = "onlr",
-  description = "The engine: scenes, objects and components",
+  description = "The engine: nodes, components and scenes",
   version = "0.1.0",
   source = "https://github.com/omerfuyar/ONLR",
   license = "zlib",
-  -- By their files' names: sprite is lib/onlr/sprite.lua, and a scene names it onlr.sprite.
+  -- By their files' names: sprite is lib/onlr/sprite.lua, and a node file names it onlr.sprite.
   components = {
     "sprite",
     "text",

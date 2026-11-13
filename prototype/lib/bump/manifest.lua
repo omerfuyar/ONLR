@@ -9,7 +9,7 @@ return {
   source = "https://github.com/kikito/bump.lua",
   license = "MIT",
   -- The component types that the editor offers, by their files' names:
-  -- world is lib/bump/world.lua, and a scene names it bump.world.
+  -- world is lib/bump/world.lua, and a node file names it bump.world.
   components = {
     "world",
     "body",
