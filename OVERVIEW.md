@@ -88,8 +88,9 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - A **node** is a thing of the game: a player, a coin, a camera, a whole level. It has a name, a place (position, rotation and scale), components, and children. A child's place is in its parent, so it moves, turns and scales with it.
 - A **component** gives a node what it shows or does. Each has properties, such as a sprite's image or a player's speed. A node can have many components, one of each type. So one node is a whole player: its picture, its body and its script. A child is for what has a place of its own, such as a shadow.
 - Nodes draw in the order of a number, `z`, the lowest first. A child's `z` is added to its parent's, so a child can draw behind its parent. Nodes of the same `z` draw in the order of the tree: a parent before its children, and siblings in their order.
+- A node can draw as a **group**, with all under it, through one of its components: a camera shows the world under its node, and a score beside that node stays on the screen.
 - A **node file** holds one node with all that is under it: a level, a menu, a coin. There is one kind of it.
-- A node file may hold others, as **instances**: a level holds coins, and the coin is a node file of its own. An instance is made from that file, its base, and may change it freely: any value of its nodes and components, and components and children of its own. A script makes instances while the game runs, such as bullets and enemies.
+- A node file may hold others, as **instances**: a level holds coins, and the coin is a node file of its own. An instance is made from that file, its base, and may change it freely: any value of its nodes and components, and components and children of its own. What it does not want of its base, it turns off. A script makes instances while the game runs, such as bullets and enemies.
 - The game runs one node at a time, with all that is under it: the **root**. The game starts with the node file that the manifest names, and a script loads another as the root, which ends the one that runs.
 - What a root has one of, such as the world that its bodies collide in, is a component of the root.
 - What must outlive the root, such as a music player or a pause menu, is a **kept node**: the manifest names node files that the game loads once, before the first root, and keeps beside every root. A value such as a score may also live in the user's own Lua modules, as in any LÖVE game.
@@ -112,8 +113,8 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 | Panel            | Shows                                                                         |
 | ---------------- | ----------------------------------------------------------------------------- |
-| Node view        | The open node file. The user chooses nodes, and moves, turns and scales them. |
-| Nodes            | The open node file's tree of nodes.                                           |
+| Node view        | An open node file. The user chooses nodes, and moves, turns and scales them.  |
+| Nodes            | The tree of nodes of the node view in focus.                                  |
 | Inspector        | The chosen node's components and their properties.                            |
 | Files            | The project's folders and files.                                              |
 | Asset viewer     | A file of the project as it is: an image, a sound, a video or a text.        |
@@ -126,7 +127,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 - The inspector lists a component's properties in the order its script declares them. Adding a component offers the engine's, those of the project's packs, and the project's scripts.
 - The editor never runs the game's code. LÖVE does, and tells the editor what it needs, such as the properties a script declares.
 - In the node view nothing moves: the engine draws the nodes and does not update them.
-- Play saves the project, then runs the open node file as the root, in LÖVE's own window. Stop ends it, and so does closing the window. The console, the errors and their links to files work while it runs.
+- Play saves the project, then runs the game from its start node, in LÖVE's own window, and Play This File runs the node file in focus as the root. Pause stops the game, and Step runs one frame of it. Stop ends it, and so does closing the window. The console, the errors and their links to files work while it runs.
 - A preview of a node file is drawn by LÖVE as the node view is.
 - Each panel comes from a plugin, and none is built into the editor. Panels that need nothing of ONLR, such as the files panel and the asset viewer, are made for any OpenECS tool, and are part of OpenECS's standard plugins. ONLR's own panels are built from the same generic parts.
 - A game that fails, or never returns, does not stop the editor.
@@ -189,6 +190,8 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 **Editor.** The half of ONLR in which the user arranges nodes, runs the game and exports it.
 
 **Engine.** The half of ONLR that runs inside the game: a Lua library that adds nodes and components to LÖVE.
+
+**Group.** A node that draws with all under it as one, through one of its components, such as a camera.
 
 **Inspector.** The panel that shows and changes the properties of the chosen node's components.
 

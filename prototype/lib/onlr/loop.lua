@@ -20,7 +20,7 @@ function loop.event(name, ...) end
 ---@param dt number seconds since the last frame
 function loop.update(dt) end
 
----Calls the components' draw through the camera, in the order of drawing. Called before love.draw.
+---Calls the components' draw in the order of drawing, and each group's drawGroup in its place. Called before love.draw.
 function loop.draw() end
 
 ---Takes out what was destroyed, loads a new root if a script asked for one,

@@ -1,14 +1,23 @@
--- The component type onlr.camera: the view of the tree. In this prototype, only its properties.
--- Its node's place is what the window's centre shows, turned as the node is. The node's scale is not
--- used, so a camera under a scaled node does not zoom: zoom does.
+-- The component type onlr.camera: a view. In this prototype, only its properties.
+-- It draws its node and all under it as a group, moved, turned and zoomed so that
+-- the window's centre shows its point. What is outside its node, such as a score, it does not move.
 local onlr = require("onlr")
 
 ---@class onlr.camera : onlr.Component
 local Camera = {}
 
-Camera.zoom = onlr.property.number(1, { min = 0.01, description = "2 shows the tree twice as large" })
+-- Its own place, not its node's: the node's place moves the world under it.
+-- A script follows the player by setting these in lateUpdate.
+Camera.posX = onlr.property.number(0, { description = "The point, in its node's space, that the window's centre shows" })
+Camera.posY = onlr.property.number(0)
+Camera.rot = onlr.property.number(0, { description = "Its angle, clockwise" })
+Camera.zoom = onlr.property.number(1, { min = 0.01, description = "2 shows its nodes twice as large" })
 
--- In the game it draws nothing: the tree draws through its first camera that runs.
+-- The engine calls it in place of drawing the group, and gives it draw, which draws the group.
+-- In the node view it is not called, so the camera does not move the view.
+---@param draw fun()
+function Camera:drawGroup(draw) end
+
 -- In the node view, the frame of what it shows.
 function Camera:drawEditor(chosen) end
 function Camera:bounds() end
