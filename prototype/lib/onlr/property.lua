@@ -8,9 +8,11 @@
 
 ---@class onlr.PropertyOptions
 ---@field description? string shown in the inspector
+---@field label? string shown in place of the name. Without it, cellSize shows as "Cell size".
 ---@field min? number for integer and number
 ---@field max? number
 ---@field choices? string[] for choice
+---@field stream? boolean for sound: LÖVE streams it, as music needs, and does not decode it whole
 
 ---@class onlr.property
 local property = {}
@@ -59,8 +61,9 @@ function property.image(options) end
 ---@return love.Source?
 function property.sound(options) end
 
+---A node file keeps it as { path = "fonts/main.ttf", size = 16 }. Without a path, LÖVE's default font.
 ---@param options? onlr.PropertyOptions
----@return love.Font?
+---@return love.Font
 function property.font(options) end
 
 ---@param options? onlr.PropertyOptions
@@ -74,6 +77,13 @@ function property.nodeFile(options) end
 ---@param options? onlr.PropertyOptions
 ---@return onlr.Node? a node of the same file
 function property.node(options) end
+
+---A node of the same file that has a component of the type. A node file keeps the node's id.
+---@generic T
+---@param type `T` a type's name, dots and all: "bump.body"
+---@param options? onlr.PropertyOptions
+---@return T?
+function property.component(type, options) end
 
 ---@generic T
 ---@param fields T a table of properties

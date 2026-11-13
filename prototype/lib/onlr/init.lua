@@ -7,14 +7,17 @@
 -- conf.lua loads it before LÖVE's modules for drawing and input are there,
 -- so no file of the engine uses them while it loads.
 -- In this prototype every file of the engine is definitions only: functions without code.
+-- The engine's components, sprite.lua to camera.lua, declare their properties as a script does.
 
 ---@class onlr
 local onlr = {}
 
+onlr.loop = require("onlr.loop")
 onlr.node = require("onlr.tree")
 onlr.property = require("onlr.property")
 
----Starts the engine. Called from main.lua.
+---Starts the engine. Called from main.lua. It sets love.run to the engine's loop, which calls
+---the steps of onlr.loop; a game that sets its own love.run calls them itself.
 function onlr.start() end
 
 ---Sets LÖVE's settings from the project's manifest. Called from conf.lua.

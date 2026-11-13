@@ -8,46 +8,24 @@ What the owner wants worked on, in no fixed order.
 
 - **The plan.** ONLR is being planned. No code is written until the owner says the plan is done.
 - **The Windows experiment.** The owner runs it and reports what it prints (see [Tasks](#tasks)). Remind the owner of it.
-- **To discuss with the owner.** What the edit player runs (see [Player and link](#player-and-link)).
+- **To discuss with the owner.** Names: the engine's namespaces, functions and names, all together. Removing in an instance (see [Engine](#engine)).
 - **The engine's concepts first.** What is open under [Engine](#engine) is settled before a library's pack is designed, since packs are built on the engine.
-- **Which libraries.** How a library meets the engine is designed (DESIGN 11). No library is chosen (see [Libraries](#libraries)).
+- **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
 - **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
 
-- **The engine's components' properties.** DESIGN 10 names the four types. Their properties are not listed: a sprite's part of an image, its origin and its colour; a text's alignment and width; a shape's kinds and line width; a camera's zoom and limits.
-- **Sound.** A component that plays a sound when its node loads, or when a script asks. Whether it is one of the engine's own, and how music that outlives the root is played. Also open: whether a sound property gives a source that is decoded whole or one that is streamed, which LÖVE asks when it makes a source.
-- **Animation.** A sprite that shows frames of a sheet in turn. Whether it is part of `onlr.sprite` or a type of its own, and where the frames' sizes and times are kept.
-- **Physics and collision.** Components that give a node a body: where the world lives, how the body moves the node, how a child of a moving node behaves, and the name under which a contact reaches a script (DESIGN 7). Open: whether they use `love.physics`, a collision library such as bump, or both as separate packs (see [Libraries](#libraries)).
-- **Particles and tile maps.** Whether the engine has components for LÖVE's particle systems, and for tile maps (see [Libraries](#libraries)).
-- **The window and the game's size.** A project has one size (DESIGN 3.2). Open: what the game does when the window has another size or is resized, whether it scales with bars or shows more, and how fullscreen and high-density screens behave.
-- **From the window to the world.** A callback such as `mousepressed` gives a point of the window, and a node's place is in the world, behind the camera. No function turns the one into the other, so a script cannot tell which node a click is on. Recommended: `onlr.node.toWorld(x, y)` and `onlr.node.toWindow(x, y)`, through the tree's camera.
-- **Drawing in the window's space.** A component draws at its node, through the camera (DESIGN 6.3), and `love.draw` draws in the window's space (DESIGN 8.1). Open: a component that draws in the window's space, such as a score. `love.graphics.origin()` in its `draw` does it today, under LÖVE's own name. A mark on the node could do it too.
-- **Order by y.** A game seen from above draws what is lower on the screen later. A script can set `z` from `posY` each frame (DESIGN 5). Open: whether the engine does it for the children of a node that asks. It needs no library: LÖVE has nothing for it, and it is a sort of the list of `draw`.
-- **More kinds of property.** A component of another node, such as a body. Whether a property can name a node of another node file.
-- **A property's name in the inspector.** The inspector shows the name as the script writes it (DESIGN 13). Open: an option for another label, and showing `cellSize` as "Cell size".
-- **A component's values in a file.** A component's entry holds `enabled` beside the properties' values, so no property can have that name (DESIGN 6.2). Recommended: keep the taken name. The other way: the values in a table of their own, which frees the name and makes each entry one level deeper.
-- **Nested names in a node file.** The editor cannot tell from a file alone whether `enemies = { bat = { ... } }` is the type `enemies.bat` or a type `enemies` with a group `bat` (DESIGN 6.1). It tells by the files of `components/` and `lib/`. Open: a type whose file is gone, which the editor keeps as it is and cannot show. The other way: one text for each name in the file, as `["enemies.bat"]`, which is plain to the editor and less plain in a script.
-- **A pack's table on a node that has none of its components.** `node.components.bump.body` is an error, not `nil`, on a node with no component of bump, since `components.bump` is not there (DESIGN 6.1). A type that needs the body never meets it (DESIGN 6.6). Open: what a script writes to ask whether another node has a body. Recommended: `components` gives an empty table for the name of every pack and folder that the engine knows.
-- **The order of a node's components.** They load, update and draw by their names, and after those that they need (DESIGN 5). So `onlr.shape` draws before `onlr.text`, by its name alone. Open: whether a node needs a way to set the order, apart from a child with its own `z`.
-- **Finding nodes.** `onlr.node.find` gives the first node of a name, and `onlr.node.findComponent` the first component of a type. Open: finding all of them, and whether nodes have tags.
-- **Knowing that a node is gone.** A component may hold a node that was destroyed since (DESIGN 6.4). Open: a field that says so, such as `node.destroyed`.
-- **How the engine learns of a change.** DESIGN 8.2 says three things that cannot all hold: a script sets `active`, `enabled`, `z` and `parent` as plain fields; the engine's lists follow them; and the engine walks no tree. The engine learns of a plain field's change only by looking at every node each frame. The same holds for a node's place and its world transform. And no function moves a node to another parent. Recommended: `posX`, `posY`, `rot`, `sclX` and `sclY` stay plain fields, compared when the transform is used; what changes the lists goes through functions, such as `node:setActive`, `node:setParent`, `node:setZ` and `component:setEnabled`. The other way: nodes are proxies that see every write, which costs a call for each.
-- **Speed.** DESIGN 8.2 says how the tree is kept. A first measure, with 10,000 nodes that each update and draw one image: walking the components' `update` takes a small part of the time that the calls into LÖVE for drawing take. So what is worth making faster is the number of calls into LÖVE for each drawn component, not how the engine keeps its data. A sample with thousands of nodes stays as the measure.
-- **How large a node file can be.** LuaJIT reads a file's table as one function, which holds at most 65,536 constants, and each node and component uses one. A node file of 30,000 nodes with one component each loads, and one of 33,000 does not. Recommended: the editor warns well before that, and a tile map is one component, not a node for each tile.
-- **Threads.** The engine runs on LÖVE's main thread, as a LÖVE game does, and a script may use `love.thread` as in any game. Open: reading and decoding a node file's images and sounds in a thread, so that loading does not stop the picture (see Loading).
-- **Drawing state in the game.** In the node view the engine saves and restores LÖVE's drawing state around each component (DESIGN 6.5). In the game it restores the transform only, as plain LÖVE code expects to manage its own colours. Open: whether the game restores all of it too, which is safer and costs time for every component.
-- **Order of update.** Nodes update in the tree's order, and `lateUpdate` comes after every `update` (DESIGN 6.4). Open: whether a type needs a number that puts all its components before or after the others', as Unity's script execution order does.
-- **The game's own loop.** The engine takes `love.run` (DESIGN 8.1), so a game cannot set its own. Open: functions for the steps of the engine's loop, which a game's own loop calls; and an update at a fixed step, such as `fixedUpdate`, for physics.
-- **Keeping a node when the root changes.** What outlives the root lives in the user's modules (OVERVIEW 5). Whether a node can be kept too, such as a music player.
-- **Loading.** A root's files are loaded when the root loads. Open: big node files, showing progress, and freeing what the next root does not use.
-- **Removing in an instance.** An instance changes and adds, and turns off what it does not want (DESIGN 9). Open: whether it may remove a component or a node of its base. A component that is turned off is still loaded, and one that another needs cannot go.
-- **A component that the base gets later.** An instance adds a component that its base lacks (DESIGN 9). When the base later gets that component itself, what the instance wrote becomes a change of the base's component. Open: whether the editor says so when it opens the file.
-- **A world in a node file that is held.** A node file's first node may hold what the tree has one of, such as `bump.world`, and a file that holds it gets a second one (DESIGN 9). `onlr.node.findComponent` gives the first in the tree's order, so the second is not used. Open: whether a body uses the nearest world above it instead, which needs a function that looks up the tree.
-- **A type's name is its file's path.** `player` is `components/player.lua` (DESIGN 6.1). A script that is renamed or moved outside the editor breaks every node file that names it, and a renamed property leaves its old values unused (DESIGN 6.2). Recommended: the inspector shows a type or a value that it does not know, with a way to give it to another type or property. The other way: a type has a name of its own, apart from its file's, which changes how scripts are found.
-- **How a file is written, exactly.** DESIGN 4.2 names the rules. Not written down: the order of the fields, how a number is written so that both Luas read the same value, an id's letters and length, the ends of lines, and the patterns that `exclude` takes. The ends of lines matter twice: git on Windows may change them, and the editor must not take such a file for one that a person wrote (DESIGN 4.2).
-- **Versions.** While ONLR is young, a new version may break projects, and nothing is kept for the old ones. Not designed: what happens to a project's files when a format changes.
-- **Logic without code.** An idea for later: a panel in which the user connects nodes, as Unreal's Blueprints do, which writes a component. It needs nothing new from the engine if its output is a script.
+- **Removing in an instance.** To discuss with the owner. An instance changes values, and adds components and children (DESIGN 9). Open: whether it may also remove a node or a component of its base.
+  - No: it turns them off instead. What is off still loads, and stays in the tree.
+  - Yes: a change writes `removed = true` for a node, and `false` in place of a component's entry, such as `coin = false`. The editor undoes a removal by deleting that entry. A component that another of the node needs cannot be removed (DESIGN 6.6), and a property that names a removed node gets `nil`.
+  - Recommended: yes. An instance is the base, changed as freely as the user needs, and the format stays one table of changes.
+- **The camera: the engine's own, or a library's.** DESIGN 10 gives the engine `onlr.camera`. Libraries come first (OVERVIEW 9), and camera libraries do the same: gamera, and hump's camera. Open: whether a pack of one replaces `onlr.camera`. It needs the next item first.
+- **A library that wraps the whole frame.** A library that scales the game, such as push or shove, a library of screen effects, such as moonshine, and a camera library each start something before the tree draws and end it after. The engine's loop has no place for that (DESIGN 8.1). Recommended: a component of a kept node or of the root may have a function that the engine calls in place of drawing the tree, and gives a function that draws it. push's `start` and `finish`, and moonshine's `chain:draw(f)`, both fit. Its name waits for the talk on names.
+- **The window and the game's size.** A library scales the game when the window has another size (see [Libraries](#libraries)). Open: which one, how fullscreen and high-density screens behave, and how a component draws in the window's space, such as a score. `love.graphics.origin()` in its `draw` does that today, under LÖVE's own name, but it undoes any scaling too.
+- **From the window to the world.** The pointer's place, which `love.mouse.getPosition` and `mousepressed` give, is in the window's pixels. A node's place is in the world, which the camera moves, turns and zooms. To know which node a click is on, a script turns the pointer's place into the world's. A camera library has that function under its own name, such as gamera's `cam:toWorld`, and a scaling library has one too, such as push's `push:toGame`. Open with the camera and with the talk on names.
+- **Components for sound, animation and particles.** Ideas. Libraries come first (OVERVIEW 9): anim8, or peachy for Aseprite's files, to animate a sprite through its `quad` (DESIGN 10); ripple for sounds and their volumes; and LÖVE's own particle systems, whose settings Hot Particles edits. A sound property already streams with the option `stream` (DESIGN 6.2), and a kept node plays music for the whole game (DESIGN 5).
+- **Tags.** A component type serves as a tag (DESIGN 7). An idea for later: tags or groups of their own. `onlr.node.findAll` and `findAllComponents` stay so that a function that finds by tag can join them.
+- **Loading.** A root's files are loaded when the root loads, and those that the next root does not name are let go (DESIGN 6.2). An idea for later: reading a big root's images and sounds in a thread, while a picture of progress shows, as love-loader and lily do.
 
 ## Player and link
 
@@ -59,10 +37,6 @@ What the owner wants worked on, in no fixed order.
 - **How fast frames travel.** Reading a 1280×720 frame back takes about 1.4 ms with a graphics card. Making a Lua string of it and sending it with LuaSocket take about 5 ms more, so the sending side passes 60 frames a second. Receiving a frame and showing it in a panel is not measured. Ways to make it cheaper: a texture of OpenECS-std's gpu plugin, which is uploaded once and scaled by the graphics card; sending straight from the frame's memory with LuaJIT's FFI, without the string; shared memory; sending only when the picture changed.
 - **The pixels' order.** LÖVE gives a pixel as red, green, blue and alpha, and OpenECS's images hold blue, green, red and alpha. Where the change is made: a shader in the engine, the panel, or a texture that takes LÖVE's order.
 - **Bounds in the link.** With each frame the engine sends every node's bounds as the view shows them (DESIGN 12.3), so moving the view sends them all again, and a turned node's bounds are no rectangle there. Recommended: bounds in the node's own space with the node's transform, sent when the nodes change; the panel places them in the view itself. It waits for the libraries, since their components give the bounds.
-- **What the edit player runs.** To discuss with the owner. The edit player is LÖVE on the project's folder, so it runs `conf.lua`, the top of `main.lua`, and the top of each script that the editor asks about. It does not call `love.load`, nor a component's `load` or `update` (DESIGN 6.5). What follows for a game's author:
-  - Code at the top of `main.lua` runs when the project opens, not only when the game plays. An error or an endless loop there leaves the node view empty.
-  - What a game sets in `love.load` is not set in the node view. A game with pixel art calls `love.graphics.setDefaultFilter("nearest")` there, so its pictures are sharp in the game and blurred in the node view.
-  - Recommended: the manifest holds the settings that both need, the default filter first; while the edit player is down, the inspector shows the values that the node file holds, without their kinds; and the edit player starts again when any Lua file changes, which takes about a tenth of a second.
 - **A player that does not answer.** The editor starts a player again when asked (DESIGN 12.1). Open: how the editor learns that a `drawEditor` never returns, and what keeps it from starting the same view again and again; and what the console shows for a game that fails before the engine loads.
 - **The game in a panel.** Play shows the game in LÖVE's own window, and only what a mode draws into differs between the modes (DESIGN 12.1). Showing the game in a panel is an idea for later. What it needs:
   - Frames from the play player. `love.graphics.captureScreenshot` reads the window's picture, also when there is no window, so the game draws as always. Drawing into a canvas of the engine's instead would break a game that sets canvases of its own.
@@ -71,9 +45,7 @@ What the owner wants worked on, in no fixed order.
 - **Looking into the running game.** Showing the tree's nodes and values in the nodes panel and the inspector, and changing them while the game plays.
 - **Reloading while playing.** A changed script or image takes effect in the running game without a restart. Open: what happens to the values a component keeps.
 - **Pause and step.** Stopping the game's updates, and running one frame.
-- **Sound in the edit player.** Whether the edit player opens a sound device at all.
 - **Previews that move.** The edit player draws when asked and updates nothing (DESIGN 12.3). A preview of an animation or of particles needs time to pass. Open: whether a view can ask for updates of its own nodes.
-- **Files in the files panel.** A small picture of an image file could come from the edit player, as a view, or from OpenECS's own image reader, which is faster and is not what the game draws.
 - **A debugger.** Stopping at a line and reading variables. Not planned; an error's file, line and stack are shown (DESIGN 12.2).
 
 ## Editor
@@ -83,7 +55,10 @@ What the owner wants worked on, in no fixed order.
 - **Which node files are made to be roots.** Every node file can be loaded as the root and can be held in another (DESIGN 5, 9), so the editor does not know a level from a coin. Open: whether it needs to, such as to offer only levels for the manifest's start node. A folder inside `nodes/` could tell, or a field of the file.
 - **Playing from the start node.** Play runs the open node file as the root (DESIGN 12.1), which may be a coin. Open: a second function that plays the game from the manifest's start node.
 - **Copying nodes.** Duplicate and paste give the copies new ids. A property that named a copied node names its copy.
-- **The files panel.** What it does with files: rename and move, and whether paths in node files follow; how an image or a sound is previewed.
+- **The files panel.** What it does with files apart from renaming and moving them (DESIGN 13).
+- **Panels for later.** Ideas, each a panel type of a plugin (DESIGN 13): a node editor, in which the user connects nodes to write logic without code, as Unreal's Blueprints do, and whose output is a script, so the engine needs nothing new; a tile editor, which waits for the choice of a library for tile maps (see [Libraries](#libraries)).
+- **Video in the asset viewer.** LÖVE plays Ogg Theora video, and OpenECS-std's video reads MPEG-1 only. Open: Theora in std's video, or the asset viewer without video at first.
+- **Which other panels are generic.** The files panel and the asset viewer are (DESIGN 13). The console, a log whose lines link to a file and a line, may serve any tool too. Checked when it is written.
 - **Making a script.** A new script starts from a file with the common functions. Where that file is kept, and whether the user can change it.
 - **Assets that are missing.** What the inspector and the node view show for a path that no longer exists.
 - **Many node files open.** Whether two can be open at once, each with an edit player, or one at a time.
@@ -109,16 +84,42 @@ What the owner wants worked on, in no fixed order.
 
 ## Libraries
 
-- **Which libraries.** None is chosen. The candidates, by the rule of OVERVIEW 9:
-  - collision of boxes, through bump, which is its own small system and uses nothing of `love.physics`;
-  - physics with forces and joints, through `love.physics`, which is part of LÖVE and so needs components only;
-  - tile maps made with Tiled, through STI;
-  - an interface inside the game, through one library such as SUIT or Slab, or components of the engine's own.
+- **Which libraries.** None is chosen. A library works in a project as it is, and a pack is made for it only when it is chosen (OVERVIEW 9). A library fits ONLR when:
+  - it is Lua that LuaJIT runs in LÖVE 11.5, with no compiled module, so an export runs on every platform without a build;
+  - it does not take `love.run` and does not replace LÖVE's callbacks. Adding to `love.handlers` is fine (DESIGN 8.1);
+  - it returns a module and sets no global;
+  - its licence lets a game ship it: MIT, zlib or ISC;
+  - it is maintained, or small and finished.
+
+  The candidates, by job:
+
+  | Job                         | Candidates                                     | What matters for ONLR                                                                                   |
+  | --------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+  | Collision of boxes          | bump.lua; slick; HC                            | bump's boxes do not turn. slick and HC take polygons that turn. slick's licence is MPL-2.0, which asks that changes to its own files stay open. |
+  | Physics                     | `love.physics`; breezefield                    | `love.physics` is part of LÖVE and needs components only. breezefield makes it shorter to use.         |
+  | Tile maps from Tiled        | STI; cartographer                              | STI draws a map through a canvas of its own, so a pack draws its layers itself, to follow the camera.   |
+  | Animation of a sprite sheet | anim8; peachy                                  | anim8 gives a quad for each frame, which `onlr.sprite` takes. peachy reads Aseprite's files.           |
+  | Camera                      | gamera; hump's camera                          | Both turn a point of the window into the world's. hump's other parts take LÖVE's callbacks; its camera does not. |
+  | Scaling to the window       | push; shove; maid64                            | Each wraps the whole frame (see [Engine](#engine)). maid64 is for pixel art only.                      |
+  | Tweens and timers           | flux; tween.lua; hump's timer; tick            | Each is called from a component's `update`.                                                            |
+  | Input                       | baton                                          | Turns keys, buttons and sticks into a game's own actions.                                              |
+  | Sound                       | ripple                                         | Groups sounds by tags, with a volume for each.                                                         |
+  | Interface inside the game   | SUIT; Slab                                     | SUIT and Slab draw in the window's space, from `love.draw` or a component. love-nuklear and cimgui-love are left out: they are compiled modules. |
+  | Light and shadows           | shadows; light_world                           | Both draw over the whole frame, as scaling does.                                                        |
+  | Screen effects              | moonshine                                      | Wraps the whole frame.                                                                                  |
+  | Saved games and data        | bitser; binser; json.lua                       | bitser uses LuaJIT's FFI, which LÖVE has.                                                              |
+  | Loading in a thread         | love-loader; lily                              | For the [Engine](#engine)'s loading.                                                                   |
+  | Debugging                   | lovebird; lurker                               | lurker swaps changed files in a running game, which may clash with the engine's loaded types (see [Player and link](#player-and-link), reloading while playing). |
+
+  Whichever library gives bodies, its world is a component of what a root has one of, and contacts reach scripts with `node:send`, as DESIGN 11.3 shows.
+
+  hump, HC and moonshine name no licence that GitHub reads. It is checked before one is chosen.
+
+  Libraries of entities and of classes, such as tiny-ecs, Concord, middleclass and classic, overlap ONLR's own nodes and components. A user may still use them in scripts, and no pack is made for them.
 - **A bump pack's details.** DESIGN 11.3 shows its outline as a sample. Open if bump is chosen: a body on a node that is turned or scaled, since bump's boxes are not; which boxes a body passes through.
 - **A pack's version.** A pack names its library's version (DESIGN 11.2). Open: how the editor offers a newer pack to a project that has an older one, and what happens to changes the user made in the project's copy.
 - **A pack's hints.** A library needs definitions for the code editor, as LÖVE has (DESIGN 4.3). Most libraries ship none. Open: whether a pack holds them, and who writes them.
 - **Packs from others.** A pack is a folder (DESIGN 11.2), so anyone can make one. Open: whether the editor adds a pack, or a plain library, from a folder or an address that the user gives.
-- **What the engine covers itself.** Animation of sprites and a camera are small enough to be the engine's own, so no library is planned for them.
 
 ## LÖVE
 
@@ -147,6 +148,9 @@ What the owner wants worked on, in no fixed order.
   - compress: writing tar (see [Export](#export)).
   - ui: a tree that chooses many nodes and drags them, for the nodes panel.
   - fs: watching the folders inside a folder, for the project's folder.
+  - The files panel and the asset viewer, as first-party plugins, as its settings window is (DESIGN 13).
+  - video: Ogg Theora, which LÖVE plays (see [Editor](#editor)).
+  - ui: what the inspector and the nodes panel need and ui lacks, found when they are written.
 - **The build files.** The template's plugins, preset, test, build script, submodules, checks and Claude Code settings were removed, since nothing is built yet. When code starts, take them fresh from [OpenECS-template](https://github.com/omerfuyar/OpenECS-template), which follows OpenECS's `dev`.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the player's files, and LÖVE's package for the host.
 - **The hashes of LÖVE's packages.** DESIGN 15.2 checks downloads against hashes that ONLR ships. They are taken once from LÖVE's releases.
