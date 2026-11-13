@@ -5,15 +5,18 @@
 ---@type onlr.Scene
 return {
   format = 1,
-  -- The scene's own components: what the whole scene has one of.
-  -- No object is made to hold them. To a component, self.object is the scene's root.
+  -- The file returns one object: the scene's root. Every other object is under it.
+  id = "l3v1",
+  name = "Level",
+  -- The root's components. What the whole scene has one of is here, such as the world
+  -- that its bodies collide in: no object is made only to hold it.
   components = {
     {
       type = "bump.world",
       cellSize = 32,
     },
   },
-  objects = {
+  children = {
     {
       id = "c8m1",
       name = "Camera",
@@ -92,32 +95,33 @@ return {
         },
       },
     },
-    -- An instance of a prefab: the prefab's object, with this entry laid over it.
-    -- What the entry writes replaces the prefab's, and what it leaves out is the prefab's.
-    -- This one writes its place only, so its name and its components are the prefab's.
+    -- An instance: another scene, held here as an object. It is that scene's root,
+    -- with this entry laid over it. What the entry writes replaces the root's,
+    -- and what it leaves out is the root's.
+    -- This one writes its place only, so its name and its components are the coin's.
     {
       id = "n4q8",
-      prefab = "prefabs/coin.prefab.lua",
+      scene = "scenes/coin.scene.lua",
       x = 400,
       y = 540,
     },
     {
       id = "t1r6",
-      prefab = "prefabs/coin.prefab.lua",
+      scene = "scenes/coin.scene.lua",
       name = "Big coin",
       x = 700,
       y = 540,
       scaleX = 2,
       scaleY = 2,
-      -- Laid over the components of the prefab's object, by type: this coin is worth 5.
+      -- Laid over the components of the coin's root, by type: this coin is worth 5.
       components = {
         {
           type = "components.coin",
           worth = 5,
         },
       },
-      -- Laid over the objects inside the prefab, by their ids in the prefab's file:
-      -- this coin has no glint. Another object of the scene names that glint as t1r6/g1nt.
+      -- Laid over the objects under the coin's root, by their ids in the coin's file:
+      -- this coin has no glint. Another object of the level names that glint as t1r6/g1nt.
       overrides = {
         g1nt = {
           active = false,

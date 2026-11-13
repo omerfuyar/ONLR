@@ -22,7 +22,7 @@ This document explains how ONLR is built: its parts, the project's files, the en
 6. Components
 7. The engine's functions
 8. The loop
-9. Prefabs
+9. Instances
 10. The engine's components
 11. Libraries
 12. The player and the link
@@ -59,7 +59,7 @@ A game made with ONLR is built in layers. Each uses only the layers above it in 
 | 2. Libraries       | Lua code for LÖVE games, such as a library for collision (11).                      | Their authors                      | LÖVE, or nothing               |
 | 3. The engine      | Scenes, objects, components, properties and the loop (5 to 9).                      | ONLR                               | LÖVE                           |
 | 4. Components      | What objects show and do: the engine's own (10), a pack's (11.2) and the user's scripts (6). | ONLR, a pack's author, the user | The engine, LÖVE and libraries |
-| 5. The game's data | The project's manifest, scenes and prefabs, which name component types and hold their values (3, 4). | The user, through the editor | Component types, by name       |
+| 5. The game's data | The project's manifest and scenes, which name component types and hold their values (3, 4). | The user, through the editor | Component types, by name       |
 
 - The engine and the libraries do not know each other. A component is where they meet: it is called by the engine, and it calls a library.
 - All three kinds of component are the same thing to the engine. The engine's own and a pack's can do nothing that a script cannot.
@@ -93,10 +93,9 @@ mygame/
   lib/                      the engine, packs and libraries
     onlr/                     the engine
     bump/                     a pack
-  scenes/                   scenes, prefabs and assets, in any folders of any name
+  scenes/                   scenes and assets, in any folders of any name
     level.scene.lua
-  prefabs/
-    coin.prefab.lua
+    coin.scene.lua
   images/
     player.png
   .onlr/                    the editor's own files for this project
@@ -138,8 +137,8 @@ return {
   format = 1,
   name = "My game",
   id = "org.example.mygame",
-  version = "0.1.0",
-  love = "11.5",
+  gameVersion = "0.1.0",
+  loveVersion = "11.5",
   scene = "scenes/menu.scene.lua",
   window = {
     width = 1280,
@@ -156,8 +155,8 @@ return {
 | `format`          | The version of this file's format.                                              |
 | `name`            | The game's name: its window's title, and the name of its exports.               |
 | `id`              | A reversed domain that names the game to the system, such as its saved files' folder. |
-| `version`         | The game's own version.                                                         |
-| `love`            | The version of LÖVE the game is made for.                                       |
+| `gameVersion`     | The game's own version.                                                         |
+| `loveVersion`     | The version of LÖVE the game is made for.                                       |
 | `scene`           | The scene that the game starts with.                                            |
 | `window`          | The game's window, in the names of LÖVE's `t.window`: its `width` and `height`, in pixels. |
 | `exclude`         | Patterns of files that an export leaves out.                                    |
@@ -173,19 +172,20 @@ return {
 
 ### 4.1 Rules
 
-- Every file that ONLR writes is a Lua file that returns one table: manifests, scenes and prefabs.
+- Every file that ONLR writes is a Lua file that returns one table: manifests and scenes.
 - The table is plain data: numbers, texts, booleans and tables, and no function.
 - The engine and the editor each read a file by running it, with their own Lua: LuaJIT in the game, and the editor's Lua. The file runs with Lua's basic functions and its `string`, `table` and `math` libraries, and nothing else. It cannot reach LÖVE, the engine, the editor or another file.
 - So a file that a person writes may compute its table, such as a manifest that works out the window's size. Its code must be Lua that both run.
-- A scene's file ends with `.scene.lua`, and a prefab's with `.prefab.lua`, so the editor knows them without reading them.
+- A scene's file ends with `.scene.lua`, so the editor knows it without reading it.
 - Each file has a `format` number. The engine and the editor refuse a newer format than they know, and say so.
 
 ### 4.2 How the editor writes them
 
 - The editor writes data only: the table's values. A save writes the whole file again, so code and comments that a person wrote in it are not kept.
+- So the editor asks before it replaces such a file. It knows one when it reads it: the file's text differs from what the editor would write for the same table.
 - A file is written beside the old one and then renamed over it, so it is never left half-written.
 - Fields are written in a fixed order, one on each line, and each item of a list starts on its own line. So two changes to different objects merge in git.
-- A value that equals its default is left out, so a file holds only what the user set. In an instance, the prefab's value is the default (9).
+- A value that equals its default is left out, so a file holds only what the user set. In an instance, the value in the instance's scene is the default (9).
 - An object's `id` is a short random text, which the editor gives once. Objects are named by id wherever one refers to another, never by their place in a list.
 - A field or a component type that the editor does not know is kept as it is, and written back.
 
@@ -211,13 +211,15 @@ return {
 ---@type onlr.Scene
 return {
   format = 1,
+  id = "l3v1",
+  name = "Level",
   components = {
     {
       type = "bump.world",
       cellSize = 32,
     },
   },
-  objects = {
+  children = {
     {
       id = "k3f9",
       name = "Player",
@@ -252,16 +254,12 @@ return {
 }
 ```
 
-| Field of a scene | Holds                                                                              |
-| ---------------- | ---------------------------------------------------------------------------------- |
-| `format`         | The version of this file's format.                                                 |
-| `components`     | The scene's own components: what the whole scene has one of, such as a world of bodies. |
-| `objects`        | The scene's objects.                                                               |
+- A scene's file returns one object, the scene's root, with `format` beside the root's own fields (4.1). Every other object of the scene is under the root: its child, or a child of one of those.
 
 | Field of an object        | Holds                                                             | Default |
 | ------------------------- | ----------------------------------------------------------------- | ------- |
 | `id`                      | Its id, unique in its file.                                       |         |
-| `prefab`                  | The prefab it is an instance of (9).                              |         |
+| `scene`                   | The scene it is an instance of (9).                               |         |
 | `name`                    | Its name. Names need not be unique.                               |         |
 | `x`, `y`                  | Its position in its parent, in pixels.                            | 0       |
 | `rotation`                | Its angle in its parent, clockwise.                               | 0       |
@@ -270,10 +268,10 @@ return {
 | `active`                  | Whether it and its children update, draw and get events.          | true    |
 | `components`              | Its components, each a table of its `type`, its properties' values, and `enabled`, which is true when left out. |    |
 | `children`                | Its children, objects too.                                        |         |
-| `overrides`               | In an instance, what differs in the objects inside the prefab (9). |        |
+| `overrides`               | In an instance, what differs in the objects under the instance's root (9). |  |
 
-- The running scene is an object too, the root, which `onlr.scene.root` gives. Its components are the scene's own, and its children are the scene's objects. It has no place in the file: it is at 0, 0, not turned and not scaled.
-- So a scene's own component is a component as any other, with `self.object` as the root. It is written in the scene's file apart from the objects, and no object is made only to hold it.
+- The root is an object as any other, with a name, a place and components. `onlr.scene.root` gives the root of the running scene.
+- What a whole scene has one of, such as the world that its bodies collide in, is a component of the root. A scene has no components apart from its objects', and no object is made only to hold one.
 - Objects update, and get events, in the order of the tree: a parent, then its children, and siblings in the order of their list. `z` plays no part in it.
 - Objects draw by `z`, the lowest first. An object's z is its own added to its parent's, so a child with a negative `z` draws behind its parent. Objects of the same z draw in the order of the tree.
 - An object's components update and draw in their order.
@@ -311,7 +309,7 @@ end
 
 function Player:keypressed(key)
   if key == "space" then
-    onlr.scene.spawn("prefabs/bullet.prefab.lua", self.object.x, self.object.y)
+    onlr.scene.spawn("scenes/bullet.scene.lua", self.object.x, self.object.y)
   end
 end
 
@@ -343,7 +341,7 @@ return Player
 | `sound`                     | A sound file of the project.                      | A LÖVE source of its own.                    |
 | `font`                      | A font file of the project and a size.            | A LÖVE font.                                 |
 | `file`                      | Any file of the project.                          | Its path.                                    |
-| `scene`, `prefab`           | A scene or a prefab of the project.               | Its path.                                    |
+| `scene`                     | A scene of the project.                           | Its path.                                    |
 | `object`                    | An object of the same scene.                      | The object.                                  |
 | `vector`                    | Two number fields in one row.                     | A table with `x` and `y`.                    |
 | `group`                     | The properties it holds, under one heading.       | A table with a field for each.               |
@@ -402,11 +400,11 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 | ---------------------------------------- | ---------------------------------------------------------------------------- |
 | `onlr.start()`                           | Starts the engine, from `main.lua` (8).                                      |
 | `onlr.conf(t)`                           | Sets LÖVE's settings from the project's manifest, from `conf.lua` (3.1).    |
-| `onlr.scene.load(path)`                  | Ends the running scene and loads another, when the current frame ends.       |
+| `onlr.scene.load(path)`                  | Ends the running scene and loads another, by its file's path, when the current frame ends. |
 | `onlr.scene.find(name)`                  | Gives the first object of that name.                                         |
-| `onlr.scene.root`                        | The running scene as an object: the root (5).                                |
+| `onlr.scene.root`                        | The root of the running scene (5).                                           |
 | `onlr.scene.get(type)`                   | Gives the scene's first component of a type, in the tree's order, the root's first. |
-| `onlr.scene.spawn(prefab, x, y, parent)` | Makes an instance of a prefab at a place in its parent, and returns it (9).  |
+| `onlr.scene.spawn(path, x, y, parent)`   | Makes an instance of a scene at a place in its parent, and returns it (9).   |
 | `onlr.scene.add(name, parent)`           | Makes an empty object in its parent, and returns it.                         |
 | `object:get(type)`                       | Gives the object's first component of a type.                                |
 | `object:add(type, values)`               | Gives the object a component, and returns it.                                |
@@ -419,7 +417,7 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 - A `parent` that is left out is the root.
 - When each function takes effect is in section 6.4.
 - The functions that declare properties are in `onlr.property` (6.2).
-- `onlr.scene.get` finds what a scene has one of. A component that many others need, such as the world that bodies collide in, is one of the scene's own components (5), and the others find it by its type.
+- `onlr.scene.get` finds what a scene has one of. A component that many others need, such as the world that bodies collide in, is a component of the root (5), and the others find it by its type.
 - `object:send` is how a component makes an event of its own. The engine calls `keypressed` in every component when LÖVE reports a key; in the same way, a component that finds a contact calls `self.object:send("contact", other)`, and every component of that object that defines `contact(other)` is called. The name is agreed between the two components, and the engine does not know it.
 
 ## 8. The loop
@@ -461,11 +459,11 @@ Each file of the engine holds one thing:
 - The engine is in `lib/` as a pack is, with a manifest that names its component types. So the editor finds the engine's components and a pack's in one way.
 - `conf.lua` loads the engine before LÖVE has loaded its modules for drawing, input and the rest (3.1): only its file functions are sure to be there. So no file of the engine uses another part of LÖVE while it loads, only when its functions run.
 
-## 9. Prefabs
+## 9. Instances
 
 ``` lua
--- prefabs/coin.prefab.lua
----@type onlr.Prefab
+-- scenes/coin.scene.lua
+---@type onlr.Scene
 return {
   format = 1,
   id = "c0in",
@@ -497,10 +495,10 @@ return {
 ```
 
 ``` lua
--- in a scene's objects: an instance that is twice as large, worth more, and without its glint
+-- in scenes/level.scene.lua: an instance that is twice as large, worth more, and without its glint
 {
   id = "t1r6",
-  prefab = "prefabs/coin.prefab.lua",
+  scene = "scenes/coin.scene.lua",
   name = "Big coin",
   x = 700,
   y = 540,
@@ -520,22 +518,23 @@ return {
 },
 ```
 
-- A prefab's file returns one object, with its components and children, in the format of section 5, under the type `onlr.Prefab`.
-- An instance in a scene is an object with `prefab`, the prefab's path, and an `id` of its own. It is the prefab's object with the instance's entry laid over it: what the entry writes replaces the prefab's, and what it leaves out is the prefab's.
+- There is one kind of file, the scene's, for a level and for a coin. Any scene can be the running one, and any scene can be held in another.
+- A scene holds another as an instance: an object with `scene`, the other scene's path, and an `id` of its own. The instance is the other scene's root with the instance's entry laid over it: what the entry writes replaces the root's, and what it leaves out is the root's.
 
   | In the instance's entry                                            | Is laid over                                                                                   |
   | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-  | `name`, `x`, `y`, `rotation`, `scaleX`, `scaleY`, `z` and `active` | The same field of the prefab's object.                                                         |
-  | `components`                                                       | The components of the prefab's object, by type: each value that an entry writes replaces that property's. The second entry of a type is laid over the second component of that type. |
-  | `overrides`                                                        | The objects inside the prefab, by their ids in the prefab's file: each entry is laid over its object as this table says. |
+  | `name`, `x`, `y`, `rotation`, `scaleX`, `scaleY`, `z` and `active` | The same field of the root.                                                                    |
+  | `components`                                                       | The root's components, by type: each value that an entry writes replaces that property's. The second entry of a type is laid over the second component of that type. |
+  | `overrides`                                                        | The objects under the root, by their ids in their scene's file: each entry is laid over its object as this table says. |
 
 - A value replaces a property whole. A group is the exception (6.2): it is laid over field by field.
-- An instance changes what the prefab's objects and components are set to. It adds and removes none; such a change is made in the prefab. An entry of a type that the prefab's object does not have is kept in the file (4.2) and not used.
-- A prefab's object may be an instance of another prefab. An instance of the outer prefab reaches into the inner one through the `overrides` of an entry in its own `overrides`. A prefab cannot hold itself, directly or through another.
+- An instance changes what its scene's objects and components are set to. It adds and removes none; such a change is made in the scene's own file. An entry of a type that the root does not have is kept in the file (4.2) and not used.
+- An object under the root may be an instance too. The outer instance reaches into it through the `overrides` of an entry in its own `overrides`. A scene cannot hold itself, directly or through another.
 - An id is read in the file that writes it:
-  - In a prefab's file, a property that names an object holds an id of that file. In each instance it gives that instance's own object.
-  - In a scene's file, it holds an id of the scene. An object inside an instance is named by a path: the instance's id, a slash, and the object's id in the prefab, such as `t1r6/g1nt`.
-- A change to a prefab reaches every instance, apart from what the instance's entry writes.
+  - A property that names an object holds an id of its own file. In a scene that is held, it gives each instance's own object.
+  - An object inside an instance is named by a path: the instance's id, a slash, and the object's id in its scene's file, such as `t1r6/g1nt`.
+- A change to a scene reaches every instance of it, apart from what the instance's entry writes.
+- A scene that is held is objects of the running scene, and runs no scene of its own. `onlr.scene.root` stays the running scene's root, and `onlr.scene.find` and `onlr.scene.get` look through the held scene's objects as through the others.
 - `onlr.scene.spawn` makes an instance while the game runs, and calls `load` of its components before it returns (6.4).
 
 ## 10. The engine's components
@@ -698,7 +697,7 @@ return Player
 
 What the sample shows of every pack:
 
-- **What a scene has one of** is a component of the scene itself (5): here `bump.world`. It is made with the scene and ends with it, so each scene has its own, and the scene's file keeps its settings. It is not a module that lives through the whole game. A component that needs it finds it with `onlr.scene.get`, and adds it to the root when the scene has none.
+- **What a scene has one of** is a component of the scene's root (5): here `bump.world`. It is made with the scene and ends with it, so each scene has its own, and the scene's file keeps its settings. It is not a module that lives through the whole game. A component that needs it finds it with `onlr.scene.get`, and adds it to the root when the scene has none.
 - **What the library must be told** is told by the component, in its `load` and `destroy`. bump asks for each box to be added to its world; the body does that, so the user does not.
 - **Where an object is** has one truth: the object's own place (5). A library that keeps a place of its own, as bump does for each box, holds a copy, and the pack's component keeps the copy in step. After `move`, the object takes the library's answer. When a script sets the object's place itself, the component tells the library, in its `update`.
 - **What a script asks of the library** is a function of the component: `body:move(x, y)`.
@@ -732,7 +731,7 @@ What the sample shows of every pack:
 
 | The editor sends | To              | For                                                                                                                |
 | ---------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
-| A file           | The edit player | A scene or a prefab as the editor holds it, saved or not. The edit player reads it in place of the project's file. |
+| A file           | The edit player | A scene as the editor holds it, saved or not. The edit player reads it in place of the project's file.             |
 | A change         | The edit player | One edit of such a file, such as a moved object or a new value.                                                    |
 | A view           | The edit player | Which scene to draw, from where, and at what size (12.3).                                                          |
 | Shown            | The edit player | The editor has shown the last frame (12.4).                                                                        |
@@ -749,7 +748,7 @@ What the sample shows of every pack:
 ### 12.3 Views
 
 - The edit player only draws, and what it draws are views.
-- The scene view is a view of the open scene. A preview is a view of a scene that the editor makes up, such as one object with one sprite. So a preview of an image, a font, a prefab or a component needs no drawing code of its own, in the editor or in the engine.
+- The scene view is a view of the open scene, and a preview of a scene is a view of that scene. A preview of anything else is a view of a scene that the editor makes up, such as one object with one sprite. So a preview of an image, a font or a component needs no drawing code of its own, in the editor or in the engine.
 - The edit player draws a view when the editor asks: after a change, or when the view moves. It runs no loop of frames, so it uses the processor only when something changed.
 - What is drawn is split by what it depends on:
 
@@ -778,18 +777,18 @@ What the sample shows of every pack:
 
 | Plugin         | Does                                                                                          |
 | -------------- | --------------------------------------------------------------------------------------------- |
-| `onlr_project` | Holds the open project: its manifest, its scenes and prefabs, the chosen objects and the history. It reads and writes the files, and watches the folder. |
+| `onlr_project` | Holds the open project: its manifest, its scenes, the chosen objects and the history. It reads and writes the files, and watches the folder. |
 | `onlr_player`  | Starts the players and speaks the link. It gives the scene view, and the functions Play and Stop. |
 | `onlr_views`   | The other panels of OVERVIEW 7.                                                               |
 | `onlr_export`  | Export (14), and LÖVE's packages (15).                                                        |
 
 - The inspector shows the chosen object's place, then each of its components under its type's name. A component has one row for each property: the property's name, and the control of its kind (6.2).
 - The types that adding a component offers come from three places: the engine's manifest (8.3), the manifests of the project's packs (11.2), and the Lua files of `components/` (3.1).
-- The objects panel shows the scene itself as its first row. Choosing it shows the scene's own components in the inspector.
+- The objects panel shows the open scene's tree, from its root.
 - The project's data lives in `onlr_project`, not in a panel (OpenECS OVERVIEW 9.2). Panels show it, change it through its functions, and hear of changes through its events. So two panels never differ.
-- Each change of a scene or a prefab is a record that can be undone. `onlr_project` keeps them in one history for the project.
-- A scene or a prefab with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS OVERVIEW 5.5).
-- Play saves every scene and prefab with changes, and the manifest, before it starts the play player (12.1). So the game that plays is the project's files, and the play player is sent none.
+- Each change of a scene is a record that can be undone. `onlr_project` keeps them in one history for the project.
+- A scene with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS OVERVIEW 5.5).
+- Play saves every scene with changes, and the manifest, before it starts the play player (12.1). So the game that plays is the project's files, and the play player is sent none.
 - A file of the project that changes on disk is read again. When the editor's copy has unsaved changes too, the editor asks which to keep.
 - Opening a file at a line in the user's code editor runs a command that is a setting.
 
@@ -851,7 +850,7 @@ A build is made from the `.love` file and LÖVE's package for the platform (15.2
 
 **Edit player.** The player that draws views for the editor.
 
-**Entry.** The table that a scene's or a prefab's file holds for one object or one component.
+**Entry.** The table that a scene's file holds for one object or one component.
 
 **Frame.** One picture that LÖVE draws: of the game, or of a view.
 
@@ -880,6 +879,8 @@ A build is made from the `.love` file and LÖVE's package for the platform (15.2
 **Plugin.** A module that gives OpenECS panels and functions.
 
 **Preset.** The file that tells OpenECS which plugins and panels a tool starts with.
+
+**Root.** The object that a scene's file returns, which holds the scene's other objects.
 
 **SDL.** The library through which LÖVE and OpenECS use windows, input and graphics.
 

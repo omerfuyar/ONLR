@@ -55,7 +55,7 @@ The window, drawing, sound, input, physics, files and the game's loop. ONLR repl
 
 - Scenes, objects and components, read from the project's files (5).
 - The life of a component: when it loads, updates, draws and is destroyed (6).
-- Prefabs, and making objects from them while the game runs.
+- Scenes inside scenes, and making objects from a scene while the game runs.
 - A few components of its own, for what almost every game shows: a sprite, a text, a shape and a camera.
 
 ### 3.3 What the editor provides
@@ -79,18 +79,19 @@ All of the game's logic. A script may call any function of LÖVE (6).
 - A project is a folder. ONLR opens projects, never single files.
 - A project is a LÖVE game: LÖVE runs the folder as it is, without the editor. So a project works in git, on another computer and with any tool for LÖVE games.
 - One folder of the project, `lib`, holds the engine, packs and libraries. The editor puts the engine there, and updates it when the user agrees. The user adds libraries to it, by hand or in the editor.
-- Scripts are in one folder, `components`. Scenes, prefabs and assets are in any folders. A file's path in the project is its path in the game.
+- Scripts are in one folder, `components`. Scenes and assets are in any folders. A file's path in the project is its path in the game.
 - The project's manifest holds what describes the whole game: its name, its version, its first scene, the size of its window, and the version of LÖVE it was made for.
 - Every file that ONLR writes is a Lua file that returns a table. A person may write such a file too, and compute the table in it. ONLR ships definition files for them, so a code editor completes and checks them.
 
 ## 5. Scenes, objects and components
 
-- A **scene** is a file that holds objects: a level, a menu, a screen. One scene runs at a time. Loading a scene ends the one that runs.
+- A **scene** is a file that holds one object, its root, with all that is under it: a level, a menu, a coin. The game runs one scene at a time. Loading a scene ends the one that runs.
 - An **object** has a name, a place (position, rotation and scale), a list of components, and children. A child's place is in its parent, so it moves, turns and scales with it.
 - A **component** gives an object what it shows or does. Each has properties, such as a sprite's image or a player's speed. An object can have many components.
 - Objects draw in the order of a number, `z`, the lowest first. A child's `z` is added to its parent's, so a child can draw behind its parent. Objects of the same `z` draw in the order of the scene's tree: a parent before its children, and siblings in their order.
-- A **prefab** is an object, with its children, in a file of its own. A scene holds instances of it. An instance has its own place, and may change any value of the prefab's objects and components. A prefab may hold instances of other prefabs. A script makes instances while the game runs, such as bullets and enemies.
-- A scene has components of its own too, for what the whole scene has one of, such as the world that its bodies collide in.
+- A scene may hold other scenes, as **instances**: a level holds coins, and a coin is a scene of its own. An instance has its own place, and may change any value of its scene's objects and components. A script makes instances while the game runs, such as bullets and enemies.
+- There is one kind of scene. Any scene can be the one that runs, and any scene can be held in another.
+- What a whole scene has one of, such as the world that its bodies collide in, is a component of its root.
 - What must outlive a scene, such as a score, lives in the user's own Lua modules, as in any LÖVE game.
 
 ## 6. Scripts
@@ -123,10 +124,10 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 - The editor never runs the game's code. LÖVE does, and tells the editor what it needs, such as the properties a script declares.
 - In the scene view nothing moves: the engine draws the scene and does not update it.
 - Play saves the project, then runs the game from the open scene, in LÖVE's own window. Stop ends it, and so does closing the window. The console, the errors and their links to files work while it runs.
-- A preview, such as of an image, a font or a prefab, is drawn by LÖVE as the scene view is.
+- A preview, such as of an image, a font or a scene, is drawn by LÖVE as the scene view is.
 - A game that fails, or never returns, does not stop the editor.
 - Every change to a scene can be undone. The project has one history, whichever panel made the change.
-- The editor saves when the user asks and when Play starts, and asks about unsaved work before it closes.
+- The editor saves when the user asks and when Play starts, and asks about unsaved work before it closes. It also asks before a save replaces a file in which a person wrote code.
 - When a file of the project changes outside the editor, such as a script that the user saves or a branch that git checks out, the editor reads it again.
 
 ## 8. Export
@@ -164,7 +165,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 9. **Few dependencies.** A library is included only when it earns its place (9).
 10. **Easy to set up.** One archive holds everything that making and running a game needs.
 11. **Do not lose what is not understood.** A field or a component that the editor does not know is kept when it writes a file.
-12. **Composition, not inheritance.** An object is what its components make it, and a scene is made of objects and of instances of prefabs. No component type inherits another.
+12. **Composition, not inheritance.** An object is what its components make it, and a scene is made of objects and of instances of other scenes. No component type inherits another.
 
 ## Glossary
 
@@ -184,7 +185,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **Inspector.** The panel that shows and changes the properties of the chosen object's components.
 
-**Instance.** An object in a scene that was made from a prefab.
+**Instance.** An object in a scene that was made from another scene.
 
 **LÖVE.** A free framework that runs 2D games written in Lua.
 
@@ -200,13 +201,13 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **Panel.** A rectangular area of the editor's window.
 
-**Prefab.** An object, with its children, kept in a file of its own, from which scenes and scripts make instances.
-
 **Project.** The folder of a game made with ONLR.
 
 **Property.** A named, typed value of a component, which the inspector shows and a scene keeps.
 
-**Scene.** A file that holds the objects of one part of a game, such as a level or a menu.
+**Root.** The one object that a scene's file holds, with every other object of the scene under it.
+
+**Scene.** A file that holds the objects of one part of a game, such as a level, a menu or a coin.
 
 **Script.** A Lua file, written by the user, that returns a component.
 
