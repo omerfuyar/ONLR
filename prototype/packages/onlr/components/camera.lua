@@ -24,11 +24,11 @@ function Camera:drawTree(draw) end
 -- Turns a point of its screen, such as the pointer's, into the point of the world that the camera
 -- shows there, in the space of node:toWorld: camera:toWorld(love.mouse.getPosition()).
 ---@return number x, number y
-function Camera:toWorld(x, y) end
+function Camera:toWorld(x, y) return x, y end
 
 -- Turns a point of the world into the point of its screen where the camera shows it.
 ---@return number x, number y
-function Camera:toScreen(x, y) end
+function Camera:toScreen(x, y) return x, y end
 
 -- In the node view, the frame of what it shows.
 function Camera:drawEditor(chosen) end

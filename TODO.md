@@ -123,8 +123,8 @@ What the owner wants worked on, in no fixed order.
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: what the inspector and the nodes panel need and ui lacks, found when they are written.
-- **The build files.** The template's plugins, preset, test, build script, submodules, checks and Claude Code settings were removed, since nothing is built yet. When code starts, take them fresh from [OpenECS-template](https://github.com/omerfuyar/OpenECS-template), which follows OpenECS's `dev`.
+- **The submodules shu and shuild.** They build plugins in C with `shuild.c`, which the template has. ONLR's plugins are all Lua, so it has no `shuild.c`, and nothing uses the submodules in `dependencies/`. Removing them changes the submodules, which the owner decides.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the player's files, and LÖVE's runtime for the host, and the Linux runtime that ONLR hosts (DESIGN 15.2).
 - **The hashes of LÖVE's runtimes.** DESIGN 15.2 checks downloads against hashes that ONLR ships. They are taken once from LÖVE's releases.
 - **OpenECS's TODO.md** still lists this editor's open questions. Replace them there with a link to this repository.
-- **Rulesets.** `dev` and `main` have no rules in this repository yet. The owner sets them when checks exist.
+- **Rulesets.** `dev` and `main` have no rules in this repository yet. The checks exist now: `Test (Linux)` and `Lua (LuaLS)`. The owner sets the rules, as OpenECS-template's `.github/rulesets/` does.
