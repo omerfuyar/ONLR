@@ -97,6 +97,7 @@ What the owner wants worked on, in no fixed order.
 
 ## Tasks
 
+- **The edit player's hidden window on Windows is not tested.** `player/edit.lua` hides LÖVE's window with `SDL_HideWindow` through LuaJIT's FFI, as DESIGN 12.1 says. It was written on Linux, where the offscreen driver is used, and never run on Windows.
 - **The Windows experiment.** It tells whether the edit player's window can open on Windows without showing for a moment (see [Player and link](#player-and-link)). The owner runs it in the command prompt:
   1. Keep `C:\t\main.lua` as it is, and make `C:\t\conf.lua` with these lines. They open LÖVE's window outside the screen, without a border, one pixel wide:
 

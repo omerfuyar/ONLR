@@ -362,7 +362,12 @@ function property.convert(decl, value, ctx, name, resolve)
     return value and property.load(ctx, name, "image", value)
   elseif kind == "sound" then
     local source = value and property.load(ctx, name, "sound", value, decl.options.stream or false)
-    return source and source:clone()
+    if not source then
+      return nil
+    end
+    local clone = source:clone()
+    data.paths[clone] = value
+    return clone
   elseif kind == "font" then
     local path, size = nil, decl.options.size or 12
     if type(value) == "table" then

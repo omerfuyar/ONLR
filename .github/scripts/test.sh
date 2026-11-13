@@ -15,19 +15,22 @@ fi
 mkdir -p build/tests
 failed=0
 
+# every sample gets the engine and the helper first, since the link's test starts players on other samples
+for sample in samples/*/; do
+    rm -rf "${sample}packages/onlr"
+    mkdir -p "${sample}packages"
+    cp -r engine "${sample}packages/onlr"
+    cp samples/check.lua "${sample}packages/check.lua"
+done
+
 for name in "$@"; do
     sample="samples/${name%/}"
     name=$(basename "$sample")
     [ -f "$sample/test.lua" ] || continue
 
-    rm -rf "$sample/packages/onlr"
-    mkdir -p "$sample/packages"
-    cp -r engine "$sample/packages/onlr"
-    cp samples/check.lua "$sample/packages/check.lua"
-
     log="build/tests/$name.log"
     # the null driver of OpenAL Soft, LÖVE's sound, needs no sound device; a test that never ends stops after TEST_TIMEOUT seconds, 120 if it is not set
-    if SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout "${TEST_TIMEOUT:-120}" "$love" "$sample" --test > "$log" 2>&1; then
+    if LOVE="$love" SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout "${TEST_TIMEOUT:-120}" "$love" "$sample" --test > "$log" 2>&1; then
         grep "^report: " "$log" | sed "s/^report: /$name: /"
     else
         echo "FAIL $name (status $?):"
