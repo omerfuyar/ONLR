@@ -11,13 +11,23 @@ Body.height = onlr.property.number(32, { min = 0 })
 -- A vector: two numbers in one row. Read as self.offset.x.
 Body.offset = onlr.property.vector(0, 0, { description = "The box's corner, from the node's place" })
 
+-- Once: finds the tree's one world. It is a component of the root, found by its type.
+-- When the tree has none, the body adds one to the root.
 function Body:load()
-  -- The scene's one world: a component of the scene's root, found by its type.
-  -- When the scene has none, the body adds one to the scene's root.
-  local world = onlr.scene.get("bump.world") or onlr.scene.root:add("bump.world")
+  local world = onlr.node.findComponent("bump.world") or onlr.node.root:add("bump.world")
   self.world = world:get()
+end
+
+-- Each time the body starts to run: after load, and when it or its node is turned on again.
+function Body:enable()
   self.x, self.y = self.node:toWorld(self.offset.x, self.offset.y)
   self.world:add(self, self.x, self.y, self.width, self.height)
+end
+
+-- Each time the body stops running, and before it is destroyed.
+-- So a node that is turned off collides with nothing.
+function Body:disable()
+  self.world:remove(self)
 end
 
 -- Not called by the engine: scripts call it. The box goes as far as bump lets it,
@@ -43,16 +53,12 @@ function Body:update()
   end
 end
 
-function Body:destroy()
-  self.world:remove(self)
-end
-
 -- For the editor: the rectangle that the component covers, in the node's own space.
 function Body:bounds()
   return self.offset.x, self.offset.y, self.width, self.height
 end
 
--- For the scene view: the box's outline, more visible when the node is chosen.
+-- For the node view: the box's outline, more visible when the node is chosen.
 function Body:drawEditor(chosen)
   love.graphics.setColor(0, 1, 0, chosen and 1 or 0.4)
   love.graphics.rectangle("line", self.offset.x, self.offset.y, self.width, self.height)

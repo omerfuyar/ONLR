@@ -4,7 +4,7 @@
 return {
   format = 1,
   name = "onlr",
-  description = "The engine: nodes, components and scenes",
+  description = "The engine: nodes and components",
   version = "0.1.0",
   source = "https://github.com/omerfuyar/ONLR",
   license = "zlib",

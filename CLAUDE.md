@@ -28,6 +28,7 @@ ONLR is being planned. Planning is the work: the documents are what you make. Wr
 **The project**
 
 - LÖVE is never changed, and ONLR ships no changed LÖVE (OVERVIEW 11). Do not propose a design that needs one.
+- Think from the editor's side too. A node file is read, written and tracked by the editor, not by a person: choose its format for that.
 - Composition over inheritance, everywhere: in the engine, in the editor and in what users are given (OVERVIEW 11).
 - Never be afraid of removing code and breaking things. ONLR has no users yet: delete a concept, a format or a whole design when a better one is found, and keep nothing for compatibility. Give versions little thought.
 - OpenECS changes often. Know what it and its standard plugins can do, and read them again before you rely on them: [OVERVIEW.md](https://github.com/omerfuyar/OpenECS/blob/dev/OVERVIEW.md), [DESIGN.md](https://github.com/omerfuyar/OpenECS/blob/dev/DESIGN.md) and [OpenECS-std's DESIGN.md](https://github.com/omerfuyar/OpenECS-std/blob/dev/DESIGN.md). Do not bind ONLR's design to it: only DESIGN.md's section on the editor depends on OpenECS, and it links to OpenECS's documents and repeats nothing of theirs.

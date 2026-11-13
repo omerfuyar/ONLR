@@ -11,7 +11,7 @@
 ---@class onlr
 local onlr = {}
 
-onlr.scene = require("onlr.scene")
+onlr.node = require("onlr.tree")
 onlr.property = require("onlr.property")
 
 ---Starts the engine. Called from main.lua.
