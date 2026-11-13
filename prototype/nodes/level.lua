@@ -43,14 +43,14 @@ return {
           posX = 100,
           posY = 500,
           components = {
-            -- A pack's component: lib/bump/body.lua.
+            -- A package's component: packages/bump/components/body.lua.
             bump = {
               body = {
                 height = 48,
                 width = 32,
               },
             },
-            -- One of the engine's own components: lib/onlr/sprite.lua.
+            -- One of the engine's own components: packages/onlr/components/sprite.lua.
             onlr = {
               sprite = {
                 image = "images/player.png",

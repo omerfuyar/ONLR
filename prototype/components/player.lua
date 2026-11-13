@@ -28,7 +28,7 @@ Player.footsteps = onlr.property.list(onlr.property.sound())
 -- and the properties are set.
 function Player:load()
   -- Another component of the same node, by its type's name. No function stands before it.
-  -- The body is the pack's; move is its function.
+  -- The body is the package's; move is its function.
   self.body = self.node.components.bump.body
   -- A field of the script's own. It is not a property, so the inspector does not show it.
   self.velocityY = 0

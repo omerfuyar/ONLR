@@ -78,7 +78,7 @@ All of the game's logic. A script may call any function of LÖVE (6).
 
 - A project is a folder. ONLR opens projects, never single files.
 - A project is a LÖVE game: LÖVE runs the folder as it is, without the editor. So a project works in git, on another computer and with any tool for LÖVE games.
-- One folder of the project, `lib`, holds the engine, packs and libraries. The editor puts the engine there, and updates it when the user agrees. The user adds libraries to it, by hand or in the editor.
+- One folder of the project, `packages`, holds the engine, packages and libraries. The editor puts the engine there, and updates it when the user agrees. The user adds libraries to it, by hand or in the editor.
 - Scripts are in one folder, `components`, and node files in another, `nodes`. Assets are in any folders. A file's path in the project is its path in the game.
 - The project's manifest holds what describes the whole game: its name, its version, the node file it starts with, the size of its window, and the version of LÖVE it was made for.
 - Every data file that ONLR writes, the manifest and the node files, is a Lua file that returns a table. A person may write such a file too, and compute the table in it. ONLR ships definition files for them, so a code editor completes and checks them.
@@ -117,17 +117,18 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 | Nodes            | The tree of nodes of the node view in focus.                                  |
 | Inspector        | The chosen node's components and their properties.                            |
 | Files            | The project's folders and files.                                              |
-| Asset viewer     | A file of the project as it is: an image, a sound, a video or a text.        |
+| Asset viewer     | A file of the project as it is: an image, a sound or a text.                  |
 | Console          | What the game prints, and its errors.                                         |
 | Project settings | What the project's manifest holds.                                            |
 | Export           | The targets, and the export's progress.                                       |
 
 - LÖVE draws the node view, as it draws the game. The editor has no renderer of its own for games.
 - A component says what it shows in the node view, in LÖVE code. The editor adds what belongs to its tools: the grid, the outline and handles of the chosen nodes, and a marker for a node that shows nothing.
-- The inspector lists a component's properties in the order its script declares them. Adding a component offers the engine's, those of the project's packs, and the project's scripts.
+- The inspector lists a component's properties in the order its script declares them. Adding a component offers the engine's, those of the project's packages, and the project's scripts.
 - The editor never runs the game's code. LÖVE does, and tells the editor what it needs, such as the properties a script declares.
 - In the node view nothing moves: the engine draws the nodes and does not update them.
 - Play saves the project, then runs the game from its start node, in LÖVE's own window, and Play This File runs the node file in focus as the root. Pause stops the game, and Step runs one frame of it. Stop ends it, and so does closing the window. The console, the errors and their links to files work while it runs.
+- While the game plays, the nodes panel and the inspector show its running nodes. A value changed there changes the game until it stops, and never a file.
 - A preview of a node file is drawn by LÖVE as the node view is.
 - Each panel comes from a plugin, and none is built into the editor. Panels that need nothing of ONLR, such as the files panel, the asset viewer and the console, are made for any OpenECS tool, and are part of OpenECS's standard plugins. ONLR's own panels are built from the same generic parts.
 - A game that fails, or never returns, does not stop the editor.
@@ -148,9 +149,9 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 - The engine knows no library, and a library does not know the engine. A script calls a library as the library's own documentation says.
 - ONLR may include a library when it is widely used, simple to understand, and either maintained or small and finished. Fewer is better: each one included is one to keep working.
 - For a job that a library does well, ONLR includes the library before it writes its own. The engine gets a component of its own only for a job that no such library does.
-- A library that ONLR includes comes as a pack. The library in it is unchanged. Its components are written as scripts are, so a user can write the same for any other library.
-- A pack's components are a help, not a wall. A script may use the library through them, call the library itself, or do both.
-- A project chooses its packs. The editor copies a pack into the project, where it is the project's own.
+- A library that ONLR includes comes as a package. The library in it is unchanged. Its components are written as scripts are, so a user can write the same for any other library.
+- A package's components are a help, not a wall. A script may use the library through them, call the library itself, or do both.
+- A project chooses its packages. The editor copies a package into the project, where it is the project's own.
 
 ## 10. Platforms
 
@@ -201,7 +202,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **`.love` file.** An archive of a game's files, which LÖVE runs.
 
-**Manifest.** A data file that describes the folder it is in: the project's, which describes the whole game, and one for the engine and for each pack.
+**Manifest.** A data file that describes the folder it is in: the project's, which describes the whole game, and one for the engine and for each package.
 
 **Node.** A thing of a game, with a name, a place, components and children.
 
@@ -209,7 +210,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **OpenECS.** The program that provides the editor's windows, panels and plugins.
 
-**Pack.** A library as ONLR includes it: the library, its licence, and the components that show it in the inspector.
+**Package.** A library as ONLR includes it: the library, its licence, its components, which show it in the inspector, and its node files.
 
 **Panel.** A rectangular area of the editor's window.
 
