@@ -26,8 +26,8 @@ for name in "$@"; do
     cp samples/check.lua "$sample/packages/check.lua"
 
     log="build/tests/$name.log"
-    # the null driver of OpenAL Soft, LÖVE's sound, needs no sound device; a test that never ends stops after two minutes
-    if SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 120 "$love" "$sample" --test > "$log" 2>&1; then
+    # the null driver of OpenAL Soft, LÖVE's sound, needs no sound device; a test that never ends stops after TEST_TIMEOUT seconds, 120 if it is not set
+    if SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout "${TEST_TIMEOUT:-120}" "$love" "$sample" --test > "$log" 2>&1; then
         grep "^report: " "$log" | sed "s/^report: /$name: /"
     else
         echo "FAIL $name (status $?):"
