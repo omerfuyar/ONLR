@@ -22,8 +22,8 @@ What the owner wants worked on, in no fixed order.
 
 ## Player and link
 
-- **The edit player on Windows.** SDL's offscreen driver gets OpenGL only through EGL, and LÖVE's runtime for Windows holds no `libEGL.dll`. So the edit player most likely does not start on Windows as DESIGN 12.1 starts it on Linux. The owner's experiment tells (see [Tasks](#tasks)). None of these ways is checked:
-  - A normal window that the engine hides at once, with SDL's `SDL_HideWindow` through LuaJIT's FFI. The engine draws into a canvas, with the same OpenGL as the exported game. The window may flash when it opens. Recommended to try first.
+- **The edit player on Windows.** SDL's offscreen driver gets OpenGL only through EGL, and LÖVE's runtime for Windows holds no `libEGL.dll`. The owner's experiment showed it, with LÖVE 11.5 and an NVIDIA card: with the offscreen driver LÖVE stops with "Could not initialize OpenGL / GLES library", and shows a message box that waits for a click; with SDL's normal driver it gets OpenGL 3.3. So the edit player does not start on Windows as DESIGN 12.1 starts it on Linux. None of these ways is checked:
+  - A normal window that the engine hides at once, with SDL's `SDL_HideWindow` through LuaJIT's FFI. The engine draws into a canvas, with the same OpenGL as the exported game. The window may flash when it opens. Recommended; the next experiment tries it (see [Tasks](#tasks)).
   - A normal window that LÖVE's own functions move off the screen or minimize. It needs no FFI, and the window shows in the task bar.
   - ANGLE's `libEGL.dll` and `libGLESv2.dll` beside LÖVE's files in ONLR's archive. LÖVE itself stays unchanged. The edit player then draws with OpenGL ES over Direct3D, not with the OpenGL of the exported game, so a shader may look different in the node view. The offscreen driver also asks EGL for its list of devices, which ANGLE may not give.
 - **The offscreen driver elsewhere.** It is checked on Linux with an NVIDIA card, with the system's LÖVE 11.5 and with LÖVE's own AppImage, and on a computer with no display and no graphics card, where Mesa draws in software. It needs the system's EGL library. Not checked: Intel and AMD cards.
@@ -76,7 +76,7 @@ What the owner wants worked on, in no fixed order.
   | Collision of boxes          | bump.lua; slick; HC                            | bump's boxes do not turn. slick and HC take polygons that turn. slick's licence is MPL-2.0, which asks that changes to its own files stay open. |
   | Physics                     | `love.physics`; breezefield                    | `love.physics` is part of LÖVE and needs components only. breezefield makes it shorter to use.         |
   | Tile maps from Tiled        | STI; cartographer                              | STI draws a map through a canvas of its own, so a package draws its layers itself, to follow the camera.   |
-  | Animation of a sprite sheet | anim8; peachy                                  | anim8 gives a quad for each frame, which `onlr.sprite` takes. peachy reads Aseprite's files.           |
+  | Animation of a sprite sheet | anim8; peachy                                  | anim8 gives a LÖVE quad for each frame, whose rectangle a script copies into `onlr.sprite`'s `quad`. peachy reads Aseprite's files.           |
   | Camera                      | gamera; hump's camera                          | Both turn a point of the window into the world's. hump's other parts take LÖVE's callbacks; its camera does not. |
   | Scaling to the window       | push; shove; maid64                            | Each draws a group on the top node (DESIGN 5). maid64 is for pixel art only.                           |
   | Tweens and timers           | flux; tween.lua; hump's timer; tick            | Each is called from a component's `update`.                                                            |
@@ -102,20 +102,43 @@ What the owner wants worked on, in no fixed order.
 
 ## Tasks
 
-- **The Windows experiment.** It tells whether LÖVE's runtime for Windows runs without a window (see [Player and link](#player-and-link)). The owner runs it:
-  1. Unpack `love-11.5-win64.zip`, from LÖVE's releases, to `C:\love`.
-  2. Make the file `C:\t\main.lua` with these lines:
+- **The Windows experiment.** It tells whether the edit player can run on Windows in a window that the engine hides (see [Player and link](#player-and-link)). The owner runs it in the command prompt:
+  1. Put these lines in `C:\t\main.lua`, in place of the old ones. They hide LÖVE's window through SDL, draw into a canvas, read it back, and wait three seconds before they quit:
 
      ``` lua
      io.stdout:setvbuf("no")
-     print(love.graphics.getRendererInfo())
-     print(love.window.getMode())
+     local ffi = require("ffi")
+     ffi.cdef([[
+     typedef struct SDL_Window SDL_Window;
+     SDL_Window *SDL_GL_GetCurrentWindow(void);
+     void SDL_HideWindow(SDL_Window *window);
+     ]])
+     local sdl = ffi.load("SDL2")
+     sdl.SDL_HideWindow(sdl.SDL_GL_GetCurrentWindow())
+     print("visible", love.window.isVisible())
+
+     local canvas = love.graphics.newCanvas(1280, 720)
+     love.graphics.setCanvas(canvas)
+     love.graphics.clear(0, 0, 0, 0)
+     love.graphics.setColor(1, 0, 0, 1)
+     love.graphics.rectangle("fill", 0, 0, 10, 10)
+     love.graphics.setCanvas()
+     local pixels = canvas:newImageData()
+     print("inside", pixels:getPixel(5, 5))
+     print("outside", pixels:getPixel(20, 20))
+
+     local start = love.timer.getTime()
+     for _ = 1, 100 do
+       pixels = canvas:newImageData()
+     end
+     print("ms for one read", (love.timer.getTime() - start) * 10)
+
+     love.timer.sleep(3)
      love.event.quit()
      ```
 
-  3. In the command prompt, run `set SDL_VIDEODRIVER=offscreen`, then `C:\love\lovec.exe C:\t`.
-  4. In a new command prompt, run only `C:\love\lovec.exe C:\t`.
-  5. Report everything that each run prints.
+  2. Open a new command prompt, so that `SDL_VIDEODRIVER` is not set, go to LÖVE's folder, and run `lovec.exe C:\t`.
+  3. Report everything that it prints, any error, and whether a window or a button in the task bar showed during those three seconds, even for a moment.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. They are the owner's too, so they change when that is the better solution:
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
   - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the player on Linux and `cmd /c` on Windows.
@@ -123,6 +146,7 @@ What the owner wants worked on, in no fixed order.
   - ui: a tree that chooses many nodes and drags them, for the nodes panel.
   - fs: watching the folders inside a folder, for the project's folder.
   - The files panel, the asset viewer and the console, as first-party plugins, as its settings window is (DESIGN 13).
+  - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: what the inspector and the nodes panel need and ui lacks, found when they are written.

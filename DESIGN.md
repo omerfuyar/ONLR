@@ -8,7 +8,7 @@ This document explains how ONLR is built: its parts, the project's files, the en
 - Code samples are only illustrations of a file or an interface.
 - Samples that need a library use bump, a library for collision. It stands for any library: this document chooses none.
 - Technical terms are explained in the glossary at the end.
-- "OpenECS DESIGN" names [OpenECS's DESIGN.md](https://github.com/omerfuyar/OpenECS/blob/dev/DESIGN.md), and "OpenECS-std DESIGN" [OpenECS-std's](https://github.com/omerfuyar/OpenECS-std/blob/dev/DESIGN.md). OpenECS changes often, so this document links to them and repeats nothing of theirs. Only the editor depends on OpenECS: section 13, and what sections 1, 2.2 and 16 say of the editor.
+- "OpenECS DESIGN" names [OpenECS's DESIGN.md](https://github.com/omerfuyar/OpenECS/blob/dev/DESIGN.md), and "OpenECS-std DESIGN" [OpenECS-std's](https://github.com/omerfuyar/OpenECS-std/blob/dev/DESIGN.md). OpenECS changes often, so this document links to them and repeats nothing of theirs. Only the editor depends on OpenECS: section 13, and what sections 1, 2.2, 12.4 and 16 say of the editor.
 
 ---
 
@@ -68,12 +68,12 @@ A game made with ONLR is built in layers. Each uses only the layers above it in 
 
 ### 2.2 In this repository
 
-| Part           | In this repository       | Is                                                                                | Runs in |
-| -------------- | ------------------------ | --------------------------------------------------------------------------------- | ------- |
-| Engine         | `engine/`                | The Lua library that every project holds a copy of, as `packages/onlr/`.               | LÖVE    |
+| Part           | In this repository       | Is                                                                                                              | Runs in |
+| -------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- | ------- |
+| Engine         | `engine/`                | The Lua library that every project holds a copy of, as `packages/onlr/`.                                        | LÖVE    |
 | Player's files | `player/`                | The Lua code that the engine loads when the editor starts it: the link and the views (12). No project holds it. | LÖVE    |
-| Editor         | `plugins/`, `preset.lua` | OpenECS plugins and their preset (13).                                            | OpenECS |
-| Samples        | `samples/`               | Small projects, which are the tests (16).                                         | Both    |
+| Editor         | `plugins/`, `preset.lua` | OpenECS plugins and their preset (13).                                                                          | OpenECS |
+| Samples        | `samples/`               | Small projects, which are the tests (16).                                                                       | Both    |
 
 ## 3. Projects
 
@@ -199,11 +199,12 @@ return {
 - A file is written beside the old one and then renamed over it, so it is never left half-written.
 - A file is written in one way only, so the same table always gives the same text, and changes to different nodes, or to fields on lines apart, merge in git:
   - One field on each line, indented by two spaces, and each item of a list on its own line. Lines end with LF.
-  - A node's fields in the order of section 5's table, after `format`, and a manifest's in the order of section 3.2's. The fields of every other table, such as a node's components and a component's values, in the order of their names.
+  - A node's fields in the order of section 5's table, after `format`, and so are the fields of an instance's change (9). A manifest's fields are in the order of section 3.2's table, with LÖVE's other settings in the order of their names. The fields of every other table, such as a node's components and a component's values, are in the order of their names.
+  - A key that is not a name in Lua, such as a path of ids (9), is written in brackets: `["ch3st9/g1nt4k"] = {`.
   - A whole number from -2^53 to 2^53 without a point, such as `250`. Any other number with the fewest digits that read back as the same number, such as `0.1`, and an endless one as `math.huge`. So LuaJIT and the editor's Lua read the same value.
   - A text in double quotes, with `\\`, `\"` and `\n`, and every other byte below 32 as three digits, such as `\009`. So both Luas read the same text.
 - A value that equals its default is left out, so a file holds only what the user set. In an instance, the value in its base is the default (9).
-- A node's `id` is six random characters, lowercase letters and digits, the first a letter, so it is a name in Lua: `c0in7x = { ... }`. The editor gives it once. Nodes are named by id wherever one refers to another, never by their place in a list.
+- A node's `id` is six random characters, lowercase letters and digits, the first a letter, and not a word that Lua reserves, such as `return`, so it is a name in Lua: `c0in7x = { ... }`. The editor gives it once. Nodes are named by id wherever one refers to another, never by their place in a list.
 - An id is unique in its file, and no further. When a file holds an id twice, such as after a merge in git, the editor gives one of the two nodes a new id, and says so.
 - Two changes on neighbouring lines, such as a node's `name` and its `posX`, and two nodes added at the end of one list of children conflict in git, as in any text. A node file with git's marks of a conflict does not load: the node view shows the error, and the user resolves it in a text editor.
 - A field or a component type that the editor does not know is kept as it is, and written back.
@@ -294,7 +295,7 @@ return {
 | `children`         | Its children, nodes too.                                                      |         |
 
 - The game runs one root at a time: a node, with all that is under it, which `onlr.node.root` gives. The game starts with the manifest's start node (3.2), and `onlr.node.loadRoot` puts another in its place (7). A level and a coin are node files alike: the game loads the level as its root, and the level holds the coin as an instance (9).
-- Above the root is the top node: the node of the node file that the manifest names (3.2), which the game loads once, before the first root, and keeps for the whole game. What outlives the root is under it, such as a music player or a pause menu, and the root runs as its last child. When the manifest names none, the top node is an empty node.
+- Above the root is the top node: the node of the node file that the manifest names (3.2), which the game loads once, before the first root, and keeps for the whole game. What outlives the root is under it, such as a music player or a pause menu, and the root runs as its last child. When the manifest names none, the top node is an empty node. While the top node loads, there is no root yet: `onlr.node.root` is `nil` until the first root loads.
 - The top node, with all under it, is the tree. So the tree has one top, and a group on the top node holds the whole game, such as a library that scales the game to the window.
 - A script keeps a node of the root when the root changes by moving it under the top node, or under a node of the top node's own (7).
 - What a root has one of, such as the world that its bodies collide in, is a component of the root. No node is made only to hold one.
@@ -392,7 +393,6 @@ return Player
 
 - A kind is a value or a reference. A value is held in the node file as it is: `bool`, `integer`, `number`, `string`, `choice`, `color`, `vector`, `group` and `list`. A reference names something else of the project: `image`, `sound`, `font`, `file`, `nodeFile`, `node` and `component`.
 - `group` and `list` take other properties: `onlr.property.group({ width = onlr.property.number(32), height = onlr.property.number(32) })` is read as `self.box.width`, and `onlr.property.list(onlr.property.image())` as `self.frames[1]`.
-
 - A node file keeps a file as its path, and a font as a table of its `path` and its `size`. It keeps a node, and a component, as the node's id, or as a path of ids when the node is inside an instance (9). When the file loads, the engine gives the component the node or the component itself.
 - The engine loads each file once, and components that name the same file share it. A sound is the exception: each component gets its own source, so two can play at once. When a root replaces another, the engine keeps the files that the new root names too, and lets go of the others.
 - A value of a property that the type no longer declares is kept in the node file (4.2), and the component does not get it.
@@ -881,7 +881,7 @@ What the sample shows of every package:
 | A view           | The edit player | Which node file to draw, from where, and at what size (12.3).                                                        |
 | Shown            | The edit player | The editor has shown the last frame (12.4).                                                                        |
 | A question       | The edit player | What a component type declares (12.5).                                                                             |
-| Reload           | The edit player | A file of the project changed.                                                                                     |
+| Reload           | The edit player | A file of the project that is not Lua changed, such as an image.                                                   |
 | Stop             | The play player | The game ends.                                                                                                     |
 | Pause, Step, Resume | The play player | The game stops, runs one frame, or goes on (12.1).                                                           |
 | Watch            | The play player | Which running nodes to send, or none (12.6).                                                                       |
@@ -921,12 +921,12 @@ What the sample shows of every package:
 ### 12.5 What the editor learns from LÖVE
 
 - The editor never loads a script. To show a type's properties, it asks the edit player, which loads the file as the game would and answers with the type's properties (6.2): their names, kinds, defaults and options, in their order. It answers with the types that the type needs too (6.6).
-- When any Lua file of the project changes on disk, the editor starts the edit player again, which takes about a tenth of a second, and asks again. So nothing of the old code stays in it.
+- When a Lua file of the project other than a node file changes on disk, such as a script or the manifest, the editor starts the edit player again, which takes about a tenth of a second, and asks again. So nothing of the old code stays in it.
 - While the edit player is down, such as after an error in `main.lua`, the node view shows the error, and the inspector shows the values that the node file holds, without their kinds.
 
 ### 12.6 The running game
 
-- While the game plays, the nodes panel and the inspector can show the running tree in place of a node file, as Unity's do. A change made there changes the running game only, and is gone at Stop. The panels mark that they show the running game.
+- While the game plays, the nodes panel and the inspector can show the running tree in place of a node file. A change made there changes the running game only, and is gone at Stop. The panels mark that they show the running game.
 - The editor asks the play player for the tree. The engine sends each node's name, its children and its components' types, and sends the tree again when it changes, at most four times a second. A running node has no id of a file (9), so the engine gives each a number for the link.
 - For the chosen nodes, the engine sends their places and their components' values ten times a second. A reference is sent as what it names: a file as its path, and a node or a component as the node's number.
 - A value that the user changes is sent to the play player, which sets it between two frames, as a script sets a field. A node's active and a component's enabled are set through their functions (7).
@@ -945,16 +945,16 @@ What the sample shows of every package:
 | -------------- | --------------------------------------------------------------------------------------------- |
 | `onlr_project` | Holds the open project: its manifest, its node files, the chosen nodes and the history. It reads and writes the files, and watches the folder. |
 | `onlr_player`  | Starts the players and speaks the link. It gives the node view, and the functions Play, Play This File, Pause, Step and Stop. |
-| `onlr_views`   | The other panels of ONLR's own: the nodes panel, the inspector and the project settings. |
+| `onlr_views`   | The other panels of ONLR's own: the nodes panel, the inspector, the tools and the project settings. |
 | `onlr_export`  | Export (14), and LÖVE's runtimes (15).                                                        |
 
-- The inspector shows the chosen node's place, then each of its components under its type's name. A component has one row for each property: its `label`, or else its name in words, `cellSize` as "Cell size", and the control of its kind (6.2).
+- The inspector shows the chosen node's own fields (5): its name, its place, its `z` and whether it is active. Then it shows each of its components under its type's name. A component has one row for each property: its `label`, or else its name in words, `cellSize` as "Cell size", and the control of its kind (6.2).
 - A reference (6.2) is set by dragging onto its row what it names: a file from the files panel, or a node from the nodes panel or the node view. A value is typed or chosen with its control, and is not dragged in the node view.
 - A type or a property that the editor does not find, such as after a script was renamed outside the editor, shows in the inspector as the node file writes it. The user can give its values to another type or property. Until then they are kept (4.2).
 - The types that adding a component offers are the files of the project's `components/` (3.1), and of the `components/` of the engine and of each package (11.2).
 - Many node files can be open at once, each in a node view of its own. One edit player draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
 - The nodes panel shows the tree of the node file whose view has the focus, from its first node.
-- The node view has three tools, as Unity and Godot have: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and the node view follows the tool chosen there.
+- The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and the node view follows the tool chosen there.
 - A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node in a rectangle.
 - Snapping to a grid is a toggle. The grid's size is a setting of the project, kept in `.onlr/`.
 - The console is a log whose lines may name a file and a line, which a click opens in the user's code editor.
@@ -965,7 +965,7 @@ What the sample shows of every package:
 - Each change of a node file is a record that can be undone. `onlr_project` keeps them in one history for the project.
 - A node file with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS OVERVIEW 5.5).
 - Play saves every node file with changes, and the manifest, before it starts the play player (12.1). So the game that plays is the project's files, and the play player is sent none.
-- The files panel shows the project's folder, apart from what starts with a dot. It makes folders, scripts and node files, renames and moves them, and deletes them after asking, with the node files that name them. A deleted file goes to the system's trash.
+- The files panel shows the project's folder, apart from what starts with a dot. It makes folders, scripts and node files, renames and moves them, and deletes them after asking. The question names the node files that name the file. A deleted file goes to the system's trash.
 - Opening a file opens a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
 - Dragging an image from the files panel into the node view makes a node with a sprite of it, and dragging a node file makes an instance of it (9).
 - When the files panel renames or moves a file, the editor changes every path and type name that names it, in every node file and in the manifest.
@@ -1035,7 +1035,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 **Edit player.** The player that draws views for the editor.
 
-**Entry.** The table that a node file holds for one node or one component.
+**Entry.** The table that a node file holds for one node, one component or one change of an instance.
 
 **Frame.** One picture that LÖVE draws: of the game, or of a view.
 
