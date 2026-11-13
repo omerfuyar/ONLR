@@ -68,6 +68,8 @@ The window, drawing, sound, input, physics, files and the game's loop. ONLR repl
 
 All of the game's logic. A script may call any function of LÖVE (6).
 
+What LÖVE or a library already does stays there too, with no part of the engine for it (9): saving the game, with `love.filesystem` and a library such as bitser; turning keys and buttons into a game's actions, with a library such as baton; and menus inside the game, with a library such as SUIT.
+
 ### 3.5 Not in the design
 
 - Changing LÖVE, or shipping a changed LÖVE.

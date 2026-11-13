@@ -41,7 +41,11 @@ What the owner wants worked on, in no fixed order.
 - **Panels for later.** Ideas, each a panel type of a plugin (DESIGN 13): a node editor, in which the user connects nodes to write logic without code, as Unreal's Blueprints do, and whose output is a script, so the engine needs nothing new; a tile editor, which waits for the choice of a library for tile maps (see [Libraries](#libraries)).
 - **Video in the asset viewer.** For later. LÖVE plays Ogg Theora video, and OpenECS-std's video reads MPEG-1 only, so the asset viewer shows no video (DESIGN 13).
 - **A project's own script template.** A new script starts from ONLR's template (DESIGN 13). An idea for later: a project that keeps a template of its own.
-- **Node files in git.** The editor writes files so that changes merge (DESIGN 4.2). Not checked on a real merge.
+- **Node files in git.** Checked on a real merge of `prototype/nodes/level.lua`, as the editor writes it, with one branch's change on each side:
+  - Merge cleanly: a node moved and another node's colour; a script's two values a line apart; a component added and another value of the node; a child added and another node moved; two instances changed.
+  - Conflict: a node's `posX` and `posY`; a node's `name` and `posX`; two children added at the end of one node's list.
+
+  To discuss with the owner. Text conflicts, which the user resolves by hand (DESIGN 4.2), or a merge driver that ONLR ships: git calls it for node files through `.gitattributes`, and it merges by ids and fields, so only one field changed on both sides conflicts. Git takes the driver's command from its own settings, not from the repository, so the editor sets it in each clone that it opens. Recommended: text conflicts now, the driver later.
 - **The split into plugins.** DESIGN 13 names four. It is checked again when the first is written.
 
 ## Export
