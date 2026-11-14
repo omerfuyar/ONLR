@@ -7,6 +7,7 @@ local process = require("process")
 local project = require("onlr_project")
 local console = require("console")
 local link = require("link")
+local hints = require("hints")
 
 local players = {}
 
@@ -111,6 +112,15 @@ local function start(mode, startPath)
     mode = mode, process = started, server = server, buffer = "", ready = false, output = {}, partial = "",
     sent = {}, owed = {}, since = os.time(),
   }
+end
+
+-- Adds an error to the console, with a hint when the error is one that the hints know (DESIGN 13.1).
+local function sayError(text)
+  console.add(text, "error")
+  local hint = hints.of(text)
+  if hint then
+    console.add("Hint: " .. hint, "info")
+  end
 end
 
 local function send(player, message, block)
@@ -305,13 +315,13 @@ function edits.answer(message)
   assert(edit).owed[message.name] = nil
   project.setTypeInfo(message.name, message)
   if message.error then
-    console.add(tostring(message.error), "error")
+    sayError(tostring(message.error))
   end
 end
 
 function edits.error(message)
   local where = message.file and (message.file .. (message.line and (":" .. message.line) or "") .. ": ") or ""
-  console.add(where .. tostring(message.message), "error")
+  sayError(where .. tostring(message.message))
   if message.view then
     assert(edit).owed[message.view] = nil
     players.onView("error", message)
@@ -342,7 +352,7 @@ end
 
 function plays.error(message)
   local where = message.file and (message.file .. (message.line and (":" .. message.line) or "") .. ": ") or ""
-  console.add(where .. tostring(message.message), "error")
+  sayError(where .. tostring(message.message))
   if message.stack then
     console.add(message.stack, "error")
   end

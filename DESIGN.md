@@ -178,7 +178,7 @@ return {
 ### 3.3 Updating the engine
 
 - The editor ships one version of the engine, and works on a project that holds that version. The engine's manifest in `packages/onlr/` names its version (8.3).
-- When the editor opens a project that holds another version, it asks the user, then replaces `packages/onlr/`. If the user declines, the project stays closed.
+- When the editor opens a project that holds another version, or no engine, it asks the user, then replaces `packages/onlr/`. If the user declines, the project stays closed.
 
 ## 4. Data files
 
@@ -1016,7 +1016,8 @@ What the sample shows of every package:
 - Every panel can be open many times. What belongs to the project is one, in `onlr_project`: its files, the chosen nodes, the chosen tool, snapping and the history. So two node views of one file show the same nodes, two inspectors show the same chosen nodes, and a change made in one panel shows in every other at once.
 - What belongs to one panel is its own state (OpenECS OVERVIEW 5.4): where a node view looks from and its zoom, which nodes a nodes panel has open, and which components an inspector has folded.
 - The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, and a text with syntax. It shows no video, since OpenECS-std's video does not read LÖVE's Ogg Theora.
-- The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting, `console.editor`.
+- The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting, `console.editor`. When that command does not start, the system opens the file with the program that it has for such files.
+- An error of the game shows with a hint, when it is one that the editor knows: what such an error often means in a game, in plain words, and what to try. The hints are a list of patterns in `onlr_player`, matched against the error's text.
 - `onlr_project` tells of changes with events: a project opened or closed, files changed, saved or renamed, the chosen nodes, the tool, the types, and a file that changed on disk. Its functions and events are documented in its code.
 
 ### 13.2 Projects
@@ -1125,7 +1126,8 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- The tests share one helper, `samples/check.lua`. Before a test runs, the sample gets the helper and the engine in its `packages/`, as a project holds the engine (3.1). The repository does not keep those copies.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It gives every sample the engine in its `packages/`, as a project holds the engine (3.1), so LÖVE runs a sample as it is. With `--test` it runs the samples' tests, and with `--editor` it starts the editor.
+- The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The player and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both players on other samples, and speaks the link with them.
 - A sample's test of the editor is its `editortest.lua`, an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes. It runs on a copy of the sample, since it writes the sample's files.
 - `samples/editor` is a project as the editor writes one, so its test checks that a change and its undo give the first text again.

@@ -75,7 +75,10 @@ jobs:
     runs-on: ubuntu-24.04
     needs: openecs
     steps:
+      # shuild, which runs the tests, is a submodule
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/download-artifact@v4
         with:
