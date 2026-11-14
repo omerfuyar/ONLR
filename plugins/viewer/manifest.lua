@@ -6,5 +6,5 @@ return {
   api = 2,
   type = "lua",
   description = "Shows a file as what it is: an image, a sound or a text",
-  depends = { ui = "0.1", audio = "0.1", mixer = "0.1", syntax = "0.1", fs = "0.1" },
+  depends = { ui = "0.1", image = "0.1", audio = "0.1", mixer = "0.1", syntax = "0.1", fs = "0.1" },
 }

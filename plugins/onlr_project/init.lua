@@ -673,9 +673,12 @@ local function open(folder)
   -- The editor works on a project that holds its own version of the engine (DESIGN 3.3).
   local ours, theirs = engineVersion(home() .. "engine/"), engineVersion(folder .. "packages/onlr/")
   if ours and theirs ~= ours then
-    local answer = ecs.dialog.showMessage("Update the engine",
-      ("The project holds the engine %s, and this editor works with %s. Updating replaces packages/onlr/."):format(
-        tostring(theirs or "of no version"), ours), { "Update", "Cancel" })
+    -- A project without the engine, such as one that was just cloned, gets it without a question about versions.
+    local title = theirs and "Update the engine" or "Add the engine"
+    local message = theirs
+      and ("The project holds the engine %s, and this editor works with %s. Updating replaces packages/onlr/."):format(theirs, ours)
+      or ("The project holds no engine. The editor adds its engine, %s, as packages/onlr/."):format(ours)
+    local answer = ecs.dialog.showMessage(title, message, { theirs and "Update" or "Add", "Cancel" })
     if answer ~= 1 then
       return false
     end

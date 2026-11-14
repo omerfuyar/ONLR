@@ -19,6 +19,9 @@ ecs.setting.declare({
   default = "code --goto {file}:{line}",
 })
 
+local warned = false -- the user was told that the code editor did not start
+local add
+
 local function redraw()
   for panel, state in pairs(panels) do
     state.follow = true
@@ -39,15 +42,23 @@ local function openFile(file, line)
       return file
     end):gsub("{line}", tostring(line or 1)))
   end
-  if #command > 0 then
-    local started, err = process.start(command, "")
-    if not started then
-      ecs.log.warn("the code editor did not start: " .. tostring(err))
-    end
+  if #command > 0 and process.start(command, "") then
+    return
+  end
+  -- Without the code editor, the system opens the file with the program that it has for such files.
+  local isWindows = package.config:sub(1, 1) == "\\"
+  local opener = isWindows and { "cmd", "/c", "start", "", file } or { "xdg-open", file }
+  local started, err = process.start(opener, "")
+  if not warned then
+    warned = true
+    add(("The code editor did not start: %s. The setting console.editor names its command."):format(tostring(command[1])), "warning")
+  end
+  if not started then
+    add("The system did not open the file either: " .. tostring(err), "error")
   end
 end
 
-local function add(text, level)
+function add(text, level)
   for line in (tostring(text) .. "\n"):gmatch("(.-)\r?\n") do
     local file, number = line:match("([%w_%-./\\]+%.%a+):(%d+)")
     lines[#lines + 1] = { text = line, level = level or "info", file = file, line = tonumber(number) }

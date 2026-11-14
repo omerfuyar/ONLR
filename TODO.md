@@ -4,11 +4,14 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 ## Next
 
-What the owner wants worked on, in no fixed order.
+What the owner wants worked on, in this order.
 
-- **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
-- **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
-- **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
+1. **One plugin.** `onlr_project`, `onlr_player`, `onlr_views` and `onlr_export` become one plugin, `onlr`, with a file for each part. The plugins that know nothing of ONLR stay apart, and move to OpenECS-std (see [Tasks](#tasks)). DESIGN 13.1 changes with it.
+2. **Menus, not rows of buttons.** A right click opens a menu in the files panel, the nodes panel, the inspector and the node view, and it takes the place of the buttons there. Every control has a tooltip. The tool's menu holds only what belongs to the whole project, such as New Project, Open Project, Save All and Play; what belongs to one panel is in that panel's menu.
+3. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
+4. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
+5. **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
+6. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
 
@@ -34,6 +37,20 @@ What the owner wants worked on, in no fixed order.
 
 ## Editor
 
+- **A number that a drag changes.** A drag over a number field's label, or over the field, changes the number, as in Unity. It belongs in OpenECS-std's ui, as a property of its number field, so every tool gets it.
+- **Undo of what is chosen.** Choosing nodes is a record of the history too, so undo gives the last chosen nodes back. Open: whether such a record stands between the records of changes, as in Unity, or in a history of its own. Between them is simpler to use: one key walks back through everything that the user did. A record of choosing never marks a file as unsaved.
+- **The files panel's views.** Icons for kinds of files, small pictures of images, and a view of a folder as a grid, as a file manager shows it, beside the tree. It belongs to the files panel that moves to OpenECS-std.
+- **The console's entries.** Each entry is a box of its own, with its level's colour, its time and its place. Equal entries stack with a count. The console clears when the game plays, as a toggle, and filters by level. It belongs to the console that moves to OpenECS-std.
+- **More hints for errors.** The hints are a list of patterns (DESIGN 13.1). To add: errors of LÖVE's own functions, and a hint that names the node and the component that the error came from, with a click that chooses the node.
+- **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
+  - The node view: handles that move along one axis, and a rectangle tool that sizes a node by its corners; a key that fits the view to the chosen nodes; a switch between each node's own place and the middle of the chosen ones as the pivot; a key that holds snapping; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
+  - The nodes panel: a search by name and by component type; a drag that moves a node in the tree; choosing many nodes; renaming with F2; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there; a mark and another colour for an instance; a button that opens the instance's node file.
+  - The inspector: a lock that keeps its node while another is chosen; folding, reordering, copying and pasting a component's values; Add Component as a search; sums in number fields, such as `32*4`; a round button that picks a node or a file for a reference; a colour picker with a pipette; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
+  - The files panel: a search by name and kind; favourite folders; the path as a row of folders to click; Show in the file manager; Find what names this file.
+  - The console: a click on an entry chooses the node that the error came from; a pane with the stack of the chosen entry; a search; Pause on Error.
+  - Playing: a tint over the editor while the game plays; the count of frames a second and the time of update and draw, from the play player; sizes of the window to choose from, such as a phone's; values that were changed in the running game, with a way to keep them.
+  - The editor: a list of the history's records, to jump back to one; a search over every function, node and file with one key; a window for keys.
+  - Tools of their own, each a panel: a cutter of sprite sheets into quads, a timeline for animations, a palette for tile maps.
 - **Panels for later.** Ideas, each a panel type of a plugin (DESIGN 13.1): a node editor, in which the user connects nodes to write logic without code, as Unreal's Blueprints do, and whose output is a script, so the engine needs nothing new; a tile editor, which waits for the choice of a library for tile maps (see [Libraries](#libraries)).
 - **Video in the asset viewer.** For later. LÖVE plays Ogg Theora video, and OpenECS-std's video reads MPEG-1 only, so the asset viewer shows no video (DESIGN 13.1).
 - **A project's own script template.** A new script starts from ONLR's template (DESIGN 13.4). An idea for later: a project that keeps a template of its own.
@@ -121,6 +138,7 @@ What the owner wants worked on, in no fixed order.
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
+  - ui: a menu that a right click opens, from a list of entries, and a number field that a drag changes (see [Next](#next) and [Editor](#editor)).
   - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel opens a file only then; a control for a colour.
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
@@ -129,9 +147,11 @@ What the owner wants worked on, in no fixed order.
 - **Move to OpenECS-std: the console.** `plugins/console` knows nothing of ONLR.
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the players were written on Linux.
 - **What the editor does not do yet.** Dragging a node in the nodes panel to move it in the tree, and choosing many nodes there, wait for ui's tree. Copying LÖVE's definitions into a new project's `.onlr/` takes them from `build/love2d/`, until ONLR's archive holds them. Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
-- **The submodules shu and shuild.** They build plugins in C with `shuild.c`, which the template has. ONLR's plugins are all Lua, so it has no `shuild.c`, and nothing uses the submodules in `dependencies/`. Removing them changes the submodules, which the owner decides.
+- **OpenECS as a submodule.** A question for the owner (see the report of the session that added `shuild.c`). Today OpenECS's release is unpacked into `OpenECS/` by hand, and the checks build OpenECS's newest `dev`. With a submodule at a fixed commit, `shuild.c` would build it, and the checks would test against the same OpenECS as everyone.
+- **The tests on Windows.** `shuild.c` runs them on Linux only: they need SDL's offscreen driver, and set variables as a POSIX shell does.
+- **A warning when a popup opens.** On the owner's computer, a dropdown logs "[ecs] The GPU cannot present to a window (The GPU API doesn't support transparent windows)". It is OpenECS's, not ONLR's: its popups ask for a transparent window.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the player's files, and LÖVE's runtime for the host, and the Linux runtime that ONLR hosts (DESIGN 15.2).
 - **The Linux runtime has no address.** DESIGN 15.2 downloads it from ONLR, which hosts the contents of LÖVE's AppImage as a `.tar.gz`. Nothing hosts it yet, so `plugins/onlr_export/runtimes.lua` has no address and no hash for it. Until then a Linux build uses the LÖVE that runs the players, when it is an unpacked AppImage, or the folder that `onlr_export.linuxRuntime` names. Unpacking a `.tar.gz` also waits for compress to read tar. The AppImage's own SHA-256 hash is `65a673406431eff7167a15a032bf7a2e4ba50108e091eb7b176465831f9b5e00`.
 - **Export on Windows is not tested.** The user's data folder there, `%APPDATA%`, and a Linux build made on Windows, which cannot find LÖVE's AppImage.
 - **OpenECS's TODO.md** still lists this editor's open questions. Replace them there with a link to this repository.
-- **Rulesets.** `dev` and `main` have no rules in this repository yet. The checks exist now: `Test (Linux)` and `Lua (LuaLS)`. The owner sets the rules, as OpenECS-template's `.github/rulesets/` does.
+- **Rulesets.** `.github/rulesets/` holds the rules of `dev` and `main`. The owner imports them in the repository's settings.

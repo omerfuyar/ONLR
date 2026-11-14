@@ -320,6 +320,13 @@ local function fileSubject(state, out)
   end
 
   out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
+    label("Active"),
+    ui.toggle(common(nodes, function(n)
+      return n.active
+    end) == true, { id = key .. ":active", onChange = setField("active") }),
+    fieldMark("active"),
+  })
+  out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
     label("Name"),
     text(key .. ":name", common(nodes, function(n)
       return n.name
@@ -345,14 +352,6 @@ local function fileSubject(state, out)
       label(field[2]), number(key .. ":" .. field[1], value, set), fieldMark(field[1]),
     })
   end
-  out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-    label("Active"),
-    ui.toggle(common(nodes, function(n)
-      return n.active
-    end) == true, { id = key .. ":active", onChange = setField("active") }),
-    fieldMark("active"),
-  })
-
   -- The components that all of the chosen nodes have, in the order of their names.
   local types = {}
   for typeName in pairs(first.components) do
@@ -506,6 +505,9 @@ local function runningSubject(state, out)
     end
   end
   out[#out + 1] = ui.text(node.name or "(no name)", { style = STYLES.title })
+  out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
+    label("Active"), ui.toggle(node.active == true, { id = key .. ":active", onChange = setField("active") }),
+  })
   out[#out + 1] = ui.row({ gap = 6, align = "center" }, { label("Name"), text(key .. ":name", node.name, setField("name")) })
   for _, field in ipairs(FIELDS) do
     local value, set = node[field[1]], setField(field[1])
@@ -518,9 +520,6 @@ local function runningSubject(state, out)
     end
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, { label(field[2]), number(key .. ":" .. field[1], value, set) })
   end
-  out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-    label("Active"), ui.toggle(node.active == true, { id = key .. ":active", onChange = setField("active") }),
-  })
   local types = {}
   for typeName in pairs(node.components or {}) do
     types[#types + 1] = typeName

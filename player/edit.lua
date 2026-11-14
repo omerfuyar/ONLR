@@ -1,6 +1,6 @@
 -- The edit player (DESIGN 12.3 to 12.5): it draws views of node files for the editor's node views, and answers
 -- what a component type declares. It runs no game: no load, update or event reaches a component.
--- It draws a view only when the editor asked and has shown the view's last frame.
+-- It draws a view only when the editor asked and has taken the view's last frame.
 
 local part = ...
 local link = part("link")
@@ -26,7 +26,7 @@ local edit = {}
 ---@field scope onlr.Scope? its nodes by their ids
 ---@field dirty boolean it must be drawn again
 ---@field boundsDue boolean? its nodes changed, so their bounds are sent again
----@field waiting boolean its last frame was sent, and the editor has not shown it yet
+---@field waiting boolean its last frame was sent, and the editor has not taken it yet
 ---@field canvas love.Canvas?
 ---@field swapped love.Canvas?
 
@@ -194,7 +194,7 @@ local function draw(view)
   end
   local pixels = view.swapped:newImageData()
   view.waiting = true
-  send({ type = "frame", view = view.id, width = w, height = h }, pixels:getString())
+  send({ type = "frame", view = view.id, width = w, height = h, x = view.x, y = view.y, zoom = view.zoom }, pixels:getString())
   pixels:release()
 end
 
@@ -297,7 +297,7 @@ function handlers.view(message)
   view.dirty = true
 end
 
--- The editor has shown the view's last frame.
+-- The editor has taken the view's last frame.
 function handlers.shown(message)
   if views[message.id] then
     views[message.id].waiting = false
