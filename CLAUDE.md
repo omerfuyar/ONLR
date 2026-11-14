@@ -16,6 +16,8 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
 | `engine/`                  | The engine: the Lua library that every project holds as `packages/onlr/` (DESIGN.md, section 8.3). |
 | `player/`                  | The player's files: the link and the views, which the engine loads when the editor starts LÖVE (DESIGN.md, section 12). |
+| `plugins/`                 | The editor's plugins: `onlr_project`, `onlr_player` and `onlr_views`, and the panels that know nothing of ONLR, `files`, `viewer` and `console` (DESIGN.md, section 13.1). |
+| `preset.lua`               | The editor's preset: the plugins it needs, and where their panels go.                          |
 | `samples/`                 | Small projects, which are the tests, and `check.lua`, the tests' helper (DESIGN.md, section 16). |
 | `.github/`                 | Checks, and the scripts that agents and CI run: `check.sh` and `test.sh`. `scripts/assets/` makes the samples' images and sounds. |
 | `.claude/`                 | Claude Code's settings, its hook for cloud sessions, and `notes.md`: why the tools are set up as they are. |
@@ -52,7 +54,7 @@ The plan is done, and the implementation has started. Build it in small mileston
 - Run an experiment only when a decision depends on its result, and never the same one twice.
 - The owner runs experiments on their own computer when asked. Give exact steps: the files, the commands, and what to report back.
 - Before each commit, run `.github/scripts/check.sh`: it checks the changed Lua files with the Lua language server when it is installed.
-- Before each push, run `.github/scripts/test.sh` for the samples that the change touches, such as `.github/scripts/test.sh coinrun`, and with no names before a pull request. It needs LÖVE 11.5 as `love`, or where `LOVE` names it, and EGL.
+- Before each push, run `.github/scripts/test.sh` for the samples that the change touches, such as `.github/scripts/test.sh coinrun`, and with no names before a pull request. It needs LÖVE 11.5 as `love`, or where `LOVE` names it, and EGL. The editor's tests need OpenECS too, built in Debug and laid out as a release in `OpenECS/`, with its `include/`, as the checks lay it out; without it they are skipped, and the Lua check does not know the `ecs` module.
 - The scripts print only problems. Read the logs in `build/tests/` only when a test fails.
 - Check documents by reading them: links, section numbers and cross-references.
 

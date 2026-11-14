@@ -1,5 +1,6 @@
-# Checks every change to dev and main: the Lua annotations of every Lua file, and the samples' tests of the engine in LÖVE.
-# The samples are the tests (DESIGN.md, section 16): each one runs in LÖVE with SDL's offscreen driver, checks itself and quits with a status.
+# Checks every change to dev and main: the Lua annotations of every Lua file, and the samples' tests.
+# The samples are the tests (DESIGN.md, section 16): a sample's test of the engine runs it in LÖVE with SDL's offscreen driver,
+# and its test of the editor is an OpenECS test, which a Debug build of OpenECS runs.
 name: Checks
 
 on:
@@ -18,11 +19,74 @@ permissions:
   contents: read
 
 jobs:
+  # OpenECS, built in Debug from its dev and laid out as a release has it: the editor's tests run in it, and the Lua check reads its definitions
+  openecs:
+    name: OpenECS
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Name OpenECS's commit
+        id: commit
+        run: echo "sha=$(git ls-remote https://github.com/omerfuyar/OpenECS refs/heads/dev | cut -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore OpenECS
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: OpenECS
+          key: openecs-debug-linux-${{ steps.commit.outputs.sha }}
+
+      - uses: actions/checkout@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          repository: omerfuyar/OpenECS
+          ref: ${{ steps.commit.outputs.sha }}
+          submodules: recursive
+          path: source
+
+      - name: Build OpenECS
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: source
+        run: |
+          .github/scripts/install-linux.sh
+          gcc shuild.c -o shuild.ignore -O3 -Wno-format-truncation
+          ./shuild.ignore -b debug > build.log 2>&1 || true
+          test -x build/Debug/bin/OpenECS || (tail -n 40 build.log && exit 1)
+
+      # the program writes include/ as a release has it: the plugin interface and the standard plugins' definitions
+      - name: Lay out OpenECS as a release
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir OpenECS
+          cp -r source/build/Debug/bin/. OpenECS/
+          OpenECS/OpenECS --definitions OpenECS/include > definitions.log 2>&1 || (cat definitions.log && exit 1)
+
+      # a tar keeps the files' permissions, which an artifact does not
+      - name: Pack OpenECS
+        run: tar -czf openecs.tar.gz OpenECS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openecs
+          path: openecs.tar.gz
+          retention-days: 1
+
   test-linux:
     name: Test (Linux)
     runs-on: ubuntu-24.04
+    needs: openecs
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: openecs
+
+      # OpenECS needs the libraries that its build's packages bring, such as those of SDL
+      - name: Unpack OpenECS
+        run: |
+          tar -xzf openecs.tar.gz
+          git clone -q --depth 1 https://github.com/omerfuyar/OpenECS "$RUNNER_TEMP/openecs-source"
+          "$RUNNER_TEMP/openecs-source/.github/scripts/install-linux.sh"
 
       # EGL, with Mesa drawing in software, lets LÖVE draw with SDL's offscreen driver on a runner without a graphics card
       - name: Install EGL
@@ -42,11 +106,20 @@ jobs:
   lua:
     name: Lua (LuaLS)
     runs-on: ubuntu-24.04
+    needs: openecs
     env:
       LUALS_VERSION: 3.15.0
       LOVE2D_DEFINITIONS: c630dd883cda128a19d850bd5e3911110b271609
     steps:
       - uses: actions/checkout@v4
+
+      # the definitions of the ecs module and of the standard plugins, which .luarc.json names for the editor's plugins
+      - uses: actions/download-artifact@v4
+        with:
+          name: openecs
+
+      - name: Unpack OpenECS
+        run: tar -xzf openecs.tar.gz
 
       - name: Install the Lua language server
         run: |

@@ -119,11 +119,17 @@ What the owner wants worked on, in no fixed order.
   - compress: writing tar, for the Linux build's `.tar.gz` (DESIGN 14.2).
   - ui: a tree that chooses many nodes and drags them, for the nodes panel.
   - fs: watching the folders inside a folder, for the project's folder.
-  - The files panel, the asset viewer and the console, as first-party plugins, as its settings window is (DESIGN 13.1).
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
-  - ui: what the inspector and the nodes panel need and ui lacks, found when they are written.
+  - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel opens a file only then; a control for a colour.
+  - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
+  - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
+- **Move to OpenECS-std: the files panel.** `plugins/files` knows nothing of ONLR (DESIGN 13.1).
+- **Move to OpenECS-std: the asset viewer.** `plugins/viewer` knows nothing of ONLR.
+- **Move to OpenECS-std: the console.** `plugins/console` knows nothing of ONLR.
+- **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the players were written on Linux.
+- **What the editor does not do yet.** Dragging a node in the nodes panel to move it in the tree, and choosing many nodes there, wait for ui's tree. Copying LÖVE's definitions into a new project's `.onlr/` takes them from `build/love2d/`, until ONLR's archive holds them. Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
 - **The submodules shu and shuild.** They build plugins in C with `shuild.c`, which the template has. ONLR's plugins are all Lua, so it has no `shuild.c`, and nothing uses the submodules in `dependencies/`. Removing them changes the submodules, which the owner decides.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the player's files, and LÖVE's runtime for the host, and the Linux runtime that ONLR hosts (DESIGN 15.2).
 - **The hashes of LÖVE's runtimes.** DESIGN 15.2 checks downloads against hashes that ONLR ships. They are taken once from LÖVE's releases.
