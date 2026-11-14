@@ -6,7 +6,6 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in no fixed order.
 
-- **The first build.** The plan is done. The engine, the player, the editor and export are built from DESIGN.md, with the samples as their tests (DESIGN 16).
 - **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
 - **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
 - **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
@@ -41,7 +40,6 @@ What the owner wants worked on, in no fixed order.
 - **A merge driver for node files.** For later. A conflict in a node file is git's conflict of text, which the user resolves by hand (DESIGN 4.2). A merge driver that ONLR ships would merge by ids and fields, so that only one field changed on both sides conflicts. Git calls it for node files through `.gitattributes`, and takes its command from its own settings, not from the repository, so the editor would set it in each clone that it opens. Checked on a real merge of coin run's `nodes/level.lua`, as the editor writes it, with one branch's change on each side:
   - Merge cleanly: a node moved and another node's colour; a script's two values a line apart; a component added and another value of the node; a child added and another node moved; two instances changed.
   - Conflict: a node's `posX` and `posY`; a node's `name` and `posX`; two children added at the end of one node's list.
-- **The split into plugins.** DESIGN 13.1 names four. It is checked again when the first is written.
 
 ## Export
 
