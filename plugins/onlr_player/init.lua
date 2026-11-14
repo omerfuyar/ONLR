@@ -25,7 +25,6 @@ local IMAGES = { png = true, jpg = true, jpeg = true, bmp = true, tga = true }
 ---@field chosen string[] the chosen nodes of its file, kept while another view has the focus
 ---@field image any? the last frame
 ---@field frame table? where the last frame was drawn from: x, y, zoom, width and height
----@field fresh boolean a frame arrived that was not shown yet
 ---@field visible boolean
 ---@field nodes table[] the nodes' bounds, in the order of drawing
 ---@field byPath table<string, table>
@@ -195,10 +194,6 @@ local function drawView(view, surface)
     local x, y = toScreen(view, f.x, f.y)
     draw.image(surface, view.image, x, y, f.width * ratio, f.height * ratio)
   end
-  if view.fresh then
-    view.fresh = false
-    players.shown(view.id)
-  end
 
   -- The window's frame: where the nodes that no camera holds show (DESIGN 13.3).
   local manifest = project.manifest()
@@ -280,19 +275,13 @@ players.onView = function(kind, message, block)
         else
           view.image = draw.newImage(message.width, message.height, block)
         end
-        local sent = players.views[view.id]
-        -- The frame was drawn from where the view was when the player last heard of it.
+        -- The frame says where it was drawn from, which is not where the view is now while the user moves it.
         view.frame = {
-          x = sent and sent.x or view.x, y = sent and sent.y or view.y, zoom = (sent and sent.zoom or view.zoom) / view.scale,
+          x = message.x, y = message.y, zoom = message.zoom / view.scale,
           width = message.width / view.scale, height = message.height / view.scale,
         }
         view.error = nil
-        if view.visible then
-          view.fresh = true
-          view.panel:redraw()
-        else
-          players.shown(view.id)
-        end
+        view.panel:redraw()
       elseif kind == "bounds" then
         view.nodes = message.nodes or {}
         view.byPath = {}
@@ -339,33 +328,46 @@ local function startToolDrag(view, sx, sy)
       }
     end
   end
+  -- Many nodes turn and scale as one, around the middle of their places.
+  local midX, midY = 0, 0
+  for _, n in ipairs(nodes) do
+    midX, midY = midX + n.originX / #nodes, midY + n.originY / #nodes
+  end
   local wx, wy = toWorld(view, sx, sy)
-  view.drag = { kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, fields = {} }
+  view.drag = { kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, midX = midX, midY = midY, fields = {} }
 end
 
 local function toolDrag(view, sx, sy)
   local d = view.drag
   local wx, wy = toWorld(view, sx, sy)
+  -- Lua 5.5's math.atan takes both, as LuaJIT's math.atan2 does.
+  ---@diagnostic disable-next-line: redundant-parameter
+  local angle = math.atan(wy - d.midY, wx - d.midX) - math.atan(d.startY - d.midY, d.startX - d.midX)
+  local from = math.sqrt((d.startX - d.midX) ^ 2 + (d.startY - d.midY) ^ 2)
+  local factor = from > 0 and math.sqrt((wx - d.midX) ^ 2 + (wy - d.midY) ^ 2) / from or 1
   for _, n in ipairs(d.nodes) do
     local fields = {}
+    local p = n.parentPlace
+    local linear = { p[1], p[2], p[3], p[4], 0, 0 }
+    -- Where the node's place goes in the world, from the middle that the nodes turn and scale around.
+    local offX, offY = n.originX - d.midX, n.originY - d.midY
+    local toX, toY
     if d.tool == "move" then
-      -- The pointer's move in the world, as the node's parent sees it.
-      local p = n.parentPlace
-      local fromX, fromY = worldToNode({ p[1], p[2], p[3], p[4], 0, 0 }, d.startX, d.startY)
-      local toX, toY = worldToNode({ p[1], p[2], p[3], p[4], 0, 0 }, wx, wy)
-      fields.posX, fields.posY = snap(n.posX + toX - fromX), snap(n.posY + toY - fromY)
+      toX, toY = wx - d.startX, wy - d.startY
     elseif d.tool == "turn" then
-      -- Lua 5.5's math.atan takes both, as LuaJIT's math.atan2 does.
-      ---@diagnostic disable-next-line: redundant-parameter
-      local from = math.atan(d.startY - n.originY, d.startX - n.originX)
-      ---@diagnostic disable-next-line: redundant-parameter
-      local to = math.atan(wy - n.originY, wx - n.originX)
-      fields.rot = n.rot + to - from
+      local cos, sin = math.cos(angle), math.sin(angle)
+      toX, toY = offX * cos - offY * sin - offX, offX * sin + offY * cos - offY
+      fields.rot = n.rot + angle
     else
-      local from = math.sqrt((d.startX - n.originX) ^ 2 + (d.startY - n.originY) ^ 2)
-      local to = math.sqrt((wx - n.originX) ^ 2 + (wy - n.originY) ^ 2)
-      local factor = from > 0 and to / from or 1
+      toX, toY = offX * factor - offX, offY * factor - offY
       fields.sclX, fields.sclY = n.sclX * factor, n.sclY * factor
+    end
+    -- The move in the world, as the node's parent sees it.
+    local moveX, moveY = worldToNode(linear, toX, toY)
+    if d.tool == "move" then
+      fields.posX, fields.posY = snap(n.posX + moveX), snap(n.posY + moveY)
+    elseif #d.nodes > 1 then
+      fields.posX, fields.posY = n.posX + moveX, n.posY + moveY
     end
     d.fields[n.path] = fields
     players.change(view.file, n.path, fields)
@@ -528,7 +530,7 @@ ecs.panel.registerType({
     ---@type onlr_player.View
     local view = {
       panel = panel, id = nextId, x = -40, y = -40, zoom = 1, width = 0, height = 0, scale = 1, chosen = {},
-      fresh = false, visible = true, nodes = {}, byPath = {},
+      visible = true, nodes = {}, byPath = {},
     }
     if version == STATE_VERSION and type(saved) == "table" then
       view.file = saved.file
@@ -595,16 +597,11 @@ ecs.event.subscribe("onlr_project.opened", function()
       show(view, nil)
     end
   end
-  -- The start node opens in the first node view that shows no file.
+  -- The start node opens: in a node view that shows no file, or in a new one.
   local start = manifest and manifest.startNode
   if start and project.file(start) and not viewOf(start) then
-    for _, view in pairs(views) do
-      if not view.file then
-        show(view, start)
-        project.choose(start, {})
-        break
-      end
-    end
+    openFile(start)
+    project.choose(start, {})
   end
 end)
 

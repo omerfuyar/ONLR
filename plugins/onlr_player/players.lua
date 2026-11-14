@@ -227,12 +227,6 @@ function players.setView(id, view)
   end
 end
 
----Tells the edit player that a node view has shown a view's last frame (DESIGN 12.4).
----@param id integer
-function players.shown(id)
-  send(edit, { type = "shown", id = id })
-end
-
 ---Sends one edit of a node's own fields, such as while a drag moves it.
 ---@param path string the node file
 ---@param node string the node's path of ids
@@ -298,6 +292,8 @@ function edits.frame(message, block)
   local player = assert(edit)
   player.owed[message.view] = nil
   strikes = 0
+  -- The player may draw the next frame while the editor shows this one (DESIGN 12.4).
+  send(player, { type = "shown", id = message.view })
   players.onView("frame", message, block)
 end
 
@@ -412,6 +408,12 @@ end
 
 -- Reading both players
 
+-- The size of the message that some bytes start, when they hold its first line.
+local function wanted(bytes)
+  local textSize, blockSize, headerEnd = bytes:match("^(%d+) (%d+)\n()")
+  return textSize and headerEnd - 1 + tonumber(textSize) + tonumber(blockSize)
+end
+
 local function read(player, handlers)
   local text = player.process:read() .. player.process:readErrors()
   if text ~= "" then
@@ -433,16 +435,29 @@ local function read(player, handlers)
     player.connection = player.server:accept()
   end
   if player.connection then
-    local chunks = {}
-    while true do
-      local bytes = player.connection:receive(4 * 1024 * 1024)
-      if not bytes or bytes == "" then
-        break
+    local chunks = { player.buffer }
+    local size = #player.buffer
+    local function take()
+      local got = false
+      while true do
+        local bytes = player.connection:receive(4 * 1024 * 1024)
+        if not bytes or bytes == "" then
+          return got
+        end
+        chunks[#chunks + 1] = bytes
+        size = size + #bytes
+        got = true
       end
-      chunks[#chunks + 1] = bytes
     end
-    if #chunks > 0 then
-      player.buffer = player.buffer .. table.concat(chunks)
+    if take() then
+      -- A frame is bigger than what the system holds of a connection, so it arrives in parts while the player sends on.
+      -- The rest of a message that has started is read now, for a short while, not at the next tick.
+      local need = wanted(chunks[1] ~= "" and chunks[1] or chunks[2])
+      local limit = os.clock() + 0.03
+      while need and size < need and os.clock() < limit do
+        take()
+      end
+      player.buffer = table.concat(chunks)
       local messages
       messages, player.buffer = link.unpack(player.buffer)
       for _, item in ipairs(messages) do
@@ -493,7 +508,8 @@ local function poll()
   end
 end
 
-ecs.timer.start(0.016, true, poll)
+-- Often, so a frame waits little for the editor to take it.
+ecs.timer.start(0.004, true, poll)
 
 ---Whether the edit player runs and has connected.
 ---@return boolean

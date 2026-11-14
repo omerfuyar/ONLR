@@ -5,6 +5,7 @@ local ecs = require("ecs")
 local ui = require("ui")
 local fs = require("fs")
 local audio = require("audio")
+local image = require("image")
 local mixer = require("mixer")
 local syntax = require("syntax")
 
@@ -90,6 +91,14 @@ local function load(state, path)
   end
   state.kind = kindOf(path)
   state.size = info.size
+  if state.kind == "image" then
+    -- Only the image's size is needed here: ui reads the file itself.
+    local loaded = image.load(path, 1)
+    if loaded then
+      state.imageWidth, state.imageHeight = loaded:size()
+      loaded:free()
+    end
+  end
   if state.kind == "sound" then
     local sound, err = audio.load(path)
     state.sound, state.error = sound, not sound and tostring(err) or nil
@@ -111,7 +120,17 @@ local function draw(state, surface)
     if state.error then
       children[#children + 1] = ui.text(state.error, { color = "#e06c75", wrap = true })
     elseif state.kind == "image" then
-      children[#children + 1] = ui.scroll({ id = "image" }, { ui.image(state.path, {}) })
+      -- The image fills the panel: a big one whole, and a small one by a whole number of times, at most 16.
+      local w, h = state.imageWidth or 0, state.imageHeight or 0
+      local roomW, roomH = surface.width / surface.scale - 16, surface.height / surface.scale - 48
+      local props = {}
+      if w > 0 and h > 0 and roomW > 0 and roomH > 0 then
+        local fit = math.min(roomW / w, roomH / h)
+        fit = fit >= 1 and math.min(16, math.floor(fit)) or fit
+        props = { width = w * fit, height = h * fit }
+        children[1] = ui.text(("%s, %d bytes, %d × %d, shown at %d%%"):format(state.path, state.size or 0, w, h, math.floor(fit * 100 + 0.5)), { style = STYLES.note })
+      end
+      children[#children + 1] = ui.image(state.path, props)
     elseif state.kind == "sound" then
       children[#children + 1] = ui.row({ gap = 8, align = "center" }, {
         ui.button("Play", { id = "play", onClick = function()

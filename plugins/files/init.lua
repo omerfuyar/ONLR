@@ -154,7 +154,11 @@ local function draw(state, surface)
       ui.field(state.name, { id = "name", grow = 1, tooltip = "A name, for a new file or a rename", onChange = function(text)
         state.name = text
       end }),
-      ui.dropdown(0, kinds, { id = "new", tooltip = "Make a new file of this name", onSelect = function(choice)
+      ui.dropdown(math.min(state.kind, #kinds), kinds, { id = "kind", tooltip = "What New makes", onSelect = function(choice)
+        state.kind = choice
+      end }),
+      ui.button("New", { id = "new", tooltip = "Make a new file of this name and kind", onClick = function()
+        local choice = math.min(state.kind, #kinds)
         if state.name == "" then
           return say(state, false, "Type a name first.")
         end
@@ -215,7 +219,7 @@ ecs.panel.registerType({
   title = "Files",
   stateVersion = STATE_VERSION,
   create = function(panel, saved, version)
-    local state = { panel = panel, open = {}, name = "" }
+    local state = { panel = panel, open = {}, name = "", kind = 1 }
     if version == STATE_VERSION and type(saved) == "table" then
       state.open = saved.open or {}
     end

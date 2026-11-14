@@ -63,12 +63,12 @@ return {
     save()
     check(read("nodes/start.lua") == start, "undo and save give the first text again")
 
-    -- the inspector shows the chosen node: a new name, typed in its first field and ended with Return, is one change
+    -- the inspector shows the chosen node: a new name, typed in its Name field and ended with Return, is one change
     x, y = at(56, 56)
     test.click(x, y)
     test.wait(0.2)
     local inspector = test.rect(panelOf(test, "onlr_views.inspector"))
-    test.click(inspector.x + 200, inspector.y + 52)
+    test.click(inspector.x + 200, inspector.y + 76)
     test.key("Ctrl+A")
     test.text("Hero")
     test.key("Return")
@@ -208,7 +208,7 @@ return {
     x, y = at(216, 56)
     test.click(x, y)
     test.wait(0.2)
-    test.click(inspector.x + 200, inspector.y + 80)
+    test.click(inspector.x + 200, inspector.y + 104)
     test.key("Ctrl+A")
     test.text("Mine")
     test.key("Return")
@@ -217,7 +217,7 @@ return {
     save()
     check(read("nodes/start.lua"):find('%["p4rt00"%] = {\n            name = "Mine",'), "the instance's change holds the name:\n" .. read("nodes/start.lua"))
     -- typing the base's name again takes the change out: a value that equals its default is left out
-    test.click(inspector.x + 200, inspector.y + 80)
+    test.click(inspector.x + 200, inspector.y + 104)
     test.key("Ctrl+A")
     test.text("Piece")
     test.key("Return")

@@ -935,7 +935,7 @@ What the sample shows of every package:
 | A file           | `file`                    | The edit player | A node file as the editor holds it, saved or not. The edit player reads it in place of the project's file. |
 | A change         | `change`                  | The edit player | One edit of a node's own fields in such a file, such as a moved node.                                      |
 | A view           | `view`                    | The edit player | Which node file to draw, from where, at what size, and which nodes are chosen (12.3).                      |
-| Shown            | `shown`                   | The edit player | The editor has shown the last frame (12.4).                                                                |
+| Shown            | `shown`                   | The edit player | The editor has taken the last frame (12.4).                                                                |
 | A question       | `question`                | The edit player | What a component type declares (12.5).                                                                     |
 | Reload           | `reload`                  | The edit player | A file of the project that is not Lua changed, such as an image.                                           |
 | Stop             | `stop`                    | Both players    | The player ends.                                                                                           |
@@ -973,7 +973,9 @@ What the sample shows of every package:
 ### 12.4 Frames
 
 - The engine draws a view into a canvas of the view's size, reads the canvas back, and sends its pixels.
-- The engine sends a frame only when the editor has shown the last one, so a slow panel never fills the link.
+- The engine sends a frame only when the editor has taken the last one, so a slow editor never fills the link. The editor says so when the frame arrives, so the engine draws the next one while the panel shows this one.
+- A frame names the place and the zoom that it was drawn from. The panel places it by them, so the nodes stay on the grid while the user moves the view and the next frame is on its way.
+- A frame is bigger than what the system holds of a connection at once. The editor reads the rest of a frame that has started at once, not at its next look at the link.
 - LÖVE holds a pixel as red, green, blue and alpha, and OpenECS's images as blue, green, red and alpha. The engine draws the view's canvas once more through a shader that swaps red and blue, then reads it back. So the graphics card does it, and the panel takes the pixels as they come.
 - The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13.3). LÖVE's canvases hold colours multiplied by their alpha, and OpenECS's images do not. The same shader divides them, so the panel draws a frame as it comes.
 
@@ -1028,7 +1030,7 @@ What the sample shows of every package:
 ### 13.3 The node view
 
 - Many node files can be open at once, each in a node view of its own. One edit player draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
-- The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
+- The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. Many chosen nodes turn and scale as one, around the middle of their places. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
 - A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node whose middle is in the rectangle.
 - A drag that starts on a node drags the chosen nodes with the tool: move by the pointer's way, turn by its angle around each node's place, and scale by its distance from it. The edit player draws each step (12.2), and the release is one change of the history.
 - The wheel zooms around the pointer. A drag with the middle button, or with Alt, moves the view.
