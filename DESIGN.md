@@ -975,7 +975,7 @@ What the sample shows of every package:
 - The engine draws a view into a canvas of the view's size, reads the canvas back, and sends its pixels.
 - The engine sends a frame only when the editor has shown the last one, so a slow panel never fills the link.
 - LÖVE holds a pixel as red, green, blue and alpha, and OpenECS's images as blue, green, red and alpha. The engine draws the view's canvas once more through a shader that swaps red and blue, then reads it back. So the graphics card does it, and the panel takes the pixels as they come.
-- The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13.3). A frame's colours are multiplied by their alpha, as LÖVE's canvases hold them.
+- The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13.3). LÖVE's canvases hold colours multiplied by their alpha, and OpenECS's images do not. The same shader divides them, so the panel draws a frame as it comes.
 
 ### 12.5 What the editor learns from LÖVE
 
