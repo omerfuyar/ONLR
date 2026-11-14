@@ -6,7 +6,7 @@ return {
   name = "onlr",
   version = "0.1.0",
   app = { id = "io.github.omerfuyar.ONLR", name = "ONLR" },
-  depends = { onlr_project = "0.1", onlr_player = "0.1", onlr_views = "0.1", console = "0.1", files = "0.1", viewer = "0.1" },
+  depends = { onlr_project = "0.1", onlr_player = "0.1", onlr_views = "0.1", onlr_export = "0.1", console = "0.1", files = "0.1", viewer = "0.1" },
   pluginsDir = "plugins",
   -- a project's folder, or a file in it, named on the command line opens the project (DESIGN 13.2)
   open = "onlr_project.openPath",
@@ -15,7 +15,7 @@ return {
     ["ecs.toolMenu"] = {
       "onlr_project.newProject", "onlr_project.openProject", "onlr_project.save", "onlr_project.undo", "onlr_project.redo",
       "onlr_player.play", "onlr_player.playFile", "onlr_player.pause", "onlr_player.step", "onlr_player.stop",
-      "onlr_player.restart", "settings.open", "panels.open",
+      "onlr_player.restart", "onlr_export.love", "onlr_export.linux", "onlr_export.windows", "settings.open", "panels.open",
     },
   },
   workspaces = {
@@ -37,7 +37,7 @@ return {
             { share = 3, panels = { { type = "onlr_player.view" } } },
             { share = 1, panels = { { type = "console.log" } } },
           },
-          { size = 340, panels = { { type = "onlr_views.inspector" }, { type = "onlr_views.settings" } } },
+          { size = 340, panels = { { type = "onlr_views.inspector" }, { type = "onlr_views.settings" }, { type = "onlr_export.panel" } } },
         },
       },
     },

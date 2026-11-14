@@ -1082,7 +1082,8 @@ What the sample shows of every package:
 ### 14.1 The `.love` file
 
 - A `.love` file is a zip archive of the project's folder, with `main.lua` at its root.
-- The user chooses the folder that an export is written to, and the editor keeps it for the project in `.onlr/`. A folder inside the project is left out of every export, as `exclude`'s files are.
+- The user chooses the folder that an export is written to, and the editor keeps it for the project in `.onlr/editor.lua`. A path that starts at no root is in the project's folder. A folder inside the project is left out of every export, as `exclude`'s files are.
+- The file is named after the game: `My game.love`. A pattern of `exclude` names a path from the project's folder (3.2).
 - It leaves out every file and folder whose name starts with a dot, such as `.onlr/` and `.luarc.json`, and what `exclude` in the project's manifest names.
 - It holds every other file, as it is. The editor does not leave out a file that no node file names, since a script may name it in a text. Scripts stay source: LuaJIT's bytecode is tied to its version.
 - The licences travel with their parts: the engine's is in `packages/onlr/`, and a library's is in the library's folder.
@@ -1093,12 +1094,14 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 | Target        | The build                                                                                                         |
 | ------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Linux x86_64  | LÖVE's files, with the `.love` file joined to the end of LÖVE's executable, in a `.tar.gz` archive that keeps the files' permissions. A launcher named after the game starts it. |
+| Linux x86_64  | LÖVE's files, with the `.love` file joined to the end of LÖVE's executable, in a `.tar.gz` archive that keeps the files' permissions. A launcher named after the game starts it: the launcher of LÖVE's AppImage, which tells LÖVE where its libraries are. |
 | Windows x86_64 | `love.exe` with the `.love` file joined to its end, named after the game, beside LÖVE's libraries, in a zip archive. |
 
 - LÖVE runs a `.love` file that is joined to the end of its executable.
 - A Windows build keeps LÖVE's icon and details.
 - A build holds LÖVE's `license.txt`, which lists the licences of LÖVE and of the libraries inside it.
+- A build's archive holds one folder, named after the game, and is named after the game and the target: `My game-linux-x86_64.tar.gz` and `My game-windows-x86_64.zip`.
+- A build writes the `.love` file first, into the same folder.
 
 ## 15. LÖVE
 
@@ -1111,8 +1114,9 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 - A runtime is LÖVE for one version and one platform, as files in a folder.
 - ONLR's archive holds the runtime of the editor's own platform, which the players run. On Linux it is the contents of LÖVE's AppImage, unpacked, so it runs without the system's AppImage support.
-- The runtime of another platform is downloaded at the first export for it: from LÖVE's releases, and for Linux from ONLR, which hosts the AppImage's contents as a `.tar.gz`, since only Linux unpacks an AppImage. The editor checks it against SHA-256 hashes that ONLR ships, and keeps it in the user's data folder, by version and platform.
-- A setting names a folder to use as a runtime instead, such as a LÖVE the user built.
+- The runtime of another platform is downloaded at the first export for it: from LÖVE's releases, and for Linux from ONLR, which hosts the AppImage's contents as a `.tar.gz`, since only Linux unpacks an AppImage. The editor checks the downloaded file against the SHA-256 hash that ONLR ships for it, before it uses anything of it, and keeps the runtime in the user's data folder, by version and platform: `onlr/runtimes/11.5/windows-x86_64/`.
+- A setting names a folder to use as a runtime instead, such as a LÖVE the user built: `onlr_export.linuxRuntime` and `onlr_export.windowsRuntime`.
+- The players run the LÖVE that the setting `onlr_player.love` names, or else the one of ONLR's archive.
 
 ## 16. Tests
 
