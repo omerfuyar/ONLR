@@ -239,6 +239,51 @@ return {
     test.key("Shift+F5")
     test.wait(0.5)
 
+    -- Export: the folder that exports are written to is typed into the Export panel, which is a tab beside the inspector
+    test.click(inspector.x + 210, inspector.y - 14)
+    test.wait(0.2)
+    local export = test.rect(panelOf(test, "onlr_export.panel"))
+    test.click(export.x + 100, export.y + 50)
+    test.key("Ctrl+A")
+    test.text("out")
+    test.key("Return")
+    test.wait(0.2)
+
+    -- the .love file is a zip archive of the project, without what starts with a dot and without the export's folder
+    test.call("onlr_export.love")
+    test.wait(0.3)
+    local function list(command)
+      local pipe = assert(io.popen(command))
+      local text = pipe:read("a")
+      pipe:close()
+      return text
+    end
+    local love = list("unzip -l out/Editor.love")
+    check(love:find(" main.lua\n") and love:find(" nodes/start.lua\n") and love:find(" packages/onlr/init.lua\n"), "the .love file holds the project:\n" .. love)
+    check(not love:find("%.onlr") and not love:find("%d   out/"), "without .onlr/ and the export's folder")
+
+    -- the Linux build is LÖVE's files with the .love file joined to LÖVE's executable: unpacked, its launcher runs the game
+    test.call("onlr_export.linux")
+    test.wait(1)
+    os.execute("mkdir -p out/linux && tar -xzf out/Editor-linux-x86_64.tar.gz -C out/linux && cd out/linux && "
+      .. "SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 3 ./Editor/Editor > /dev/null 2>&1")
+    check(read("out/linux/played.txt") == "Start", "the Linux build runs the game")
+    check(read("out/linux/Editor/license.txt") ~= "", "and holds LÖVE's license.txt")
+
+    -- the Windows build is made from LÖVE's runtime, which is downloaded and checked against the hash that ONLR ships
+    test.call("onlr_export.windows")
+    for _ = 1, 300 do
+      test.wait(0.1)
+      if read("out/Editor-windows-x86_64.zip") ~= "" then
+        break
+      end
+    end
+    local windows = list("unzip -l out/Editor-windows-x86_64.zip")
+    check(windows:find(" Editor/Editor.exe\n") and windows:find(" Editor/love.dll\n") and windows:find(" Editor/license.txt\n"),
+      "the Windows build holds the game's executable, LÖVE's libraries and its license.txt:\n" .. windows)
+    os.execute("cd out && unzip -q -o Editor-windows-x86_64.zip")
+    check(list("unzip -l out/Editor/Editor.exe 2>&1"):find(" main.lua\n"), "the .love file is joined to the executable's end")
+
     -- no panel failed
     for _, panel in ipairs(test.panels()) do
       check(not test.panel(panel.id).fault, panel.type .. " failed: " .. tostring(test.panel(panel.id).fault))

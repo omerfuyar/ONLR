@@ -12,3 +12,6 @@ Notes for agents and the owner that belong in no other document: why the tools a
 - `check.sh` checks Lua files with LuaLS over the whole folder and prints only the named files' problems, because LuaLS 3.15 finds nothing in a file that it checks alone.
 - `.luarc.json` leaves every folder named `library` out of the check: a package's `library/` holds its library unchanged.
 - The copies of the engine that `test.sh` puts into each sample are ignored by git, so LuaLS does not see each class twice.
+- The editor's tests and the plugins' Lua check need OpenECS in `OpenECS/`, laid out as a release has it. The hook does not make it, since the build takes long: clone OpenECS's `dev` with its submodules, run its `.github/scripts/install-linux.sh` and `.github/scripts/build.sh D`, copy `build/Debug/bin/.` into `OpenECS/` here, and run `OpenECS/OpenECS --definitions OpenECS/include`. `checks.yml` does the same, and keeps the result by OpenECS's commit.
+- An editor's test finds a control by its place in its panel, since a test cannot ask ui for an element's rectangle. When OpenECS-std changes ui's sizes, the places in `editortest.lua` change with them.
+- In an editor's test, text typed right after a click on a field is lost when a `test.wait` with a time comes between them; a key such as Ctrl+A, or a `test.wait()` of one pass, does not lose it. The cause is not known.

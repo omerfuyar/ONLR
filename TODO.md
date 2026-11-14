@@ -6,7 +6,6 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in no fixed order.
 
-- **The first build.** The plan is done. The engine, the player, the editor and export are built from DESIGN.md, with the samples as their tests (DESIGN 16).
 - **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
 - **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
 - **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
@@ -41,7 +40,6 @@ What the owner wants worked on, in no fixed order.
 - **A merge driver for node files.** For later. A conflict in a node file is git's conflict of text, which the user resolves by hand (DESIGN 4.2). A merge driver that ONLR ships would merge by ids and fields, so that only one field changed on both sides conflicts. Git calls it for node files through `.gitattributes`, and takes its command from its own settings, not from the repository, so the editor would set it in each clone that it opens. Checked on a real merge of coin run's `nodes/level.lua`, as the editor writes it, with one branch's change on each side:
   - Merge cleanly: a node moved and another node's colour; a script's two values a line apart; a component added and another value of the node; a child added and another node moved; two instances changed.
   - Conflict: a node's `posX` and `posY`; a node's `name` and `posX`; two children added at the end of one node's list.
-- **The split into plugins.** DESIGN 13.1 names four. It is checked again when the first is written.
 
 ## Export
 
@@ -116,7 +114,8 @@ What the owner wants worked on, in no fixed order.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. They are the owner's too, so they change when that is the better solution:
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
   - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the player on Linux and `cmd /c` on Windows.
-  - compress: writing tar, for the Linux build's `.tar.gz` (DESIGN 14.2).
+  - compress: writing and reading tar, for the Linux build's `.tar.gz` (DESIGN 14.2) and the Linux runtime (DESIGN 15.2). Until it does, `plugins/onlr_export/tar.lua` writes one.
+  - fs: a file's permissions. Until it tells them, the Linux build marks as programs LÖVE's launcher, the files of `bin/` and the libraries.
   - ui: a tree that chooses many nodes and drags them, for the nodes panel.
   - fs: watching the folders inside a folder, for the project's folder.
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
@@ -132,6 +131,7 @@ What the owner wants worked on, in no fixed order.
 - **What the editor does not do yet.** Dragging a node in the nodes panel to move it in the tree, and choosing many nodes there, wait for ui's tree. Copying LÖVE's definitions into a new project's `.onlr/` takes them from `build/love2d/`, until ONLR's archive holds them. Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
 - **The submodules shu and shuild.** They build plugins in C with `shuild.c`, which the template has. ONLR's plugins are all Lua, so it has no `shuild.c`, and nothing uses the submodules in `dependencies/`. Removing them changes the submodules, which the owner decides.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the player's files, and LÖVE's runtime for the host, and the Linux runtime that ONLR hosts (DESIGN 15.2).
-- **The hashes of LÖVE's runtimes.** DESIGN 15.2 checks downloads against hashes that ONLR ships. They are taken once from LÖVE's releases.
+- **The Linux runtime has no address.** DESIGN 15.2 downloads it from ONLR, which hosts the contents of LÖVE's AppImage as a `.tar.gz`. Nothing hosts it yet, so `plugins/onlr_export/runtimes.lua` has no address and no hash for it. Until then a Linux build uses the LÖVE that runs the players, when it is an unpacked AppImage, or the folder that `onlr_export.linuxRuntime` names. Unpacking a `.tar.gz` also waits for compress to read tar. The AppImage's own SHA-256 hash is `65a673406431eff7167a15a032bf7a2e4ba50108e091eb7b176465831f9b5e00`.
+- **Export on Windows is not tested.** The user's data folder there, `%APPDATA%`, and a Linux build made on Windows, which cannot find LÖVE's AppImage.
 - **OpenECS's TODO.md** still lists this editor's open questions. Replace them there with a link to this repository.
 - **Rulesets.** `dev` and `main` have no rules in this repository yet. The checks exist now: `Test (Linux)` and `Lua (LuaLS)`. The owner sets the rules, as OpenECS-template's `.github/rulesets/` does.
