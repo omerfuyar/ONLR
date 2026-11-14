@@ -79,7 +79,8 @@ function resolve.component(entry, typeName, create)
   local t = entry.components
   if not t then
     if not create then
-      return nil --[[@as table]]
+      ---@diagnostic disable-next-line: return-type-mismatch
+      return nil
     end
     t = {}
     entry.components = t
@@ -87,7 +88,8 @@ function resolve.component(entry, typeName, create)
   for part in typeName:gmatch("[^.]+") do
     if type(t[part]) ~= "table" then
       if not create then
-        return nil --[[@as table]]
+        ---@diagnostic disable-next-line: return-type-mismatch
+        return nil
       end
       t[part] = {}
     end

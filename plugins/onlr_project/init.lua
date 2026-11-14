@@ -785,7 +785,8 @@ local function target(node, create)
   local changes = holder.instance.changes
   if not changes then
     if not create then
-      return nil --[[@as table]]
+      ---@diagnostic disable-next-line: return-type-mismatch
+      return nil
     end
     changes = {}
     holder.instance.changes = changes
