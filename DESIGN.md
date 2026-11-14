@@ -202,19 +202,19 @@ return {
   - One field on each line, indented by two spaces, and each item of a list on its own line. Lines end with LF.
   - A node's fields in the order of section 5's table, after `format`, and so are the fields of an instance's change (9). A manifest's fields are in the order of section 3.2's table, with LÖVE's other settings in the order of their names. The fields of every other table, such as a node's components and a component's values, are in the order of their names.
   - A key that is a name in Lua is written as it is, and any other in brackets. The keys of an instance's `changes` are paths of ids (9), and are always in brackets: `["c0in7x"] = {` and `["ch3st9/g1nt4k"] = {`.
-  - A whole number from -2^53 to 2^53 without a point, such as `250`. Any other number with the fewest digits that read back as the same number, such as `0.1`, and an endless one as `math.huge`. So LuaJIT and the editor's Lua read the same value.
+  - A whole number from -2^53 to 2^53 without a point, such as `250`. Any other number with the fewest digits that read back as the same number, such as `0.1`, and an endless one as `math.huge`, and one that is no number as `0/0`. So LuaJIT and the editor's Lua read the same value.
   - A text in double quotes, with `\\`, `\"` and `\n`, and every other byte below 32 as three digits, such as `\009`. So both Luas read the same text.
 - A value that equals its default is left out, so a file holds only what the user set. In an instance, the value in its base is the default (9).
 - A node's `id` is six random characters, lowercase letters and digits, such as `c0in7x`. The editor gives it once. Nodes are named by id wherever one refers to another, never by their place in a list.
 - An id is unique in its file, and no further. When a file holds an id twice, such as after a merge in git, the editor gives one of the two nodes a new id, and says so.
 - Two changes on neighbouring lines, such as a node's `name` and its `posX`, and two nodes added at the end of one list of children conflict in git, as in any text. A node file with git's marks of a conflict does not load: the node view shows the error, and the user resolves it in a text editor.
-- A field or a component type that the editor does not know is kept as it is, and written back.
+- A field or a component type that the editor does not know is kept as it is, and written back. A node's field that section 5 does not name is written after those it names, in the order of the names.
 - LuaJIT cannot read a node file of much more than 30,000 nodes. The editor warns well before a file gets there. A tile map is one component, not a node for each tile.
 
 ### 4.3 Definitions
 
 - The first line of each file names its type, such as `---@type onlr.NodeFile`, so a code editor with the Lua language server completes and checks its fields.
-- The types are in the engine's source, in the project's `packages/onlr/` (1). LÖVE's own definitions, from [LuaCATS/love2d](https://github.com/LuaCATS/love2d), are copied into `.onlr/`.
+- The types are in the engine's source, in the project's `packages/onlr/` (1). LÖVE's own definitions, from [LuaCATS/love2d](https://github.com/LuaCATS/love2d), are copied into `.onlr/love2d/`.
 - The editor writes `.luarc.json` once, when it makes the project. It names LuaJIT as the Lua version, `.onlr/` as a library, and `packages/` as a place where `require` looks (11.1):
 
   ``` json
@@ -226,7 +226,7 @@ return {
   ```
 
 - A script names its type with an annotation, under the type's name: `---@class player : onlr.Component`.
-- The editor writes a definition of `node.components` (6.1) into `.onlr/`, with a field for each component type of the project, and writes it again when a type is added or removed. So a code editor knows what `self.node.components.player` is.
+- The editor writes a definition of `node.components` (6.1) into `.onlr/components.lua`, with a field for each component type of the project, and writes it again when a type is added or removed. So a code editor knows what `self.node.components.player` is.
 
 ## 5. Nodes
 
@@ -920,7 +920,7 @@ What the sample shows of every package:
 - The play player is LÖVE as an exported game runs it: the window, the keyboard, the pointer, the gamepads and the sound are LÖVE's own, and the engine stands in for nothing.
 - What a mode draws into is the one difference between the modes. Starting a player, the link, the console and the errors are the same code for both, so the editor's other parts do not know where the game is drawn.
 - A player is another program, so a game that fails or never returns leaves the editor running. The editor shows what happened, and starts the player again when asked.
-- The editor gives the edit player two seconds for each answer. When it does not answer, as when a `drawEditor` never returns, or the game's code fails before the engine has loaded, the editor ends it, shows in the console what it printed, and starts it again at the next change. A view that stops it twice in a row is not drawn again until the user asks.
+- The editor gives the edit player two seconds for each answer. When it does not answer, as when a `drawEditor` never returns, or the game's code fails before the engine has loaded, the editor ends it, shows in the console what it printed, and starts it again at the next change. When it stops twice in a row, it does not start again until the user asks, with Start the Edit Player Again.
 - The editor reads what a player prints, and shows it in the console. In a player, the engine turns off the buffer of the game's output, so each line shows when it is printed.
 
 ### 12.2 The link
@@ -999,7 +999,8 @@ What the sample shows of every package:
 - The editor is an OpenECS tool: a preset and plugins, in Lua unless a part needs C. The user never sees or writes them.
 - It builds on OpenECS's standard plugins (OpenECS-std DESIGN): process starts the players, net carries the link, fs watches the project, compress and hash serve export, web downloads LÖVE, and ui and draw make the panels.
 - Every panel is a panel type that a plugin registers (OpenECS DESIGN 4), and the preset only places them. No panel is built into the editor, so the user opens, moves and groups them as in any OpenECS tool.
-- A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a plugin that knows nothing of ONLR and serves any OpenECS tool. It belongs in OpenECS-std, as its settings window does (OpenECS-std DESIGN 12).
+- A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a plugin that knows nothing of ONLR and serves any OpenECS tool: `files`, `viewer` and `console`. Each belongs in OpenECS-std, as its settings window does (OpenECS-std DESIGN 12).
+- Such a plugin is told what ONLR needs through its functions. The files panel takes handlers: how a file opens, which files it makes, what a rename and a delete do, and what the question before a delete adds. It drags a file as a list of paths, as another application's files come. The console takes lines, and the folder that their files are in.
 - A panel of ONLR's own, such as the inspector or the nodes panel, is built from generic parts, such as ui's elements. A part that it needs and that knows nothing of ONLR is added to the standard plugin that it belongs to, not written inside ONLR, and not worked around.
 
 | Plugin         | Does                                                                                          |
@@ -1013,12 +1014,14 @@ What the sample shows of every package:
 - Every panel can be open many times. What belongs to the project is one, in `onlr_project`: its files, the chosen nodes, the chosen tool, snapping and the history. So two node views of one file show the same nodes, two inspectors show the same chosen nodes, and a change made in one panel shows in every other at once.
 - What belongs to one panel is its own state (OpenECS OVERVIEW 5.4): where a node view looks from and its zoom, which nodes a nodes panel has open, and which components an inspector has folded.
 - The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, and a text with syntax. It shows no video, since OpenECS-std's video does not read LÖVE's Ogg Theora.
-- The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting.
+- The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting, `console.editor`.
+- `onlr_project` tells of changes with events: a project opened or closed, files changed, saved or renamed, the chosen nodes, the tool, the types, and a file that changed on disk. Its functions and events are documented in its code.
 
 ### 13.2 Projects
 
 - ONLR's preset gives OpenECS an `open` function (OpenECS DESIGN 13.6), so a project's folder named on the command line opens.
-- The menu has New Project, which asks for an empty folder, Open Project, which asks for a folder, and the projects opened last.
+- The menu has New Project, which asks for an empty folder, and Open Project, which asks for a folder. The project settings panel has both too, and while no project is open it lists the projects opened last.
+- The editor's session keeps the open project's folder, so the editor starts with the project it was closed with.
 - The editor holds one project at a time. Opening another closes the one that is open, after asking about unsaved work.
 - A new project holds the files that section 3.1 says the editor writes, the engine in `packages/onlr/`, empty `components/` and `shared/` folders, and `nodes/start.lua`, an empty node. Its manifest names that file as the start node, and the folder's name as the game's `name` and `id`.
 
@@ -1026,8 +1029,10 @@ What the sample shows of every package:
 
 - Many node files can be open at once, each in a node view of its own. One edit player draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
 - The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
-- A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node in a rectangle.
-- Snapping to a grid is a toggle. The grid's size is a setting of the project, kept in `.onlr/`.
+- A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node whose middle is in the rectangle.
+- A drag that starts on a node drags the chosen nodes with the tool: move by the pointer's way, turn by its angle around each node's place, and scale by its distance from it. The edit player draws each step (12.2), and the release is one change of the history.
+- The wheel zooms around the pointer. A drag with the middle button, or with Alt, moves the view.
+- Snapping to a grid is a toggle. It and the grid's size are settings of the project, kept in `.onlr/editor.lua`, a data file.
 - The node view draws the window's frame: a rectangle from 0, 0, of the size of the manifest's `window`. So the user sees where the nodes that no camera holds show, such as a score.
 - Dragging an image from the files panel into the node view makes a node with a sprite of it, and dragging a node file makes an instance of it (9).
 - The editor does not tell a level from a coin. Any node file can be the start node and can be held in another (5, 9), so the manifest's start node is chosen from every node file.
@@ -1036,6 +1041,8 @@ What the sample shows of every package:
 
 - The nodes panel shows the tree of the node file whose view has the focus, from its first node.
 - The inspector shows the chosen node's own fields (5): its name, its place, its `z` and whether it is active. Then it shows each of its components under its type's name. A component has one row for each property: its `label`, or else its name in words, `cellSize` as "Cell size", and the control of its kind (6.2).
+- A typed value is taken at Return. The inspector shows a node's angle in degrees; the file keeps radians, as LÖVE does.
+- The nodes panel moves the chosen node with buttons: up and down among its parent's children, out of its parent, and into the node above it.
 - With many nodes chosen, the inspector shows the fields and the components that all of them have. A value that differs among them shows empty, and a change sets it on all of them, as one change of the history.
 - A reference (6.2) is set by dragging onto its row what it names: a file from the files panel, or a node from the nodes panel or the node view. A value is typed or chosen with its control, and is not dragged in the node view.
 - A type or a property that the editor does not find, such as after a script was renamed outside the editor, shows in the inspector as the node file writes it. The user can give its values to another type or property. Until then they are kept (4.2).
@@ -1062,10 +1069,11 @@ What the sample shows of every package:
 - When a file goes back to what is on disk, because the user does not save its changes, or keeps a change made outside the editor, every record that changed it is taken out of the history.
 - Play saves every node file with changes, and the manifest, before it starts the play player (12.1). So the game that plays is the project's files, and the play player is sent none. One game plays at a time: Play while a game plays stops it first.
 - A file of the project that changes on disk is read again. When the editor's copy has unsaved changes too, the editor asks which to keep.
+- A node view of a file that is renamed follows it, and one of a file that is gone shows no file.
 
 ### 13.7 Files
 
-- The files panel shows the project's folder, apart from what starts with a dot. It makes folders, scripts and node files, renames and moves them, and deletes them after asking. The question names the node files that name the file. A deleted file goes to the system's trash.
+- The files panel shows the project's folder, apart from what starts with a dot. It makes folders, scripts and node files, renames and moves them, and deletes them after asking. The question names the node files that name the file. A deleted file goes to the system's trash, or to `.onlr/trash/` when the system has none.
 - Opening a file opens a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
 - Renaming, moving and deleting files are not in the history. Before a rename or a move, the editor saves every file with changes. Then it renames the file, changes every path and type name that names it, in every node file and in the manifest, and saves them. The user undoes it by renaming or moving the file back, and gets a deleted file back from the system's trash.
 
@@ -1108,12 +1116,13 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 ## 16. Tests
 
-- The samples are the tests. A sample is a small project that shows one part of ONLR, and it has one test.
+- The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
 - The tests share one helper, `samples/check.lua`. Before a test runs, the sample gets the helper and the engine in its `packages/`, as a project holds the engine (3.1). The repository does not keep those copies.
 - The player and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both players on other samples, and speaks the link with them.
-- A sample's test of the editor is an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes.
+- A sample's test of the editor is its `editortest.lua`, an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes. It runs on a copy of the sample, since it writes the sample's files.
+- `samples/editor` is a project as the editor writes one, so its test checks that a change and its undo give the first text again.
 - One sample has thousands of nodes. It is the measure of speed: its test reports the time of a frame.
 - A change that breaks a sample changes the sample in the same piece of work.
 

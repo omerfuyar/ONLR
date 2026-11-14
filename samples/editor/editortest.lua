@@ -1,10 +1,12 @@
 -- The editor's test (DESIGN 16): an OpenECS test that opens this sample, acts as a user would, and checks the files
 -- that the editor writes. test.sh runs it on a copy of the sample, in build/tests/work/editor/.
 
+---A file's text, or an empty text when there is no such file.
+---@return string
 local function read(path)
   local file = io.open(path, "rb")
   if not file then
-    return nil
+    return ""
   end
   local text = file:read("a")
   file:close()
@@ -37,6 +39,7 @@ return {
     local function at(x, y)
       return view.x + x + 40, view.y + y + 40
     end
+    local file
     local function save()
       test.key("Ctrl+S")
       test.wait(0.2)
@@ -127,9 +130,77 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the drop is undone")
 
+    -- Ctrl+D duplicates the chosen node: the copy has a new id, and names what the first one names
+    x, y = at(56, 56)
+    test.click(x, y)
+    test.key("Ctrl+D")
+    test.wait(0.2)
+    save()
+    local doubled = read("nodes/start.lua")
+    local _, count = doubled:gsub('name = "A"', "")
+    check(count == 2, "the node is there twice:\n" .. doubled)
+    _, count = doubled:gsub('id = "aaaaaa"', "")
+    check(count == 1, "the copy has an id of its own")
+    _, count = doubled:gsub('target = "bbbbbb"', "")
+    check(count == 2, "the copy names the node that the first one names")
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the copy is undone")
+
+    -- Save as Node File writes the chosen node to a new node file, and puts an instance of it in its place
+    test.click(x, y)
+    test.wait(0.2)
+    local nodes = test.rect(panelOf(test, "onlr_views.nodes"))
+    -- the new file's name goes into the field at the panel's bottom, above the button
+    test.click(nodes.x + 130, nodes.y + nodes.height - 55)
+    test.wait()
+    test.text("hero")
+    test.click(nodes.x + 68, nodes.y + nodes.height - 22)
+    test.wait(0.3)
+    local hero = read("nodes/hero.lua")
+    check(hero:find('id = "aaaaaa"') and hero:find("speed = 25"), "the new node file holds the node:\n" .. hero)
+    check(not hero:find("bbbbbb"), "without the values that name a node outside it")
+    test.click(x, y)
+    save()
+    local held = read("nodes/start.lua")
+    check(held:find('base = "nodes/hero.lua"'), "an instance is in the node's place:\n" .. held)
+    check(held:find('%["aaaaaa"%] = {\n            components = {\n              thing = {\n                friend = "bbbbbb",\n                target = "bbbbbb",'),
+      "and its change sets the values that name the node outside")
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start and read("nodes/hero.lua") == hero, "undoing it puts the node back, and leaves the new file")
+    os.remove("nodes/hero.lua")
+    test.wait(0.3)
+
+    -- the files panel renames a file: every path that names it changes with it, and the files are saved (DESIGN 13.7)
+    local files = test.rect(panelOf(test, "files.tree"))
+    test.click(files.x + 21, files.y + 130)
+    test.wait(0.2)
+    test.click(files.x + 80, files.y + 172)
+    test.click(files.x + 80, files.y + 25)
+    test.wait()
+    test.text("piece.lua")
+    test.click(files.x + 43, files.y + 58)
+    test.wait(0.5)
+    check(read("nodes/piece.lua") ~= "" and read("nodes/part.lua") == "", "the file has its new name")
+    check(read("nodes/start.lua") == start:gsub("nodes/part.lua", "nodes/piece.lua"), "the instance names the file by its new name")
+    -- the click opened the file in a node view, which follows it to its new name
+    local followed = false
+    for _, panel in ipairs(test.panels()) do
+      followed = followed or (panel.type == "onlr_player.view" and panel.title == "piece.lua")
+    end
+    check(followed, "the node view shows the file under its new name")
+    test.click(at(300, 300))
+    test.call("ecs.layout.close")
+    os.rename("nodes/piece.lua", "nodes/part.lua")
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write(start)
+    file:close()
+    test.wait(0.5)
+
     -- a file that changes on disk is read again
     local part = read("nodes/part.lua"):gsub('name = "Part"', 'name = "Piece"')
-    local file = assert(io.open("nodes/part.lua", "wb"))
+    file = assert(io.open("nodes/part.lua", "wb"))
     file:write(part)
     file:close()
     test.wait(0.5)
@@ -160,7 +231,7 @@ return {
     test.key("F5")
     for _ = 1, 50 do
       test.wait(0.1)
-      if read("played.txt") then
+      if read("played.txt") ~= "" then
         break
       end
     end

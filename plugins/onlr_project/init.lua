@@ -18,6 +18,7 @@ local resolve = require("resolve")
 ---@field saved string? what the editor writes for the table on disk
 ---@field dirty boolean it has changes that are not saved
 ---@field handwritten boolean a person wrote its text, so a save asks first (DESIGN 4.2)
+---@field missing boolean? the project has no such file
 
 ---A change that can be undone: the tables of the files that it changed, before and after (DESIGN 13.6).
 ---@class onlr_project.Record
@@ -45,7 +46,7 @@ local P
 
 local recent = {} ---@type string[] the folders of the projects opened last
 
-for _, name in ipairs({ "opened", "closed", "changed", "chosen", "tool", "types", "saved", "disk", "said", "settings" }) do
+for _, name in ipairs({ "opened", "closed", "changed", "chosen", "tool", "types", "saved", "disk", "said", "settings", "renamed" }) do
   ecs.event.declare(name)
 end
 
@@ -129,6 +130,7 @@ local function readFile(path)
   local text = format.readFile(absolute(path))
   if not text then
     file.error = path .. ": no such file"
+    file.missing = true
     return file
   end
   file.disk = text
@@ -1572,17 +1574,25 @@ local function renameFile(from, to)
     return false, err
   end
   -- The node files that moved are read again under their new paths.
+  local movedFiles = {}
   for path in pairs(p.files) do
     if path == from or path:sub(1, #from + 1) == from .. "/" then
-      dropHistory(path)
-      p.files[path] = nil
-      getFile(to .. path:sub(#from + 1))
+      movedFiles[#movedFiles + 1] = path
     end
+  end
+  for _, path in ipairs(movedFiles) do
+    dropHistory(path)
+    p.files[path] = nil
+    getFile(to .. path:sub(#from + 1))
   end
   local changed = renameNames(from, to)
   saveAll()
   scanTypes()
   p.types = {}
+  if p.chosen.file and (p.chosen.file == from or p.chosen.file:sub(1, #from + 1) == from .. "/") then
+    p.chosen.file = to .. p.chosen.file:sub(#from + 1)
+  end
+  ecs.event.emit("onlr_project.renamed", { from = from, to = to })
   emitChanged(changed, true)
   ecs.event.emit("onlr_project.types")
   return true
@@ -1634,11 +1644,15 @@ local function deleteFile(path)
       return false
     end
   end
+  local gone = {}
   for other in pairs(p.files) do
     if other == path or other:sub(1, #path + 1) == path .. "/" then
-      dropHistory(other)
-      p.files[other] = nil
+      gone[#gone + 1] = other
     end
+  end
+  for _, other in ipairs(gone) do
+    dropHistory(other)
+    p.files[other] = nil
   end
   emitChanged({ path }, true)
   return true
@@ -1656,7 +1670,9 @@ ecs.service.register({
   open = { sig = "void(string folder)", doc = "Open a project's folder", fn = function(folder)
     open(folder)
   end },
-  create = { sig = "bool(string folder)", doc = "Make a new project in an empty folder, and open it", fn = new },
+  create = { sig = "void(string folder)", doc = "Make a new project in an empty folder, and open it", fn = function(folder)
+    new(folder)
+  end },
   close = { sig = "bool()", doc = "Close the project, after asking about unsaved work", fn = close },
   newProject = { sig = "void()", doc = "New Project", fn = function()
     ecs.dialog.show({ type = "openFolder" }, function(files)

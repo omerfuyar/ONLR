@@ -619,7 +619,9 @@ end)
 ecs.event.subscribe("onlr_project.changed", function(_, value)
   players.filesChanged()
   for _, view in pairs(views) do
-    if view.file and not project.file(view.file).data and not project.file(view.file).error then
+    -- A node view of a file that is gone shows no file.
+    local file = view.file and project.file(view.file)
+    if view.file and (not file or file.missing) then
       show(view, nil)
     end
     title(view)
@@ -631,6 +633,17 @@ ecs.event.subscribe("onlr_project.changed", function(_, value)
       if file and file.kind == "node" and file.data and file.dirty and not viewOf(path) then
         openFile(path)
       end
+    end
+  end
+end)
+
+-- A node view of a file that was renamed or moved shows it under its new path.
+ecs.event.subscribe("onlr_project.renamed", function(_, value)
+  for _, view in pairs(views) do
+    if view.file and (view.file == value.from or view.file:sub(1, #value.from + 1) == value.from .. "/") then
+      view.file = value.to .. view.file:sub(#value.from + 1)
+      title(view)
+      sync(view)
     end
   end
 end)
