@@ -35,10 +35,15 @@ local function treeNodes(node, open)
 end
 
 -- The running game's nodes, as the play player sent them.
-local function runningNodes(list)
+local function runningNodes(list, open, seen)
   local byNumber, tops = {}, {}
   for _, n in ipairs(list or {}) do
-    byNumber[n.n] = { id = n.n, label = (n.name or "(no name)") .. (n.root and "  (root)" or ""), color = not n.active and "textDim" or nil }
+    local name = n.name ~= nil and n.name ~= "" and n.name or (n.parent and "(no name)" or "(top)")
+    byNumber[n.n] = { id = n.n, label = name .. (n.root and "  (root)" or ""), color = not n.active and "textDim" or nil }
+    -- a node shows open the first time it is seen
+    if not seen[n.n] then
+      seen[n.n], open[n.n] = true, true
+    end
   end
   for _, n in ipairs(list or {}) do
     local parent = n.parent and byNumber[n.parent]
@@ -110,8 +115,8 @@ local function draw(state, surface)
   end
 
   if shared.running and running.playing then
-    children[#children + 1] = ui.text("The running game. A change here is gone at Stop.", { style = STYLES.note })
-    children[#children + 1] = ui.tree(runningNodes(running.tree), {
+    children[#children + 1] = ui.text("The running game. A change here is gone at Stop.", { style = STYLES.note, wrap = true })
+    children[#children + 1] = ui.tree(runningNodes(running.tree, state.openRunning, state.seenRunning), {
       id = "running", open = state.openRunning, selected = shared.runningNode, grow = 1,
       onSelect = shared.chooseRunning,
       onToggle = function(id, open)
@@ -205,7 +210,7 @@ ecs.panel.registerType({
   title = "Nodes",
   stateVersion = STATE_VERSION,
   create = function(panel, saved, version)
-    local state = { panel = panel, open = {}, openRunning = {}, name = "" }
+    local state = { panel = panel, open = {}, openRunning = {}, seenRunning = {}, name = "" }
     if version == STATE_VERSION and type(saved) == "table" then
       state.open, state.openFile = saved.open or {}, saved.file
     end
