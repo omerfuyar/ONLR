@@ -132,8 +132,6 @@ What the owner wants worked on, in this order.
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7).
-  - console: an entry's links of its own, for the link from a game's error to its node (DESIGN 13.1), in omerfuyar/OpenECS-std#106. Until it is in OpenECS, the error shows without the link.
-  - ui: a field's placeholder, for the nodes panel's search in place of the label beside it (OpenECS-std#107); sums in number fields, such as `32*4`, for the inspector (OpenECS-std#108); a dropdown's search, for Add Component (OpenECS-std#109). The inspector gets the last two as they are in OpenECS.
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the players were written on Linux.

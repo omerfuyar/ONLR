@@ -252,12 +252,9 @@ local function draw(state, surface)
         state.openFile, state.open = file, { [first.path] = true }
       end
       local paths = chosen.file == file and chosen.paths or {}
-      children[#children + 1] = ui.row({ gap = 6, align = "center" }, {
-        ui.text("Search", { style = STYLES.note }),
-        ui.field(state.search or "", { id = "search", grow = 1, tooltip = "Shows the nodes whose name holds the text; t: and a text, those with a component of such a type", onChange = function(text)
-          state.search = text ~= "" and text or nil
-        end }),
-      })
+      children[#children + 1] = ui.field(state.search or "", { id = "search", placeholder = "Search", tooltip = "Shows the nodes whose name holds the text; t: and a text, those with a component of such a type", onChange = function(text)
+        state.search = text ~= "" and text or nil
+      end })
       local search = state.search and state.search:lower()
       local opened = search and {} or state.open
       local shown = treeNodes(first, state.open, search, opened)
