@@ -369,6 +369,8 @@ function players.play(startPath)
     stop(play)
     play = nil
   end
+  -- The console clears for the new game, unless its Clear on run toggle is off (DESIGN 12.1).
+  console.run()
   local top = project.manifest() and project.manifest().topNode
   if startPath == top then
     -- The top node's own file plays as Play does (DESIGN 12.1).
