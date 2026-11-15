@@ -6,7 +6,7 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in this order.
 
-1. **Menus, not rows of buttons.** A right click opens a menu in the files panel, the nodes panel, the inspector and the node view, and it takes the place of the buttons there; the nodes panel, the inspector and the node view have theirs, and the files panel's waits for OpenECS-std's. Every control has a tooltip. The tool's menu holds only what belongs to the whole project, such as New Project, Open Project, Save All and Play; what belongs to one panel is in that panel's menu.
+1. **Menus, not rows of buttons.** A right click opens a menu in the files panel, the nodes panel, the inspector and the node view, and it takes the place of the buttons there; each has its own. Every control has a tooltip. The tool's menu holds only what belongs to the whole project, such as New Project, Open Project, Save All and Play; what belongs to one panel is in that panel's menu.
 2. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
 3. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
 4. **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
@@ -38,7 +38,6 @@ What the owner wants worked on, in this order.
 ## Editor
 
 - **A number that a drag changes.** A drag over a number field's label, or over the field, changes the number, as in Unity. It belongs in OpenECS-std's ui, as a property of its number field, so every tool gets it.
-- **The files panel's New.** It stays a dropdown of kinds beside a button for now. It needs a better design later, such as entries of the right click's menu (see [Next](#next)).
 - **The files panel's views.** Icons for kinds of files, small pictures of images, and a view of a folder as a grid, as a file manager shows it, beside the tree. It belongs to OpenECS-std's files panel.
 - **The console's entries.** Each entry is a box of its own, with its level's colour, its time and its place. Equal entries stack with a count. The console clears when the game plays, as a toggle, and filters by level. It belongs to OpenECS-std's console.
 - **More hints for errors.** The hints are a list of patterns (DESIGN 13.1). To add: errors of LÖVE's own functions, and a hint that names the node and the component that the error came from, with a click that chooses the node.
@@ -138,7 +137,6 @@ What the owner wants worked on, in this order.
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: a number field that a drag changes (see [Editor](#editor)).
-  - The files panel: a menu that a right click opens, in place of its buttons (see [Next](#next)).
   - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7).
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
