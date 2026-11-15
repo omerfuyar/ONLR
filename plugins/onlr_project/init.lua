@@ -762,7 +762,8 @@ local function new(folder)
   write(".gitignore", ".onlr/\n")
   write(".luarc.json", '{\n  "runtime.version": "LuaJIT",\n'
     .. '  "runtime.path": ["?.lua", "?/init.lua", "packages/?.lua", "packages/?/init.lua"],\n'
-    .. '  "workspace.library": [".onlr"]\n}\n')
+    .. '  "workspace.library": [".onlr"],\n'
+    .. '  "diagnostics.disable": ["different-requires"]\n}\n')
   for _, dir in ipairs({ "components", "shared", "nodes", "packages", ".onlr" }) do
     fs.makeFolder(folder .. dir)
   end

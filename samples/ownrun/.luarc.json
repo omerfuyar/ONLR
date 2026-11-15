@@ -1,5 +1,6 @@
 {
   "runtime.version": "LuaJIT",
   "runtime.path": ["?.lua", "?/init.lua", "packages/?.lua", "packages/?/init.lua"],
-  "workspace.library": [".onlr"]
+  "workspace.library": [".onlr"],
+  "diagnostics.disable": ["different-requires"]
 }
