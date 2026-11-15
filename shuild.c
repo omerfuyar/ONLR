@@ -1,28 +1,84 @@
 // ONLR's build script. ONLR has no C code to compile: it puts the engine and the packages into the samples, starts the editor and runs the tests.
 // Compile it once, and it compiles itself again when this file changes: cc shuild.c -o shuild && ./shuild
+// It has no SHUC_ENABLE_INCREMENTAL or SHUC_COMPILE_DATABASE, which OpenECS's shuild.c has: they choose how modules compile, and ONLR compiles none.
 #define SHU_IMPLEMENTATION
 #include "dependencies/shuild/shuild.h"
 
-/// @brief What the flags choose.
+#pragma region Setup
+
+/// @brief What the build does, in groups, as OpenECS's shuild.c keeps it.
 static struct
 {
-    const char *openecs;  // the folder of OpenECS's release
-    const char *love;     // LÖVE's executable
-    const char *compiler; // compiles this file again when it changes
-    bool editor;          // start the editor
-    const char *project;  // the project's folder that the editor opens, or NULL
-    bool test;            // run the samples' tests
-    char **tested;        // the samples whose tests run, or none for every sample
-    int testedCount;
-    bool help;
-    const char *badArgument; // the first argument that cannot be read, and why
-    const char *badArgumentReason;
+    // what the command line chooses
+    struct
+    {
+        const char *openecs;  // the folder of OpenECS's release
+        const char *love;     // LÖVE's executable
+        const char *compiler; // compiles this file again when it changes
+        bool editor;          // start the editor
+        const char *project;  // the project's folder that the editor opens, or NULL
+        bool test;            // run the samples' tests
+        char **testedSamples; // the samples whose tests run, as the command line names them, or none for every sample
+        int testedSampleCount;
+        bool help;                     // print the help, and do nothing
+        const char *badArgument;       // the first argument that cannot be read
+        const char *badArgumentReason; // and why
+    } FLAGS;
 
-    // the tests that ran, those that failed, and whether the editor's tests were left out
-    int run;
-    int failed;
-    bool skipped;
-} CONFIG = {.openecs = "OpenECS/", .love = NULL, .compiler = SHUM_HOST_WINDOWS ? "clang" : "gcc"};
+    // the samples' tests that ran, those that failed, and whether the editor's tests were left out
+    struct
+    {
+        int run;
+        int failed;
+        bool skipped;
+    } TESTS;
+} CONFIG = {.FLAGS = {.openecs = "OpenECS/", .compiler = SHUM_HOST_WINDOWS || SHUM_HOST_MACOS ? "clang" : "gcc"}};
+
+/// @brief The packages that a sample holds beside the engine, by the sample's name.
+static const char *const SAMPLE_PACKAGES[][2] = {{"coinrun", "bump"}};
+
+#pragma endregion Setup
+
+static void ReadArguments(int argc, char **argv);
+static void PrintUsage(void);
+static void PutPackages(const char *path, SHUFileType type, void *data);
+static void RunTests(void);
+static void RunEditor(void);
+
+int main(int argc, char **argv)
+{
+    ReadArguments(argc, argv);
+    SHU_CompilerConfigureTry(CONFIG.FLAGS.compiler);
+
+    // a changed shuild.c is compiled again and run with the same arguments, so a bad argument is reported after it, by the new program
+    SHU_UtilAutomate(argc, argv);
+
+    if (CONFIG.FLAGS.badArgument != NULL)
+    {
+        PrintUsage();
+        SHU_UtilFail("%s: " SHUM_LOG_VALUE("%s"), CONFIG.FLAGS.badArgumentReason, CONFIG.FLAGS.badArgument);
+    }
+
+    if (CONFIG.FLAGS.help)
+    {
+        PrintUsage();
+        return 0;
+    }
+
+    SHU_UtilListDirectory("samples/", false, PutPackages, NULL);
+
+    if (CONFIG.FLAGS.test)
+    {
+        RunTests();
+    }
+
+    if (CONFIG.FLAGS.editor)
+    {
+        RunEditor();
+    }
+
+    return 0;
+}
 
 static void PrintUsage(void)
 {
@@ -41,10 +97,10 @@ static void PrintUsage(void)
 /// @brief Notes the first argument that cannot be read. main reports it, after shuild.c is compiled again if it changed.
 static void NoteBadArgument(const char *reason, const char *argument)
 {
-    if (CONFIG.badArgument == NULL)
+    if (CONFIG.FLAGS.badArgument == NULL)
     {
-        CONFIG.badArgumentReason = reason;
-        CONFIG.badArgument = argument;
+        CONFIG.FLAGS.badArgumentReason = reason;
+        CONFIG.FLAGS.badArgument = argument;
     }
 }
 
@@ -71,45 +127,45 @@ static void ReadArguments(int argc, char **argv)
 
         if (!strcmp(flag, "-o") || !strcmp(flag, "--openecs"))
         {
-            CONFIG.openecs = AsFolder(argv[++i]);
+            CONFIG.FLAGS.openecs = AsFolder(argv[++i]);
         }
         else if (!strcmp(flag, "-l") || !strcmp(flag, "--love"))
         {
-            CONFIG.love = argv[++i];
+            CONFIG.FLAGS.love = argv[++i];
         }
         else if (!strcmp(flag, "-c") || !strcmp(flag, "--compiler"))
         {
-            CONFIG.compiler = argv[++i];
+            CONFIG.FLAGS.compiler = argv[++i];
         }
         else if (!strcmp(flag, "-e") || !strcmp(flag, "--editor"))
         {
-            CONFIG.editor = true;
+            CONFIG.FLAGS.editor = true;
 
             if (hasNext)
             {
-                CONFIG.project = argv[++i];
+                CONFIG.FLAGS.project = argv[++i];
             }
         }
         else if (!strcmp(flag, "-t") || !strcmp(flag, "--test"))
         {
-            CONFIG.test = true;
-            CONFIG.tested = argv + i + 1;
+            CONFIG.FLAGS.test = true;
+            CONFIG.FLAGS.testedSamples = &argv[i + 1];
 
             while (i + 1 < argc && argv[i + 1][0] != '-')
             {
                 i++;
-                CONFIG.testedCount++;
+                CONFIG.FLAGS.testedSampleCount++;
 
                 if (SHU_UtilFileExists(SHU_UtilFormat("samples/%s/", argv[i])) != SHUFileType_Directory)
                 {
-                    NoteBadArgument("No such sample", argv[i]);
+                    NoteBadArgument("No sample is named", argv[i]);
                     return;
                 }
             }
         }
         else if (!strcmp(flag, "-h") || !strcmp(flag, "--help"))
         {
-            CONFIG.help = true;
+            CONFIG.FLAGS.help = true;
         }
         else
         {
@@ -118,10 +174,10 @@ static void ReadArguments(int argc, char **argv)
         }
     }
 
-    if (CONFIG.love == NULL)
+    if (CONFIG.FLAGS.love == NULL)
     {
         const char *named = getenv("LOVE");
-        CONFIG.love = named != NULL && named[0] != '\0' ? named : "love";
+        CONFIG.FLAGS.love = named != NULL && named[0] != '\0' ? named : "love";
     }
 }
 
@@ -131,9 +187,6 @@ static void CopyFolder(const char *from, const char *to)
     SHU_UtilDeleteFile(to);
     SHU_UtilCopyFile(from, to);
 }
-
-/// @brief The packages that a sample holds beside the engine, by the sample's name.
-static const char *const SAMPLE_PACKAGES[][2] = {{"coinrun", "bump"}};
 
 /// @brief Gives a sample its packages in packages/, as a project holds them: the engine, the packages that SAMPLE_PACKAGES names for it,
 /// and the tests' helper. git ignores the copies.
@@ -162,7 +215,7 @@ static void PutPackages(const char *path, SHUFileType type, void *data)
 /// @brief Gives the path of OpenECS's executable, or NULL if OpenECS's release is not in its folder.
 static const char *OpenECS(void)
 {
-    char *program = SHU_UtilFormat("%sOpenECS%s", CONFIG.openecs, SHUM_HOST_WINDOWS ? ".exe" : "");
+    char *program = SHU_UtilFormat("%sOpenECS%s", CONFIG.FLAGS.openecs, SHUM_HOST_WINDOWS ? ".exe" : "");
     return SHU_UtilFileExists(program) == SHUFileType_Regular ? SHU_UtilGetPath(program) : NULL;
 }
 
@@ -172,24 +225,24 @@ static void RunEditor(void)
 
     if (openecs == NULL)
     {
-        SHU_UtilFail("OpenECS's release is not in " SHUM_LOG_PATH("%s") "; unpack it there, or name its folder with " SHUM_LOG_COMMAND("-o") ".", CONFIG.openecs);
+        SHU_UtilFail("OpenECS's release is not in " SHUM_LOG_PATH("%s") "; unpack it there, or name its folder with " SHUM_LOG_COMMAND("-o") ".", CONFIG.FLAGS.openecs);
     }
 
-    const char *project = CONFIG.project != NULL ? SHU_UtilFormat(" \"%s\"", SHU_UtilGetPath(CONFIG.project)) : "";
+    const char *project = CONFIG.FLAGS.project != NULL ? SHU_UtilFormat(" \"%s\"", SHU_UtilGetPath(CONFIG.FLAGS.project)) : "";
     SHU_UtilRun("\"%s\" --preset \"%s\"%s", openecs, SHU_UtilGetPath("preset.lua"), project);
 }
 
 static bool IsTested(const char *name)
 {
-    for (int i = 0; i < CONFIG.testedCount; i++)
+    for (int i = 0; i < CONFIG.FLAGS.testedSampleCount; i++)
     {
-        if (!strcmp(CONFIG.tested[i], name))
+        if (!strcmp(CONFIG.FLAGS.testedSamples[i], name))
         {
             return true;
         }
     }
 
-    return CONFIG.testedCount == 0;
+    return CONFIG.FLAGS.testedSampleCount == 0;
 }
 
 /// @brief Prints the end of a failed test's log, without what OpenAL Soft says of the missing sound device.
@@ -209,7 +262,7 @@ static void PrintLogEnd(const char *text)
 static void NoteTest(const char *name, const char *kind, bool passed, const char *log)
 {
     SHUSlice output = SHU_UtilReadFile(log);
-    CONFIG.run++;
+    CONFIG.TESTS.run++;
 
     if (passed)
     {
@@ -226,7 +279,7 @@ static void NoteTest(const char *name, const char *kind, bool passed, const char
     }
     else
     {
-        CONFIG.failed++;
+        CONFIG.TESTS.failed++;
         printf("FAIL %s%s\n", name, kind);
         PrintLogEnd(output.data);
     }
@@ -265,7 +318,7 @@ static void TestSample(const char *path, SHUFileType type, void *data)
 
     // the offscreen driver gives LÖVE a window that no screen shows, and OpenAL Soft's null driver needs no sound device.
     // A test that never ends is stopped after two minutes
-    const char *settings = SHU_UtilFormat("LOVE=\"%s\" SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 120", CONFIG.love);
+    const char *settings = SHU_UtilFormat("LOVE=\"%s\" SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 120", CONFIG.FLAGS.love);
 
     if (SHU_UtilFileExists(SHU_UtilFormat("%seditortest.lua", path)) == SHUFileType_Regular)
     {
@@ -273,7 +326,7 @@ static void TestSample(const char *path, SHUFileType type, void *data)
 
         if (openecs == NULL)
         {
-            CONFIG.skipped = true;
+            CONFIG.TESTS.skipped = true;
         }
         else
         {
@@ -290,7 +343,7 @@ static void TestSample(const char *path, SHUFileType type, void *data)
     if (SHU_UtilFileExists(SHU_UtilFormat("%stest.lua", path)) == SHUFileType_Regular)
     {
         char *log = SHU_UtilFormat("build/tests/%s.log", name);
-        bool passed = SHU_UtilRunTry("%s \"%s\" \"%s\" --test > \"%s\" 2>&1", settings, CONFIG.love, SHU_UtilGetPath(path), SHU_UtilGetPath(log)) == 0;
+        bool passed = SHU_UtilRunTry("%s \"%s\" \"%s\" --test > \"%s\" 2>&1", settings, CONFIG.FLAGS.love, SHU_UtilGetPath(path), SHU_UtilGetPath(log)) == 0;
         NoteTest(name, "", passed, log);
     }
 }
@@ -305,50 +358,15 @@ static void RunTests(void)
     SHU_UtilCreateDirectory("build/tests/work/");
     SHU_UtilListDirectory("samples/", false, TestSample, NULL);
 
-    if (CONFIG.skipped)
+    if (CONFIG.TESTS.skipped)
     {
-        SHU_UtilWarn("the editor's tests are skipped: OpenECS's release is not in " SHUM_LOG_PATH("%s") ".", CONFIG.openecs);
+        SHU_UtilWarn("the editor's tests are skipped: OpenECS's release is not in " SHUM_LOG_PATH("%s") ".", CONFIG.FLAGS.openecs);
     }
 
-    if (CONFIG.failed > 0)
+    if (CONFIG.TESTS.failed > 0)
     {
-        SHU_UtilFail("%d of %d tests failed.", CONFIG.failed, CONFIG.run);
+        SHU_UtilFail("%d of %d tests failed.", CONFIG.TESTS.failed, CONFIG.TESTS.run);
     }
 
-    SHU_UtilLog("all %d tests passed.", CONFIG.run);
-}
-
-int main(int argc, char **argv)
-{
-    ReadArguments(argc, argv);
-    SHU_CompilerConfigureTry(CONFIG.compiler);
-
-    // a changed shuild.c is compiled again and run with the same arguments, so a bad argument is reported after it, by the new program
-    SHU_UtilAutomate(argc, argv);
-
-    if (CONFIG.badArgument != NULL)
-    {
-        PrintUsage();
-        SHU_UtilFail("%s: " SHUM_LOG_VALUE("%s"), CONFIG.badArgumentReason, CONFIG.badArgument);
-    }
-
-    if (CONFIG.help)
-    {
-        PrintUsage();
-        return 0;
-    }
-
-    SHU_UtilListDirectory("samples/", false, PutPackages, NULL);
-
-    if (CONFIG.test)
-    {
-        RunTests();
-    }
-
-    if (CONFIG.editor)
-    {
-        RunEditor();
-    }
-
-    return 0;
+    SHU_UtilLog("all %d tests passed.", CONFIG.TESTS.run);
 }
