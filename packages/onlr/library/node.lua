@@ -212,7 +212,10 @@ function Node:send(name, ...)
     if r.running then
       local fn = r.component[name]
       if fn then
+        local outer = life.current
+        life.current = r
         fn(r.component, ...)
+        life.current = outer
       end
     end
   end

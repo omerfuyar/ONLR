@@ -114,9 +114,23 @@ local function start(mode, startPath)
   }
 end
 
--- Adds an error to the console, with a hint when the error is one that the hints know (DESIGN 13.1).
-local function sayError(text)
-  console.add(text, "error")
+-- Adds an error to the console, with its stack and a hint when the error is one that the hints know (DESIGN 13.1).
+-- An error that a component raised names it and its node; when a node file wrote the node, the name is a link, and a click
+-- opens the file and chooses the node.
+local function sayError(text, stack, source)
+  local links
+  if type(source) == "table" then
+    local name = ("%s on %s"):format(tostring(source.type), source.name ~= "" and tostring(source.name) or "a node")
+    if source.file and source.id then
+      links = { { text = name, tooltip = "Choose the node whose component raised the error", onClick = function()
+        require("nodeview").openFile(source.file)
+        project.choose(source.file, { source.id })
+      end } }
+    else
+      text = text .. "\nIn " .. name .. ", which code made."
+    end
+  end
+  console.add(stack and (text .. "\n" .. stack) or text, "error", links)
   local hint = hints.of(text)
   if hint then
     console.add("Hint: " .. hint, "info")
@@ -321,7 +335,7 @@ end
 
 function edits.error(message)
   local where = message.file and (message.file .. (message.line and (":" .. message.line) or "") .. ": ") or ""
-  sayError(where .. tostring(message.message))
+  sayError(where .. tostring(message.message), nil, message.source)
   if message.view then
     assert(edit).owed[message.view] = nil
     players.onView("error", message)
@@ -352,10 +366,7 @@ end
 
 function plays.error(message)
   local where = message.file and (message.file .. (message.line and (":" .. message.line) or "") .. ": ") or ""
-  sayError(where .. tostring(message.message))
-  if message.stack then
-    console.add(message.stack, "error")
-  end
+  sayError(where .. tostring(message.message), message.stack, message.source)
 end
 
 ---Plays the game: saves the project, then starts the play player (DESIGN 13.6).

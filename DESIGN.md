@@ -952,7 +952,7 @@ What the sample shows of every package:
 | An answer        | `answer` | The edit player | A type's properties, or why its file does not load (12.5).     |
 | The tree         | `tree`   | The play player | The running tree's nodes, when it changes (12.6).              |
 | Values           | `values` | The play player | The watched nodes' places and values (12.6).                   |
-| An error         | `error`  | Both players    | A message with its file, line and stack.                       |
+| An error         | `error`  | Both players    | Its message, file, line and stack, and what raised it (13.1).  |
 
 - A change carries a node's own fields only: its name, its place, its `z` and whether it is active. The edit player sets them on the view's nodes, so a drag draws at once. For any other edit, such as a component's value, the editor sends the file again, and the edit player makes the views' nodes anew.
 - A node file that does not load leaves its view empty, and its error names the view.
@@ -1025,7 +1025,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - What belongs to one panel is its own state (OpenECS OVERVIEW 5.4): where a node view looks from and its zoom, which nodes a nodes panel has open, and which components an inspector has folded.
 - The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, and a text with syntax. It shows no video, since OpenECS-std's video does not read LÖVE's Ogg Theora.
 - The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting, `console.editor`. The console first checks that the command's program is there, as a path or in the folders of `PATH`. When it is not, or does not start, the system opens the file with the program that it has for such files, and the console warns once.
-- An error of the game shows with a hint, when it is one that the editor knows: what such an error often means in a game, in plain words, and what to try. The hints are a list of patterns in `hints.lua`, matched against the error's text.
+- An error of the game shows as one entry, with its stack. It names the component that raised it and the component's node, which the engine knows, as it notes the component whose function it calls. When a node file wrote the node, the name is a link, and a click opens the file and chooses the node. A hint follows, when the error is one that the editor knows: what such an error often means in a game, in plain words, and what to try. The hints are a list of patterns in `hints.lua`, matched against the error's text, and know Lua's errors, LÖVE's and the engine's.
 - `project.lua` tells of changes with events, such as `onlr.chosen`: a project opened or closed, files changed, saved or renamed, the chosen nodes, the tool, the types, and a file that changed on disk. Its functions and events are documented in its code.
 
 ### 13.2 Projects

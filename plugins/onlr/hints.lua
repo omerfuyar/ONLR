@@ -35,6 +35,17 @@ local HINTS = {
   { "'<eof>' expected near 'end'", "There is one end too many." },
   { "Could not open file ([^%s%.]+%.%w+)",
     "The file %s is not in the project. Paths start at the project's folder, and capital letters count." },
+  -- LÖVE's own errors, before the general ones that would match them too.
+  { "bad argument #1 to 'draw' %(Drawable expected, got nil%)",
+    "love.graphics.draw got nil in place of an image. The image is not loaded yet, or the name that holds it is misspelled: load it in load, and keep it in self." },
+  { "Shader uniform '([^']+)' does not exist",
+    "The shader has no uniform named %s. A uniform that the shader's code does not use is dropped when it is compiled: use it, or check shader:hasUniform before sending it." },
+  { "Cannot use object after it has been released",
+    "The object was released with :release(), and used after. Keep a released object nowhere, or do not release one that is still drawn or played." },
+  { "[Cc]ould not decode",
+    "LÖVE could not read the file's contents. It may be damaged, or of a format that LÖVE does not read: images are PNG, JPEG, TGA or BMP, and sounds are OGG, WAV, MP3 or FLAC." },
+  { "changes nothing in the node view",
+    "The node view shows the nodes without running them, so a function that changes the tree does nothing there. Call it in start or update, which the node view does not call, not in drawEditor." },
   { "bad argument #(%d+) to '([%w_]+)' %(([^)]+)%)",
     "Argument %s of %s is wrong: %s. A value may be nil where LÖVE needs a number, a text or an object." },
 }

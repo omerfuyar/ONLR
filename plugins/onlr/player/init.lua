@@ -35,6 +35,17 @@ if options.port then
   link.connect(tonumber(options.port))
 end
 
+-- The component whose function the engine called when the error came, and its node, which the editor names and chooses.
+local function source()
+  local life = package.loaded["onlr.library.life"]
+  local r = life and life.current
+  if not r then
+    return nil
+  end
+  local node = r.node
+  return { type = r.type.name, name = node.name, file = node._file, id = node._id }
+end
+
 -- Splits an error's message into its file, its line and the rest.
 local function report(message, traceback)
   message = tostring(message)
@@ -45,6 +56,7 @@ local function report(message, traceback)
     file = file,
     line = tonumber(line),
     stack = traceback,
+    source = source(),
   })
 end
 

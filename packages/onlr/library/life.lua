@@ -31,6 +31,10 @@ life.records = {}
 ---@type onlr.Node?
 life.top = nil
 
+---The record whose function the engine calls now, which an error names (DESIGN 12.2). It is nil between the calls.
+---@type onlr.Record?
+life.current = nil
+
 ---"game", or "edit" in the node view, where nothing changes the tree (DESIGN 6.5).
 life.mode = "game"
 
@@ -81,7 +85,10 @@ life.collect = collect
 local function call(r, name)
   local fn = r.component[name]
   if fn then
+    local outer = life.current
+    life.current = r
     fn(r.component)
+    life.current = outer
   end
 end
 
@@ -396,11 +403,13 @@ function life.call(name, ...)
     local r = list[i]
     if r.live then
       local component = r.component
+      life.current = r
       if component[name](component, ...) then
         any = true
       end
     end
   end
+  life.current = nil
   return any
 end
 
@@ -420,6 +429,7 @@ local function drawGroup(group)
       if r.drawn then
         love.graphics.push()
         love.graphics.applyTransform(r.node:_drawTransform(life.drawing))
+        life.current = r
         r.component:draw()
         love.graphics.pop()
       end
@@ -437,8 +447,10 @@ local function newGroup(node, trees)
   end
   for i = #trees, 1, -1 do
     local inner = fn
-    local tree = trees[i].component
+    local record = trees[i]
+    local tree = record.component
     fn = function()
+      life.current = record
       tree:drawTree(inner)
     end
   end
@@ -537,6 +549,7 @@ function life.draw()
   end
   life.drawing = (life.drawing or 0) + 1
   topGroup.draw()
+  life.current = nil
 end
 
 return life
