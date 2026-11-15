@@ -183,6 +183,28 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the copy is undone")
 
+    -- in the nodes panel, a click chooses a node alone, Ctrl adds a node or takes it out, and Shift chooses the shown nodes from
+    -- the last one clicked; the rows are Start, A, B and Part (DESIGN 13.4)
+    local tree = test.rect(panelOf(test, "onlr.nodes"))
+    local function chosen()
+      return test.panel(panelOf(test, "onlr.nodes")).state.chosen
+    end
+    local function row(i)
+      return tree.x + 60, tree.y + 106 + 21 * (i - 1)
+    end
+    local rx, ry = row(2)
+    test.click(rx, ry)
+    test.match(chosen(), { "aaaaaa" }, "a click chooses A")
+    rx, ry = row(3)
+    test.click(rx, ry, nil, "Ctrl")
+    test.match(chosen(), { "bbbbbb", "aaaaaa" }, "Ctrl adds B")
+    rx, ry = row(2)
+    test.click(rx, ry, nil, "Ctrl")
+    test.match(chosen(), { "bbbbbb" }, "Ctrl takes A out")
+    rx, ry = row(4)
+    test.click(rx, ry, nil, "Shift")
+    check(#chosen() == 2 and chosen()[1] == "bbbbbb", "Shift chooses B and Part: " .. table.concat(chosen(), ", "))
+
     -- Save as Node File writes the chosen node to a new node file, and puts an instance of it in its place
     test.click(x, y)
     test.wait(0.2)
