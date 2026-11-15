@@ -168,11 +168,29 @@ local function draw(state, surface)
           reorder(file, "in")
         end }),
       })
+      -- A press chooses a node alone, Ctrl adds one or takes it out, and Shift chooses the shown nodes from the last node pressed
+      -- alone or with Ctrl, which is the first of the chosen ones (DESIGN 13.4).
+      local paths = chosen.file == file and chosen.paths or {}
       children[#children + 1] = ui.tree({ treeNodes(first, state.open) }, {
-        id = "tree", open = state.open, selected = chosen.file == file and chosen.paths[1] or nil, grow = 1,
-        onSelect = function(id)
+        id = "tree", open = state.open, selected = paths, grow = 1,
+        onSelect = function(id, how, between)
           state.pressed = id
-          project.choose(file, { id })
+          if how == "toggle" then
+            local kept = {}
+            for _, path in ipairs(paths) do
+              if path ~= id then
+                kept[#kept + 1] = path
+              end
+            end
+            if #kept == #paths then
+              table.insert(kept, 1, id)
+            end
+            project.choose(file, kept)
+          elseif how == "range" then
+            project.choose(file, between)
+          else
+            project.choose(file, { id })
+          end
         end,
         onToggle = function(id, open)
           state.open[id] = open or nil
@@ -233,7 +251,9 @@ ecs.panel.registerType({
     ui.event(state.panel, event)
   end,
   saveState = function(state)
-    return { open = state.open, file = state.openFile }
+    -- What is chosen is the project's, and is not read back; a test reads it here.
+    local chosen = project.chosen()
+    return { open = state.open, file = state.openFile, chosen = chosen.file == state.openFile and chosen.paths or {} }
   end,
   destroy = function(state)
     shared.forget(state.panel)
