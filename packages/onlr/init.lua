@@ -14,11 +14,11 @@ end
 local onlr = {}
 package.loaded["onlr"] = onlr
 
-local data = require("onlr.data")
+local data = require("onlr.library.data")
 
-onlr.loop = require("onlr.loop")
-onlr.tree = require("onlr.tree")
-onlr.property = require("onlr.property")
+onlr.loop = require("onlr.library.loop")
+onlr.tree = require("onlr.library.tree")
+onlr.property = require("onlr.library.property")
 
 -- The fields of the manifest that are ONLR's own. Every other field is one of LÖVE's settings, under LÖVE's name.
 local OWN = {

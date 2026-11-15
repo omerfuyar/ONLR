@@ -279,7 +279,7 @@ function life.takeOut(data)
             break
           end
         end
-        require("onlr.component").take(node, r.type.name)
+        require("onlr.library.component").take(node, r.type.name)
         dirty()
       end
     end

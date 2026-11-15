@@ -582,21 +582,21 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 
 ### 8.3 The engine's files
 
-Each file of the engine holds one thing:
+Each file of the engine holds one thing. The engine is laid out as a package is (11.2): what a game calls and what the editor reads at the top, and its own modules in `library/`, which `init.lua` joins. A game requires `onlr`, never a file of `library/`.
 
 | In `packages/onlr/`                                 | Holds                                                                                                                                                      |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `manifest.lua`                                      | The engine's name and its version, as a package's manifest holds them (11.2).                                                                              |
 | `init.lua`                                          | What `require("onlr")` gives: `start`, `conf`, and the namespaces of the files below. It joins them, sets where `require` looks (3.1), and does nothing else. |
-| `loop.lua`                                          | `onlr.loop`: the loop and its steps (8.1).                                                                                                                 |
-| `tree.lua`                                          | `onlr.tree`: the root, the tree and its lists (8.2).                                                                                                       |
-| `node.lua`                                          | Nodes and their functions (7).                                                                                                                             |
-| `component.lua`                                     | Component types (6.1): finding and loading a type's file, and a node's `components`.                                                                       |
-| `life.lua`                                          | The life of components (6.4), and the lists that a frame walks (8.2).                                                                                      |
-| `build.lua`                                         | Making nodes from node files: instances, their changes and ids (9).                                                                                        |
-| `property.lua`                                      | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
-| `data.lua`                                          | Reading data files (4), and loading the files that properties name.                                                                                        |
-| `formats.lua`                                       | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
+| `library/loop.lua`                                  | `onlr.loop`: the loop and its steps (8.1).                                                                                                                 |
+| `library/tree.lua`                                  | `onlr.tree`: the root, the tree and its lists (8.2).                                                                                                       |
+| `library/node.lua`                                  | Nodes and their functions (7).                                                                                                                             |
+| `library/component.lua`                             | Component types (6.1): finding and loading a type's file, and a node's `components`.                                                                       |
+| `library/life.lua`                                  | The life of components (6.4), and the lists that a frame walks (8.2).                                                                                      |
+| `library/build.lua`                                 | Making nodes from node files: instances, their changes and ids (9).                                                                                        |
+| `library/property.lua`                              | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
+| `library/data.lua`                                  | Reading data files (4), and loading the files that properties name.                                                                                        |
+| `library/formats.lua`                               | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
 | `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua` and `camera.lua`.                                                   |
 | `license.txt`                                       | The engine's licence, which an export holds (14.1).                                                                                                        |
 
@@ -1075,7 +1075,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 13.6 Changes and saving
 
 - Each change of a node file or of the manifest is a record that can be undone. `project.lua` keeps them in one history for the project. One record can change many files, such as a deleted node and the properties that named it.
-- Choosing nodes is a record of the same history, between the records of changes, as in Unity. So one key walks back through everything that the user did, and undo gives the nodes that were chosen before back. A record of choosing never marks a file as unsaved.
+- Choosing nodes is a record of the same history, between the records of changes, as in Unity. So one key walks back through everything that the user did, and undo gives the nodes that were chosen before back. A record of choosing never marks a file as unsaved. Nodes that the editor chooses right after a change, such as the copy that Duplicate makes, belong to the change's record, so one undo takes back both. A view that gets the focus chooses its own nodes again, which is no record.
 - Deleting a node, with all under it, also clears every property that names one of those nodes or one of their components, and drops every change of an instance that names one of them, in every node file of the project, in the same record. Removing a component clears the properties that name it in the same way. So no file names a node that is gone.
 - When the editor reads a file that names a node that does not exist, such as after a merge in git, the inspector marks the property or the change, and offers to clear it (9).
 - Undoing or redoing a change of a file that no node view shows opens a view of it.

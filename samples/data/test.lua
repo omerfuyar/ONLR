@@ -1,7 +1,7 @@
 -- Checks reading data files in their sandbox (DESIGN 4.1), and onlr.conf, which gives LÖVE the manifest's settings (DESIGN 3.2).
 local check = require("check")
 local onlr = require("onlr")
-local data = require("onlr.data")
+local data = require("onlr.library.data")
 
 check.run(function()
   -- The manifest computed its values, and onlr.conf gave them to LÖVE.

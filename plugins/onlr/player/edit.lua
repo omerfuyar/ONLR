@@ -5,10 +5,10 @@
 local part = ...
 local link = part("link")
 
-local data = require("onlr.data")
-local life = require("onlr.life")
-local build = require("onlr.build")
-local component = require("onlr.component")
+local data = require("onlr.library.data")
+local life = require("onlr.library.life")
+local build = require("onlr.library.build")
+local component = require("onlr.library.component")
 
 local edit = {}
 
