@@ -202,8 +202,19 @@ local function draw(state, surface)
       onActivate = function(id)
         if isFolder(id) then
           state.open[id] = not state.open[id] or nil
-        elseif handlers.open then
-          handlers.open(id)
+        elseif state.clicked == id then
+          -- the second click on a file, soon after the first, opens it
+          state.clicked = nil
+          if handlers.open then
+            handlers.open(id)
+          end
+        else
+          state.clicked = id
+          ecs.timer.start(0.4, false, function()
+            if state.clicked == id then
+              state.clicked = nil
+            end
+          end)
         end
       end,
       onToggle = function(id, open)

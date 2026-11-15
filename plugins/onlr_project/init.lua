@@ -609,7 +609,7 @@ local function whole(path)
   return start .. table.concat(parts, "/") .. (path:sub(-1) == "/" and "/" or "")
 end
 
--- ONLR's own folder, which holds the engine and the player's files beside plugins/.
+-- ONLR's own folder, which holds packages/, with the engine in it, and the player's files beside plugins/.
 local function home()
   return whole(ecs.plugin.folder .. "../../")
 end
@@ -671,7 +671,7 @@ local function open(folder)
   end
 
   -- The editor works on a project that holds its own version of the engine (DESIGN 3.3).
-  local ours, theirs = engineVersion(home() .. "engine/"), engineVersion(folder .. "packages/onlr/")
+  local ours, theirs = engineVersion(home() .. "packages/onlr/"), engineVersion(folder .. "packages/onlr/")
   if ours and theirs ~= ours then
     -- A project without the engine, such as one that was just cloned, gets it without a question about versions.
     local title = theirs and "Update the engine" or "Add the engine"
@@ -683,7 +683,7 @@ local function open(folder)
       return false
     end
     removeFolder(folder .. "packages/onlr")
-    copyFolder(home() .. "engine", folder .. "packages/onlr")
+    copyFolder(home() .. "packages/onlr", folder .. "packages/onlr")
   end
 
   P = {
@@ -767,7 +767,7 @@ local function new(folder)
     fs.makeFolder(folder .. dir)
   end
   write("nodes/start.lua", format.write({ format = format.FORMAT, id = format.newId({}), name = "Start" }, "node"))
-  copyFolder(home() .. "engine", folder .. "packages/onlr")
+  copyFolder(home() .. "packages/onlr", folder .. "packages/onlr")
   -- LÖVE's own definitions, for a code editor (DESIGN 4.3), where ONLR holds them.
   if fs.info(home() .. "build/love2d/library") then
     copyFolder(home() .. "build/love2d/library", folder .. ".onlr/love2d")

@@ -23,6 +23,12 @@ local function draw(state, surface)
       ui.selector(selected, { "Move", "Turn", "Scale" }, { id = "tool", onSelect = function(choice)
         project.setTool(TOOLS[choice])
       end }),
+      ui.selector(project.setting("pivot") == "own" and 2 or 1, { "Global", "Local" }, {
+        id = "pivot", tooltip = "Many nodes turn and scale around their shared middle (Global), or each around its own place (Local)",
+        onSelect = function(choice)
+          project.setSetting("pivot", choice == 2 and "own" or "middle")
+        end,
+      }),
       ui.toggle(project.setting("snap") == true, { id = "snap", label = "Snap", onChange = function(on)
         project.setSetting("snap", on)
       end }),

@@ -1,4 +1,4 @@
-// ONLR's build script. ONLR has no C code to compile: it puts the engine into the samples, starts the editor and runs the tests.
+// ONLR's build script. ONLR has no C code to compile: it puts the engine and the packages into the samples, starts the editor and runs the tests.
 // Compile it once, and it compiles itself again when this file changes: cc shuild.c -o shuild && ./shuild
 #define SHU_IMPLEMENTATION
 #include "dependencies/shuild/shuild.h"
@@ -27,7 +27,7 @@ static struct
 static void PrintUsage(void)
 {
     printf("Usage: ./shuild [FLAG...]\n\n"
-           "Puts the engine into every sample, as a project holds it, so LÖVE runs a sample: love samples/coinrun\n\n"
+           "Puts the engine and the packages into every sample, as a project holds them, so LÖVE runs a sample: love samples/coinrun\n\n"
            "Flags:\n"
            "  -e, --editor [PROJECT]  Then start the editor, on a project's folder if one is named\n"
            "  -t, --test [SAMPLE...]  Then run the tests of the samples named, such as coinrun, or of every sample.\n"
@@ -132,8 +132,12 @@ static void CopyFolder(const char *from, const char *to)
     SHU_UtilCopyFile(from, to);
 }
 
-/// @brief Gives a sample the engine in packages/onlr/, as a project holds it, and the tests' helper. git ignores both copies.
-static void PutEngine(const char *path, SHUFileType type, void *data)
+/// @brief The packages that a sample holds beside the engine, by the sample's name.
+static const char *const SAMPLE_PACKAGES[][2] = {{"coinrun", "bump"}};
+
+/// @brief Gives a sample its packages in packages/, as a project holds them: the engine, the packages that SAMPLE_PACKAGES names for it,
+/// and the tests' helper. git ignores the copies.
+static void PutPackages(const char *path, SHUFileType type, void *data)
 {
     (void)data;
 
@@ -143,8 +147,16 @@ static void PutEngine(const char *path, SHUFileType type, void *data)
     }
 
     char *packages = SHU_UtilFormat("%spackages/", path);
-    CopyFolder("engine/", SHU_UtilFormat("%sonlr/", packages));
+    CopyFolder("packages/onlr/", SHU_UtilFormat("%sonlr/", packages));
     SHU_UtilCopyFile("samples/check.lua", packages);
+
+    for (usz i = 0; i < sizeof(SAMPLE_PACKAGES) / sizeof(SAMPLE_PACKAGES[0]); i++)
+    {
+        if (SHU_UtilMatch(path, SHU_UtilFormat("*samples/%s/", SAMPLE_PACKAGES[i][0])))
+        {
+            CopyFolder(SHU_UtilFormat("packages/%s/", SAMPLE_PACKAGES[i][1]), SHU_UtilFormat("%s%s/", packages, SAMPLE_PACKAGES[i][1]));
+        }
+    }
 }
 
 /// @brief Gives the path of OpenECS's executable, or NULL if OpenECS's release is not in its folder.
@@ -324,7 +336,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    SHU_UtilListDirectory("samples/", false, PutEngine, NULL);
+    SHU_UtilListDirectory("samples/", false, PutPackages, NULL);
 
     if (CONFIG.test)
     {

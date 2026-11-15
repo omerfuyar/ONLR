@@ -29,6 +29,30 @@ local function redraw()
   end
 end
 
+-- Whether a command's program is there: a path as it is, and a name in the folders of PATH.
+-- On Windows a name may lack its ending, so the command is tried as it is.
+local function found(program)
+  if package.config:sub(1, 1) == "\\" then
+    return true
+  end
+  local function isFile(path)
+    local file = io.open(path, "rb")
+    if file then
+      file:close()
+    end
+    return file ~= nil
+  end
+  if program:find("/", 1, true) then
+    return isFile(program)
+  end
+  for dir in (os.getenv("PATH") or ""):gmatch("[^:]+") do
+    if isFile(dir .. "/" .. program) then
+      return true
+    end
+  end
+  return false
+end
+
 ---Opens a file at a line in the user's code editor.
 ---@param file string a path; a relative one starts at the console's folder
 ---@param line integer?
@@ -42,7 +66,7 @@ local function openFile(file, line)
       return file
     end):gsub("{line}", tostring(line or 1)))
   end
-  if #command > 0 and process.start(command, "") then
+  if #command > 0 and found(command[1]) and process.start(command, "") then
     return
   end
   -- Without the code editor, the system opens the file with the program that it has for such files.

@@ -20,9 +20,8 @@ OpenECS/
 *.dll
 *.a
 
-# the copies of the engine and of the tests' helper that shuild puts into each sample
-/samples/*/packages/onlr/
-/samples/*/packages/check.lua
+# the copies of the engine, of the packages and of the tests' helper that shuild puts into each sample
+/samples/*/packages/
 
 # what the editor keeps for a project, and what a played sample leaves
 .onlr/

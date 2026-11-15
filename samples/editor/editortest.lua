@@ -176,6 +176,8 @@ return {
     local files = test.rect(panelOf(test, "files.tree"))
     test.click(files.x + 21, files.y + 130)
     test.wait(0.2)
+    -- a second click on a file opens it
+    test.click(files.x + 80, files.y + 172)
     test.click(files.x + 80, files.y + 172)
     test.click(files.x + 80, files.y + 25)
     test.wait()
@@ -184,7 +186,7 @@ return {
     test.wait(0.5)
     check(read("nodes/piece.lua") ~= "" and read("nodes/part.lua") == "", "the file has its new name")
     check(read("nodes/start.lua") == start:gsub("nodes/part.lua", "nodes/piece.lua"), "the instance names the file by its new name")
-    -- the click opened the file in a node view, which follows it to its new name
+    -- the second click opened the file in a node view, which follows it to its new name
     local followed = false
     for _, panel in ipairs(test.panels()) do
       followed = followed or (panel.type == "onlr_player.view" and panel.title == "piece.lua")
