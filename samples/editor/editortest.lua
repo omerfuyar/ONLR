@@ -212,8 +212,9 @@ return {
     local files = test.rect(panelOf(test, "files.tree"))
     test.click(files.x + 21, files.y + 130)
     test.wait(0.2)
-    -- a second click on a file opens it
+    -- a click on a file shows it in the inspector, and a second click soon after opens it (DESIGN 13.7)
     test.click(files.x + 80, files.y + 172)
+    test.match(test.panel(panelOf(test, "onlr.inspector")).state, { file = "nodes/part.lua" }, "the inspector shows the clicked file")
     test.click(files.x + 80, files.y + 172)
     test.click(files.x + 80, files.y + 25)
     test.wait()

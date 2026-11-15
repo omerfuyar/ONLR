@@ -11,6 +11,9 @@ shared.running = false
 ---The chosen running node's number.
 ---@type integer?
 shared.runningNode = nil
+---The file that a click chose in the files panel, which the inspector shows until nodes are chosen (DESIGN 13.7).
+---@type string?
+shared.chosenFile = nil
 
 local panels = {} ---@type table<ecs.Panel, boolean>
 
@@ -46,6 +49,13 @@ function shared.chooseRunning(n)
   shared.redraw()
 end
 
+---Shows a file in the inspector, by its path in the project.
+---@param path string?
+function shared.chooseFile(path)
+  shared.chosenFile = path
+  shared.redraw()
+end
+
 ---The node file that the panels show: that of the chosen nodes.
 ---@return string?
 function shared.file()
@@ -53,6 +63,13 @@ function shared.file()
   if file and project.file(file) then
     return file
   end
+end
+
+-- Choosing nodes, or another project, takes the file out of the inspector.
+for _, name in ipairs({ "onlr.chosen", "onlr.opened", "onlr.closed" }) do
+  ecs.event.subscribe(name, function()
+    shared.chosenFile = nil
+  end)
 end
 
 for _, name in ipairs({

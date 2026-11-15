@@ -554,12 +554,44 @@ local function runningSubject(state, out)
   end
 end
 
+-- What a kind of file is called, by its extension.
+local KINDS = {
+  png = "Image", jpg = "Image", jpeg = "Image", bmp = "Image", tga = "Image",
+  ogg = "Sound", wav = "Sound", mp3 = "Sound", flac = "Sound", ttf = "Font", otf = "Font",
+}
+
+-- A file that the files panel chose: its name, its kind, its size, and a node file's nodes (DESIGN 13.7).
+local function chosenFileSubject(out)
+  local path = assert(shared.chosenFile)
+  local kind = path:match("^nodes/.+%.lua$") and "Node file" or path:match("%.lua$") and "Script"
+    or KINDS[(path:match("%.([^./]+)$") or ""):lower()] or "File"
+  local info = fs.info(project.folder() .. path)
+  out[#out + 1] = ui.text(path:match("[^/]*$"), { style = STYLES.title })
+  local rows = { { "Path", path }, { "Kind", kind } }
+  if info and info.type == "file" then
+    rows[#rows + 1] = { "Size", info.size < 1024 and ("%d bytes"):format(info.size) or ("%.1f KB"):format(info.size / 1024) }
+  end
+  if kind == "Node file" and project.file(path) then
+    local count = 0
+    for _ in pairs(project.tree(path).index) do
+      count = count + 1
+    end
+    rows[#rows + 1] = { "Nodes", tostring(count) }
+  end
+  for _, row in ipairs(rows) do
+    out[#out + 1] = ui.row({ gap = 6 }, { label(row[1]), ui.text(row[2], { grow = 1, wrap = true }) })
+  end
+  out[#out + 1] = ui.text("A double click in the files panel opens it.", { style = STYLES.note })
+end
+
 local function draw(state, surface)
   state.drops = {}
   state.scale = surface.scale
   local out = {}
   if shared.running and player.running().playing then
     runningSubject(state, out)
+  elseif shared.chosenFile then
+    chosenFileSubject(out)
   else
     fileSubject(state, out)
   end
@@ -624,7 +656,8 @@ ecs.panel.registerType({
     end
   end,
   saveState = function(state)
-    return { folded = state.folded }
+    -- The file that it shows is not read back; a test reads it here.
+    return { folded = state.folded, file = shared.chosenFile }
   end,
   destroy = function(state)
     shared.forget(state.panel)

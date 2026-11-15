@@ -1003,8 +1003,8 @@ What the sample shows of every package:
 - The editor is an OpenECS tool: a preset and plugins, in Lua unless a part needs C. The user never sees or writes them.
 - It builds on OpenECS's standard plugins (OpenECS-std DESIGN): process starts the players, net carries the link, fs watches the project, compress and hash serve export, web downloads LÖVE, and ui and draw make the panels.
 - Every panel is a panel type that a plugin registers (OpenECS DESIGN 4), and the preset only places them. No panel is built into the editor, so the user opens, moves and groups them as in any OpenECS tool.
-- A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a plugin that knows nothing of ONLR and serves any OpenECS tool: `files`, `viewer` and `console`. Each belongs in OpenECS-std, as its settings window does (OpenECS-std DESIGN 12).
-- Such a plugin is told what ONLR needs through its functions. The files panel takes handlers: how a file opens, which files it makes, what a rename and a delete do, and what the question before a delete adds. It drags a file as a list of paths, as another application's files come. The console takes lines, and the folder that their files are in.
+- A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a standard plugin that knows nothing of ONLR and serves any OpenECS tool: OpenECS-std's `files`, `viewer` and `console` (OpenECS-std DESIGN 29, 30 and 31).
+- Such a plugin is told what ONLR needs through its functions. The files panel takes handlers: what a click shows, how a file opens, which files it makes, what a rename and a delete do, and what the question before a delete adds. It drags a file as a list of paths, as another application's files come. The console takes lines, and the folder that their files are in.
 - A panel of ONLR's own, such as the inspector or the nodes panel, is built from generic parts, such as ui's elements. A part that it needs and that knows nothing of ONLR is added to the standard plugin that it belongs to, not written inside ONLR, and not worked around.
 
 ONLR's own panels and functions are one plugin, `onlr`, whose names all start with `onlr.`, such as `onlr.play` and the panel type `onlr.view`. It has a file for each part:
@@ -1015,7 +1015,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 | `project.lua`, `format.lua`, `resolve.lua` | The open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. |
 | `nodeview.lua`, `players.lua`, `link.lua`, `hints.lua` | The node view, the players and the link, and the functions Play, Play This File, Pause, Step and Stop. |
 | `panels.lua`, `nodes.lua`, `inspector.lua`, `tools.lua`, `settings.lua`, `shared.lua` | The other panels of ONLR's own: the nodes panel, the inspector, the tools and the project settings. |
-| `export.lua`, `runtimes.lua`, `tar.lua` | Export (14), and LÖVE's runtimes (15).                                                        |
+| `export.lua`, `runtimes.lua`           | Export (14), and LÖVE's runtimes (15).                                                        |
 | `player/`                               | The player's files (12.1), which the editor names to LÖVE and never loads itself.              |
 
 - The parts call each other's functions as Lua functions, and other plugins call them as `onlr.*`.
@@ -1088,7 +1088,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 13.7 Files
 
 - The files panel shows the project's folder, apart from what starts with a dot. It makes folders, scripts and node files, renames and moves them, and deletes them after asking. The question names the node files that name the file. A deleted file goes to the system's trash, or to `.onlr/trash/` when the system has none.
-- A click on a file chooses it, and a second click within 0.4 seconds opens it: a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
+- A click on a file chooses it and shows it without opening it: in the asset viewer, when one is open, and in the inspector, which shows its name, its kind, its size and a node file's count of nodes, until nodes are chosen. A double click, a second click within 0.4 seconds, opens it: a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
 - Renaming, moving and deleting files are not in the history. Before a rename or a move, the editor saves every file with changes. Then it renames the file, changes every path and type name that names it, in every node file and in the manifest, and saves them. The user undoes it by renaming or moving the file back, and gets a deleted file back from the system's trash.
 
 ## 14. Export

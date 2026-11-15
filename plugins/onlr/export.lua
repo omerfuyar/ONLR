@@ -7,7 +7,6 @@ local compress = require("compress")
 local project = require("project")
 local console = require("console")
 local runtimes = require("runtimes")
-local tar = require("tar")
 
 local STYLES = ui.styles()
 
@@ -212,7 +211,10 @@ local function exportLinux()
       end
       files[#files + 1] = { name = name .. "/" .. target, data = data, executable = executable }
     end
-    local packed, err = compress.gzip.pack(tar.pack(files), 0)
+    local packed, err = compress.tar.pack(files)
+    if packed then
+      packed, err = compress.gzip.pack(packed, 0)
+    end
     local path = out .. name .. "-linux-x86_64.tar.gz"
     if not packed or not write(path, packed) then
       return say("The Linux build was not written: " .. tostring(err), true)
