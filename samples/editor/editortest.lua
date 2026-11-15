@@ -254,6 +254,32 @@ return {
     test.key("Return")
     test.wait(0.2)
 
+    -- a component's menu in the inspector copies its values, and pastes them onto the same type of another node, as one
+    -- change: A's thing onto B's; Up goes round from the first entry to the last, Remove Component, then skips Paste while
+    -- nothing is copied
+    local inspect = test.rect(panelOf(test, "onlr.inspector"))
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.wait(0.2)
+    test.click(inspect.x + 41, inspect.y + 548, 3)
+    test.key("Up")
+    test.key("Up")
+    test.key("Return")
+    rx, ry = row(3)
+    test.click(rx, ry)
+    test.wait(0.2)
+    test.click(inspect.x + 41, inspect.y + 548, 3)
+    test.key("Up")
+    test.key("Up")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    local _, speeds = read("nodes/start.lua"):gsub("speed = 25", "")
+    check(speeds == 2, "B's thing has A's values:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the paste is one change, undone")
+
     -- F2 renames the chosen node in a field above the tree, and Return takes the name
     rx, ry = row(2)
     test.click(rx, ry)
