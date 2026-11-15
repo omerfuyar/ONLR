@@ -183,7 +183,7 @@ local function draw(state, surface)
 
   if running.playing then
     children[#children + 1] = ui.selector(shared.running and 2 or 1, { "Node file", "Running game" }, {
-      id = "mode",
+      id = "mode", tooltip = "Show the node file, or the running game's tree, whose changes are gone at Stop",
       onSelect = function(choice)
         shared.setRunning(choice == 2)
       end,

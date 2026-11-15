@@ -6,11 +6,10 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in this order.
 
-1. **Menus, not rows of buttons.** A right click opens a menu in the files panel, the nodes panel, the inspector and the node view, and it takes the place of the buttons there; each has its own. Every control has a tooltip. The tool's menu holds only what belongs to the whole project, such as New Project, Open Project, Save All and Play; what belongs to one panel is in that panel's menu.
-2. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
-3. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
-4. **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
-5. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
+1. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
+2. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
+3. **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
+4. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
 

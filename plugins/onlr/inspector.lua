@@ -63,7 +63,7 @@ end
 local function number(id, value, set, decl)
   local options = decl and decl.options or {}
   if value == MIXED or type(value) ~= "number" then
-    return ui.field("", { id = id, grow = 1, onSubmit = function(text)
+    return ui.field("", { id = id, grow = 1, tooltip = "The nodes differ; Return sets the typed number on all of them", onSubmit = function(text)
       local n = tonumber(text)
       if n then
         set(n)
@@ -72,12 +72,12 @@ local function number(id, value, set, decl)
   end
   return ui.number(value, {
     id = id, grow = 1, min = options.min, max = options.max, step = decl and decl.kind == "integer" and 1 or nil,
-    onSubmit = set,
+    tooltip = "Return takes the number; Up and Down change it", onSubmit = set,
   })
 end
 
 local function text(id, value, set, valid)
-  return ui.field(value ~= MIXED and type(value) == "string" and value or "", { id = id, grow = 1, valid = valid, onSubmit = function(new)
+  return ui.field(value ~= MIXED and type(value) == "string" and value or "", { id = id, grow = 1, valid = valid, tooltip = "Return takes the text", onSubmit = function(new)
     set(new)
   end })
 end
@@ -94,7 +94,7 @@ local function control(state, subject, id, decl, value, set)
   local kind = decl.kind
   local options = decl.options or {}
   if kind == "bool" then
-    return ui.toggle(value == true, { id = id, onChange = set })
+    return ui.toggle(value == true, { id = id, tooltip = "On or off", onChange = set })
   elseif kind == "integer" or kind == "number" then
     return number(id, value, set, decl)
   elseif kind == "string" then
@@ -107,7 +107,7 @@ local function control(state, subject, id, decl, value, set)
         selected = i
       end
     end
-    return ui.dropdown(selected, choices, { id = id, grow = 1, onSelect = function(choice)
+    return ui.dropdown(selected, choices, { id = id, grow = 1, tooltip = "One of the choices that the property declares", onSelect = function(choice)
       set(choices[choice])
     end })
   elseif kind == "color" then
@@ -173,7 +173,7 @@ local function control(state, subject, id, decl, value, set)
     state.drops[#state.drops + 1] = { id = id, type = "onlr.node", set = set, needs = kind == "component" and decl.type or nil, tree = subject.tree }
     return ui.row({ id = id, gap = 4, grow = 1, align = "center" }, {
       ui.text(shown, { grow = 1, color = value and value ~= MIXED and not named and RED or nil }),
-      (value ~= nil and ui.button("Clear", { id = id .. ":clear", onClick = function()
+      (value ~= nil and ui.button("Clear", { id = id .. ":clear", tooltip = "Take the value out", onClick = function()
         set(nil)
       end })) --[[@as ui.Element]],
     })
@@ -204,7 +204,7 @@ local function rows(state, subject, out, id, decl, value, set, title, mark)
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       ui.text(name, { style = STYLES.heading, tooltip = description, grow = 1 }),
       mark,
-      ui.button("Add", { id = id .. ":add", onClick = function()
+      ui.button("Add", { id = id .. ":add", tooltip = "Add an item to the list", onClick = function()
         local whole = copy(list)
         local item = decl.item and decl.item.default
         if item == nil then
@@ -225,7 +225,7 @@ local function rows(state, subject, out, id, decl, value, set, title, mark)
         end
         set(whole)
       end, tostring(i))
-      inner[#inner + 1] = ui.row({}, { ui.space(), ui.button("Remove", { id = id .. "." .. i .. ":remove", onClick = function()
+      inner[#inner + 1] = ui.row({}, { ui.space(), ui.button("Remove", { id = id .. "." .. i .. ":remove", tooltip = "Take this item out of the list", onClick = function()
         local whole = copy(list)
         table.remove(whole, i)
         set(whole)
@@ -280,7 +280,7 @@ local function fileSubject(state, out)
   if #nodes == 1 and first.instanceOf then
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       ui.text("Instance of " .. first.instanceOf, { style = STYLES.note, grow = 1 }),
-      ui.button("Open base", { id = "openBase", onClick = function()
+      ui.button("Open base", { id = "openBase", tooltip = "Open the node file that this instance is of", onClick = function()
         player.openFile(first.instanceOf)
       end }),
     })
@@ -297,7 +297,7 @@ local function fileSubject(state, out)
     for _, unused in ipairs(tree.unused[first.path] or {}) do
       out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
         ui.text(("A change names %s, which is no node."):format(unused), { color = RED, grow = 1 }),
-        ui.button("Clear", { id = "unused:" .. unused, onClick = function()
+        ui.button("Clear", { id = "unused:" .. unused, tooltip = "Take the change out, as its node is gone", onClick = function()
           project.dropChange(file, first.path, unused)
         end }),
       })
@@ -418,7 +418,7 @@ local function fileSubject(state, out)
       local names = project.typeNames()
       body[#body + 1] = ui.row({ gap = 6, align = "center" }, {
         label("Give values to"),
-        ui.dropdown(0, names, { id = cid .. ":give", grow = 1, onSelect = function(choice)
+        ui.dropdown(0, names, { id = cid .. ":give", grow = 1, tooltip = "Give the values to a type of the project", onSelect = function(choice)
           project.giveValues(file, paths, typeName, names[choice])
         end }),
       })
@@ -488,7 +488,7 @@ local function fileSubject(state, out)
   out[#out + 1] = ui.separator()
   out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
     label("Add component"),
-    ui.dropdown(0, offered, { id = key .. ":addComponent", grow = 1, onSelect = function(choice)
+    ui.dropdown(0, offered, { id = key .. ":addComponent", grow = 1, tooltip = "A type of the project that the nodes lack", onSelect = function(choice)
       project.addComponent(file, paths, offered[choice])
     end }),
   })
@@ -516,7 +516,7 @@ local function runningSubject(state, out)
   end
   out[#out + 1] = ui.text(node.name or "(no name)", { style = STYLES.title })
   out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-    label("Active"), ui.toggle(node.active == true, { id = key .. ":active", onChange = setField("active") }),
+    label("Active"), ui.toggle(node.active == true, { id = key .. ":active", tooltip = "Whether the node runs and draws", onChange = setField("active") }),
   })
   out[#out + 1] = ui.row({ gap = 6, align = "center" }, { label("Name"), text(key .. ":name", node.name, setField("name")) })
   for _, field in ipairs(FIELDS) do
@@ -543,7 +543,7 @@ local function runningSubject(state, out)
     out[#out + 1] = ui.separator()
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       ui.text(typeName, { style = STYLES.heading, grow = 1 }),
-      ui.toggle(values.enabled == true, { id = cid .. ":enabled", onChange = function(on)
+      ui.toggle(values.enabled == true, { id = cid .. ":enabled", tooltip = "Whether the component is on", onChange = function(on)
         player.set({ node = node.n, component = typeName, property = "enabled", value = on })
       end }),
     })
