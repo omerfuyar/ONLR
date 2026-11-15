@@ -318,6 +318,7 @@ local functions = {
 }
 
 -- The other parts call the functions themselves; init.lua registers them as the plugin's (DESIGN 13.1).
+---@type table<string, any>
 local part = { functions = functions }
 for name, entry in pairs(functions) do
   part[name] = entry.fn
