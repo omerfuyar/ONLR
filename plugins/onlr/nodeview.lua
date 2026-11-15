@@ -611,7 +611,7 @@ ecs.panel.registerType({
     if kind == "focused" then
       focused = view
       if view.file then
-        project.choose(view.file, view.chosen)
+        project.choose(view.file, view.chosen, true)
       end
     elseif kind == "shown" then
       view.visible = true
@@ -657,7 +657,7 @@ ecs.event.subscribe("onlr.opened", function()
   local start = manifest and manifest.startNode
   if start and project.file(start) and not viewOf(start) then
     openFile(start)
-    project.choose(start, {})
+    project.choose(start, {}, true)
   end
 end)
 

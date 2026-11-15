@@ -1,9 +1,9 @@
 -- onlr.loop: the steps that the engine adds to LÖVE's loop (DESIGN 8.1). The engine's love.run calls them,
 -- around LÖVE's own callbacks. A game that sets its own love.run calls them from its own loop instead.
 
-local data = require("onlr.data")
-local life = require("onlr.life")
-local tree = require("onlr.tree")
+local data = require("onlr.library.data")
+local life = require("onlr.library.life")
+local tree = require("onlr.library.tree")
 
 ---@class onlr.loop
 local loop = {}

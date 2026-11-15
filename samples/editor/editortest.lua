@@ -183,6 +183,32 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the copy is undone")
 
+    -- choosing is a record of the history, which marks no file unsaved: after A and then B are chosen, undo chooses A again,
+    -- so Delete deletes A; and the copy that Duplicate chose is one record with the copy, so one undo takes both (DESIGN 13.6)
+    test.click(x, y)
+    local bx, by = at(136, 56)
+    test.click(bx, by)
+    test.match(test.panel(panelOf(test, "onlr.view")), { unsaved = false }, "choosing marks nothing unsaved")
+    test.key("Ctrl+Z")
+    test.key("Delete")
+    test.wait(0.2)
+    save()
+    local deleted = read("nodes/start.lua")
+    check(not deleted:find('id = "aaaaaa"') and deleted:find('id = "bbbbbb"'), "undo chose A again, which Delete deleted:\n" .. deleted)
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the delete is undone")
+    test.click(x, y)
+    test.key("Ctrl+D")
+    test.key("Ctrl+Z")
+    test.key("Delete")
+    save()
+    deleted = read("nodes/start.lua")
+    check(not deleted:find('id = "aaaaaa"'), "one undo took the copy and its choice, so A was chosen, and deleted:\n" .. deleted)
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the delete is undone")
+
     -- in the nodes panel, a click chooses a node alone, Ctrl adds a node or takes it out, and Shift chooses the shown nodes from
     -- the last one clicked; the rows are Start, A, B and Part (DESIGN 13.4)
     local tree = test.rect(panelOf(test, "onlr.nodes"))
@@ -224,6 +250,8 @@ return {
     check(held:find('base = "nodes/hero.lua"'), "an instance is in the node's place:\n" .. held)
     check(held:find('%["aaaaaa"%] = {\n            components = {\n              thing = {\n                friend = "bbbbbb",\n                target = "bbbbbb",'),
       "and its change sets the values that name the node outside")
+    -- the click chose the instance, a record of its own, so the second undo takes the node file back
+    test.key("Ctrl+Z")
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start and read("nodes/hero.lua") == hero, "undoing it puts the node back, and leaves the new file")

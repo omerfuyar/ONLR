@@ -1,6 +1,6 @@
 {
   "runtime.version": "LuaJIT",
   "workspace.library": ["build/love2d/library", "OpenECS/include"],
-  "workspace.ignoreDir": ["build", "OpenECS", "library"],
+  "workspace.ignoreDir": ["build", "OpenECS", "packages/bump/library"],
   "diagnostics.disable": ["duplicate-set-field", "different-requires"]
 }

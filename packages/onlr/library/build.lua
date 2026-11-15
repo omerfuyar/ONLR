@@ -3,11 +3,11 @@
 -- and each change of an instance give it. Then it makes every component, and then gives them their values,
 -- so a property that names a node finds it, wherever in the file that node is.
 
-local data = require("onlr.data")
-local life = require("onlr.life")
-local component = require("onlr.component")
-local property = require("onlr.property")
-local nodes = require("onlr.node")
+local data = require("onlr.library.data")
+local life = require("onlr.library.life")
+local component = require("onlr.library.component")
+local property = require("onlr.library.property")
+local nodes = require("onlr.library.node")
 
 local build = {}
 
