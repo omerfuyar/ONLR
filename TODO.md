@@ -38,7 +38,7 @@ What the owner wants worked on, in this order.
 
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
   - The node view: handles that move along one axis, and a rectangle tool that sizes a node by its corners; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
-  - The nodes panel: a search by name and by component type; a drag that moves a node in the tree; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there; a mark and another colour for an instance; a button that opens the instance's node file.
+  - The nodes panel: a drag that moves a node in the tree; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there; a mark and another colour for an instance; a button that opens the instance's node file.
   - The inspector: a lock that keeps its node while another is chosen; reordering, copying and pasting a component's values; Add Component as a search; sums in number fields, such as `32*4`; a round button that picks a node or a file for a reference; a pipette for the colour picker; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
   - The files panel: a search by name and kind; favourite folders; Show in the file manager; Find what names this file.
   - The console: a pane with the stack of the chosen entry; a search; Pause on Error.
@@ -133,6 +133,7 @@ What the owner wants worked on, in this order.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7).
   - console: an entry's links of its own, for the link from a game's error to its node (DESIGN 13.1), in omerfuyar/OpenECS-std#106. Until it is in OpenECS, the error shows without the link.
+  - ui: a field's placeholder, a text it shows while empty, such as Search, in place of the label beside the nodes panel's search.
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the players were written on Linux.

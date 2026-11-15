@@ -19,8 +19,24 @@ local function say(_, message)
   end
 end
 
--- The nodes of the tree element, from a node of the file.
-local function treeNodes(node, open)
+-- Whether a node matches a search: its name holds the text, or with "t:" first, the name of one of its components' types,
+-- as Unity's search does. Case does not count.
+local function matches(node, search)
+  local typeName = search:match("^t:%s*(.*)$")
+  if typeName then
+    for name in pairs(node.components or {}) do
+      if name:lower():find(typeName, 1, true) then
+        return true
+      end
+    end
+    return false
+  end
+  return (node.name or ""):lower():find(search, 1, true) ~= nil
+end
+
+-- The nodes of the tree element, from a node of the file. With a search, only the nodes that match and those above them
+-- show, all open; nil when none under the node matches.
+local function treeNodes(node, open, search, opened)
   local label = node.name or "(no name)"
   if node.instanceOf then
     label = label .. "  (" .. node.instanceOf:match("[^/]*$") .. ")"
@@ -28,9 +44,18 @@ local function treeNodes(node, open)
   local children
   if #node.children > 0 then
     children = {}
-    for i, child in ipairs(node.children) do
-      children[i] = treeNodes(child, open)
+    for _, child in ipairs(node.children) do
+      children[#children + 1] = treeNodes(child, open, search, opened)
     end
+    if #children == 0 then
+      children = nil
+    end
+  end
+  if search then
+    if not children and not matches(node, search) then
+      return nil
+    end
+    opened[node.path] = true
   end
   local color = #node.errors > 0 and "#e06c75" or not node.active and "textDim" or not node.own and "accent" or nil
   return { id = node.path, label = label, color = color, children = children }
@@ -224,6 +249,15 @@ local function draw(state, surface)
         state.openFile, state.open = file, { [first.path] = true }
       end
       local paths = chosen.file == file and chosen.paths or {}
+      children[#children + 1] = ui.row({ gap = 6, align = "center" }, {
+        ui.text("Search", { style = STYLES.note }),
+        ui.field(state.search or "", { id = "search", grow = 1, tooltip = "Shows the nodes whose name holds the text; t: and a text, those with a component of such a type", onChange = function(text)
+          state.search = text ~= "" and text or nil
+        end }),
+      })
+      local search = state.search and state.search:lower()
+      local opened = search and {} or state.open
+      local shown = treeNodes(first, state.open, search, opened)
       local renaming = state.renaming
       if renaming and renaming.file == file then
         children[#children + 1] = ui.row({ gap = 4, align = "center" }, {
@@ -238,8 +272,8 @@ local function draw(state, surface)
           end }),
         })
       end
-      children[#children + 1] = ui.tree({ treeNodes(first, state.open) }, {
-        id = "tree", open = state.open, selected = paths, grow = 1, tooltip = "A right click opens a menu of the nodes",
+      children[#children + 1] = ui.tree({ shown }, {
+        id = "tree", open = opened, selected = paths, grow = 1, tooltip = "A right click opens a menu of the nodes",
         onSelect = function(id, how, between)
           state.pressed = id
           if how == "toggle" then
@@ -260,7 +294,9 @@ local function draw(state, surface)
           end
         end,
         onToggle = function(id, open)
-          state.open[id] = open or nil
+          if not search then
+            state.open[id] = open or nil
+          end
         end,
         onMenu = function(id, x, y)
           menu(state, file, id, x, y)

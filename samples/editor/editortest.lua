@@ -225,7 +225,7 @@ return {
       return test.panel(panelOf(test, "onlr.nodes")).state.chosen
     end
     local function row(i)
-      return tree.x + 60, tree.y + 40 + 21 * (i - 1)
+      return tree.x + 60, tree.y + 71 + 21 * (i - 1)
     end
     local rx, ry = row(2)
     test.click(rx, ry)
@@ -239,6 +239,20 @@ return {
     rx, ry = row(4)
     test.click(rx, ry, nil, "Shift")
     check(#chosen() == 2 and chosen()[1] == "bbbbbb", "Shift chooses B and Part: " .. table.concat(chosen(), ", "))
+
+    -- the search shows the nodes whose name holds the text, and with t:, those with a component of a type: thing is on A, B
+    -- and Part's Tip, so Start, A, B, Part and Tip show, opened
+    test.click(tree.x + 150, tree.y + 42)
+    test.text("t:thing")
+    test.wait(0.2)
+    rx, ry = row(5)
+    test.click(rx, ry)
+    test.match(chosen(), { "p4rt01/t1p000" }, "the search shows Tip, under Part, opened")
+    test.click(tree.x + 150, tree.y + 42)
+    test.key("Ctrl+A")
+    test.key("Backspace")
+    test.key("Return")
+    test.wait(0.2)
 
     -- F2 renames the chosen node in a field above the tree, and Return takes the name
     rx, ry = row(2)
