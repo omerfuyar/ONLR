@@ -478,7 +478,9 @@ local function fileSubject(state, out)
             copied = { type = typeName, values = format.copy(first.components[typeName].values) }
           end },
           { label = "Paste values", enabled = copied ~= nil and copied.type == typeName, onClick = function()
-            project.pasteValues(file, paths, typeName, copied.values)
+            if copied then
+              project.pasteValues(file, paths, typeName, copied.values)
+            end
           end },
           { line = true },
           { label = "Remove component", onClick = function()

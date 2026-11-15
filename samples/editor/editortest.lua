@@ -293,6 +293,19 @@ return {
     check(read("nodes/start.lua") == start:gsub('name = "A"', 'name = "Lead"'), "F2 renames the node:\n" .. read("nodes/start.lua"))
     test.key("Ctrl+Z")
     save()
+    -- so does Rename, the second entry of the node's menu
+    test.click(rx, ry, 3)
+    test.key("Down")
+    test.key("Return")
+    test.wait()
+    test.key("Ctrl+A")
+    test.text("Head")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua") == start:gsub('name = "A"', 'name = "Head"'), "the menu renames the node:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
 
     -- Save as Node File, the last entry of a node's menu in the nodes panel that A can use, writes the node to a new node file named after it, and
     -- puts an instance of it in its place; Up goes round from the menu's first entry to its last

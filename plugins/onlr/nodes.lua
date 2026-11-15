@@ -127,6 +127,16 @@ local function reorder(file, how)
   local _ = tree
 end
 
+-- Asks for a node's new name in the field above the tree, which gets the keys.
+local function rename(state, file, path)
+  local node = project.tree(file).index[path]
+  if node then
+    state.renaming = { file = file, path = path, text = node.name or "" }
+    ui.edit(state.panel, "rename")
+    state.panel:redraw()
+  end
+end
+
 -- A new node file's path in nodes/, from a name: the name's own, or with a number after it when that is taken.
 local function freePath(name)
   local base = (name or ""):gsub("[^%w_%-]+", "_"):lower()
@@ -203,16 +213,6 @@ menu = function(state, file, id, x, y)
       player.openFile(node.instanceOf)
     end },
   })
-end
-
--- Asks for a node's new name in the field above the tree, which gets the keys.
-local function rename(state, file, path)
-  local node = project.tree(file).index[path]
-  if node then
-    state.renaming = { file = file, path = path, text = node.name or "" }
-    ui.edit(state.panel, "rename")
-    state.panel:redraw()
-  end
 end
 
 local function draw(state, surface)
