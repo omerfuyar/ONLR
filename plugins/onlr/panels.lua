@@ -68,6 +68,14 @@ files.setHandlers({
       return project.newScript(path)
     end },
   },
+  -- The grid's icons tell a node file and a component's script from other Lua files; images show as small pictures.
+  icon = function(path)
+    if path:match("^nodes/.+%.lua$") then
+      return { label = "NODE", color = "accent" }
+    elseif path:match("^components/.+%.lua$") then
+      return { label = "LUA", color = "#98c379" }
+    end
+  end,
   rename = project.renameFile,
   delete = project.deleteFile,
   deleteNote = function(path)

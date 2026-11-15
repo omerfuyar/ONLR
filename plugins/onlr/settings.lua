@@ -17,8 +17,8 @@ local function draw(state, surface)
   local out = {}
   local manifest = project.folder() ~= "" and project.manifest()
   out[#out + 1] = ui.row({ gap = 8 }, {
-    ui.button("New project", { id = "new", onClick = project.newProject }),
-    ui.button("Open project", { id = "open", onClick = project.openProject }),
+    ui.button("New project", { id = "new", tooltip = "Make a project in an empty folder", onClick = project.newProject }),
+    ui.button("Open project", { id = "open", tooltip = "Open a project's folder", onClick = project.openProject }),
   })
   if not manifest then
     if project.folder() ~= "" then
@@ -26,7 +26,7 @@ local function draw(state, surface)
     end
     out[#out + 1] = ui.text("Opened last", { style = STYLES.heading })
     for i, folder in ipairs(project.recent()) do
-      out[#out + 1] = ui.button(folder, { id = "recent" .. i, onClick = function()
+      out[#out + 1] = ui.button(folder, { id = "recent" .. i, tooltip = "Open this project again", onClick = function()
         project.open(folder)
       end })
     end
@@ -34,7 +34,7 @@ local function draw(state, surface)
     local function text(field, title)
       out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
         label(title),
-        ui.field(tostring(manifest[field] or ""), { id = field, grow = 1, onSubmit = function(new)
+        ui.field(tostring(manifest[field] or ""), { id = field, grow = 1, tooltip = "Return writes it to the manifest", onSubmit = function(new)
           project.setManifest(field, new)
         end }),
       })
@@ -42,7 +42,7 @@ local function draw(state, surface)
     local function number(field, title, value, least)
       out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
         label(title),
-        ui.number(value, { id = field, grow = 1, min = least, step = 1, onSubmit = function(new)
+        ui.number(value, { id = field, grow = 1, min = least, step = 1, tooltip = "Return writes it to the manifest", onSubmit = function(new)
           project.setManifest(field, new)
         end }),
       })
@@ -67,7 +67,7 @@ local function draw(state, surface)
       end
       out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
         label(title),
-        ui.dropdown(selected, choices, { id = field, grow = 1, onSelect = function(choice)
+        ui.dropdown(selected, choices, { id = field, grow = 1, tooltip = "A node file of the project", onSelect = function(choice)
           local path = choices[choice]
           project.setManifest(field, path ~= "(none)" and path or nil)
         end }),
@@ -81,7 +81,7 @@ local function draw(state, surface)
     for _, field in ipairs({ "resizable", "fullscreen" }) do
       out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
         label(shared.words(field)),
-        ui.toggle(window[field] == true, { id = "window." .. field, onChange = function(on)
+        ui.toggle(window[field] == true, { id = "window." .. field, tooltip = "LÖVE's window setting of this name", onChange = function(on)
           project.setManifest("window." .. field, on or nil)
         end }),
       })
@@ -89,7 +89,7 @@ local function draw(state, surface)
     local filter = manifest.defaultFilter == "nearest" and 2 or 1
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       label("Default filter"),
-      ui.dropdown(filter, FILTERS, { id = "defaultFilter", grow = 1, onSelect = function(choice)
+      ui.dropdown(filter, FILTERS, { id = "defaultFilter", grow = 1, tooltip = "How images are scaled: smooth, or nearest for pixel art", onSelect = function(choice)
         project.setManifest("defaultFilter", choice == 2 and "nearest" or nil)
       end }),
     })
