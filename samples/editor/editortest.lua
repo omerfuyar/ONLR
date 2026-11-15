@@ -271,14 +271,14 @@ return {
 
     -- the files panel renames a file: every path that names it changes with it, and the files are saved (DESIGN 13.7)
     local files = test.rect(panelOf(test, "files.tree"))
-    test.click(files.x + 21, files.y + 64)
+    test.click(files.x + 21, files.y + 97)
     test.wait(0.2)
     -- a click on a file shows it in the inspector, and a second click soon after opens it (DESIGN 13.7)
-    test.click(files.x + 80, files.y + 106)
+    test.click(files.x + 80, files.y + 139)
     test.match(test.panel(panelOf(test, "onlr.inspector")).state, { file = "nodes/part.lua" }, "the inspector shows the clicked file")
-    test.click(files.x + 80, files.y + 106)
+    test.click(files.x + 80, files.y + 139)
     -- Rename, the entry before the last of a file's menu, shows a field with the file's name, which the new name replaces
-    test.click(files.x + 80, files.y + 106, 3)
+    test.click(files.x + 80, files.y + 139, 3)
     test.key("Up")
     test.key("Up")
     test.key("Return")
