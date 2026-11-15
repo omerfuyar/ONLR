@@ -155,6 +155,7 @@ menu = function(state, file, id, x, y)
   end
   ui.menu(state.panel, x, y, {
     { label = "Add child", enabled = one, onClick = function() add(id) end },
+    { label = "Rename", keys = "F2", enabled = one, onClick = function() rename(state, file, id) end },
     { label = "Duplicate", keys = "Ctrl+D", enabled = not isFirst, onClick = function()
       local made = project.duplicate(file, paths)
       if #made > 0 then
@@ -174,6 +175,16 @@ menu = function(state, file, id, x, y)
       say(project.saveAsNodeFile(file, id, freePath(node.name)))
     end },
   })
+end
+
+-- Asks for a node's new name in the field above the tree, which gets the keys.
+local function rename(state, file, path)
+  local node = project.tree(file).index[path]
+  if node then
+    state.renaming = { file = file, path = path, text = node.name or "" }
+    ui.edit(state.panel, "rename")
+    state.panel:redraw()
+  end
 end
 
 local function draw(state, surface)
@@ -213,6 +224,20 @@ local function draw(state, surface)
         state.openFile, state.open = file, { [first.path] = true }
       end
       local paths = chosen.file == file and chosen.paths or {}
+      local renaming = state.renaming
+      if renaming and renaming.file == file then
+        children[#children + 1] = ui.row({ gap = 4, align = "center" }, {
+          ui.field(renaming.text, { id = "rename", grow = 1, tooltip = "Return takes the name", onChange = function(text)
+            renaming.text = text
+          end, onSubmit = function(text)
+            state.renaming = nil
+            project.setField(file, { renaming.path }, "name", text)
+          end }),
+          ui.button("Cancel", { id = "cancel", tooltip = "Close the field", onClick = function()
+            state.renaming = nil
+          end }),
+        })
+      end
       children[#children + 1] = ui.tree({ treeNodes(first, state.open) }, {
         id = "tree", open = state.open, selected = paths, grow = 1, tooltip = "A right click opens a menu of the nodes",
         onSelect = function(id, how, between)
@@ -260,6 +285,14 @@ ecs.panel.registerType({
   end,
   draw = draw,
   event = function(state, event)
+    -- F2 renames the chosen node, as in Unity.
+    if event.type == "keyDown" and event.key == "F2" and not shared.running then
+      local chosen = project.chosen()
+      if chosen.file and #chosen.paths == 1 then
+        rename(state, chosen.file, chosen.paths[1])
+        return
+      end
+    end
     -- A node is dragged out of the tree to a reference's row of the inspector (DESIGN 13.4).
     if event.type == "pointerDown" then
       state.pressed, state.pressX, state.pressY = nil, event.x, event.y

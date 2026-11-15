@@ -240,6 +240,20 @@ return {
     test.click(rx, ry, nil, "Shift")
     check(#chosen() == 2 and chosen()[1] == "bbbbbb", "Shift chooses B and Part: " .. table.concat(chosen(), ", "))
 
+    -- F2 renames the chosen node in a field above the tree, and Return takes the name
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.key("F2")
+    test.wait()
+    test.key("Ctrl+A")
+    test.text("Lead")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua") == start:gsub('name = "A"', 'name = "Lead"'), "F2 renames the node:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+
     -- Save as Node File, the last entry of a node's menu in the nodes panel, writes the node to a new node file named after it, and
     -- puts an instance of it in its place; Up goes round from the menu's first entry to its last
     test.click(x, y)
