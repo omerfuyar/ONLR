@@ -280,7 +280,7 @@ return {
     -- Export: the folder that exports are written to is typed into the Export panel, which is a tab beside the inspector
     test.click(inspector.x + 210, inspector.y - 14)
     test.wait(0.2)
-    local export = test.rect(panelOf(test, "onlr.panel"))
+    local export = test.rect(panelOf(test, "onlr.export"))
     test.click(export.x + 100, export.y + 50)
     test.key("Ctrl+A")
     test.text("out")
