@@ -127,8 +127,14 @@ local function control(state, subject, id, decl, value, set)
       local function byte(n)
         return math.floor(math.max(0, math.min(1, n or 1)) * 255 + 0.5)
       end
-      parts[5] = ui.space({ width = 18, height = 18, grow = 0, border = "textDim",
-        background = ("#%02x%02x%02x%02x"):format(byte(color[1]), byte(color[2]), byte(color[3]), byte(color[4])) })
+      parts[5] = ui.color(("#%02x%02x%02x%02x"):format(byte(color[1]), byte(color[2]), byte(color[3]), byte(color[4])), {
+        id = id .. ":pick", alpha = true, tooltip = "A click opens a picker", onChange = function(picked)
+          local new = {}
+          for i = 1, 4 do
+            new[i] = tonumber(picked:sub(2 * i, 2 * i + 1), 16) / 255
+          end
+          set(new)
+        end })
     end
     return ui.row({ gap = 4, grow = 1, align = "center" }, parts)
   elseif kind == "vector" then
@@ -398,74 +404,74 @@ local function fileSubject(state, out)
       end
     end
 
-    out[#out + 1] = ui.separator()
-    out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-      ui.button(folded and "+" or "-", { id = cid .. ":fold", onClick = function()
-        state.folded[typeName] = not folded or nil
-        state.panel:redraw()
-      end }),
-      ui.text(typeName, { style = STYLES.heading, grow = 1, color = not known[typeName] and RED or nil }),
-      ui.toggle(valueOf("enabled", true) == true, { id = cid .. ":enabled", tooltip = "Whether the component is on", onChange = setProperty("enabled") }),
-      propertyMark("enabled"),
-      ui.button("Remove", { id = cid .. ":remove", onClick = function()
-        local _, message = project.removeComponent(file, paths, typeName)
-        if message then
-          console.add(message, "warn")
-        end
-      end }),
-    })
-    if not folded then
-      local declared = {}
-      if not known[typeName] then
-        -- A type that the editor does not find shows as the node file writes it, and its values can be given to another.
-        out[#out + 1] = ui.text("The project has no such type. Its values are kept.", { color = RED, wrap = true })
-        local names = project.typeNames()
-        out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-          label("Give values to"),
-          ui.dropdown(0, names, { id = cid .. ":give", grow = 1, onSelect = function(choice)
-            project.giveValues(file, paths, typeName, names[choice])
-          end }),
-        })
-      elseif info and info.error then
-        out[#out + 1] = ui.text(tostring(info.error), { color = RED, wrap = true })
-      elseif not info then
-        out[#out + 1] = ui.text("The edit player is down, so the values show without their kinds.", { style = STYLES.note, wrap = true })
-      end
-      for _, decl in ipairs(info and info.properties or {}) do
-        declared[decl.name] = true
-        rows(state, subject, out, cid .. ":" .. decl.name, decl, valueOf(decl.name, decl.default), setProperty(decl.name), nil,
-          propertyMark(decl.name))
-      end
-      -- Values of properties that the type does not declare, as the node file writes them.
-      local extra = {}
-      for _, node in ipairs(nodes) do
-        for name in pairs(node.components[typeName].values) do
-          if not declared[name] and name ~= "enabled" then
-            extra[name] = true
+    -- A component is a section, which the user folds; its first row turns it on and off, and removes it.
+    local body = {
+      ui.row({ gap = 6, align = "center" }, {
+        ui.toggle(valueOf("enabled", true) == true, { id = cid .. ":enabled", label = "Enabled", tooltip = "Whether the component is on", onChange = setProperty("enabled") }),
+        propertyMark("enabled") or false,
+        ui.space(),
+        ui.button("Remove", { id = cid .. ":remove", tooltip = "Remove the component from the chosen nodes", onClick = function()
+          local _, message = project.removeComponent(file, paths, typeName)
+          if message then
+            console.add(message, "warn")
           end
+        end }),
+      }),
+    }
+    local declared = {}
+    if not known[typeName] then
+      -- A type that the editor does not find shows as the node file writes it, and its values can be given to another.
+      body[#body + 1] = ui.text("The project has no such type. Its values are kept.", { color = RED, wrap = true })
+      local names = project.typeNames()
+      body[#body + 1] = ui.row({ gap = 6, align = "center" }, {
+        label("Give values to"),
+        ui.dropdown(0, names, { id = cid .. ":give", grow = 1, onSelect = function(choice)
+          project.giveValues(file, paths, typeName, names[choice])
+        end }),
+      })
+    elseif info and info.error then
+      body[#body + 1] = ui.text(tostring(info.error), { color = RED, wrap = true })
+    elseif not info then
+      body[#body + 1] = ui.text("The edit player is down, so the values show without their kinds.", { style = STYLES.note, wrap = true })
+    end
+    for _, decl in ipairs(info and info.properties or {}) do
+      declared[decl.name] = true
+      rows(state, subject, body, cid .. ":" .. decl.name, decl, valueOf(decl.name, decl.default), setProperty(decl.name), nil,
+        propertyMark(decl.name))
+    end
+    -- Values of properties that the type does not declare, as the node file writes them.
+    local extra = {}
+    for _, node in ipairs(nodes) do
+      for name in pairs(node.components[typeName].values) do
+        if not declared[name] and name ~= "enabled" then
+          extra[name] = true
         end
-      end
-      local names = {}
-      for name in pairs(extra) do
-        names[#names + 1] = name
-      end
-      table.sort(names)
-      local targets = {}
-      for _, decl in ipairs(info and info.properties or {}) do
-        targets[#targets + 1] = decl.name
-      end
-      for _, name in ipairs(names) do
-        local value = valueOf(name)
-        local shown = value == MIXED and "" or type(value) == "table" and "(a table)" or tostring(value)
-        out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-          label(name),
-          ui.text(shown, { grow = 1, color = info and info.properties and RED or nil }),
-          (#targets > 0 and ui.dropdown(0, targets, { id = cid .. ":give:" .. name, tooltip = "Give the value to a property", onSelect = function(choice)
-            project.giveValues(file, paths, typeName, typeName, name, targets[choice])
-          end })) --[[@as ui.Element]],
-        })
       end
     end
+    local names = {}
+    for name in pairs(extra) do
+      names[#names + 1] = name
+    end
+    table.sort(names)
+    local targets = {}
+    for _, decl in ipairs(info and info.properties or {}) do
+      targets[#targets + 1] = decl.name
+    end
+    for _, name in ipairs(names) do
+      local value = valueOf(name)
+      local shown = value == MIXED and "" or type(value) == "table" and "(a table)" or tostring(value)
+      body[#body + 1] = ui.row({ gap = 6, align = "center" }, {
+        label(name),
+        ui.text(shown, { grow = 1, color = info and info.properties and RED or nil }),
+        (#targets > 0 and ui.dropdown(0, targets, { id = cid .. ":give:" .. name, tooltip = "Give the value to a property", onSelect = function(choice)
+          project.giveValues(file, paths, typeName, typeName, name, targets[choice])
+        end })) --[[@as ui.Element]],
+      })
+    end
+    out[#out + 1] = ui.section(typeName, { id = cid, open = not folded, onToggle = function(open)
+      state.folded[typeName] = not open or nil
+      state.panel:redraw()
+    end }, body)
   end
 
   -- Adding a component offers the project's types that the nodes lack (DESIGN 13.4).
