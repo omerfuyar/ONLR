@@ -7,6 +7,7 @@ local console = require("console")
 local player = require("nodeview")
 local files = require("files")
 local viewer = require("viewer")
+local shared = require("shared")
 
 require("nodes")
 require("inspector")
@@ -32,7 +33,12 @@ local function showFolder()
 end
 
 files.setHandlers({
-  -- A node file opens in a node view, a script in the user's code editor, and any other file in the asset viewer.
+  -- A click on a file shows it without opening it: in the asset viewer when one is open, and in the inspector.
+  choose = function(path)
+    viewer.show(project.folder() .. path)
+    shared.chooseFile(path)
+  end,
+  -- A double click opens it: a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
   open = function(path)
     if path:match("^nodes/.+%.lua$") then
       player.openFile(path)
