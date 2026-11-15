@@ -1090,7 +1090,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 
 ### 13.7 Files
 
-- The files panel shows the project's folder, apart from what starts with a dot. Its right click's menu makes folders, scripts and node files, renames and moves them, and deletes them after asking (OpenECS-std DESIGN 29). The question names the node files that name the file. A deleted file goes to the system's trash, or to `.onlr/trash/` when the system has none.
+- The files panel shows the project's folder, apart from what starts with a dot, as a tree or as a grid of icons, in which an image shows as a small picture, and a node file and a component's script have badges of their own. Its right click's menu makes folders, scripts and node files, renames and moves them, and deletes them after asking (OpenECS-std DESIGN 29). The question names the node files that name the file. A deleted file goes to the system's trash, or to `.onlr/trash/` when the system has none.
 - A click on a file chooses it and shows it without opening it: in the asset viewer, when one is open, and in the inspector, which shows its name, its kind, its size and a node file's count of nodes, until nodes are chosen. A double click, a second click within 0.4 seconds, opens it: a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
 - Renaming, moving and deleting files are not in the history. Before a rename or a move, the editor saves every file with changes. Then it renames the file, changes every path and type name that names it, in every node file and in the manifest, and saves them. The user undoes it by renaming or moving the file back, and gets a deleted file back from the system's trash.
 
