@@ -199,6 +199,9 @@ menu = function(state, file, id, x, y)
     { label = "Save as node file", enabled = one, onClick = function()
       say(project.saveAsNodeFile(file, id, freePath(node.name)))
     end },
+    { label = "Open base", enabled = one and node.instanceOf ~= nil, onClick = function()
+      player.openFile(node.instanceOf)
+    end },
   })
 end
 

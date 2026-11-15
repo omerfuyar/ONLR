@@ -268,7 +268,7 @@ return {
     test.key("Ctrl+Z")
     save()
 
-    -- Save as Node File, the last entry of a node's menu in the nodes panel, writes the node to a new node file named after it, and
+    -- Save as Node File, the last entry of a node's menu in the nodes panel that A can use, writes the node to a new node file named after it, and
     -- puts an instance of it in its place; Up goes round from the menu's first entry to its last
     test.click(x, y)
     test.wait(0.2)
@@ -375,6 +375,18 @@ return {
     local fitted = test.panel(panelOf(test, "onlr.view")).state
     check(fitted.zoom > 2, "F zooms in on the chosen node: " .. tostring(fitted.zoom))
     check(test.pixel(view.x + view.width / 2, view.y + view.height / 2) == "#FF0000", "and centres it")
+
+    -- Open Base, the last entry of an instance's menu in the nodes panel, opens its base in a node view
+    rx, ry = row(4)
+    test.click(rx, ry, 3)
+    test.key("Up")
+    test.key("Return")
+    test.wait(0.3)
+    local opened = false
+    for _, panel in ipairs(test.panels()) do
+      opened = opened or (panel.type == "onlr.view" and test.panel(panel.id).title == "part.lua")
+    end
+    check(opened, "Open Base opens part.lua")
 
     -- Play saves the project and runs the game, whose marker writes a file
     os.remove("played.txt")
