@@ -35,7 +35,7 @@ local views = {}
 
 -- OpenECS's images hold a pixel as blue, green, red and alpha, and LÖVE as red, green, blue and alpha.
 -- The view is drawn once more through this shader, so the graphics card swaps red and blue (DESIGN 12.4).
--- A canvas holds colours multiplied by their alpha, and OpenECS's images do not, so the shader divides them too.
+-- A canvas holds colours multiplied by their alpha, as gpu's textures do, so they stay so.
 local swap
 
 local function send(message, block)
@@ -145,9 +145,6 @@ local function draw(view)
   swap = swap or love.graphics.newShader([[
     vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
       vec4 pixel = Texel(tex, texture_coords);
-      if (pixel.a > 0.0) {
-        pixel.rgb /= pixel.a;
-      }
       return vec4(pixel.b, pixel.g, pixel.r, pixel.a);
     }
   ]])

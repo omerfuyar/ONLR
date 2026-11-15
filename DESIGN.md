@@ -978,8 +978,8 @@ What the sample shows of every package:
 - The engine sends a frame only when the editor has taken the last one, so a slow editor never fills the link. The editor says so when the frame arrives, so the engine draws the next one while the panel shows this one.
 - A frame names the place and the zoom that it was drawn from. The panel draws the frame, the grid, the outlines and the handles all from that place and zoom, not from where the view has moved to since. So the nodes stay on the grid, and the panel's drawing on the nodes, while the user moves the view and the next frame is on its way.
 - A frame is bigger than what the system holds of a connection at once. The editor reads the rest of a frame that has started at once, not at its next look at the link.
-- LÖVE holds a pixel as red, green, blue and alpha, and OpenECS's images as blue, green, red and alpha. The engine draws the view's canvas once more through a shader that swaps red and blue, then reads it back. So the graphics card does it, and the panel takes the pixels as they come.
-- The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13.3). LÖVE's canvases hold colours multiplied by their alpha, and OpenECS's images do not. The same shader divides them, so the panel draws a frame as it comes.
+- LÖVE holds a pixel as red, green, blue and alpha, and OpenECS-std's gpu textures as blue, green, red and alpha. The engine draws the view's canvas once more through a shader that swaps red and blue, then reads it back. So the graphics card does it, and the panel takes the pixels as they come.
+- The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13.3). LÖVE's canvases hold colours multiplied by their alpha, as gpu's textures do, so the shader changes nothing else.
 
 ### 12.5 What the editor learns from LÖVE
 
@@ -1045,6 +1045,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - A drag that starts on a node drags the chosen nodes with the tool: move by the pointer's way, turn by its angle around each node's place, and scale by its distance from it. The edit player draws each step (12.2), and the release is one change of the history.
 - The wheel zooms around the pointer. A drag with the middle button, or with Alt, moves the view.
 - Snapping to a grid is a toggle. It and the grid's size are settings of the project, kept in `.onlr/editor.lua`, a data file.
+- The node view draws with OpenECS-std's gpu, on a panel's GPU surface (OpenECS-std DESIGN 15). The frame is a texture on the graphics card, which each new frame replaces, and the grid, the outlines, the handles and the messages are gpu's rectangles, lines and text. So drawing the panel copies no pixels, and costs the same at any size. Without a graphics card that gpu can use, the view shows why in place of the nodes.
 - The node view draws the window's frame: a rectangle from 0, 0, of the size of the manifest's `window`. So the user sees where the nodes that no camera holds show, such as a score.
 - Dragging an image from the files panel into the node view makes a node with a sprite of it, and dragging a node file makes an instance of it (9).
 - The editor does not tell a level from a coin. Any node file can be the start node and can be held in another (5, 9), so the manifest's start node is chosen from every node file.

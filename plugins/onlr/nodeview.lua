@@ -1,9 +1,11 @@
 -- The node view (DESIGN 13.3), and the functions Play, Play This File, Pause, Step and Stop.
 -- A node view shows a view of a node file: the edit player draws the nodes into a frame, and the panel draws over it
 -- the grid, the window's frame, the outlines of the chosen nodes and the handles of the tool (DESIGN 12.3).
+-- It draws with gpu: the frame is a texture on the graphics card, which each frame replaces, so drawing the panel copies no pixels (DESIGN 12.4).
 
 local ecs = require("ecs")
 local draw = require("draw")
+local gpu = require("gpu")
 local project = require("project")
 local console = require("console")
 local players = require("players")
@@ -23,7 +25,7 @@ local IMAGES = { png = true, jpg = true, jpeg = true, bmp = true, tga = true }
 ---@field height number
 ---@field scale number the surface's pixels for each layout unit
 ---@field chosen string[] the chosen nodes of its file, kept while another view has the focus
----@field image any? the last frame
+---@field image gpu.texture? the last frame
 ---@field frame table? where the last frame was drawn from: x, y, zoom, width and height
 ---@field visible boolean
 ---@field nodes table[] the nodes' bounds, in the order of drawing
@@ -52,10 +54,19 @@ local function title(view)
   view.panel.unsaved = file ~= nil and file.dirty
 end
 
+-- Frees the view's last frame, which the graphics card holds.
+local function dropImage(view)
+  if view.image then
+    view.image:free()
+    view.image = nil
+  end
+end
+
 local function show(view, file)
   view.file = file
   view.chosen = {}
-  view.nodes, view.byPath, view.error, view.image = {}, {}, nil, nil
+  dropImage(view)
+  view.nodes, view.byPath, view.error = {}, {}, nil
   title(view)
   sync(view)
   view.panel:redraw()
@@ -154,6 +165,23 @@ end
 
 -- Drawing
 
+-- A rectangle's edges, inside it, as draw.outline draws them; gpu fills only.
+local function frameRect(surface, x, y, w, h, thickness, color)
+  gpu.fill(surface, x, y, w, thickness, color)
+  gpu.fill(surface, x, y + h - thickness, w, thickness, color)
+  gpu.fill(surface, x, y + thickness, thickness, h - thickness * 2, color)
+  gpu.fill(surface, x + w - thickness, y + thickness, thickness, h - thickness * 2, color)
+end
+
+-- A circle's edge, of 32 lines.
+local function circle(surface, x, y, radius, thickness, color)
+  local step = math.pi * 2 / 32
+  for i = 0, 31 do
+    local a, b = i * step, (i + 1) * step
+    gpu.line(surface, x + math.cos(a) * radius, y + math.sin(a) * radius, x + math.cos(b) * radius, y + math.sin(b) * radius, thickness, color)
+  end
+end
+
 local function outline(surface, view, node, color, thickness)
   local r = node.rect
   local corners = { { r[1], r[2] }, { r[1] + r[3], r[2] }, { r[1] + r[3], r[2] + r[4] }, { r[1], r[2] + r[4] } }
@@ -161,7 +189,7 @@ local function outline(surface, view, node, color, thickness)
     local a, b = corners[i], corners[i % 4 + 1]
     local x1, y1 = toScreen(view, nodeToWorld(node, a[1], a[2]))
     local x2, y2 = toScreen(view, nodeToWorld(node, b[1], b[2]))
-    draw.line(surface, x1, y1, x2, y2, thickness, color)
+    gpu.line(surface, x1, y1, x2, y2, thickness, color)
   end
 end
 
@@ -171,7 +199,7 @@ local function drawView(view, surface)
     view.width, view.height, view.scale = w, h, surface.scale
     sync(view)
   end
-  draw.fill(surface, 0, 0, w, h, "background")
+  gpu.clear(surface, "background")
 
   -- The panel draws a whole picture only: the grid, the outlines and the handles from the place and zoom of the frame
   -- that it has, not from where the view wants to be, so nothing shows that the frame does not hold yet (DESIGN 12.4).
@@ -186,11 +214,11 @@ local function drawView(view, surface)
   if step >= 8 then
     local fx = (-view.x * view.zoom) % step
     for x = fx, w, step do
-      draw.fill(surface, x, 0, 1, h, "#ffffff10")
+      gpu.fill(surface, x, 0, 1, h, "#ffffff10")
     end
     local fy = (-view.y * view.zoom) % step
     for y = fy, h, step do
-      draw.fill(surface, 0, y, w, 1, "#ffffff10")
+      gpu.fill(surface, 0, y, w, 1, "#ffffff10")
     end
   end
 
@@ -199,14 +227,14 @@ local function drawView(view, surface)
     local f = view.frame
     local ratio = view.zoom / f.zoom
     local x, y = toScreen(view, f.x, f.y)
-    draw.image(surface, view.image, x, y, f.width * ratio, f.height * ratio)
+    gpu.image(surface, view.image, x, y, f.width * ratio, f.height * ratio)
   end
 
   -- The window's frame: where the nodes that no camera holds show (DESIGN 13.3).
   local manifest = project.manifest()
   local window = manifest and manifest.window or {}
   local x0, y0 = toScreen(view, 0, 0)
-  draw.outline(surface, x0, y0, (window.width or 800) * view.zoom, (window.height or 600) * view.zoom, 1, "textDim")
+  frameRect(surface, x0, y0, (window.width or 800) * view.zoom, (window.height or 600) * view.zoom, 1, "textDim")
 
   for _, node in ipairs(view.nodes) do
     local chosen = isChosen(view, node.path)
@@ -217,7 +245,7 @@ local function drawView(view, surface)
       end
     else
       local x, y = toScreen(view, node.place[5], node.place[6])
-      draw.outline(surface, x - 4, y - 4, 8, 8, 1, color or "textDim")
+      frameRect(surface, x - 4, y - 4, 8, 8, 1, color or "textDim")
     end
   end
 
@@ -228,16 +256,16 @@ local function drawView(view, surface)
     if node then
       local x, y = toScreen(view, node.place[5], node.place[6])
       if tool == "move" then
-        draw.line(surface, x - 10, y, x + 10, y, 2, "accent")
-        draw.line(surface, x, y - 10, x, y + 10, 2, "accent")
+        gpu.line(surface, x - 10, y, x + 10, y, 2, "accent")
+        gpu.line(surface, x, y - 10, x, y + 10, 2, "accent")
       elseif tool == "turn" then
-        draw.circle(surface, x, y, 14, 2, "accent")
+        circle(surface, x, y, 14, 2, "accent")
         local ax, ay = toScreen(view, nodeToWorld(node, 1, 0))
         local length = math.max(1e-6, math.sqrt((ax - x) ^ 2 + (ay - y) ^ 2))
-        draw.line(surface, x, y, x + (ax - x) / length * 14, y + (ay - y) / length * 14, 2, "accent")
+        gpu.line(surface, x, y, x + (ax - x) / length * 14, y + (ay - y) / length * 14, 2, "accent")
       else
-        draw.outline(surface, x - 12, y - 12, 24, 24, 2, "accent")
-        draw.fill(surface, x + 8, y + 8, 8, 8, "accent")
+        frameRect(surface, x - 12, y - 12, 24, 24, 2, "accent")
+        gpu.fill(surface, x + 8, y + 8, 8, 8, "accent")
       end
     end
   end
@@ -245,7 +273,7 @@ local function drawView(view, surface)
   if view.drag and view.drag.kind == "rectangle" then
     local d = view.drag
     local x, y = math.min(d.startX, d.x), math.min(d.startY, d.y)
-    draw.outline(surface, x, y, math.abs(d.x - d.startX), math.abs(d.y - d.startY), 1, "accent")
+    frameRect(surface, x, y, math.abs(d.x - d.startX), math.abs(d.y - d.startY), 1, "accent")
   end
 
   view.x, view.y, view.zoom = wantX, wantY, wantZoom
@@ -258,7 +286,7 @@ local function drawView(view, surface)
     local font = draw.font("ui")
     local y = 12
     for line in (message .. "\n"):gmatch("(.-)\n") do
-      draw.text(surface, font, line, 12, y, 13, view.file and "#e06c75" or "textDim")
+      gpu.text(surface, font, line, 12, y, 13, view.file and "#e06c75" or "textDim")
       y = y + 18
     end
   end
@@ -275,14 +303,21 @@ players.onView = function(kind, message, block)
         if view.image then
           local iw, ih = view.image:size()
           if iw ~= message.width or ih ~= message.height then
-            view.image:free()
-            view.image = nil
+            dropImage(view)
           end
         end
+        local failure
         if view.image then
-          draw.setImagePixels(view.image, block)
+          local _, why = view.image:update(block)
+          failure = why
         else
-          view.image = draw.newImage(message.width, message.height, block)
+          view.image, failure = gpu.texture(message.width, message.height, block)
+        end
+        -- Without a graphics card that gpu can use, the view says so in place of the nodes.
+        if failure and failure ~= "" then
+          view.error = "The node view cannot show the frame: " .. failure
+          view.panel:redraw()
+          return
         end
         -- The frame says where it was drawn from, which is not where the view is now while the user moves it.
         view.frame = {
@@ -300,7 +335,8 @@ players.onView = function(kind, message, block)
         view.panel:redraw()
       elseif kind == "error" then
         view.error = tostring(message.message)
-        view.nodes, view.byPath, view.image = {}, {}, nil
+        dropImage(view)
+        view.nodes, view.byPath = {}, {}
         view.panel:redraw()
       end
     end
@@ -545,6 +581,7 @@ end
 ecs.panel.registerType({
   name = "view",
   title = "Node view",
+  surface = "gpu",
   stateVersion = STATE_VERSION,
   create = function(panel, saved, version)
     nextId = nextId + 1
@@ -597,9 +634,7 @@ ecs.panel.registerType({
   end,
   destroy = function(view)
     players.setView(view.id, nil)
-    if view.image then
-      view.image:free()
-    end
+    dropImage(view)
     if focused == view then
       focused = nil
     end
