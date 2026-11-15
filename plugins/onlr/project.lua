@@ -20,17 +20,24 @@ local resolve = require("resolve")
 ---@field handwritten boolean a person wrote its text, so a save asks first (DESIGN 4.2)
 ---@field missing boolean? the project has no such file
 
----A change that can be undone: the tables of the files that it changed, before and after (DESIGN 13.6).
+---A change that can be undone: the tables of the files that it changed, before and after, and the chosen nodes,
+---before and after, when it chose nodes (DESIGN 13.6).
 ---@class onlr.editor.Record
 ---@field label string
 ---@field files table<string, {before: table?, after: table?}>
+---@field chosen {before: onlr.editor.Chosen, after: onlr.editor.Chosen}?
+
+---@class onlr.editor.Chosen
+---@field file string?
+---@field paths string[]
 
 ---@class onlr.editor.Project
 ---@field folder string the project's folder, ending with a slash
 ---@field files table<string, onlr.editor.File>
 ---@field history onlr.editor.Record[]
 ---@field position integer how many records of the history are done
----@field chosen {file: string?, paths: string[]}
+---@field chosen onlr.editor.Chosen
+---@field joinable onlr.editor.Record? the change just made, which a choice that follows it in the same frame joins
 ---@field tool "move"|"turn"|"scale"
 ---@field settings table what the editor keeps for the project in .onlr/
 ---@field space table the names that components can hold
@@ -290,6 +297,16 @@ local function dropHistory(path)
   p.history, p.position = kept, position
 end
 
+-- Adds a record after the done ones, and drops those that were undone.
+local function push(record)
+  local p = assert(P)
+  for i = #p.history, p.position + 1, -1 do
+    p.history[i] = nil
+  end
+  p.history[#p.history + 1] = record
+  p.position = #p.history
+end
+
 ---Makes one change of the history: fn changes the files' tables, after telling which with touch.
 ---@param label string what the change is, such as "Move"
 ---@param fn fun(touch: fun(path: string): table?) touch gives a file's table, and notes how it was
@@ -330,11 +347,15 @@ local function edit(label, fn)
     return false
   end
   table.sort(paths)
-  for i = #p.history, p.position + 1, -1 do
-    p.history[i] = nil
-  end
-  p.history[#p.history + 1] = record
-  p.position = #p.history
+  record.chosen = { before = p.chosen, after = p.chosen }
+  push(record)
+  -- Nodes that the code chooses right after a change, such as a copy after Duplicate, are chosen by the same record.
+  p.joinable = record
+  ecs.timer.start(0, false, function()
+    if P and P.joinable == record then
+      P.joinable = nil
+    end
+  end)
   emitChanged(paths)
   return true
 end
@@ -354,8 +375,12 @@ local function step(record, field)
     end
   end
   table.sort(paths)
-  -- A node that the change took away is no longer chosen.
   emitChanged(paths, true)
+  -- The nodes that were chosen then are chosen again; one that the change took away is not.
+  if record.chosen then
+    p.chosen = record.chosen[field]
+    ecs.event.emit("onlr.chosen", p.chosen)
+  end
   if p.chosen.file then
     local t = tree(p.chosen.file)
     local kept = {}
@@ -1664,9 +1689,39 @@ end
 
 -- The functions
 
-local function choose(file, paths)
+-- Whether two choices are the same nodes, in the same order.
+local function sameChoice(a, b)
+  if a.file ~= b.file or #a.paths ~= #b.paths then
+    return false
+  end
+  for i, path in ipairs(a.paths) do
+    if b.paths[i] ~= path then
+      return false
+    end
+  end
+  return true
+end
+
+---Chooses nodes. Choosing is a record of the history, between the changes, and never marks a file unsaved (DESIGN 13.6).
+---A choice right after a change, in the same frame, belongs to the change's record. A choice that the user did not make,
+---such as a node view's own when it gets the focus, is no record.
+---@param file string?
+---@param paths string[]?
+---@param unrecorded boolean?
+local function choose(file, paths, unrecorded)
   local p = assert(P)
-  p.chosen = { file = file, paths = paths or {} }
+  -- A copy, so that the caller's list does not change a record.
+  local chosen = { file = file, paths = { table.unpack(paths or {}) } }
+  if not unrecorded and not sameChoice(p.chosen, chosen) then
+    local last = p.history[p.position]
+    if p.joinable and p.joinable == last then
+      last.chosen.after = chosen
+    else
+      push({ label = "Choose", files = {}, chosen = { before = p.chosen, after = chosen } })
+      p.joinable = nil
+    end
+  end
+  p.chosen = chosen
   ecs.event.emit("onlr.chosen", p.chosen)
 end
 
@@ -1759,7 +1814,7 @@ local functions = {
   chosen = { sig = "value()", doc = "The chosen nodes: their file, and their paths", fn = function()
     return P and P.chosen or { paths = {} }
   end },
-  choose = { sig = "void(string file, value paths)", doc = "Choose nodes of a node file", fn = choose },
+  choose = { sig = "void(string file, value paths, bool unrecorded)", doc = "Choose nodes of a node file; unrecorded keeps it out of the history, for a choice that the user did not make", fn = choose },
   tool = { sig = "string()", doc = "The chosen tool: move, turn or scale", fn = function()
     return P and P.tool or "move"
   end },
