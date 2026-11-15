@@ -1075,7 +1075,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 13.6 Changes and saving
 
 - Each change of a node file or of the manifest is a record that can be undone. `project.lua` keeps them in one history for the project. One record can change many files, such as a deleted node and the properties that named it.
-- Choosing nodes is a record of the same history, between the records of changes, as in Unity. So one key walks back through everything that the user did, and undo gives the nodes that were chosen before back. A record of choosing never marks a file as unsaved.
+- Choosing nodes is a record of the same history, between the records of changes, as in Unity. So one key walks back through everything that the user did, and undo gives the nodes that were chosen before back. A record of choosing never marks a file as unsaved. Nodes that the editor chooses right after a change, such as the copy that Duplicate makes, belong to the change's record, so one undo takes back both. A view that gets the focus chooses its own nodes again, which is no record.
 - Deleting a node, with all under it, also clears every property that names one of those nodes or one of their components, and drops every change of an instance that names one of them, in every node file of the project, in the same record. Removing a component clears the properties that name it in the same way. So no file names a node that is gone.
 - When the editor reads a file that names a node that does not exist, such as after a merge in git, the inspector marks the property or the change, and offers to clear it (9).
 - Undoing or redoing a change of a file that no node view shows opens a view of it.
