@@ -38,12 +38,12 @@ What the owner wants worked on, in this order.
 ## Editor
 
 - **A number that a drag changes.** A drag over a number field's label, or over the field, changes the number, as in Unity. It belongs in OpenECS-std's ui, as a property of its number field, so every tool gets it.
-- **Undo of what is chosen.** Choosing nodes is a record of the history too, so undo gives the last chosen nodes back. Open: whether such a record stands between the records of changes, as in Unity, or in a history of its own. Between them is simpler to use: one key walks back through everything that the user did. A record of choosing never marks a file as unsaved.
+- **The files panel's New.** It stays a dropdown of kinds beside a button for now. It needs a better design later, such as entries of the right click's menu (see [Next](#next)).
 - **The files panel's views.** Icons for kinds of files, small pictures of images, and a view of a folder as a grid, as a file manager shows it, beside the tree. It belongs to the files panel that moves to OpenECS-std.
 - **The console's entries.** Each entry is a box of its own, with its level's colour, its time and its place. Equal entries stack with a count. The console clears when the game plays, as a toggle, and filters by level. It belongs to the console that moves to OpenECS-std.
 - **More hints for errors.** The hints are a list of patterns (DESIGN 13.1). To add: errors of LÖVE's own functions, and a hint that names the node and the component that the error came from, with a click that chooses the node.
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
-  - The node view: handles that move along one axis, and a rectangle tool that sizes a node by its corners; a key that fits the view to the chosen nodes; a switch between each node's own place and the middle of the chosen ones as the pivot; a key that holds snapping; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
+  - The node view: handles that move along one axis, and a rectangle tool that sizes a node by its corners; a key that fits the view to the chosen nodes; a key that holds snapping; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
   - The nodes panel: a search by name and by component type; a drag that moves a node in the tree; choosing many nodes; renaming with F2; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there; a mark and another colour for an instance; a button that opens the instance's node file.
   - The inspector: a lock that keeps its node while another is chosen; folding, reordering, copying and pasting a component's values; Add Component as a search; sums in number fields, such as `32*4`; a round button that picks a node or a file for a reference; a colour picker with a pipette; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
   - The files panel: a search by name and kind; favourite folders; the path as a row of folders to click; Show in the file manager; Find what names this file.
@@ -139,7 +139,7 @@ What the owner wants worked on, in this order.
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: a menu that a right click opens, from a list of entries, and a number field that a drag changes (see [Next](#next) and [Editor](#editor)).
-  - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel opens a file only then; a control for a colour.
+  - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7); a control for a colour.
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
 - **Move to OpenECS-std: the files panel.** `plugins/files` knows nothing of ONLR (DESIGN 13.1).
@@ -147,7 +147,7 @@ What the owner wants worked on, in this order.
 - **Move to OpenECS-std: the console.** `plugins/console` knows nothing of ONLR.
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the players were written on Linux.
 - **What the editor does not do yet.** Dragging a node in the nodes panel to move it in the tree, and choosing many nodes there, wait for ui's tree. Copying LÖVE's definitions into a new project's `.onlr/` takes them from `build/love2d/`, until ONLR's archive holds them. Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
-- **OpenECS as a submodule.** A question for the owner (see the report of the session that added `shuild.c`). Today OpenECS's release is unpacked into `OpenECS/` by hand, and the checks build OpenECS's newest `dev`. With a submodule at a fixed commit, `shuild.c` would build it, and the checks would test against the same OpenECS as everyone.
+- **Undo of what is chosen is not written.** DESIGN 13.6 makes choosing a record of the history; `onlr_project`'s `choose` does not add one yet.
 - **The tests on Windows.** `shuild.c` runs them on Linux only: they need SDL's offscreen driver, and set variables as a POSIX shell does.
 - **A warning when a popup opens.** On the owner's computer, a dropdown logs "[ecs] The GPU cannot present to a window (The GPU API doesn't support transparent windows)". It is OpenECS's, not ONLR's: its popups ask for a transparent window.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the player's files, and LÖVE's runtime for the host, and the Linux runtime that ONLR hosts (DESIGN 15.2).

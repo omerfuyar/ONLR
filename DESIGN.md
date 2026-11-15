@@ -70,7 +70,8 @@ A game made with ONLR is built in layers. Each uses only the layers above it in 
 
 | Part           | In this repository       | Is                                                                                                              | Runs in |
 | -------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- | ------- |
-| Engine         | `engine/`                | The Lua library that every project holds a copy of, as `packages/onlr/`.                                        | LÖVE    |
+| Engine         | `packages/onlr/`         | The Lua library that every project holds a copy of, as `packages/onlr/` (8.3).                                  | LÖVE    |
+| Packages       | `packages/`              | The packages that ONLR ships, each in a folder of its own beside the engine, such as `packages/bump/` (11.2).   | LÖVE    |
 | Player's files | `player/`                | The Lua code that the engine loads when the editor starts it: the link and the views (12). No project holds it. | LÖVE    |
 | Editor         | `plugins/`, `preset.lua` | OpenECS plugins and their preset (13).                                                                          | OpenECS |
 | Samples        | `samples/`               | Small projects, which are the tests (16).                                                                       | Both    |
@@ -598,7 +599,7 @@ Each file of the engine holds one thing:
 | `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua` and `camera.lua`.                                                   |
 | `license.txt`                                       | The engine's licence, which an export holds (14.1).                                                                                                        |
 
-- The engine is in `packages/` as a package is, with its components in `components/`. So the editor finds the engine's components and a package's in one way. Its source carries its own definitions (4.3), so it needs no definitions file.
+- The engine is in `packages/` as a package is, with its components in `components/`. So the editor finds the engine's components and a package's in one way. ONLR's repository keeps it so too: its `packages/` holds the engine and the packages that ONLR ships, with the same files that a project holds. Its source carries its own definitions (4.3), so it needs no definitions file.
 - `conf.lua` loads the engine before LÖVE has loaded its modules for drawing, input and the rest (3.1): only its file functions are sure to be there. So no file of the engine uses another part of LÖVE while it loads, only when its functions run.
 
 ## 9. Instances
@@ -786,7 +787,7 @@ return {
 - A node file of a package is named by its path, as the project's are: `packages/bump/nodes/box.lua`.
 - A package adds nothing to the engine and changes nothing in it. A game uses a package's library with its components, without them, or both.
 - The editor copies a package into a project when the user adds it, and deletes its folder when the user removes it. In the project, the package is the project's own copy, and an export holds it.
-- The editor adds a package from ONLR's own, or from a folder that the user chooses, so anyone can make one.
+- The editor adds a package from ONLR's own, or from a folder that the user chooses, so anyone can make one. ONLR's own are in its `packages/`, beside the engine (2.2), each as a project holds it.
 - The user does not change a package in the project, as they do not change the engine (3.1). To change one of its components, they copy it into `components/` under another name. When ONLR ships a newer version of a package that a project holds, the editor offers it, and updating replaces the package's folder whole.
 
 ### 11.3 A package's components
@@ -974,7 +975,7 @@ What the sample shows of every package:
 
 - The engine draws a view into a canvas of the view's size, reads the canvas back, and sends its pixels.
 - The engine sends a frame only when the editor has taken the last one, so a slow editor never fills the link. The editor says so when the frame arrives, so the engine draws the next one while the panel shows this one.
-- A frame names the place and the zoom that it was drawn from. The panel places it by them, so the nodes stay on the grid while the user moves the view and the next frame is on its way.
+- A frame names the place and the zoom that it was drawn from. The panel draws the frame, the grid, the outlines and the handles all from that place and zoom, not from where the view has moved to since. So the nodes stay on the grid, and the panel's drawing on the nodes, while the user moves the view and the next frame is on its way.
 - A frame is bigger than what the system holds of a connection at once. The editor reads the rest of a frame that has started at once, not at its next look at the link.
 - LÖVE holds a pixel as red, green, blue and alpha, and OpenECS's images as blue, green, red and alpha. The engine draws the view's canvas once more through a shader that swaps red and blue, then reads it back. So the graphics card does it, and the panel takes the pixels as they come.
 - The engine clears a view's canvas to transparent, so the panel's grid shows behind the nodes (13.3). LÖVE's canvases hold colours multiplied by their alpha, and OpenECS's images do not. The same shader divides them, so the panel draws a frame as it comes.
@@ -1016,7 +1017,7 @@ What the sample shows of every package:
 - Every panel can be open many times. What belongs to the project is one, in `onlr_project`: its files, the chosen nodes, the chosen tool, snapping and the history. So two node views of one file show the same nodes, two inspectors show the same chosen nodes, and a change made in one panel shows in every other at once.
 - What belongs to one panel is its own state (OpenECS OVERVIEW 5.4): where a node view looks from and its zoom, which nodes a nodes panel has open, and which components an inspector has folded.
 - The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, and a text with syntax. It shows no video, since OpenECS-std's video does not read LÖVE's Ogg Theora.
-- The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting, `console.editor`. When that command does not start, the system opens the file with the program that it has for such files.
+- The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting, `console.editor`. The console first checks that the command's program is there, as a path or in the folders of `PATH`. When it is not, or does not start, the system opens the file with the program that it has for such files, and the console warns once.
 - An error of the game shows with a hint, when it is one that the editor knows: what such an error often means in a game, in plain words, and what to try. The hints are a list of patterns in `onlr_player`, matched against the error's text.
 - `onlr_project` tells of changes with events: a project opened or closed, files changed, saved or renamed, the chosen nodes, the tool, the types, and a file that changed on disk. Its functions and events are documented in its code.
 
@@ -1031,7 +1032,8 @@ What the sample shows of every package:
 ### 13.3 The node view
 
 - Many node files can be open at once, each in a node view of its own. One edit player draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
-- The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. Many chosen nodes turn and scale as one, around the middle of their places. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
+- The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
+- Many chosen nodes turn and scale by one amount, around a pivot that the tools panel chooses, as Unity's does. With Global, they turn and scale as one, around the middle of their places, so they move around it. With Local, each turns and scales around its own place and stays there, by the amount that the pointer turns around the place of the node that the drag started on. The pivot is a setting of the project, `pivot`, `middle` or `own`, kept with snapping.
 - A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node whose middle is in the rectangle.
 - A drag that starts on a node drags the chosen nodes with the tool: move by the pointer's way, turn by its angle around each node's place, and scale by its distance from it. The edit player draws each step (12.2), and the release is one change of the history.
 - The wheel zooms around the pointer. A drag with the middle button, or with Alt, moves the view.
@@ -1065,6 +1067,7 @@ What the sample shows of every package:
 ### 13.6 Changes and saving
 
 - Each change of a node file or of the manifest is a record that can be undone. `onlr_project` keeps them in one history for the project. One record can change many files, such as a deleted node and the properties that named it.
+- Choosing nodes is a record of the same history, between the records of changes, as in Unity. So one key walks back through everything that the user did, and undo gives the nodes that were chosen before back. A record of choosing never marks a file as unsaved.
 - Deleting a node, with all under it, also clears every property that names one of those nodes or one of their components, and drops every change of an instance that names one of them, in every node file of the project, in the same record. Removing a component clears the properties that name it in the same way. So no file names a node that is gone.
 - When the editor reads a file that names a node that does not exist, such as after a merge in git, the inspector marks the property or the change, and offers to clear it (9).
 - Undoing or redoing a change of a file that no node view shows opens a view of it.
@@ -1077,7 +1080,7 @@ What the sample shows of every package:
 ### 13.7 Files
 
 - The files panel shows the project's folder, apart from what starts with a dot. It makes folders, scripts and node files, renames and moves them, and deletes them after asking. The question names the node files that name the file. A deleted file goes to the system's trash, or to `.onlr/trash/` when the system has none.
-- Opening a file opens a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
+- A click on a file chooses it, and a second click within 0.4 seconds opens it: a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
 - Renaming, moving and deleting files are not in the history. Before a rename or a move, the editor saves every file with changes. Then it renames the file, changes every path and type name that names it, in every node file and in the manifest, and saves them. The user undoes it by renaming or moving the file back, and gets a deleted file back from the system's trash.
 
 ## 14. Export
@@ -1126,10 +1129,11 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It gives every sample the engine in its `packages/`, as a project holds the engine (3.1), so LÖVE runs a sample as it is. With `--test` it runs the samples' tests, and with `--editor` it starts the editor.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
+- The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The player and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both players on other samples, and speaks the link with them.
-- A sample's test of the editor is its `editortest.lua`, an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes. It runs on a copy of the sample, since it writes the sample's files.
+- A sample's test of the editor is its `editortest.lua`, an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes. It runs on a copy of the sample, since it writes the sample's files. The copy leaves out the sample's `.onlr/`, which the editor kept for it on this computer, such as snapping.
 - `samples/editor` is a project as the editor writes one, so its test checks that a change and its undo give the first text again.
 - One sample has thousands of nodes. It is the measure of speed: its test reports the time of a frame.
 - A change that breaks a sample changes the sample in the same piece of work.

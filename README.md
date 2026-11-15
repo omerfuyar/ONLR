@@ -20,7 +20,7 @@ ONLR needs [LÖVE 11.5](https://love2d.org) as `love`, and is built with [shuild
 cc shuild.c -o shuild
 ```
 
-- `./shuild` puts the engine into every sample. After it, LÖVE runs a sample: `love samples/coinrun`.
+- `./shuild` puts the engine, and the packages that a sample uses, into every sample. After it, LÖVE runs a sample: `love samples/coinrun`.
 - `./shuild --editor samples/editor` starts the editor on a sample. The editor needs [OpenECS](https://github.com/omerfuyar/OpenECS): unpack its release into `OpenECS/` here, or name its folder with `--openecs`.
 - `./shuild --test` runs the tests. The samples are the tests. The editor's tests need a Debug build of OpenECS in `OpenECS/`, and are skipped without it.
 - `./shuild --help` lists every flag.

@@ -317,7 +317,7 @@ local function snap(value)
   return value
 end
 
-local function startToolDrag(view, sx, sy)
+local function startToolDrag(view, sx, sy, lead)
   local tree = project.tree(view.file)
   local nodes = {}
   for _, path in ipairs(view.chosen) do
@@ -343,28 +343,34 @@ local function startToolDrag(view, sx, sy)
   for _, n in ipairs(nodes) do
     midX, midY = midX + n.originX / #nodes, midY + n.originY / #nodes
   end
+  -- The pointer's turn and distance are seen from the middle, or, with each node's own pivot, from the place of the node
+  -- that the drag started on, so every node turns and scales by the same amount.
   local own = project.setting("pivot") == "own"
+  local centerX, centerY = midX, midY
   for _, n in ipairs(nodes) do
     n.pivotX, n.pivotY = own and n.originX or midX, own and n.originY or midY
+    if own and n.path == lead then
+      centerX, centerY = n.originX, n.originY
+    end
   end
   local wx, wy = toWorld(view, sx, sy)
-  view.drag = { kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, fields = {} }
+  view.drag = { kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, centerX = centerX, centerY = centerY, fields = {} }
 end
 
 local function toolDrag(view, sx, sy)
   local d = view.drag
   local wx, wy = toWorld(view, sx, sy)
+  local cx, cy = d.centerX, d.centerY
+  -- Lua 5.5's math.atan takes both, as LuaJIT's math.atan2 does.
+  ---@diagnostic disable-next-line: redundant-parameter
+  local angle = math.atan(wy - cy, wx - cx) - math.atan(d.startY - cy, d.startX - cx)
+  local from = math.sqrt((d.startX - cx) ^ 2 + (d.startY - cy) ^ 2)
+  local factor = from > 0 and math.sqrt((wx - cx) ^ 2 + (wy - cy) ^ 2) / from or 1
   for _, n in ipairs(d.nodes) do
     local fields = {}
-    -- The pointer's turn and its distance, seen from the node's pivot.
-    -- Lua 5.5's math.atan takes both, as LuaJIT's math.atan2 does.
-    ---@diagnostic disable-next-line: redundant-parameter
-    local angle = math.atan(wy - n.pivotY, wx - n.pivotX) - math.atan(d.startY - n.pivotY, d.startX - n.pivotX)
-    local from = math.sqrt((d.startX - n.pivotX) ^ 2 + (d.startY - n.pivotY) ^ 2)
-    local factor = from > 0 and math.sqrt((wx - n.pivotX) ^ 2 + (wy - n.pivotY) ^ 2) / from or 1
     local p = n.parentPlace
     local linear = { p[1], p[2], p[3], p[4], 0, 0 }
-    -- Where the node's place goes in the world, from the middle that the nodes turn and scale around.
+    -- Where the node's place goes in the world, from the pivot that it turns and scales around.
     local offX, offY = n.originX - n.pivotX, n.originY - n.pivotY
     local toX, toY
     if d.tool == "move" then
@@ -448,7 +454,7 @@ local function pointer(view, event)
     local d, press = view.drag, view.press
     if press and not d and (math.abs(x - press.x) > 3 or math.abs(y - press.y) > 3) then
       if press.found[1] and not press.shift then
-        startToolDrag(view, press.x, press.y)
+        startToolDrag(view, press.x, press.y, press.found[1])
       else
         view.drag = { kind = "rectangle", startX = press.x, startY = press.y, x = x, y = y, shift = press.shift }
       end

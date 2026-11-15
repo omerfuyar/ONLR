@@ -14,7 +14,7 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | [OVERVIEW.md](OVERVIEW.md) | What ONLR is: its users, scope, principles and product decisions.                              |
 | [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the player and the link, the editor, export. |
 | [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
-| `engine/`                  | The engine: the Lua library that every project holds as `packages/onlr/` (DESIGN.md, section 8.3). |
+| `packages/`                | The engine, in `packages/onlr/`, which every project holds as its `packages/onlr/` (DESIGN.md, section 8.3), and the packages that ONLR ships, such as `packages/bump/` (DESIGN.md, section 11.2). |
 | `player/`                  | The player's files: the link and the views, which the engine loads when the editor starts LÖVE (DESIGN.md, section 12). |
 | `plugins/`                 | The editor's plugins: `onlr_project`, `onlr_player`, `onlr_views` and `onlr_export`, and the panels that know nothing of ONLR, `files`, `viewer` and `console` (DESIGN.md, section 13.1). |
 | `preset.lua`               | The editor's preset: the plugins it needs, and where their panels go.                          |

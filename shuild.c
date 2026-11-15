@@ -280,6 +280,8 @@ static void TestSample(const char *path, SHUFileType type, void *data)
             char *work = SHU_UtilFormat("build/tests/work/%s/", name);
             char *log = SHU_UtilFormat("build/tests/%s.editor.log", name);
             CopyFolder(path, work);
+            // What the editor kept for the sample on this computer, such as snapping, is not the sample's.
+            SHU_UtilDeleteFile(SHU_UtilFormat("%s.onlr/", work));
             bool passed = SHU_UtilRunTry("cd \"%s\" && %s \"%s\" --test editortest.lua > \"%s\" 2>&1", SHU_UtilGetPath(work), settings, openecs, SHU_UtilGetPath(log)) == 0;
             NoteTest(name, ", the editor's test", passed, log);
         }
