@@ -26,7 +26,25 @@ What the owner wants worked on, in this order.
   The second experiment checked a normal window that the engine hides at once, with SDL's `SDL_HideWindow` through LuaJIT's FFI: LÖVE reports it hidden, it draws into a canvas, and reads the canvas back right. DESIGN 12.1 takes this way. But a black window shows for a moment, between LÖVE opening it and the engine hiding it, and the edit player starts again at every change of a script (DESIGN 12.5). The next experiment opens the window outside the screen, borderless and one pixel wide, then hides it (see [Tasks](#tasks)). If it still shows:
   - ANGLE's `libEGL.dll` and `libGLESv2.dll` beside LÖVE's files in ONLR's archive. LÖVE itself stays unchanged. The edit player then draws with OpenGL ES over Direct3D, not with the OpenGL of the exported game, so a shader may look different in the node view. The offscreen driver also asks EGL for its list of devices, which ANGLE may not give.
 - **The offscreen driver elsewhere.** It is checked on Linux with an NVIDIA card, with the system's LÖVE 11.5 and with LÖVE's own AppImage, and on a computer with no display and no graphics card, where Mesa draws in software. It needs the system's EGL library. Not checked: Intel and AMD cards.
-- **How fast frames travel.** Reading a 1280×720 frame back takes about 1.4 ms with a graphics card on Linux, and 0.7 ms on Windows with an NVIDIA card. Making a Lua string of it and sending it with LuaSocket take about 5 ms more, so the sending side passes 60 frames a second. Receiving a frame and showing it in a panel is not measured. Ways to make it cheaper: a texture of OpenECS-std's gpu plugin, which is uploaded once and scaled by the graphics card; sending straight from the frame's memory with LuaJIT's FFI, without the string; shared memory; sending only when the picture changed.
+- **The node view's speed.** Measured on the owner's computer, on Linux with an NVIDIA card, while the node view panned by itself, with the node view filling the editor's window, at 946×1006 pixels a frame:
+
+  | Step, for each frame                                   | ms   |
+  | ------------------------------------------------------ | ---- |
+  | The player draws the view and swaps red and blue       | 0.3  |
+  | The player reads the canvas back                        | 0.5  |
+  | The player makes a Lua string of it                     | 0.8  |
+  | The player sends it, mostly waiting for the editor     | 8.6  |
+  | The editor receives it                                  | 2.3  |
+  | The editor cuts it out of the link's bytes              | 2.4  |
+  | The editor puts the pixels in the panel's image         | 1.8  |
+  | The panel draws, each time it draws: all of it          | 14.4 |
+  | The panel draws the frame's image, of that              | 10.7 |
+  | The panel draws the grid, of that                       | 1.6  |
+
+  It showed about 41 frames a second; with the editor's window at its own size, 338×650 pixels, about 90. So moving the pixels is not the main cost: the panel's drawing is. draw blends every pixel of the image into the panel's pixels on the processor, on every redraw, and the processor's time grows with the panel's size.
+
+  The way: the node view draws with OpenECS-std's gpu, which a panel already gets with a GPU surface (OpenECS-std DESIGN 15): the frame as a `gpu.texture` that `updateTexture` replaces, and the grid, outlines, handles and messages with gpu's `fill`, `line` and `text`. gpu takes colours multiplied by their alpha, as LÖVE's canvas holds them, so the player's shader only swaps red and blue. No standard plugin changes. What it leaves, about 6.5 ms a frame of moving the pixels in the editor, is enough for 60 frames a second at that size; sending only when the picture changed, or a smaller frame while dragging, comes after, if it is still slow. A native plugin is not needed for these numbers.
+
 - **The game in a panel.** Play shows the game in LÖVE's own window, and only what a mode draws into differs between the modes (DESIGN 12.1). Showing the game in a panel is an idea for later. What it needs:
   - Frames from the play player. `love.graphics.captureScreenshot` reads the window's picture, also when there is no window, so the game draws as always. Drawing into a canvas of the engine's instead would break a game that sets canvases of its own.
   - A pace. Without a window LÖVE does not wait for the screen, and runs hundreds of frames a second.
