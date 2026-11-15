@@ -1,8 +1,8 @@
 -- Component types (DESIGN 6.1): finding a type's file by its name, loading it, and reading its properties and needs.
 -- And a node's components: the table components, which holds them by their types' names, and the order they run in.
 
-local life = require("onlr.life")
-local property = require("onlr.property")
+local life = require("onlr.library.life")
+local property = require("onlr.library.property")
 
 local component = {}
 

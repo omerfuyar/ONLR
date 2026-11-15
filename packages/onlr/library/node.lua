@@ -6,9 +6,9 @@
 -- components before it returns. So a change that does more than set a value is always a call.
 -- The fields whose names start with an underscore are the engine's.
 
-local life = require("onlr.life")
-local component = require("onlr.component")
-local property = require("onlr.property")
+local life = require("onlr.library.life")
+local component = require("onlr.library.component")
+local property = require("onlr.library.property")
 
 ---@class onlr.Node
 ---@field name string
@@ -300,7 +300,7 @@ function Node:setParent(parent, index)
   if not nodes.isNode(parent) or parent._gone then
     error("node:setParent takes a node that is in the tree", 2)
   end
-  local tree = require("onlr.tree")
+  local tree = require("onlr.library.tree")
   if self == tree.top or self == tree.root then
     error("the top node and the root cannot be moved", 2)
   end
@@ -335,7 +335,7 @@ end
 ---The top node and the root are not destroyed: onlr.tree.loadRoot ends the root.
 function Node:destroy()
   check(self, "node:destroy")
-  local tree = require("onlr.tree")
+  local tree = require("onlr.library.tree")
   if self == tree.top or self == tree.root then
     error("the top node and the root are not destroyed: onlr.tree.loadRoot ends the root", 2)
   end
