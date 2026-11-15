@@ -1,7 +1,7 @@
 -- Checks properties (DESIGN 6.2): every kind, defaults, options, and what a component gets for each.
 local check = require("check")
 local onlr = require("onlr")
-local component = require("onlr.component")
+local component = require("onlr.library.component")
 
 check.run(function()
   local first = assert(onlr.tree.find("First")).components.every

@@ -79,7 +79,7 @@ end
 ---Called from onlr.start.
 ---@param onlr onlr
 function player.start(onlr)
-  link.send({ type = "hello", mode = options.mode, engine = require("onlr.data").read("packages/onlr/manifest.lua").version })
+  link.send({ type = "hello", mode = options.mode, engine = require("onlr.library.data").read("packages/onlr/manifest.lua").version })
   if options.mode == "edit" then
     part("edit").start(onlr)
   else

@@ -4,10 +4,10 @@
 local part = ...
 local link = part("link")
 
-local data = require("onlr.data")
-local life = require("onlr.life")
-local component = require("onlr.component")
-local nodes = require("onlr.node")
+local data = require("onlr.library.data")
+local life = require("onlr.library.life")
+local component = require("onlr.library.component")
+local nodes = require("onlr.library.node")
 
 local play = {}
 

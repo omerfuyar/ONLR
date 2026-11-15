@@ -2,10 +2,10 @@
 -- The tree is the top node, which the manifest names and the game keeps, with all under it.
 -- The root runs as the top node's last child, so the tree's order is the top node's own nodes, then the root's.
 
-local data = require("onlr.data")
-local life = require("onlr.life")
-local nodes = require("onlr.node")
-local build = require("onlr.build")
+local data = require("onlr.library.data")
+local life = require("onlr.library.life")
+local nodes = require("onlr.library.node")
+local build = require("onlr.library.build")
 
 ---@class onlr.tree
 ---@field top onlr.Node the top node: the node of the manifest's topNode, or an empty node

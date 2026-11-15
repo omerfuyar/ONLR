@@ -6,7 +6,7 @@
 -- has no default and takes the options only.
 -- This file also turns a node file's values into what a component gets, such as a path into a LÖVE image.
 
-local data = require("onlr.data")
+local data = require("onlr.library.data")
 
 ---The options that every kind takes. An option that a kind does not take is an error when the type loads.
 ---@class onlr.PropertyOptions

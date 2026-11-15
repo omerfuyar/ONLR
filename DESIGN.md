@@ -582,21 +582,21 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 
 ### 8.3 The engine's files
 
-Each file of the engine holds one thing:
+Each file of the engine holds one thing. The engine is laid out as a package is (11.2): what a game calls and what the editor reads at the top, and its own modules in `library/`, which `init.lua` joins. A game requires `onlr`, never a file of `library/`.
 
 | In `packages/onlr/`                                 | Holds                                                                                                                                                      |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `manifest.lua`                                      | The engine's name and its version, as a package's manifest holds them (11.2).                                                                              |
 | `init.lua`                                          | What `require("onlr")` gives: `start`, `conf`, and the namespaces of the files below. It joins them, sets where `require` looks (3.1), and does nothing else. |
-| `loop.lua`                                          | `onlr.loop`: the loop and its steps (8.1).                                                                                                                 |
-| `tree.lua`                                          | `onlr.tree`: the root, the tree and its lists (8.2).                                                                                                       |
-| `node.lua`                                          | Nodes and their functions (7).                                                                                                                             |
-| `component.lua`                                     | Component types (6.1): finding and loading a type's file, and a node's `components`.                                                                       |
-| `life.lua`                                          | The life of components (6.4), and the lists that a frame walks (8.2).                                                                                      |
-| `build.lua`                                         | Making nodes from node files: instances, their changes and ids (9).                                                                                        |
-| `property.lua`                                      | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
-| `data.lua`                                          | Reading data files (4), and loading the files that properties name.                                                                                        |
-| `formats.lua`                                       | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
+| `library/loop.lua`                                  | `onlr.loop`: the loop and its steps (8.1).                                                                                                                 |
+| `library/tree.lua`                                  | `onlr.tree`: the root, the tree and its lists (8.2).                                                                                                       |
+| `library/node.lua`                                  | Nodes and their functions (7).                                                                                                                             |
+| `library/component.lua`                             | Component types (6.1): finding and loading a type's file, and a node's `components`.                                                                       |
+| `library/life.lua`                                  | The life of components (6.4), and the lists that a frame walks (8.2).                                                                                      |
+| `library/build.lua`                                 | Making nodes from node files: instances, their changes and ids (9).                                                                                        |
+| `library/property.lua`                              | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
+| `library/data.lua`                                  | Reading data files (4), and loading the files that properties name.                                                                                        |
+| `library/formats.lua`                               | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
 | `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua` and `camera.lua`.                                                   |
 | `license.txt`                                       | The engine's licence, which an export holds (14.1).                                                                                                        |
 

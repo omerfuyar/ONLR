@@ -2,7 +2,7 @@
 -- and when the root changes the engine keeps the files that the new root names and lets go of the others.
 local check = require("check")
 local onlr = require("onlr")
-local data = require("onlr.data")
+local data = require("onlr.library.data")
 
 check.run(function()
   local holder = onlr.tree.root.components.holder
