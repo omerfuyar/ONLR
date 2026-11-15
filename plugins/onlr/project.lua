@@ -1038,32 +1038,60 @@ local function setFields(file, changes, label)
   end)
 end
 
+-- Sets a value of a node's component, or its default with nil, inside an edit.
+local function setValue(node, typeName, name, value)
+  local c = node.components[typeName]
+  if c then
+    local decl = declOf(typeName, name)
+    local default = decl and decl.default
+    if name == "enabled" then
+      default = true
+    end
+    if not node.own and c.base and c.base[name] ~= nil then
+      default = c.base[name]
+    end
+    local entry = target(node, true)
+    local values = resolve.component(entry, typeName, true)
+    if value == nil or format.same(value, default) then
+      values[name] = nil
+    else
+      values[name] = format.copy(value)
+    end
+    -- A change that sets nothing of a base's component any more leaves no table of it.
+    if not node.own and c.base and next(values) == nil then
+      resolve.dropComponent(entry, typeName)
+    end
+    prune(node)
+  end
+end
+
 local function setProperty(file, paths, typeName, name, value)
   return edit("Change " .. name, function(touch)
     touch(file)
     for _, node in ipairs((nodesOf(file, paths))) do
+      setValue(node, typeName, name, value)
+    end
+  end)
+end
+
+-- Gives the nodes' components of a type the values of another, as one change: each value that it has, and the default
+-- for each that it lacks (DESIGN 13.4).
+local function pasteValues(file, paths, typeName, values)
+  return edit("Paste " .. typeName, function(touch)
+    touch(file)
+    for _, node in ipairs((nodesOf(file, paths))) do
       local c = node.components[typeName]
       if c then
-        local decl = declOf(typeName, name)
-        local default = decl and decl.default
-        if name == "enabled" then
-          default = true
+        local names = {}
+        for name in pairs(values) do
+          names[name] = true
         end
-        if not node.own and c.base and c.base[name] ~= nil then
-          default = c.base[name]
+        for name in pairs(c.values) do
+          names[name] = true
         end
-        local entry = target(node, true)
-        local values = resolve.component(entry, typeName, true)
-        if value == nil or format.same(value, default) then
-          values[name] = nil
-        else
-          values[name] = format.copy(value)
+        for name in pairs(names) do
+          setValue(node, typeName, name, values[name])
         end
-        -- A change that sets nothing of a base's component any more leaves no table of it.
-        if not node.own and c.base and next(values) == nil then
-          resolve.dropComponent(entry, typeName)
-        end
-        prune(node)
       end
     end
   end)
@@ -1837,6 +1865,7 @@ local functions = {
   setField = { sig = "bool(string file, value paths, string field, value value)", doc = "Set a field of nodes", fn = setField },
   setFields = { sig = "bool(string file, value changes, string label)",
     doc = "Set fields of many nodes as one change: changes holds each node's fields by its path", fn = setFields },
+  pasteValues = { sig = "bool(string file, value paths, string type, value values)", doc = "Give the nodes' components of a type the values of another, as one change", fn = pasteValues },
   setProperty = { sig = "bool(string file, value paths, string type, string property, value value)",
     doc = "Set a value of the nodes' components; nil puts back the default, or the base's value", fn = setProperty },
   addComponent = { sig = "bool(string file, value paths, string type)", doc = "Add a component to nodes", fn = addComponent },

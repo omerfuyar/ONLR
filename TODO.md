@@ -37,12 +37,12 @@ What the owner wants worked on, in this order.
 ## Editor
 
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
-  - The node view: handles that move along one axis, and a rectangle tool that sizes a node by its corners; a key that fits the view to the chosen nodes; a key that holds snapping; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
-  - The nodes panel: a search by name and by component type; a drag that moves a node in the tree; renaming with F2; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there; a mark and another colour for an instance; a button that opens the instance's node file.
-  - The inspector: a lock that keeps its node while another is chosen; reordering, copying and pasting a component's values; Add Component as a search; sums in number fields, such as `32*4`; a round button that picks a node or a file for a reference; a pipette for the colour picker; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
+  - The node view: handles that move along one axis, and a rectangle tool that sizes a node by its corners; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
+  - The nodes panel: a drag that moves a node in the tree; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there.
+  - The inspector: a lock that keeps its node while another is chosen; reordering components; a round button that picks a node or a file for a reference; a pipette for the colour picker; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
   - The files panel: a search by name and kind; favourite folders; Show in the file manager; Find what names this file.
-  - The console: a pane with the stack of the chosen entry; a search; Pause on Error.
-  - Playing: a tint over the editor while the game plays; the count of frames a second and the time of update and draw, from the play player; sizes of the window to choose from, such as a phone's; values that were changed in the running game, with a way to keep them.
+  - The console: a search; Pause on Error. An error's entry holds its stack, so no pane is needed for it.
+  - Playing: a tint over the editor while the game plays, such as OpenECS's frame colour, `ecs.colorFrame`, which waits for a way to set a setting for the run only, as `ecs.setting.set` writes the user's file; the count of frames a second and the time of update and draw, from the play player; sizes of the window to choose from, such as a phone's; values that were changed in the running game, with a way to keep them.
   - The editor: a list of the history's records, to jump back to one; a search over every function, node and file with one key; a window for keys.
   - Tools of their own, each a panel: a cutter of sprite sheets into quads, a timeline for animations, a palette for tile maps.
 - **Panels for later.** Ideas, each a panel type of a plugin (DESIGN 13.1): a node editor, in which the user connects nodes to write logic without code, as Unreal's Blueprints do, and whose output is a script, so the engine needs nothing new; a tile editor, which waits for the choice of a library for tile maps (see [Libraries](#libraries)).
@@ -133,6 +133,7 @@ What the owner wants worked on, in this order.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7).
   - console: an entry's links of its own, for the link from a game's error to its node (DESIGN 13.1), in omerfuyar/OpenECS-std#106. Until it is in OpenECS, the error shows without the link.
+  - ui: a field's placeholder, for the nodes panel's search in place of the label beside it (OpenECS-std#107); sums in number fields, such as `32*4`, for the inspector (OpenECS-std#108); a dropdown's search, for Add Component (OpenECS-std#109). The inspector gets the last two as they are in OpenECS.
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the players were written on Linux.

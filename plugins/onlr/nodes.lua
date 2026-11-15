@@ -19,8 +19,24 @@ local function say(_, message)
   end
 end
 
--- The nodes of the tree element, from a node of the file.
-local function treeNodes(node, open)
+-- Whether a node matches a search: its name holds the text, or with "t:" first, the name of one of its components' types,
+-- as Unity's search does. Case does not count.
+local function matches(node, search)
+  local typeName = search:match("^t:%s*(.*)$")
+  if typeName then
+    for name in pairs(node.components or {}) do
+      if name:lower():find(typeName, 1, true) then
+        return true
+      end
+    end
+    return false
+  end
+  return (node.name or ""):lower():find(search, 1, true) ~= nil
+end
+
+-- The nodes of the tree element, from a node of the file. With a search, only the nodes that match and those above them
+-- show, all open; nil when none under the node matches.
+local function treeNodes(node, open, search, opened)
   local label = node.name or "(no name)"
   if node.instanceOf then
     label = label .. "  (" .. node.instanceOf:match("[^/]*$") .. ")"
@@ -28,9 +44,18 @@ local function treeNodes(node, open)
   local children
   if #node.children > 0 then
     children = {}
-    for i, child in ipairs(node.children) do
-      children[i] = treeNodes(child, open)
+    for _, child in ipairs(node.children) do
+      children[#children + 1] = treeNodes(child, open, search, opened)
     end
+    if #children == 0 then
+      children = nil
+    end
+  end
+  if search then
+    if not children and not matches(node, search) then
+      return nil
+    end
+    opened[node.path] = true
   end
   local color = #node.errors > 0 and "#e06c75" or not node.active and "textDim" or not node.own and "accent" or nil
   return { id = node.path, label = label, color = color, children = children }
@@ -102,6 +127,16 @@ local function reorder(file, how)
   local _ = tree
 end
 
+-- Asks for a node's new name in the field above the tree, which gets the keys.
+local function rename(state, file, path)
+  local node = project.tree(file).index[path]
+  if node then
+    state.renaming = { file = file, path = path, text = node.name or "" }
+    ui.edit(state.panel, "rename")
+    state.panel:redraw()
+  end
+end
+
 -- A new node file's path in nodes/, from a name: the name's own, or with a number after it when that is taken.
 local function freePath(name)
   local base = (name or ""):gsub("[^%w_%-]+", "_"):lower()
@@ -155,6 +190,7 @@ menu = function(state, file, id, x, y)
   end
   ui.menu(state.panel, x, y, {
     { label = "Add child", enabled = one, onClick = function() add(id) end },
+    { label = "Rename", keys = "F2", enabled = one, onClick = function() rename(state, file, id) end },
     { label = "Duplicate", keys = "Ctrl+D", enabled = not isFirst, onClick = function()
       local made = project.duplicate(file, paths)
       if #made > 0 then
@@ -172,6 +208,9 @@ menu = function(state, file, id, x, y)
     { line = true },
     { label = "Save as node file", enabled = one, onClick = function()
       say(project.saveAsNodeFile(file, id, freePath(node.name)))
+    end },
+    { label = "Open base", enabled = one and node.instanceOf ~= nil, onClick = function()
+      player.openFile(node.instanceOf)
     end },
   })
 end
@@ -213,8 +252,31 @@ local function draw(state, surface)
         state.openFile, state.open = file, { [first.path] = true }
       end
       local paths = chosen.file == file and chosen.paths or {}
-      children[#children + 1] = ui.tree({ treeNodes(first, state.open) }, {
-        id = "tree", open = state.open, selected = paths, grow = 1, tooltip = "A right click opens a menu of the nodes",
+      children[#children + 1] = ui.row({ gap = 6, align = "center" }, {
+        ui.text("Search", { style = STYLES.note }),
+        ui.field(state.search or "", { id = "search", grow = 1, tooltip = "Shows the nodes whose name holds the text; t: and a text, those with a component of such a type", onChange = function(text)
+          state.search = text ~= "" and text or nil
+        end }),
+      })
+      local search = state.search and state.search:lower()
+      local opened = search and {} or state.open
+      local shown = treeNodes(first, state.open, search, opened)
+      local renaming = state.renaming
+      if renaming and renaming.file == file then
+        children[#children + 1] = ui.row({ gap = 4, align = "center" }, {
+          ui.field(renaming.text, { id = "rename", grow = 1, tooltip = "Return takes the name", onChange = function(text)
+            renaming.text = text
+          end, onSubmit = function(text)
+            state.renaming = nil
+            project.setField(file, { renaming.path }, "name", text)
+          end }),
+          ui.button("Cancel", { id = "cancel", tooltip = "Close the field", onClick = function()
+            state.renaming = nil
+          end }),
+        })
+      end
+      children[#children + 1] = ui.tree({ shown }, {
+        id = "tree", open = opened, selected = paths, grow = 1, tooltip = "A right click opens a menu of the nodes",
         onSelect = function(id, how, between)
           state.pressed = id
           if how == "toggle" then
@@ -235,7 +297,9 @@ local function draw(state, surface)
           end
         end,
         onToggle = function(id, open)
-          state.open[id] = open or nil
+          if not search then
+            state.open[id] = open or nil
+          end
         end,
         onMenu = function(id, x, y)
           menu(state, file, id, x, y)
@@ -260,6 +324,14 @@ ecs.panel.registerType({
   end,
   draw = draw,
   event = function(state, event)
+    -- F2 renames the chosen node, as in Unity.
+    if event.type == "keyDown" and event.key == "F2" and not shared.running then
+      local chosen = project.chosen()
+      if chosen.file and #chosen.paths == 1 then
+        rename(state, chosen.file, chosen.paths[1])
+        return
+      end
+    end
     -- A node is dragged out of the tree to a reference's row of the inspector (DESIGN 13.4).
     if event.type == "pointerDown" then
       state.pressed, state.pressX, state.pressY = nil, event.x, event.y

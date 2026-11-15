@@ -70,6 +70,15 @@ return {
     save()
     check(read("nodes/start.lua") == start, "undo and save give the first text again")
 
+    -- with Ctrl held, a drag snaps to the grid of 32, though snapping is off
+    x, y = at(56, 56)
+    test.drag(x, y, x + 50, y + 20, "Ctrl")
+    test.wait(0.3)
+    save()
+    check(read("nodes/start.lua"):find("posX = 96,\n      posY = 64,"), "Ctrl snaps the drag:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+
     -- with Local, two chosen nodes turn by the same angle, each around its own place (DESIGN 13.3)
     -- the tools panel's first row: Move, Turn and Scale, then Global and Local
     local tools = test.rect(panelOf(test, "onlr.tools"))
@@ -216,7 +225,7 @@ return {
       return test.panel(panelOf(test, "onlr.nodes")).state.chosen
     end
     local function row(i)
-      return tree.x + 60, tree.y + 40 + 21 * (i - 1)
+      return tree.x + 60, tree.y + 71 + 21 * (i - 1)
     end
     local rx, ry = row(2)
     test.click(rx, ry)
@@ -231,7 +240,74 @@ return {
     test.click(rx, ry, nil, "Shift")
     check(#chosen() == 2 and chosen()[1] == "bbbbbb", "Shift chooses B and Part: " .. table.concat(chosen(), ", "))
 
-    -- Save as Node File, the last entry of a node's menu in the nodes panel, writes the node to a new node file named after it, and
+    -- the search shows the nodes whose name holds the text, and with t:, those with a component of a type: thing is on A, B
+    -- and Part's Tip, so Start, A, B, Part and Tip show, opened
+    test.click(tree.x + 150, tree.y + 42)
+    test.text("t:thing")
+    test.wait(0.2)
+    rx, ry = row(5)
+    test.click(rx, ry)
+    test.match(chosen(), { "p4rt01/t1p000" }, "the search shows Tip, under Part, opened")
+    test.click(tree.x + 150, tree.y + 42)
+    test.key("Ctrl+A")
+    test.key("Backspace")
+    test.key("Return")
+    test.wait(0.2)
+
+    -- a component's menu in the inspector copies its values, and pastes them onto the same type of another node, as one
+    -- change: A's thing onto B's; Up goes round from the first entry to the last, Remove Component, then skips Paste while
+    -- nothing is copied
+    local inspect = test.rect(panelOf(test, "onlr.inspector"))
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.wait(0.2)
+    test.click(inspect.x + 41, inspect.y + 548, 3)
+    test.key("Up")
+    test.key("Up")
+    test.key("Return")
+    rx, ry = row(3)
+    test.click(rx, ry)
+    test.wait(0.2)
+    test.click(inspect.x + 41, inspect.y + 548, 3)
+    test.key("Up")
+    test.key("Up")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    local _, speeds = read("nodes/start.lua"):gsub("speed = 25", "")
+    check(speeds == 2, "B's thing has A's values:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the paste is one change, undone")
+
+    -- F2 renames the chosen node in a field above the tree, and Return takes the name
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.key("F2")
+    test.wait()
+    test.key("Ctrl+A")
+    test.text("Lead")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua") == start:gsub('name = "A"', 'name = "Lead"'), "F2 renames the node:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    -- so does Rename, the second entry of the node's menu
+    test.click(rx, ry, 3)
+    test.key("Down")
+    test.key("Return")
+    test.wait()
+    test.key("Ctrl+A")
+    test.text("Head")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua") == start:gsub('name = "A"', 'name = "Head"'), "the menu renames the node:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+
+    -- Save as Node File, the last entry of a node's menu in the nodes panel that A can use, writes the node to a new node file named after it, and
     -- puts an instance of it in its place; Up goes round from the menu's first entry to its last
     test.click(x, y)
     test.wait(0.2)
@@ -330,6 +406,26 @@ return {
     test.click(x, y)
     save()
     check(read("nodes/start.lua") == start, "the base's own name leaves no change")
+
+    -- F fits the view to the chosen node: node A's red square fills its middle, at a greater zoom
+    test.click(at(56, 56))
+    test.key("F")
+    test.wait(0.5)
+    local fitted = test.panel(panelOf(test, "onlr.view")).state
+    check(fitted.zoom > 2, "F zooms in on the chosen node: " .. tostring(fitted.zoom))
+    check(test.pixel(view.x + view.width / 2, view.y + view.height / 2) == "#FF0000", "and centres it")
+
+    -- Open Base, the last entry of an instance's menu in the nodes panel, opens its base in a node view
+    rx, ry = row(4)
+    test.click(rx, ry, 3)
+    test.key("Up")
+    test.key("Return")
+    test.wait(0.3)
+    local opened = false
+    for _, panel in ipairs(test.panels()) do
+      opened = opened or (panel.type == "onlr.view" and test.panel(panel.id).title == "part.lua")
+    end
+    check(opened, "Open Base opens part.lua")
 
     -- Play saves the project and runs the game, whose marker writes a file
     os.remove("played.txt")

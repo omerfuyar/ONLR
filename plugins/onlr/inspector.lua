@@ -8,10 +8,15 @@ local project = require("project")
 local player = require("nodeview")
 local console = require("console")
 local shared = require("shared")
+local format = require("format")
 
 local STYLES = ui.styles()
 local STATE_VERSION = 1
 local RED = "#e06c75"
+
+-- The values that Copy Values kept, with their component's type, for Paste Values.
+---@type { type: string, values: table }?
+local copied
 
 -- A value that differs among the chosen nodes: its control shows empty.
 local MIXED = {}
@@ -468,6 +473,16 @@ local function fileSubject(state, out)
       end,
       onMenu = function(x, y)
         ui.menu(state.panel, x, y, {
+          -- Copy keeps the first chosen node's values of the component, which Paste gives to a component of the same type.
+          { label = "Copy values", enabled = #nodes == 1, onClick = function()
+            copied = { type = typeName, values = format.copy(first.components[typeName].values) }
+          end },
+          { label = "Paste values", enabled = copied ~= nil and copied.type == typeName, onClick = function()
+            if copied then
+              project.pasteValues(file, paths, typeName, copied.values)
+            end
+          end },
+          { line = true },
           { label = "Remove component", onClick = function()
             local _, message = project.removeComponent(file, paths, typeName)
             if message then

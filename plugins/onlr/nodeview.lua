@@ -346,8 +346,13 @@ end
 
 -- Dragging the chosen nodes with the tool
 
-local function snap(value)
-  if project.setting("snap") then
+-- Snaps a value to the grid while snapping is on. Ctrl held in a drag flips it, as in Unity.
+local function snap(value, flip)
+  local on = project.setting("snap") == true
+  if flip then
+    on = not on
+  end
+  if on then
     local grid = project.setting("grid") or 32
     return math.floor(value / grid + 0.5) * grid
   end
@@ -394,13 +399,19 @@ local function startToolDrag(view, sx, sy, lead)
   view.drag = { kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, centerX = centerX, centerY = centerY, fields = {} }
 end
 
-local function toolDrag(view, sx, sy)
+local TURN_STEP = math.pi / 12
+
+local function toolDrag(view, sx, sy, ctrl)
   local d = view.drag
   local wx, wy = toWorld(view, sx, sy)
   local cx, cy = d.centerX, d.centerY
   -- Lua 5.5's math.atan takes both, as LuaJIT's math.atan2 does.
   ---@diagnostic disable-next-line: redundant-parameter
   local angle = math.atan(wy - cy, wx - cx) - math.atan(d.startY - cy, d.startX - cx)
+  -- With Ctrl, a turn goes in steps of 15 degrees.
+  if ctrl then
+    angle = math.floor(angle / TURN_STEP + 0.5) * TURN_STEP
+  end
   local from = math.sqrt((d.startX - cx) ^ 2 + (d.startY - cy) ^ 2)
   local factor = from > 0 and math.sqrt((wx - cx) ^ 2 + (wy - cy) ^ 2) / from or 1
   for _, n in ipairs(d.nodes) do
@@ -423,7 +434,7 @@ local function toolDrag(view, sx, sy)
     -- The move in the world, as the node's parent sees it.
     local moveX, moveY = worldToNode(linear, toX, toY)
     if d.tool == "move" then
-      fields.posX, fields.posY = snap(n.posX + moveX), snap(n.posY + moveY)
+      fields.posX, fields.posY = snap(n.posX + moveX, ctrl), snap(n.posY + moveY, ctrl)
     elseif offX ~= 0 or offY ~= 0 then
       fields.posX, fields.posY = n.posX + moveX, n.posY + moveY
     end
@@ -477,6 +488,43 @@ end
 -- The menu of a right click (DESIGN 13.3): about the chosen nodes when the click was on one, which it chose when it was not chosen,
 -- or else about the point. ui.menu takes a place in the units of ui's layout, which on a panel that ui does not draw are its pixels.
 local functions
+-- Moves and zooms the view so that the chosen nodes fill it, or every node when none is chosen, as Unity's F does.
+-- A lone node without bounds is centred at the zoom the view has.
+local function frame(view)
+  local minX, minY, maxX, maxY
+  local function add(x, y)
+    minX, maxX = math.min(minX or x, x), math.max(maxX or x, x)
+    minY, maxY = math.min(minY or y, y), math.max(maxY or y, y)
+  end
+  local all = #view.chosen == 0
+  for _, node in ipairs(view.nodes) do
+    if all or isChosen(view, node.path) then
+      local r = node.rect
+      if r then
+        add(nodeToWorld(node, r[1], r[2]))
+        add(nodeToWorld(node, r[1] + r[3], r[2]))
+        add(nodeToWorld(node, r[1], r[2] + r[4]))
+        add(nodeToWorld(node, r[1] + r[3], r[2] + r[4]))
+      else
+        add(node.place[5], node.place[6])
+      end
+    end
+  end
+  if not minX or view.width < 1 then
+    return
+  end
+  local w, h = maxX - minX, maxY - minY
+  if w > 0 or h > 0 then
+    -- A margin of a fifth of the view on each side.
+    local zoom = math.min(view.width / math.max(w, 1e-3), view.height / math.max(h, 1e-3)) * 0.6
+    view.zoom = math.max(0.05, math.min(32, zoom))
+  end
+  view.x = (minX + maxX) / 2 - view.width / 2 / view.zoom
+  view.y = (minY + maxY) / 2 - view.height / 2 / view.zoom
+  sync(view)
+  view.panel:redraw()
+end
+
 local function menu(view, event, x, y)
   local found = hits(view, x, y)
   local wx, wy = toWorld(view, x, y)
@@ -492,6 +540,10 @@ local function menu(view, event, x, y)
         end
       end },
       { label = "Paste", keys = "Ctrl+V", onClick = functions.pasteChosen.fn },
+      { line = true },
+      { label = "Frame all", keys = "F", onClick = function()
+        frame(view)
+      end },
     })
     return
   end
@@ -501,6 +553,10 @@ local function menu(view, event, x, y)
     { line = true },
     { label = "Copy", keys = "Ctrl+C", onClick = functions.copyChosen.fn },
     { label = "Paste", keys = "Ctrl+V", onClick = functions.pasteChosen.fn },
+    { line = true },
+    { label = "Frame chosen", keys = "F", onClick = function()
+      frame(view)
+    end },
   })
 end
 
@@ -539,7 +595,7 @@ local function pointer(view, event)
       view.y = d.viewY - (y - d.startY) / view.zoom
       sync(view)
     elseif d and d.kind == "tool" then
-      toolDrag(view, x, y)
+      toolDrag(view, x, y, event.ctrl)
     elseif d and d.kind == "rectangle" then
       d.x, d.y = x, y
     end
@@ -843,6 +899,12 @@ functions = {
       end
     end
   end },
+  frame = { sig = "void()", doc = "Fit the node view to the chosen nodes, or to every node when none is chosen", fn = function()
+    local view = current()
+    if view then
+      frame(view)
+    end
+  end },
   toolMove = { sig = "void()", doc = "The move tool", fn = function()
     project.setTool("move")
   end },
@@ -860,7 +922,7 @@ for key, name in pairs({
   ["Ctrl+Shift+Z"] = "onlr.redo", ["Ctrl+S"] = "onlr.save", ["F5"] = "onlr.play",
   ["F6"] = "onlr.playFile", ["F7"] = "onlr.pause", ["F8"] = "onlr.step",
   ["Shift+F5"] = "onlr.stop", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
-  ["R"] = "onlr.toolScale",
+  ["R"] = "onlr.toolScale", ["F"] = "onlr.frame",
 }) do
   ecs.key.bind("onlr.view", key, name)
 end
