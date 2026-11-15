@@ -44,8 +44,15 @@ return {
       test.key("Ctrl+S")
       test.wait(0.2)
     end
-    -- the edit player starts, and answers what the types declare
-    test.wait(1.5)
+    -- the edit player starts, and answers what the types declare: node A's red square shows, which takes longer
+    -- on a slow computer
+    for _ = 1, 40 do
+      test.wait(0.5)
+      if test.pixel(at(56, 56)) == "#FF0000" then
+        break
+      end
+    end
+    test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr_player.view")), { title = "start.lua", unsaved = false })
 
     -- a drag with the move tool moves the node under the pointer, as one change
@@ -62,6 +69,35 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "undo and save give the first text again")
+
+    -- with Local, two chosen nodes turn by the same angle, each around its own place (DESIGN 13.3)
+    -- the tools panel's first row: Move, Turn and Scale, then Global and Local
+    local tools = test.rect(panelOf(test, "onlr_views.tools"))
+    x, y = at(56, 56)
+    test.click(x, y)
+    local bx, by = at(136, 56)
+    test.click(bx, by, nil, "Shift")
+    test.click(tools.x + 85, tools.y + 21)
+    test.click(tools.x + 257, tools.y + 21)
+    local toX, toY = at(24, 56)
+    test.drag(x, y, toX, toY)
+    test.wait(0.3)
+    save()
+    local turned = read("nodes/start.lua")
+    local _, turns = turned:gsub("rot = 1%.57079632679", "")
+    check(turns == 2, "both nodes turn a quarter:\n" .. turned)
+    check(turned:find("posX = 40,\n      posY = 40,") and turned:find("posX = 120,\n      posY = 40,"), "and stay in their places")
+    test.key("Ctrl+Z")
+    -- with Global, they turn around the middle of their places, so they move
+    test.click(tools.x + 199, tools.y + 21)
+    test.drag(x, y, toX, toY)
+    test.wait(0.3)
+    save()
+    check(not read("nodes/start.lua"):find("posX = 40,\n      posY = 40,"), "with Global, the nodes move around their middle")
+    test.key("Ctrl+Z")
+    test.click(tools.x + 20, tools.y + 21)
+    save()
+    check(read("nodes/start.lua") == start, "the turns are undone")
 
     -- the inspector shows the chosen node: a new name, typed in its Name field and ended with Return, is one change
     x, y = at(56, 56)
@@ -176,6 +212,8 @@ return {
     local files = test.rect(panelOf(test, "files.tree"))
     test.click(files.x + 21, files.y + 130)
     test.wait(0.2)
+    -- a second click on a file opens it
+    test.click(files.x + 80, files.y + 172)
     test.click(files.x + 80, files.y + 172)
     test.click(files.x + 80, files.y + 25)
     test.wait()
@@ -184,7 +222,7 @@ return {
     test.wait(0.5)
     check(read("nodes/piece.lua") ~= "" and read("nodes/part.lua") == "", "the file has its new name")
     check(read("nodes/start.lua") == start:gsub("nodes/part.lua", "nodes/piece.lua"), "the instance names the file by its new name")
-    -- the click opened the file in a node view, which follows it to its new name
+    -- the second click opened the file in a node view, which follows it to its new name
     local followed = false
     for _, panel in ipairs(test.panels()) do
       followed = followed or (panel.type == "onlr_player.view" and panel.title == "piece.lua")

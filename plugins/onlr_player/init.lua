@@ -173,6 +173,13 @@ local function drawView(view, surface)
   end
   draw.fill(surface, 0, 0, w, h, "background")
 
+  -- The panel draws a whole picture only: the grid, the outlines and the handles from the place and zoom of the frame
+  -- that it has, not from where the view wants to be, so nothing shows that the frame does not hold yet (DESIGN 12.4).
+  local wantX, wantY, wantZoom = view.x, view.y, view.zoom
+  if view.file and view.image and view.frame and not view.error and not players.down then
+    view.x, view.y, view.zoom = view.frame.x, view.frame.y, view.frame.zoom
+  end
+
   -- The grid, when its lines are far enough apart to be told from each other.
   local grid = project.setting("grid") or 32
   local step = grid * view.zoom
@@ -241,6 +248,8 @@ local function drawView(view, surface)
     draw.outline(surface, x, y, math.abs(d.x - d.startX), math.abs(d.y - d.startY), 1, "accent")
   end
 
+  view.x, view.y, view.zoom = wantX, wantY, wantZoom
+
   local message = view.error or players.down
   if not view.file then
     message = project.folder() == "" and "No project is open." or "No node file is open."
@@ -308,7 +317,7 @@ local function snap(value)
   return value
 end
 
-local function startToolDrag(view, sx, sy)
+local function startToolDrag(view, sx, sy, lead)
   local tree = project.tree(view.file)
   local nodes = {}
   for _, path in ipairs(view.chosen) do
@@ -328,29 +337,41 @@ local function startToolDrag(view, sx, sy)
       }
     end
   end
-  -- Many nodes turn and scale as one, around the middle of their places.
+  -- Many nodes turn and scale as one, around the middle of their places, or each around its own place:
+  -- the pivot, a setting of the project (DESIGN 13.3).
   local midX, midY = 0, 0
   for _, n in ipairs(nodes) do
     midX, midY = midX + n.originX / #nodes, midY + n.originY / #nodes
   end
+  -- The pointer's turn and distance are seen from the middle, or, with each node's own pivot, from the place of the node
+  -- that the drag started on, so every node turns and scales by the same amount.
+  local own = project.setting("pivot") == "own"
+  local centerX, centerY = midX, midY
+  for _, n in ipairs(nodes) do
+    n.pivotX, n.pivotY = own and n.originX or midX, own and n.originY or midY
+    if own and n.path == lead then
+      centerX, centerY = n.originX, n.originY
+    end
+  end
   local wx, wy = toWorld(view, sx, sy)
-  view.drag = { kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, midX = midX, midY = midY, fields = {} }
+  view.drag = { kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, centerX = centerX, centerY = centerY, fields = {} }
 end
 
 local function toolDrag(view, sx, sy)
   local d = view.drag
   local wx, wy = toWorld(view, sx, sy)
+  local cx, cy = d.centerX, d.centerY
   -- Lua 5.5's math.atan takes both, as LuaJIT's math.atan2 does.
   ---@diagnostic disable-next-line: redundant-parameter
-  local angle = math.atan(wy - d.midY, wx - d.midX) - math.atan(d.startY - d.midY, d.startX - d.midX)
-  local from = math.sqrt((d.startX - d.midX) ^ 2 + (d.startY - d.midY) ^ 2)
-  local factor = from > 0 and math.sqrt((wx - d.midX) ^ 2 + (wy - d.midY) ^ 2) / from or 1
+  local angle = math.atan(wy - cy, wx - cx) - math.atan(d.startY - cy, d.startX - cx)
+  local from = math.sqrt((d.startX - cx) ^ 2 + (d.startY - cy) ^ 2)
+  local factor = from > 0 and math.sqrt((wx - cx) ^ 2 + (wy - cy) ^ 2) / from or 1
   for _, n in ipairs(d.nodes) do
     local fields = {}
     local p = n.parentPlace
     local linear = { p[1], p[2], p[3], p[4], 0, 0 }
-    -- Where the node's place goes in the world, from the middle that the nodes turn and scale around.
-    local offX, offY = n.originX - d.midX, n.originY - d.midY
+    -- Where the node's place goes in the world, from the pivot that it turns and scales around.
+    local offX, offY = n.originX - n.pivotX, n.originY - n.pivotY
     local toX, toY
     if d.tool == "move" then
       toX, toY = wx - d.startX, wy - d.startY
@@ -366,7 +387,7 @@ local function toolDrag(view, sx, sy)
     local moveX, moveY = worldToNode(linear, toX, toY)
     if d.tool == "move" then
       fields.posX, fields.posY = snap(n.posX + moveX), snap(n.posY + moveY)
-    elseif #d.nodes > 1 then
+    elseif offX ~= 0 or offY ~= 0 then
       fields.posX, fields.posY = n.posX + moveX, n.posY + moveY
     end
     d.fields[n.path] = fields
@@ -433,7 +454,7 @@ local function pointer(view, event)
     local d, press = view.drag, view.press
     if press and not d and (math.abs(x - press.x) > 3 or math.abs(y - press.y) > 3) then
       if press.found[1] and not press.shift then
-        startToolDrag(view, press.x, press.y)
+        startToolDrag(view, press.x, press.y, press.found[1])
       else
         view.drag = { kind = "rectangle", startX = press.x, startY = press.y, x = x, y = y, shift = press.shift }
       end

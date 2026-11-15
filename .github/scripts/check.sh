@@ -26,7 +26,7 @@ if ! command -v lua-language-server > /dev/null; then
 fi
 
 # LuaLS checks one file only as part of its folder, so it checks the whole folder, as the check Lua (LuaLS) does, and the problems of the files
-# named here are printed; its lines name a problem's file first, such as engine/node.lua:2:11 [Warning] ..., and the two lines after show where
+# named here are printed; its lines name a problem's file first, such as packages/onlr/node.lua:2:11 [Warning] ..., and the two lines after show where
 mkdir -p build
 lua-language-server --check="$PWD" --checklevel=Warning --check_format=pretty --logpath=build/luals > build/luals.log 2>&1
 if tr '\r' '\n' < build/luals.log | sed 's/\x1b\[[0-9;]*m//g' | awk -v files="$lua" '

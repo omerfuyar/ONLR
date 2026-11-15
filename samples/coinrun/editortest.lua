@@ -24,18 +24,24 @@ return {
   run = function(test)
     local level = read("nodes/level.lua")
     check(level:find("\n%s*%-%- "), "the sample's node file holds comments")
-    local view
+    local view, viewId
     for _, panel in ipairs(test.panels()) do
       if panel.type == "onlr_player.view" then
-        view = test.rect(panel.id)
+        view, viewId = test.rect(panel.id), panel.id
       end
     end
-    test.wait(1.5)
 
-    -- the score's text is at the window's top left: a drag moves it
+    -- the score's text is at the window's top left: a drag moves it, once the edit player has sent where the nodes are,
+    -- which takes longer on a slow computer; until then a drag only chooses
     local x, y = view.x + 40 + 30, view.y + 40 + 24
-    test.drag(x, y, x + 20, y)
-    test.wait(0.3)
+    for _ = 1, 40 do
+      test.wait(0.5)
+      test.drag(x, y, x + 20, y)
+      test.wait(0.3)
+      if test.panel(viewId).unsaved then
+        break
+      end
+    end
 
     -- the save asks first, since it writes the values only; the last button keeps the file
     test.key("Ctrl+S")
