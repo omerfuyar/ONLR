@@ -6,10 +6,12 @@ local ui = require("ui")
 local project = require("project")
 local player = require("nodeview")
 local console = require("console")
+local fs = require("fs")
 local shared = require("shared")
 
 local STYLES = ui.styles()
 local STATE_VERSION = 1
+local menu
 
 local function say(_, message)
   if message then
@@ -100,6 +102,80 @@ local function reorder(file, how)
   local _ = tree
 end
 
+-- A new node file's path in nodes/, from a name: the name's own, or with a number after it when that is taken.
+local function freePath(name)
+  local base = (name or ""):gsub("[^%w_%-]+", "_"):lower()
+  base = base ~= "" and base or "node"
+  local path, number = "nodes/" .. base .. ".lua", 1
+  while fs.info(project.folder() .. path) do
+    number = number + 1
+    path = ("nodes/%s_%d.lua"):format(base, number)
+  end
+  return path
+end
+
+-- The menu of a right click on the tree (DESIGN 13.4): about the chosen nodes, which the click chose when it was on a node that was not
+-- chosen, or, beside the nodes, about the file.
+menu = function(state, file, id, x, y)
+  local tree = project.tree(file)
+  local first = tree.first
+  local paths = id and project.chosen().paths or {}
+  local node = id and tree.index[id]
+  local one = #paths == 1
+  local function add(parent)
+    local made = project.addNode(file, parent, {})
+    if made then
+      state.open[parent] = true
+      project.choose(file, { made })
+    end
+  end
+  if not node then
+    ui.menu(state.panel, x, y, {
+      { label = "Add node", onClick = function() add(first.path) end },
+      { line = true },
+      { label = "New variant", onClick = function()
+        local path = freePath(file:match("([^/]*)%.lua$") .. "_variant")
+        local ok, message = project.newNodeFile(path, file)
+        say(ok, message)
+        if ok then
+          player.openFile(path)
+        end
+      end },
+    })
+    return
+  end
+  local isFirst = node == first
+  -- where the node is among its parent's children, for the moves, which take one node
+  local siblings = node.parent and node.parent.children or {}
+  local at = 0
+  for i, child in ipairs(siblings) do
+    if child == node then
+      at = i
+    end
+  end
+  ui.menu(state.panel, x, y, {
+    { label = "Add child", enabled = one, onClick = function() add(id) end },
+    { label = "Duplicate", keys = "Ctrl+D", enabled = not isFirst, onClick = function()
+      local made = project.duplicate(file, paths)
+      if #made > 0 then
+        project.choose(file, made)
+      end
+    end },
+    { label = "Delete", keys = "Delete", enabled = not isFirst, onClick = function()
+      say(project.deleteNodes(file, paths))
+    end },
+    { line = true },
+    { label = "Move up", enabled = one and at > 1, onClick = function() reorder(file, "up") end },
+    { label = "Move down", enabled = one and at > 0 and at < #siblings, onClick = function() reorder(file, "down") end },
+    { label = "Move out of its parent", enabled = one and node.parent ~= nil and node.parent.parent ~= nil, onClick = function() reorder(file, "out") end },
+    { label = "Move into the node above", enabled = one and at > 1, onClick = function() reorder(file, "in") end },
+    { line = true },
+    { label = "Save as node file", enabled = one, onClick = function()
+      say(project.saveAsNodeFile(file, id, freePath(node.name)))
+    end },
+  })
+end
+
 local function draw(state, surface)
   local file = shared.file()
   local running = player.running()
@@ -136,43 +212,9 @@ local function draw(state, surface)
       if state.openFile ~= file then
         state.openFile, state.open = file, { [first.path] = true }
       end
-      children[#children + 1] = ui.row({ gap = 4 }, {
-        ui.button("Add", { id = "add", tooltip = "Add a node under the chosen one", onClick = function()
-          local id = project.addNode(file, chosen.paths[1] or first.path, {})
-          if id then
-            state.open[chosen.paths[1] or first.path] = true
-            project.choose(file, { id })
-          end
-        end }),
-        ui.button("Delete", { id = "delete", onClick = function()
-          say(project.deleteNodes(file, chosen.paths))
-        end }),
-        ui.button("Duplicate", { id = "duplicate", onClick = function()
-          local made = project.duplicate(file, chosen.paths)
-          if #made > 0 then
-            project.choose(file, made)
-          end
-        end }),
-      })
-      children[#children + 1] = ui.row({ gap = 4 }, {
-        ui.button("Up", { id = "up", tooltip = "Move before the node above", onClick = function()
-          reorder(file, "up")
-        end }),
-        ui.button("Down", { id = "down", tooltip = "Move after the node below", onClick = function()
-          reorder(file, "down")
-        end }),
-        ui.button("Out", { id = "out", tooltip = "Move out of its parent", onClick = function()
-          reorder(file, "out")
-        end }),
-        ui.button("In", { id = "in", tooltip = "Move into the node above", onClick = function()
-          reorder(file, "in")
-        end }),
-      })
-      -- A press chooses a node alone, Ctrl adds one or takes it out, and Shift chooses the shown nodes from the last node pressed
-      -- alone or with Ctrl, which is the first of the chosen ones (DESIGN 13.4).
       local paths = chosen.file == file and chosen.paths or {}
       children[#children + 1] = ui.tree({ treeNodes(first, state.open) }, {
-        id = "tree", open = state.open, selected = paths, grow = 1,
+        id = "tree", open = state.open, selected = paths, grow = 1, tooltip = "A right click opens a menu of the nodes",
         onSelect = function(id, how, between)
           state.pressed = id
           if how == "toggle" then
@@ -195,28 +237,9 @@ local function draw(state, surface)
         onToggle = function(id, open)
           state.open[id] = open or nil
         end,
-      })
-      -- Save as Node File and New Variant take the new file's name (DESIGN 13.5).
-      children[#children + 1] = ui.field(state.name, { id = "name", tooltip = "A new node file's name", onChange = function(text)
-        state.name = text
-      end })
-      children[#children + 1] = ui.row({ gap = 4 }, {
-        ui.button("Save as node file", { id = "saveAs", onClick = function()
-          if chosen.paths[1] and state.name ~= "" then
-            local ok, message = project.saveAsNodeFile(file, chosen.paths[1], "nodes/" .. state.name:gsub("%.lua$", "") .. ".lua")
-            say(ok, message)
-          end
-        end }),
-        ui.button("New variant", { id = "variant", tooltip = "A node file whose first node is an instance of this one", onClick = function()
-          if state.name ~= "" then
-            local path = "nodes/" .. state.name:gsub("%.lua$", "") .. ".lua"
-            local ok, message = project.newNodeFile(path, file)
-            say(ok, message)
-            if ok then
-              player.openFile(path)
-            end
-          end
-        end }),
+        onMenu = function(id, x, y)
+          menu(state, file, id, x, y)
+        end,
       })
     end
   end
@@ -228,7 +251,7 @@ ecs.panel.registerType({
   title = "Nodes",
   stateVersion = STATE_VERSION,
   create = function(panel, saved, version)
-    local state = { panel = panel, open = {}, openRunning = {}, seenRunning = {}, name = "" }
+    local state = { panel = panel, open = {}, openRunning = {}, seenRunning = {} }
     if version == STATE_VERSION and type(saved) == "table" then
       state.open, state.openFile = saved.open or {}, saved.file
     end

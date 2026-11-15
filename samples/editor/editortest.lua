@@ -216,7 +216,7 @@ return {
       return test.panel(panelOf(test, "onlr.nodes")).state.chosen
     end
     local function row(i)
-      return tree.x + 60, tree.y + 106 + 21 * (i - 1)
+      return tree.x + 60, tree.y + 40 + 21 * (i - 1)
     end
     local rx, ry = row(2)
     test.click(rx, ry)
@@ -231,32 +231,43 @@ return {
     test.click(rx, ry, nil, "Shift")
     check(#chosen() == 2 and chosen()[1] == "bbbbbb", "Shift chooses B and Part: " .. table.concat(chosen(), ", "))
 
-    -- Save as Node File writes the chosen node to a new node file, and puts an instance of it in its place
+    -- Save as Node File, the last entry of a node's menu in the nodes panel, writes the node to a new node file named after it, and
+    -- puts an instance of it in its place; Up goes round from the menu's first entry to its last
     test.click(x, y)
     test.wait(0.2)
-    local nodes = test.rect(panelOf(test, "onlr.nodes"))
-    -- the new file's name goes into the field at the panel's bottom, above the button
-    test.click(nodes.x + 130, nodes.y + nodes.height - 55)
-    test.wait()
-    test.text("hero")
-    test.click(nodes.x + 68, nodes.y + nodes.height - 22)
+    rx, ry = row(2)
+    test.click(rx, ry, 3)
+    test.key("Up")
+    test.key("Return")
     test.wait(0.3)
-    local hero = read("nodes/hero.lua")
+    local hero = read("nodes/a.lua")
     check(hero:find('id = "aaaaaa"') and hero:find("speed = 25"), "the new node file holds the node:\n" .. hero)
     check(not hero:find("bbbbbb"), "without the values that name a node outside it")
     test.click(x, y)
     save()
     local held = read("nodes/start.lua")
-    check(held:find('base = "nodes/hero.lua"'), "an instance is in the node's place:\n" .. held)
+    check(held:find('base = "nodes/a.lua"'), "an instance is in the node's place:\n" .. held)
     check(held:find('%["aaaaaa"%] = {\n            components = {\n              thing = {\n                friend = "bbbbbb",\n                target = "bbbbbb",'),
       "and its change sets the values that name the node outside")
     -- the click chose the instance, a record of its own, so the second undo takes the node file back
     test.key("Ctrl+Z")
     test.key("Ctrl+Z")
     save()
-    check(read("nodes/start.lua") == start and read("nodes/hero.lua") == hero, "undoing it puts the node back, and leaves the new file")
-    os.remove("nodes/hero.lua")
+    check(read("nodes/start.lua") == start and read("nodes/a.lua") == hero, "undoing it puts the node back, and leaves the new file")
+    os.remove("nodes/a.lua")
     test.wait(0.3)
+
+    -- a right click in the node view's empty space opens its menu, whose first entry adds a node at the pointer (DESIGN 13.3)
+    local ex, ey = at(320, 300)
+    test.click(ex, ey, 3)
+    test.key("Return")
+    save()
+    local added = read("nodes/start.lua")
+    check(added:find("posX = 320,\n%s*posY = 300"), "Add Node Here puts the node at the pointer:\n" .. added)
+    test.key("Ctrl+Z")
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the added node is undone")
 
     -- the files panel renames a file: every path that names it changes with it, and the files are saved (DESIGN 13.7)
     local files = test.rect(panelOf(test, "files.tree"))

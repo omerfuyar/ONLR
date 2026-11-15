@@ -9,6 +9,7 @@ local gpu = require("gpu")
 local project = require("project")
 local console = require("console")
 local players = require("players")
+local ui = require("ui")
 
 local STATE_VERSION = 1
 local IMAGES = { png = true, jpg = true, jpeg = true, bmp = true, tga = true }
@@ -473,9 +474,46 @@ local function drop(view, event)
   end
 end
 
+-- The menu of a right click (DESIGN 13.3): about the chosen nodes when the click was on one, which it chose when it was not chosen,
+-- or else about the point. ui.menu takes a place in the units of ui's layout, which on a panel that ui does not draw are its pixels.
+local functions
+local function menu(view, event, x, y)
+  local found = hits(view, x, y)
+  local wx, wy = toWorld(view, x, y)
+  if #found == 0 then
+    local first = view.byPath[project.tree(view.file).first.path]
+    local nx, ny = worldToNode(first and first.place or IDENTITY, wx, wy)
+    nx, ny = snap(math.floor(nx + 0.5)), snap(math.floor(ny + 0.5))
+    ui.menu(view.panel, event.x, event.y, {
+      { label = "Add node here", onClick = function()
+        local id = project.addNode(view.file, project.tree(view.file).first.path, { posX = nx ~= 0 and nx or nil, posY = ny ~= 0 and ny or nil })
+        if id then
+          choose(view, { id })
+        end
+      end },
+      { label = "Paste", keys = "Ctrl+V", onClick = functions.pasteChosen.fn },
+    })
+    return
+  end
+  ui.menu(view.panel, event.x, event.y, {
+    { label = "Duplicate", keys = "Ctrl+D", onClick = functions.duplicateChosen.fn },
+    { label = "Delete", keys = "Delete", onClick = functions.deleteChosen.fn },
+    { line = true },
+    { label = "Copy", keys = "Ctrl+C", onClick = functions.copyChosen.fn },
+    { label = "Paste", keys = "Ctrl+V", onClick = functions.pasteChosen.fn },
+  })
+end
+
 local function pointer(view, event)
   local x, y = event.x / view.scale, event.y / view.scale
-  if event.type == "pointerDown" then
+  if event.type == "pointerDown" and event.button == 3 and view.file then
+    local top = hits(view, x, y)[1]
+    if top and not isChosen(view, top) then
+      choose(view, { top })
+    end
+  elseif event.type == "pointerUp" and event.button == 3 and view.file and not view.drag then
+    menu(view, event, x, y)
+  elseif event.type == "pointerDown" then
     if event.button == 2 or (event.button == 1 and event.alt) then
       view.drag = { kind = "pan", startX = x, startY = y, viewX = view.x, viewY = view.y }
     elseif event.button == 1 and view.file then
@@ -633,6 +671,7 @@ ecs.panel.registerType({
     return true
   end,
   destroy = function(view)
+    ui.forget(view.panel)
     players.setView(view.id, nil)
     dropImage(view)
     if focused == view then
@@ -759,7 +798,7 @@ local function say(_, message)
   end
 end
 
-local functions = {
+functions = {
   openFile = { sig = "void(string file)", doc = "Open a node file in a node view", fn = openFile },
   focusedFile = { sig = "string()", doc = "The node file of the node view that has the focus, or an empty text", fn = function()
     local view = current()

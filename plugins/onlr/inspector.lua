@@ -404,18 +404,11 @@ local function fileSubject(state, out)
       end
     end
 
-    -- A component is a section, which the user folds; its first row turns it on and off, and removes it.
+    -- A component is a section, which the user folds, and whose menu removes it; its first row turns it on and off.
     local body = {
       ui.row({ gap = 6, align = "center" }, {
         ui.toggle(valueOf("enabled", true) == true, { id = cid .. ":enabled", label = "Enabled", tooltip = "Whether the component is on", onChange = setProperty("enabled") }),
-        propertyMark("enabled") or false,
-        ui.space(),
-        ui.button("Remove", { id = cid .. ":remove", tooltip = "Remove the component from the chosen nodes", onClick = function()
-          local _, message = project.removeComponent(file, paths, typeName)
-          if message then
-            console.add(message, "warn")
-          end
-        end }),
+        propertyMark("enabled"),
       }),
     }
     local declared = {}
@@ -468,10 +461,21 @@ local function fileSubject(state, out)
         end })) --[[@as ui.Element]],
       })
     end
-    out[#out + 1] = ui.section(typeName, { id = cid, open = not folded, onToggle = function(open)
-      state.folded[typeName] = not open or nil
-      state.panel:redraw()
-    end }, body)
+    out[#out + 1] = ui.section(typeName, { id = cid, open = not folded,
+      onToggle = function(open)
+        state.folded[typeName] = not open or nil
+        state.panel:redraw()
+      end,
+      onMenu = function(x, y)
+        ui.menu(state.panel, x, y, {
+          { label = "Remove component", onClick = function()
+            local _, message = project.removeComponent(file, paths, typeName)
+            if message then
+              console.add(message, "warn")
+            end
+          end },
+        })
+      end }, body)
   end
 
   -- Adding a component offers the project's types that the nodes lack (DESIGN 13.4).

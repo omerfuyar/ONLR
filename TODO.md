@@ -6,7 +6,7 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in this order.
 
-1. **Menus, not rows of buttons.** A right click opens a menu in the files panel, the nodes panel, the inspector and the node view, and it takes the place of the buttons there. Every control has a tooltip. The tool's menu holds only what belongs to the whole project, such as New Project, Open Project, Save All and Play; what belongs to one panel is in that panel's menu.
+1. **Menus, not rows of buttons.** A right click opens a menu in the files panel, the nodes panel, the inspector and the node view, and it takes the place of the buttons there; the nodes panel, the inspector and the node view have theirs, and the files panel's waits for OpenECS-std's. Every control has a tooltip. The tool's menu holds only what belongs to the whole project, such as New Project, Open Project, Save All and Play; what belongs to one panel is in that panel's menu.
 2. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
 3. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
 4. **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
@@ -132,17 +132,18 @@ What the owner wants worked on, in this order.
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
   - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the player on Linux and `cmd /c` on Windows.
   - fs: a file's permissions. Until it tells them, the Linux build marks as programs LÖVE's launcher, the files of `bin/` and the libraries.
-  - ui: a tree that chooses many nodes and drags them, for the nodes panel.
+  - ui: a tree that drags its nodes, for the nodes panel.
   - fs: watching the folders inside a folder, for the project's folder.
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
-  - ui: a menu that a right click opens, from a list of entries, and a number field that a drag changes (see [Next](#next) and [Editor](#editor)).
-  - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7); a control for a colour.
+  - ui: a number field that a drag changes (see [Editor](#editor)).
+  - The files panel: a menu that a right click opens, in place of its buttons (see [Next](#next)).
+  - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7).
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the players were written on Linux.
-- **What the editor does not do yet.** Dragging a node in the nodes panel to move it in the tree, and choosing many nodes there, wait for ui's tree. Copying LÖVE's definitions into a new project's `.onlr/` takes them from `build/love2d/`, until ONLR's archive holds them. Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
+- **What the editor does not do yet.** Dragging a node in the nodes panel to move it in the tree waits for ui's tree. Copying LÖVE's definitions into a new project's `.onlr/` takes them from `build/love2d/`, until ONLR's archive holds them. Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
 - **The tests on Windows.** `shuild.c` runs them on Linux only: they need SDL's offscreen driver, and set variables as a POSIX shell does.
 - **A warning when a popup opens.** On the owner's computer, a dropdown logs "[ecs] The GPU cannot present to a window (The GPU API doesn't support transparent windows)". It is OpenECS's, not ONLR's: its popups ask for a transparent window.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the player's files, and LÖVE's runtime for the host, and the Linux runtime that ONLR hosts (DESIGN 15.2).
