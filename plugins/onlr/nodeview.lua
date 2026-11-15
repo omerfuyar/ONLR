@@ -477,6 +477,43 @@ end
 -- The menu of a right click (DESIGN 13.3): about the chosen nodes when the click was on one, which it chose when it was not chosen,
 -- or else about the point. ui.menu takes a place in the units of ui's layout, which on a panel that ui does not draw are its pixels.
 local functions
+-- Moves and zooms the view so that the chosen nodes fill it, or every node when none is chosen, as Unity's F does.
+-- A lone node without bounds is centred at the zoom the view has.
+local function frame(view)
+  local minX, minY, maxX, maxY
+  local function add(x, y)
+    minX, maxX = math.min(minX or x, x), math.max(maxX or x, x)
+    minY, maxY = math.min(minY or y, y), math.max(maxY or y, y)
+  end
+  local all = #view.chosen == 0
+  for _, node in ipairs(view.nodes) do
+    if all or isChosen(view, node.path) then
+      local r = node.rect
+      if r then
+        add(nodeToWorld(node, r[1], r[2]))
+        add(nodeToWorld(node, r[1] + r[3], r[2]))
+        add(nodeToWorld(node, r[1], r[2] + r[4]))
+        add(nodeToWorld(node, r[1] + r[3], r[2] + r[4]))
+      else
+        add(node.place[5], node.place[6])
+      end
+    end
+  end
+  if not minX or view.width < 1 then
+    return
+  end
+  local w, h = maxX - minX, maxY - minY
+  if w > 0 or h > 0 then
+    -- A margin of a fifth of the view on each side.
+    local zoom = math.min(view.width / math.max(w, 1e-3), view.height / math.max(h, 1e-3)) * 0.6
+    view.zoom = math.max(0.05, math.min(32, zoom))
+  end
+  view.x = (minX + maxX) / 2 - view.width / 2 / view.zoom
+  view.y = (minY + maxY) / 2 - view.height / 2 / view.zoom
+  sync(view)
+  view.panel:redraw()
+end
+
 local function menu(view, event, x, y)
   local found = hits(view, x, y)
   local wx, wy = toWorld(view, x, y)
@@ -492,6 +529,10 @@ local function menu(view, event, x, y)
         end
       end },
       { label = "Paste", keys = "Ctrl+V", onClick = functions.pasteChosen.fn },
+      { line = true },
+      { label = "Frame all", keys = "F", onClick = function()
+        frame(view)
+      end },
     })
     return
   end
@@ -501,6 +542,10 @@ local function menu(view, event, x, y)
     { line = true },
     { label = "Copy", keys = "Ctrl+C", onClick = functions.copyChosen.fn },
     { label = "Paste", keys = "Ctrl+V", onClick = functions.pasteChosen.fn },
+    { line = true },
+    { label = "Frame chosen", keys = "F", onClick = function()
+      frame(view)
+    end },
   })
 end
 
@@ -843,6 +888,12 @@ functions = {
       end
     end
   end },
+  frame = { sig = "void()", doc = "Fit the node view to the chosen nodes, or to every node when none is chosen", fn = function()
+    local view = current()
+    if view then
+      frame(view)
+    end
+  end },
   toolMove = { sig = "void()", doc = "The move tool", fn = function()
     project.setTool("move")
   end },
@@ -860,7 +911,7 @@ for key, name in pairs({
   ["Ctrl+Shift+Z"] = "onlr.redo", ["Ctrl+S"] = "onlr.save", ["F5"] = "onlr.play",
   ["F6"] = "onlr.playFile", ["F7"] = "onlr.pause", ["F8"] = "onlr.step",
   ["Shift+F5"] = "onlr.stop", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
-  ["R"] = "onlr.toolScale",
+  ["R"] = "onlr.toolScale", ["F"] = "onlr.frame",
 }) do
   ecs.key.bind("onlr.view", key, name)
 end

@@ -331,6 +331,14 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the base's own name leaves no change")
 
+    -- F fits the view to the chosen node: node A's red square fills its middle, at a greater zoom
+    test.click(at(56, 56))
+    test.key("F")
+    test.wait(0.5)
+    local fitted = test.panel(panelOf(test, "onlr.view")).state
+    check(fitted.zoom > 2, "F zooms in on the chosen node: " .. tostring(fitted.zoom))
+    check(test.pixel(view.x + view.width / 2, view.y + view.height / 2) == "#FF0000", "and centres it")
+
     -- Play saves the project and runs the game, whose marker writes a file
     os.remove("played.txt")
     test.key("F5")
