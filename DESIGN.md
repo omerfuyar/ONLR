@@ -923,7 +923,7 @@ What the sample shows of every package:
 - What a mode draws into is the one difference between the modes. Starting a player, the link, the console and the errors are the same code for both, so the editor's other parts do not know where the game is drawn.
 - A player is another program, so a game that fails or never returns leaves the editor running. The editor shows what happened, and starts the player again when asked.
 - The editor gives the edit player two seconds for each answer. When it does not answer, as when a `drawEditor` never returns, or the game's code fails before the engine has loaded, the editor ends it, shows in the console what it printed, and starts it again at the next change. When it stops twice in a row, it does not start again until the user asks, with Start the Edit Player Again.
-- The editor reads what a player prints, and shows it in the console. In a player, the engine turns off the buffer of the game's output, so each line shows when it is printed.
+- The editor reads what a player prints, and shows it in the console, each line an entry, which stacks on the one before it when it repeats it (OpenECS-std DESIGN 31). In a player, the engine turns off the buffer of the game's output, so each line shows when it is printed. Play clears the console first, unless its Clear on Run toggle is off.
 
 ### 12.2 The link
 

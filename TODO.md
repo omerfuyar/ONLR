@@ -36,13 +36,11 @@ What the owner wants worked on, in this order.
 
 ## Editor
 
-- **A number that a drag changes.** A drag over a number field's label, or over the field, changes the number, as in Unity. It belongs in OpenECS-std's ui, as a property of its number field, so every tool gets it.
-- **The console's entries.** Each entry is a box of its own, with its level's colour, its time and its place. Equal entries stack with a count. The console clears when the game plays, as a toggle, and filters by level. It belongs to OpenECS-std's console.
 - **More hints for errors.** The hints are a list of patterns (DESIGN 13.1). To add: errors of LÖVE's own functions, and a hint that names the node and the component that the error came from, with a click that chooses the node.
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
   - The node view: handles that move along one axis, and a rectangle tool that sizes a node by its corners; a key that fits the view to the chosen nodes; a key that holds snapping; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
-  - The nodes panel: a search by name and by component type; a drag that moves a node in the tree; choosing many nodes; renaming with F2; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there; a mark and another colour for an instance; a button that opens the instance's node file.
-  - The inspector: a lock that keeps its node while another is chosen; folding, reordering, copying and pasting a component's values; Add Component as a search; sums in number fields, such as `32*4`; a round button that picks a node or a file for a reference; a colour picker with a pipette; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
+  - The nodes panel: a search by name and by component type; a drag that moves a node in the tree; renaming with F2; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there; a mark and another colour for an instance; a button that opens the instance's node file.
+  - The inspector: a lock that keeps its node while another is chosen; reordering, copying and pasting a component's values; Add Component as a search; sums in number fields, such as `32*4`; a round button that picks a node or a file for a reference; a pipette for the colour picker; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
   - The files panel: a search by name and kind; favourite folders; Show in the file manager; Find what names this file.
   - The console: a click on an entry chooses the node that the error came from; a pane with the stack of the chosen entry; a search; Pause on Error.
   - Playing: a tint over the editor while the game plays; the count of frames a second and the time of update and draw, from the play player; sizes of the window to choose from, such as a phone's; values that were changed in the running game, with a way to keep them.
@@ -134,7 +132,6 @@ What the owner wants worked on, in this order.
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
-  - ui: a number field that a drag changes (see [Editor](#editor)).
   - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7).
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
