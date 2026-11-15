@@ -3,7 +3,7 @@
 
 local ecs = require("ecs")
 local ui = require("ui")
-local project = require("onlr_project")
+local project = require("project")
 local shared = require("shared")
 
 local STYLES = ui.styles()

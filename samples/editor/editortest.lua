@@ -34,7 +34,7 @@ return {
   files = { "manifest.lua" },
   run = function(test)
     local start, outer = read("nodes/start.lua"), read("nodes/outer.lua")
-    local view = test.rect(panelOf(test, "onlr_player.view"))
+    local view = test.rect(panelOf(test, "onlr.view"))
     -- A node view starts with the world's point -40, -40 at its top left, at a zoom of 1.
     local function at(x, y)
       return view.x + x + 40, view.y + y + 40
@@ -53,17 +53,17 @@ return {
       end
     end
     test.wait(0.5)
-    test.match(test.panel(panelOf(test, "onlr_player.view")), { title = "start.lua", unsaved = false })
+    test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
 
     -- a drag with the move tool moves the node under the pointer, as one change
     local x, y = at(56, 56)
     test.drag(x, y, x + 64, y + 32)
     test.wait(0.3)
-    test.match(test.panel(panelOf(test, "onlr_player.view")), { unsaved = true })
+    test.match(test.panel(panelOf(test, "onlr.view")), { unsaved = true })
     save()
     local moved = read("nodes/start.lua")
     check(moved == start:gsub("posX = 40,\n      posY = 40,", "posX = 104,\n      posY = 72,"), "a moved node changes its two lines only:\n" .. moved)
-    test.match(test.panel(panelOf(test, "onlr_player.view")), { unsaved = false })
+    test.match(test.panel(panelOf(test, "onlr.view")), { unsaved = false })
 
     -- undoing it gives the file's first text again: the same table always gives the same text
     test.key("Ctrl+Z")
@@ -72,7 +72,7 @@ return {
 
     -- with Local, two chosen nodes turn by the same angle, each around its own place (DESIGN 13.3)
     -- the tools panel's first row: Move, Turn and Scale, then Global and Local
-    local tools = test.rect(panelOf(test, "onlr_views.tools"))
+    local tools = test.rect(panelOf(test, "onlr.tools"))
     x, y = at(56, 56)
     test.click(x, y)
     local bx, by = at(136, 56)
@@ -103,7 +103,7 @@ return {
     x, y = at(56, 56)
     test.click(x, y)
     test.wait(0.2)
-    local inspector = test.rect(panelOf(test, "onlr_views.inspector"))
+    local inspector = test.rect(panelOf(test, "onlr.inspector"))
     test.click(inspector.x + 200, inspector.y + 76)
     test.key("Ctrl+A")
     test.text("Hero")
@@ -146,7 +146,7 @@ return {
     -- undoing a change of a file that no node view showed opened a view of it, which has the focus
     local opened = false
     for _, panel in ipairs(test.panels()) do
-      opened = opened or (panel.type == "onlr_player.view" and panel.title == "outer.lua")
+      opened = opened or (panel.type == "onlr.view" and panel.title == "outer.lua")
     end
     check(opened, "the undo opened a view of the other file")
     test.call("ecs.layout.close")
@@ -157,7 +157,7 @@ return {
     local folder = os.getenv("PWD") .. "/"
     test.dropFiles(x, y, { folder .. "images/coin.png" })
     test.wait(0.3)
-    test.match(test.panel(panelOf(test, "onlr_player.view")), { unsaved = true })
+    test.match(test.panel(panelOf(test, "onlr.view")), { unsaved = true })
     save()
     local dropped = read("nodes/start.lua")
     check(dropped:find('name = "Coin",\n      posX = 100,\n      posY = %d+,'), "the dropped image is a node:\n" .. dropped)
@@ -186,7 +186,7 @@ return {
     -- Save as Node File writes the chosen node to a new node file, and puts an instance of it in its place
     test.click(x, y)
     test.wait(0.2)
-    local nodes = test.rect(panelOf(test, "onlr_views.nodes"))
+    local nodes = test.rect(panelOf(test, "onlr.nodes"))
     -- the new file's name goes into the field at the panel's bottom, above the button
     test.click(nodes.x + 130, nodes.y + nodes.height - 55)
     test.wait()
@@ -225,7 +225,7 @@ return {
     -- the second click opened the file in a node view, which follows it to its new name
     local followed = false
     for _, panel in ipairs(test.panels()) do
-      followed = followed or (panel.type == "onlr_player.view" and panel.title == "piece.lua")
+      followed = followed or (panel.type == "onlr.view" and panel.title == "piece.lua")
     end
     check(followed, "the node view shows the file under its new name")
     test.click(at(300, 300))
@@ -280,7 +280,7 @@ return {
     -- Export: the folder that exports are written to is typed into the Export panel, which is a tab beside the inspector
     test.click(inspector.x + 210, inspector.y - 14)
     test.wait(0.2)
-    local export = test.rect(panelOf(test, "onlr_export.panel"))
+    local export = test.rect(panelOf(test, "onlr.export"))
     test.click(export.x + 100, export.y + 50)
     test.key("Ctrl+A")
     test.text("out")
@@ -288,7 +288,7 @@ return {
     test.wait(0.2)
 
     -- the .love file is a zip archive of the project, without what starts with a dot and without the export's folder
-    test.call("onlr_export.love")
+    test.call("onlr.exportLove")
     test.wait(0.3)
     local function list(command)
       local pipe = assert(io.popen(command))
@@ -301,7 +301,7 @@ return {
     check(not love:find("%.onlr") and not love:find("%d   out/"), "without .onlr/ and the export's folder")
 
     -- the Linux build is LÖVE's files with the .love file joined to LÖVE's executable: unpacked, its launcher runs the game
-    test.call("onlr_export.linux")
+    test.call("onlr.exportLinux")
     test.wait(1)
     os.execute("mkdir -p out/linux && tar -xzf out/Editor-linux-x86_64.tar.gz -C out/linux && cd out/linux && "
       .. "SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 3 ./Editor/Editor > /dev/null 2>&1")
@@ -309,7 +309,7 @@ return {
     check(read("out/linux/Editor/license.txt") ~= "", "and holds LÖVE's license.txt")
 
     -- the Windows build is made from LÖVE's runtime, which is downloaded and checked against the hash that ONLR ships
-    test.call("onlr_export.windows")
+    test.call("onlr.exportWindows")
     for _ = 1, 300 do
       test.wait(0.1)
       if read("out/Editor-windows-x86_64.zip") ~= "" then

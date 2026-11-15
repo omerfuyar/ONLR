@@ -4,7 +4,7 @@ local ecs = require("ecs")
 local ui = require("ui")
 local fs = require("fs")
 local compress = require("compress")
-local project = require("onlr_project")
+local project = require("project")
 local console = require("console")
 local runtimes = require("runtimes")
 local tar = require("tar")
@@ -263,7 +263,7 @@ local function chooseFolder()
 end
 
 ecs.panel.registerType({
-  name = "panel",
+  name = "export",
   title = "Export",
   create = function(panel)
     local state = { panel = panel }
@@ -300,7 +300,7 @@ ecs.panel.registerType({
   end,
 })
 
-for _, name in ipairs({ "onlr_project.opened", "onlr_project.closed", "onlr_project.settings" }) do
+for _, name in ipairs({ "onlr.opened", "onlr.closed", "onlr.settings" }) do
   ecs.event.subscribe(name, function()
     for panel in pairs(panels) do
       panel:redraw()
@@ -308,11 +308,19 @@ for _, name in ipairs({ "onlr_project.opened", "onlr_project.closed", "onlr_proj
   end)
 end
 
-ecs.service.register({
-  love = { sig = "void()", doc = "Export the .love file", fn = function()
+local functions = {
+  exportLove = { sig = "void()", doc = "Export the .love file", fn = function()
     exportLove()
   end },
-  linux = { sig = "void()", doc = "Export a Linux build", fn = exportLinux },
-  windows = { sig = "void()", doc = "Export a Windows build", fn = exportWindows },
-  chooseFolder = { sig = "void()", doc = "Choose the folder that exports are written to", fn = chooseFolder },
-})
+  exportLinux = { sig = "void()", doc = "Export a Linux build", fn = exportLinux },
+  exportWindows = { sig = "void()", doc = "Export a Windows build", fn = exportWindows },
+  chooseExportFolder = { sig = "void()", doc = "Choose the folder that exports are written to", fn = chooseFolder },
+}
+
+-- The other parts call the functions themselves; init.lua registers them as the plugin's (DESIGN 13.1).
+---@type table<string, any>
+local part = { functions = functions }
+for name, entry in pairs(functions) do
+  part[name] = entry.fn
+end
+return part

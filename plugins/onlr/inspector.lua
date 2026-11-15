@@ -4,8 +4,8 @@
 local ecs = require("ecs")
 local ui = require("ui")
 local fs = require("fs")
-local project = require("onlr_project")
-local player = require("onlr_player")
+local project = require("project")
+local player = require("nodeview")
 local console = require("console")
 local shared = require("shared")
 
@@ -83,11 +83,11 @@ local function text(id, value, set, valid)
 end
 
 ---What an inspector shows: the chosen nodes of a node file.
----@class onlr_views.Subject
+---@class onlr.editor.Subject
 ---@field file string
 ---@field paths string[]
----@field nodes onlr_project.Node[]
----@field tree onlr_project.Tree
+---@field nodes onlr.editor.Node[]
+---@field tree onlr.editor.Tree
 
 -- The control of a property's kind. set gets the new value; drops notes the rows that take a dragged file or node.
 local function control(state, subject, id, decl, value, set)
@@ -265,7 +265,7 @@ local function fileSubject(state, out)
     out[#out + 1] = ui.text(tree.error or "No node is chosen.", { style = STYLES.note, wrap = true })
     return
   end
-  ---@type onlr_views.Subject
+  ---@type onlr.editor.Subject
   local subject = { file = file, paths = paths, nodes = nodes, tree = tree }
   local key = table.concat(paths, ",")
   local first = nodes[1]

@@ -4,7 +4,7 @@
 
 local ecs = require("ecs")
 local draw = require("draw")
-local project = require("onlr_project")
+local project = require("project")
 local console = require("console")
 local players = require("players")
 
@@ -12,7 +12,7 @@ local STATE_VERSION = 1
 local IMAGES = { png = true, jpg = true, jpeg = true, bmp = true, tga = true }
 
 ---A node view.
----@class onlr_player.View
+---@class onlr.editor.View
 ---@field panel ecs.Panel
 ---@field id integer the view's number on the link
 ---@field file string? the node file that it shows
@@ -32,9 +32,9 @@ local IMAGES = { png = true, jpg = true, jpeg = true, bmp = true, tga = true }
 ---@field drag table? what the pointer drags
 ---@field lastClick table? where the last click was, and which node it chose
 
-local views = {} ---@type table<ecs.Panel, onlr_player.View>
+local views = {} ---@type table<ecs.Panel, onlr.editor.View>
 local nextId = 0
-local focused ---@type onlr_player.View? the node view that had the focus last
+local focused ---@type onlr.editor.View? the node view that had the focus last
 
 local function sync(view)
   if not view.file or view.width < 1 then
@@ -86,7 +86,7 @@ local function openFile(file)
     end
   end
   local target = focused and views[focused.panel] and focused.panel or next(views)
-  ecs.layout.open("onlr_player.view", { file = file }, target, "center")
+  ecs.layout.open("onlr.view", { file = file }, target, "center")
 end
 
 -- Places
@@ -548,7 +548,7 @@ ecs.panel.registerType({
   stateVersion = STATE_VERSION,
   create = function(panel, saved, version)
     nextId = nextId + 1
-    ---@type onlr_player.View
+    ---@type onlr.editor.View
     local view = {
       panel = panel, id = nextId, x = -40, y = -40, zoom = 1, width = 0, height = 0, scale = 1, chosen = {},
       visible = true, nodes = {}, byPath = {},
@@ -609,7 +609,7 @@ ecs.panel.registerType({
 
 -- The project's events
 
-ecs.event.subscribe("onlr_project.opened", function()
+ecs.event.subscribe("onlr.opened", function()
   console.setFolder(project.folder())
   players.restartEdit()
   local manifest = project.manifest()
@@ -626,7 +626,7 @@ ecs.event.subscribe("onlr_project.opened", function()
   end
 end)
 
-ecs.event.subscribe("onlr_project.closed", function()
+ecs.event.subscribe("onlr.closed", function()
   players.stop()
   players.stopEdit()
   for _, view in pairs(views) do
@@ -634,7 +634,7 @@ ecs.event.subscribe("onlr_project.closed", function()
   end
 end)
 
-ecs.event.subscribe("onlr_project.changed", function(_, value)
+ecs.event.subscribe("onlr.changed", function(_, value)
   players.filesChanged()
   for _, view in pairs(views) do
     -- A node view of a file that is gone shows no file.
@@ -656,7 +656,7 @@ ecs.event.subscribe("onlr_project.changed", function(_, value)
 end)
 
 -- A node view of a file that was renamed or moved shows it under its new path.
-ecs.event.subscribe("onlr_project.renamed", function(_, value)
+ecs.event.subscribe("onlr.renamed", function(_, value)
   for _, view in pairs(views) do
     if view.file and (view.file == value.from or view.file:sub(1, #value.from + 1) == value.from .. "/") then
       view.file = value.to .. view.file:sub(#value.from + 1)
@@ -666,13 +666,13 @@ ecs.event.subscribe("onlr_project.renamed", function(_, value)
   end
 end)
 
-ecs.event.subscribe("onlr_project.saved", function()
+ecs.event.subscribe("onlr.saved", function()
   for _, view in pairs(views) do
     title(view)
   end
 end)
 
-ecs.event.subscribe("onlr_project.chosen", function(_, chosen)
+ecs.event.subscribe("onlr.chosen", function(_, chosen)
   for _, view in pairs(views) do
     if view.file == chosen.file then
       view.chosen = chosen.paths
@@ -682,7 +682,7 @@ ecs.event.subscribe("onlr_project.chosen", function(_, chosen)
   end
 end)
 
-for _, name in ipairs({ "onlr_project.tool", "onlr_project.settings" }) do
+for _, name in ipairs({ "onlr.tool", "onlr.settings" }) do
   ecs.event.subscribe(name, function()
     for _, view in pairs(views) do
       view.panel:redraw()
@@ -690,7 +690,7 @@ for _, name in ipairs({ "onlr_project.tool", "onlr_project.settings" }) do
   end)
 end
 
-ecs.event.subscribe("onlr_project.disk", function(_, value)
+ecs.event.subscribe("onlr.disk", function(_, value)
   if value.kind == "code" then
     -- A script or the manifest changed: the edit player starts again, so nothing of the old code stays in it (DESIGN 12.5).
     players.restartEdit()
@@ -724,7 +724,7 @@ local function say(_, message)
   end
 end
 
-ecs.service.register({
+local functions = {
   openFile = { sig = "void(string file)", doc = "Open a node file in a node view", fn = openFile },
   focusedFile = { sig = "string()", doc = "The node file of the node view that has the focus, or an empty text", fn = function()
     local view = current()
@@ -750,17 +750,17 @@ ecs.service.register({
   set = { sig = "void(value message)", doc = "Set a value of a running node", fn = players.set },
   editReady = { sig = "bool()", doc = "Whether the edit player runs", fn = players.editReady },
   view = { sig = "value(string file)", doc = "The node view of a node file: its place, zoom and the nodes' bounds", fn = viewOf },
-  delete = { sig = "void()", doc = "Delete the chosen nodes", fn = onChosen(function(file, paths)
+  deleteChosen = { sig = "void()", doc = "Delete the chosen nodes", fn = onChosen(function(file, paths)
     say(project.deleteNodes(file, paths))
   end) },
-  duplicate = { sig = "void()", doc = "Duplicate the chosen nodes", fn = onChosen(function(file, paths)
+  duplicateChosen = { sig = "void()", doc = "Duplicate the chosen nodes", fn = onChosen(function(file, paths)
     local made = project.duplicate(file, paths)
     if #made > 0 then
       project.choose(file, made)
     end
   end) },
-  copy = { sig = "void()", doc = "Copy the chosen nodes", fn = onChosen(project.copyNodes) },
-  paste = { sig = "void()", doc = "Paste the copied nodes", fn = function()
+  copyChosen = { sig = "void()", doc = "Copy the chosen nodes", fn = onChosen(project.copyNodes) },
+  pasteChosen = { sig = "void()", doc = "Paste the copied nodes", fn = function()
     local chosen = project.chosen()
     if chosen.file then
       local made = project.paste(chosen.file, chosen.paths[1] or "")
@@ -778,20 +778,28 @@ ecs.service.register({
   toolScale = { sig = "void()", doc = "The scale tool", fn = function()
     project.setTool("scale")
   end },
-})
+}
 
 for key, name in pairs({
-  ["Delete"] = "onlr_player.delete", ["Ctrl+D"] = "onlr_player.duplicate", ["Ctrl+C"] = "onlr_player.copy",
-  ["Ctrl+V"] = "onlr_player.paste", ["Ctrl+Z"] = "onlr_project.undo", ["Ctrl+Y"] = "onlr_project.redo",
-  ["Ctrl+Shift+Z"] = "onlr_project.redo", ["Ctrl+S"] = "onlr_project.save", ["F5"] = "onlr_player.play",
-  ["F6"] = "onlr_player.playFile", ["F7"] = "onlr_player.pause", ["F8"] = "onlr_player.step",
-  ["Shift+F5"] = "onlr_player.stop", ["W"] = "onlr_player.toolMove", ["E"] = "onlr_player.toolTurn",
-  ["R"] = "onlr_player.toolScale",
+  ["Delete"] = "onlr.deleteChosen", ["Ctrl+D"] = "onlr.duplicateChosen", ["Ctrl+C"] = "onlr.copyChosen",
+  ["Ctrl+V"] = "onlr.pasteChosen", ["Ctrl+Z"] = "onlr.undo", ["Ctrl+Y"] = "onlr.redo",
+  ["Ctrl+Shift+Z"] = "onlr.redo", ["Ctrl+S"] = "onlr.save", ["F5"] = "onlr.play",
+  ["F6"] = "onlr.playFile", ["F7"] = "onlr.pause", ["F8"] = "onlr.step",
+  ["Shift+F5"] = "onlr.stop", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
+  ["R"] = "onlr.toolScale",
 }) do
-  ecs.key.bind("onlr_player.view", key, name)
+  ecs.key.bind("onlr.view", key, name)
 end
 
 if project.folder() ~= "" then
   console.setFolder(project.folder())
   players.ensureEdit()
 end
+
+-- The other parts call the functions themselves; init.lua registers them as the plugin's (DESIGN 13.1).
+---@type table<string, any>
+local part = { functions = functions }
+for name, entry in pairs(functions) do
+  part[name] = entry.fn
+end
+return part

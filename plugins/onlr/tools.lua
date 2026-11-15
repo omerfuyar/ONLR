@@ -2,8 +2,8 @@
 
 local ecs = require("ecs")
 local ui = require("ui")
-local project = require("onlr_project")
-local player = require("onlr_player")
+local project = require("project")
+local player = require("nodeview")
 local shared = require("shared")
 
 local STYLES = ui.styles()

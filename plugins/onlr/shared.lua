@@ -1,8 +1,8 @@
--- What the panels of onlr_views share: which nodes they show, the project's or the running game's (DESIGN 12.6).
+-- What the panels share: which nodes they show, the project's or the running game's (DESIGN 12.6).
 
 local ecs = require("ecs")
-local project = require("onlr_project")
-local player = require("onlr_player")
+local project = require("project")
+local player = require("nodeview")
 
 local shared = {}
 
@@ -56,13 +56,13 @@ function shared.file()
 end
 
 for _, name in ipairs({
-  "onlr_project.opened", "onlr_project.closed", "onlr_project.changed", "onlr_project.chosen", "onlr_project.tool",
-  "onlr_project.types", "onlr_project.saved", "onlr_project.settings", "onlr_player.running",
+  "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.tool",
+  "onlr.types", "onlr.saved", "onlr.settings", "onlr.running",
 }) do
   ecs.event.subscribe(name, shared.redraw)
 end
 
-ecs.event.subscribe("onlr_player.state", function()
+ecs.event.subscribe("onlr.state", function()
   if shared.running and not player.running().playing then
     shared.running, shared.runningNode = false, nil
   end

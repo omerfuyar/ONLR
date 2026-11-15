@@ -9,7 +9,7 @@ local format = require("format")
 local resolve = require("resolve")
 
 ---A data file of the project, as the editor holds it.
----@class onlr_project.File
+---@class onlr.editor.File
 ---@field path string its path in the project, such as "nodes/level.lua"
 ---@field kind "node"|"manifest"
 ---@field data table? its table. Nil when the file does not load
@@ -21,14 +21,14 @@ local resolve = require("resolve")
 ---@field missing boolean? the project has no such file
 
 ---A change that can be undone: the tables of the files that it changed, before and after (DESIGN 13.6).
----@class onlr_project.Record
+---@class onlr.editor.Record
 ---@field label string
 ---@field files table<string, {before: table?, after: table?}>
 
----@class onlr_project.Project
+---@class onlr.editor.Project
 ---@field folder string the project's folder, ending with a slash
----@field files table<string, onlr_project.File>
----@field history onlr_project.Record[]
+---@field files table<string, onlr.editor.File>
+---@field history onlr.editor.Record[]
 ---@field position integer how many records of the history are done
 ---@field chosen {file: string?, paths: string[]}
 ---@field tool "move"|"turn"|"scale"
@@ -37,11 +37,11 @@ local resolve = require("resolve")
 ---@field typeNames string[]
 ---@field typeFiles table<string, string>
 ---@field types table<string, table> what the edit player answered of each type
----@field trees table<string, onlr_project.Tree>
+---@field trees table<string, onlr.editor.Tree>
 ---@field watches table<string, any>
 ---@field touch (fun(path: string))?
 
----@type onlr_project.Project?
+---@type onlr.editor.Project?
 local P
 
 local recent = {} ---@type string[] the folders of the projects opened last
@@ -52,7 +52,7 @@ end
 
 local function say(text)
   ecs.log.info(text)
-  ecs.event.emit("onlr_project.said", text)
+  ecs.event.emit("onlr.said", text)
 end
 
 local function absolute(path)
@@ -125,7 +125,7 @@ end
 
 local function readFile(path)
   local kind = path == "manifest.lua" and "manifest" or "node"
-  ---@type onlr_project.File
+  ---@type onlr.editor.File
   local file = { path = path, kind = kind, dirty = false, handwritten = false }
   local text = format.readFile(absolute(path))
   if not text then
@@ -149,7 +149,7 @@ local function readFile(path)
   return file
 end
 
----@return onlr_project.File?
+---@return onlr.editor.File?
 local function getFile(path)
   if not P then
     return nil
@@ -162,7 +162,7 @@ local function getFile(path)
   return file
 end
 
----@type onlr_project.Source
+---@type onlr.editor.Source
 local source = {
   file = function(path)
     local file = getFile(path)
@@ -272,7 +272,7 @@ local function emitChanged(paths, history)
       refresh(file)
     end
   end
-  ecs.event.emit("onlr_project.changed", { files = paths, history = history or false })
+  ecs.event.emit("onlr.changed", { files = paths, history = history or false })
 end
 
 -- Takes out of the history every record that changed a file, when the file goes back to what is on disk (DESIGN 13.6).
@@ -314,7 +314,7 @@ local function edit(label, fn)
     p.trees = {}
     error(err, 0)
   end
-  ---@type onlr_project.Record
+  ---@type onlr.editor.Record
   local record = { label = label, files = {} }
   local paths = {}
   for path, old in pairs(before) do
@@ -366,7 +366,7 @@ local function step(record, field)
     end
     if #kept ~= #p.chosen.paths then
       p.chosen.paths = kept
-      ecs.event.emit("onlr_project.chosen", p.chosen)
+      ecs.event.emit("onlr.chosen", p.chosen)
     end
   end
 end
@@ -416,7 +416,7 @@ local function saveAll()
   end
   if #paths > 0 then
     table.sort(paths)
-    ecs.event.emit("onlr_project.saved", { files = paths })
+    ecs.event.emit("onlr.saved", { files = paths })
   end
   return all
 end
@@ -514,7 +514,7 @@ local function diskChanged()
     elseif path:match("%.lua$") then
       code = true
     else
-      ecs.event.emit("onlr_project.disk", { path = path, kind = "asset", change = change })
+      ecs.event.emit("onlr.disk", { path = path, kind = "asset", change = change })
     end
   end
   if #reread > 0 then
@@ -526,10 +526,10 @@ local function diskChanged()
     scanTypes()
     p.types = {}
     p.trees = {}
-    ecs.event.emit("onlr_project.disk", { kind = "code" })
-    ecs.event.emit("onlr_project.types")
+    ecs.event.emit("onlr.disk", { kind = "code" })
+    ecs.event.emit("onlr.types")
   end
-  ecs.event.emit("onlr_project.disk", { kind = "files" })
+  ecs.event.emit("onlr.disk", { kind = "files" })
 end
 
 function watchFolder(dir)
@@ -642,7 +642,7 @@ local function close()
     end
   end
   P = nil
-  ecs.event.emit("onlr_project.closed")
+  ecs.event.emit("onlr.closed")
   return true
 end
 
@@ -707,7 +707,7 @@ local function open(folder)
   end
   table.insert(recent, 1, folder)
   recent[9] = nil
-  ecs.event.emit("onlr_project.opened", { folder = folder })
+  ecs.event.emit("onlr.opened", { folder = folder })
   return true
 end
 
@@ -1215,7 +1215,7 @@ local function deleteNodes(file, paths)
   local p = assert(P)
   if changed and p.chosen.file == file then
     p.chosen.paths = {}
-    ecs.event.emit("onlr_project.chosen", p.chosen)
+    ecs.event.emit("onlr.chosen", p.chosen)
   end
   return changed, message
 end
@@ -1424,7 +1424,7 @@ local function saveAsNodeFile(file, path, newFile)
     local made = format.copy(entry)
     made.format = format.FORMAT
     local p = assert(P)
-    ---@type onlr_project.File
+    ---@type onlr.editor.File
     local new = { path = newFile, kind = "node", data = made, dirty = true, handwritten = false, saved = "" }
     p.files[newFile] = new
     saveFile(new)
@@ -1596,9 +1596,9 @@ local function renameFile(from, to)
   if p.chosen.file and (p.chosen.file == from or p.chosen.file:sub(1, #from + 1) == from .. "/") then
     p.chosen.file = to .. p.chosen.file:sub(#from + 1)
   end
-  ecs.event.emit("onlr_project.renamed", { from = from, to = to })
+  ecs.event.emit("onlr.renamed", { from = from, to = to })
   emitChanged(changed, true)
-  ecs.event.emit("onlr_project.types")
+  ecs.event.emit("onlr.types")
   return true
 end
 
@@ -1667,10 +1667,10 @@ end
 local function choose(file, paths)
   local p = assert(P)
   p.chosen = { file = file, paths = paths or {} }
-  ecs.event.emit("onlr_project.chosen", p.chosen)
+  ecs.event.emit("onlr.chosen", p.chosen)
 end
 
-ecs.service.register({
+local functions = {
   open = { sig = "void(string folder)", doc = "Open a project's folder", fn = function(folder)
     open(folder)
   end },
@@ -1698,7 +1698,7 @@ ecs.service.register({
   folder = { sig = "string()", doc = "The open project's folder, ending with a slash, or an empty text", fn = function()
     return P and P.folder or ""
   end },
-  home = { sig = "string()", doc = "ONLR's own folder, which holds the engine and the player's files", fn = home },
+  home = { sig = "string()", doc = "ONLR's own folder, which holds packages/ and plugins/", fn = home },
   file = { sig = "value(string path)", doc = "A data file of the project, as the editor holds it", fn = getFile },
   text = { sig = "string(string path)", doc = "A data file's text, as the editor would write it now", fn = function(path)
     local file = getFile(path)
@@ -1753,7 +1753,7 @@ ecs.service.register({
     if P then
       P.types[name] = info
       P.trees = {}
-      ecs.event.emit("onlr_project.types")
+      ecs.event.emit("onlr.types")
     end
   end },
   chosen = { sig = "value()", doc = "The chosen nodes: their file, and their paths", fn = function()
@@ -1766,7 +1766,7 @@ ecs.service.register({
   setTool = { sig = "void(string tool)", doc = "Choose a tool", fn = function(tool)
     if P then
       P.tool = tool
-      ecs.event.emit("onlr_project.tool", tool)
+      ecs.event.emit("onlr.tool", tool)
     end
   end },
   setting = { sig = "value(string name)", doc = "A setting that the editor keeps for the project, such as grid or snap", fn = function(name)
@@ -1776,7 +1776,7 @@ ecs.service.register({
     if P then
       P.settings[name] = value
       writeSettings()
-      ecs.event.emit("onlr_project.settings", name)
+      ecs.event.emit("onlr.settings", name)
     end
   end },
   setField = { sig = "bool(string file, value paths, string field, value value)", doc = "Set a field of nodes", fn = setField },
@@ -1821,7 +1821,7 @@ ecs.service.register({
     end
     local ok = saveFile(file)
     if ok then
-      ecs.event.emit("onlr_project.saved", { files = { path } })
+      ecs.event.emit("onlr.saved", { files = { path } })
     end
     return ok
   end },
@@ -1843,7 +1843,7 @@ ecs.service.register({
   openPath = { sig = "void(string path)", doc = "Open the project that holds a file or a folder", fn = function(path)
     open(path)
   end },
-})
+}
 
 ecs.plugin.register({
   stateVersion = 1,
@@ -1859,3 +1859,11 @@ ecs.plugin.register({
     end
   end,
 })
+
+-- The other parts call the functions themselves; init.lua registers them as the plugin's (DESIGN 13.1).
+---@type table<string, any>
+local part = { functions = functions }
+for name, entry in pairs(functions) do
+  part[name] = entry.fn
+end
+return part
