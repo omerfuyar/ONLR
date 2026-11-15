@@ -1053,7 +1053,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 13.4 The nodes panel and the inspector
 
 - The nodes panel shows the tree of the node file whose view has the focus, from its first node.
-- The inspector shows the chosen node's own fields (5): its name, its place, its `z` and whether it is active. Then it shows each of its components under its type's name. A component has one row for each property: its `label`, or else its name in words, `cellSize` as "Cell size", and the control of its kind (6.2).
+- The inspector shows the chosen node's own fields (5): its name, its place, its `z` and whether it is active. Then it shows each of its components as a section under its type's name, which a click on the heading folds. A component's first row turns it on and off and removes it, and it has one row for each property after that: its `label`, or else its name in words, `cellSize` as "Cell size", and the control of its kind (6.2). A colour shows its four numbers and a swatch, whose click opens a picker.
 - A typed value is taken at Return. The inspector shows a node's angle in degrees; the file keeps radians, as LÖVE does.
 - In the nodes panel, a click chooses a node alone. A click with Ctrl adds a node to the chosen ones, or takes it out, and a click with Shift chooses every shown node from the last node clicked alone or with Ctrl to the clicked one, as a system's file manager does. The node view and the inspector follow the same choice.
 - The nodes panel moves the chosen node with buttons: up and down among its parent's children, out of its parent, and into the node above it.
