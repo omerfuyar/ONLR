@@ -200,12 +200,14 @@ local function playPlayer()
   check.ok(not player.printed():find("Error", 1, true), "it printed no error")
 end
 
--- An error goes to the editor with its file, line and stack.
+-- An error goes to the editor with its file, line and stack, and the component and node that raised it.
 local function errors()
   local player = editor.start("life", "play", "--onlr-start=nodes/failing.lua")
   local err = assert(player.expect("error", 10), "no error")
   check.equal({ err.file, err.line, err.message }, { "components/failing.lua", 6, "this component fails in load" }, "an error's file, line and message")
   check.ok(err.stack and err.stack:find("components/failing.lua:6", 1, true), "its stack")
+  check.equal(err.source, { type = "failing", name = "Failing", file = "nodes/failing.lua", id = "f411ng" },
+    "the component that raised it, and its node")
   check.ok(player.printed():find("this component fails in load", 1, true), "what the game prints reaches the editor's console")
 end
 
