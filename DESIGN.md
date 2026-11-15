@@ -216,13 +216,14 @@ return {
 
 - The first line of each file names its type, such as `---@type onlr.NodeFile`, so a code editor with the Lua language server completes and checks its fields.
 - The types are in the engine's source, in the project's `packages/onlr/` (1). LÖVE's own definitions, from [LuaCATS/love2d](https://github.com/LuaCATS/love2d), are copied into `.onlr/love2d/`.
-- The editor writes `.luarc.json` once, when it makes the project. It names LuaJIT as the Lua version, `.onlr/` as a library, and `packages/` as a place where `require` looks (11.1):
+- The editor writes `.luarc.json` once, when it makes the project. It names LuaJIT as the Lua version, `.onlr/` as a library, and `packages/` as a place where `require` looks (11.1). It turns off the warning of a file that is loaded by two names, since `conf.lua` and `main.lua` load the engine as `packages.onlr` and scripts as `onlr` (3.1):
 
   ``` json
   {
     "runtime.version": "LuaJIT",
     "runtime.path": ["?.lua", "?/init.lua", "packages/?.lua", "packages/?/init.lua"],
-    "workspace.library": [".onlr"]
+    "workspace.library": [".onlr"],
+    "diagnostics.disable": ["different-requires"]
   }
   ```
 

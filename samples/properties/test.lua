@@ -59,6 +59,7 @@ check.run(function()
   check.fails(function() onlr.property.number(1, { choices = {} }) end, "a number takes no option choices", "an option of another kind")
   check.fails(function() onlr.property.string("", { lable = "x" }) end, "takes no option lable", "a misspelt option")
   check.fails(function() onlr.property.choice("up", { choices = { "left" } }) end, "not one of the choices", "a default that is no choice")
+  ---@diagnostic disable-next-line: missing-parameter
   check.fails(function() onlr.property.choice("up") end, "needs its choices", "a choice without choices")
   check.fails(function() onlr.property.integer(1.5) end, "whole number", "an integer's default")
   check.fails(function() onlr.property.list(5) end, "one property", "a list of no property")

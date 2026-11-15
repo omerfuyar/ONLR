@@ -25,7 +25,7 @@ check.run(function()
   local function find(name)
     return assert(tree.find(name))
   end
-  local camera = find("World").components.onlr.camera
+  local camera = assert(find("World").components.onlr.camera)
 
   -- The camera shows its point, 0, 0, in the middle of its screen, the window.
   local at = draw()
