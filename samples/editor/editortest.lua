@@ -70,6 +70,15 @@ return {
     save()
     check(read("nodes/start.lua") == start, "undo and save give the first text again")
 
+    -- with Ctrl held, a drag snaps to the grid of 32, though snapping is off
+    x, y = at(56, 56)
+    test.drag(x, y, x + 50, y + 20, "Ctrl")
+    test.wait(0.3)
+    save()
+    check(read("nodes/start.lua"):find("posX = 96,\n      posY = 64,"), "Ctrl snaps the drag:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+
     -- with Local, two chosen nodes turn by the same angle, each around its own place (DESIGN 13.3)
     -- the tools panel's first row: Move, Turn and Scale, then Global and Local
     local tools = test.rect(panelOf(test, "onlr.tools"))
