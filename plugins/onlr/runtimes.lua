@@ -72,7 +72,7 @@ local function playersRuntime()
   if isWindows then
     return nil
   end
-  local love = ecs.setting.get("onlr_player.love")
+  local love = ecs.setting.get("onlr.love")
   if type(love) ~= "string" or love == "" then
     love = os.getenv("LOVE") or "love"
   end
@@ -88,7 +88,7 @@ end
 ---@param done fun(folder: string?, message: string?) gets the runtime's folder, ending with a slash, or nil and why there is none
 function runtimes.get(platform, done)
   local name = platform:match("^%a+")
-  local set = ecs.setting.get("onlr_export." .. name .. "Runtime")
+  local set = ecs.setting.get("onlr." .. name .. "Runtime")
   if type(set) == "string" and set ~= "" then
     set = set:gsub("\\", "/")
     if set:sub(-1) ~= "/" then
@@ -97,7 +97,7 @@ function runtimes.get(platform, done)
     if isRuntime(set, platform) then
       return done(set)
     end
-    return done(nil, ("The setting onlr_export.%sRuntime names %s, which holds no LÖVE."):format(name, set))
+    return done(nil, ("The setting onlr.%sRuntime names %s, which holds no LÖVE."):format(name, set))
   end
   local known = runtimes.KNOWN[platform]
   local folder = dataFolder() .. platform .. "/"
@@ -112,7 +112,7 @@ function runtimes.get(platform, done)
     end
   end
   if not known.url then
-    return done(nil, ("ONLR has no address to download LÖVE's runtime for %s from yet. The setting onlr_export.%sRuntime names a folder to use."):format(
+    return done(nil, ("ONLR has no address to download LÖVE's runtime for %s from yet. The setting onlr.%sRuntime names a folder to use."):format(
       platform, name))
   end
   local request, err = web.get(known.url, function(request)

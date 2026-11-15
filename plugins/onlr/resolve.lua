@@ -7,13 +7,13 @@ local format = require("format")
 local resolve = {}
 
 ---What the resolver asks of the project.
----@class onlr_project.Source
+---@class onlr.editor.Source
 ---@field file fun(path: string): table?, string? a node file's table, or nil and why it does not load
 ---@field space table the names that components can hold: true for a type, a table for a folder or a package
 ---@field properties fun(type: string): table[]? a type's properties, as the edit player answers them, when known
 
 ---A node of a node file, as the panels show it.
----@class onlr_project.Node
+---@class onlr.editor.Node
 ---@field path string its path of ids, from the file that is shown: an id, or an instance's id, a slash and the rest
 ---@field id string its id in the file that writes it
 ---@field file string the node file that writes it
@@ -32,13 +32,13 @@ local resolve = {}
 ---@field active boolean
 ---@field base table<string, any> the fields without the shown file's change, which a change that is taken out goes back to
 ---@field changed table<string, boolean> the fields that the shown file's change sets
----@field components table<string, onlr_project.Component> by type name
----@field children onlr_project.Node[]
----@field parent onlr_project.Node?
+---@field components table<string, onlr.editor.Component> by type name
+---@field children onlr.editor.Node[]
+---@field parent onlr.editor.Node?
 ---@field errors string[]
 
 ---A component of such a node.
----@class onlr_project.Component
+---@class onlr.editor.Component
 ---@field values table<string, any> its values, as the files write them
 ---@field base table<string, any>? the values without the shown file's change. Nil when that change adds the component
 ---@field changed table<string, boolean> the values that the shown file's change sets
@@ -201,7 +201,7 @@ local function expandEntry(entry, scope, overlays, ctx)
     return node
   end
 
-  ---@type onlr_project.Node
+  ---@type onlr.editor.Node
   local node = {
     path = scope.prefix .. id, id = id, file = scope.file, own = scope.top or false,
     posX = 0, posY = 0, rot = 0, sclX = 1, sclY = 1, z = 0, active = true,
@@ -314,24 +314,24 @@ function expandFile(path, overlays, ctx, firstPath)
 end
 
 ---The nodes of a node file.
----@class onlr_project.Tree
+---@class onlr.editor.Tree
 ---@field file string the node file
----@field first onlr_project.Node? its first node. Nil when the file does not load
+---@field first onlr.editor.Node? its first node. Nil when the file does not load
 ---@field error string? why it does not load
----@field index table<string, onlr_project.Node> every node, by its path
----@field order onlr_project.Node[] every node, in the order of the tree
+---@field index table<string, onlr.editor.Node> every node, by its path
+---@field order onlr.editor.Node[] every node, in the order of the tree
 ---@field instances table<string, table> the file's own instances, by id: their tables in the file
 ---@field unused table<string, string[]> for each of them, the keys of its changes that name no node
 ---@field files table<string, boolean> the node files that it is made of
 
 ---Makes the nodes of a node file.
 ---@param path string the node file
----@param source onlr_project.Source
----@return onlr_project.Tree
+---@param source onlr.editor.Source
+---@return onlr.editor.Tree
 function resolve.tree(path, source)
   local ctx = { source = source, stack = {}, index = {}, order = {}, instances = {}, unused = {}, files = {} }
   local ok, first = pcall(expandFile, path, {}, ctx)
-  ---@type onlr_project.Tree
+  ---@type onlr.editor.Tree
   local tree = { file = path, index = ctx.index, order = ctx.order, instances = ctx.instances, unused = ctx.unused, files = ctx.files }
   if not ok then
     tree.error = tostring(first)
@@ -357,8 +357,8 @@ function resolve.tree(path, source)
 end
 
 ---Calls a function for every value that a file writes itself: those of its own nodes' components, and of its instances' changes.
----@param tree onlr_project.Tree
----@param source onlr_project.Source
+---@param tree onlr.editor.Tree
+---@param source onlr.editor.Source
 ---@param visit fun(values: table, name: string, decl: table?, typeName: string, entry: table) the table that holds the value, its property's name and declaration, and the entry that writes it
 function resolve.values(tree, source, visit)
   local function entry(e)

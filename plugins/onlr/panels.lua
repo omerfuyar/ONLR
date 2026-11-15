@@ -1,10 +1,10 @@
 -- The panels of ONLR's own, apart from the node view (DESIGN 13.1): the nodes panel, the inspector, the tools
--- and the project settings. Each shows the project that onlr_project holds, and changes it through its functions.
+-- and the project settings. Each shows the project that project.lua holds, and changes it through its functions.
 
 local ecs = require("ecs")
-local project = require("onlr_project")
+local project = require("project")
 local console = require("console")
-local player = require("onlr_player")
+local player = require("nodeview")
 local files = require("files")
 local viewer = require("viewer")
 
@@ -14,17 +14,17 @@ require("tools")
 require("settings")
 
 -- What the project says shows in the console.
-ecs.event.subscribe("onlr_project.said", function(_, text)
+ecs.event.subscribe("onlr.said", function(_, text)
   console.add(text, "info")
 end)
 
-for _, panel in ipairs({ "onlr_views.nodes", "onlr_views.inspector", "onlr_views.tools", "onlr_views.settings" }) do
-  for key, name in pairs({ ["Ctrl+Z"] = "onlr_project.undo", ["Ctrl+Y"] = "onlr_project.redo", ["Ctrl+S"] = "onlr_project.save" }) do
+for _, panel in ipairs({ "onlr.nodes", "onlr.inspector", "onlr.tools", "onlr.settings" }) do
+  for key, name in pairs({ ["Ctrl+Z"] = "onlr.undo", ["Ctrl+Y"] = "onlr.redo", ["Ctrl+S"] = "onlr.save" }) do
     ecs.key.bind(panel, key, name)
   end
 end
-ecs.key.bind("onlr_views.nodes", "Delete", "onlr_player.delete")
-ecs.key.bind("onlr_views.nodes", "Ctrl+D", "onlr_player.duplicate")
+ecs.key.bind("onlr.nodes", "Delete", "onlr.deleteChosen")
+ecs.key.bind("onlr.nodes", "Ctrl+D", "onlr.duplicateChosen")
 
 -- The files panel shows the project's folder, and the editor says what its files are (DESIGN 13.7).
 local function showFolder()
@@ -72,9 +72,9 @@ files.setHandlers({
   end,
 })
 
-ecs.event.subscribe("onlr_project.opened", showFolder)
-ecs.event.subscribe("onlr_project.closed", showFolder)
-ecs.event.subscribe("onlr_project.disk", function(_, value)
+ecs.event.subscribe("onlr.opened", showFolder)
+ecs.event.subscribe("onlr.closed", showFolder)
+ecs.event.subscribe("onlr.disk", function(_, value)
   if value.kind == "asset" then
     viewer.reload(project.folder() .. value.path)
   end

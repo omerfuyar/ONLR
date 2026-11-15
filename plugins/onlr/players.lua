@@ -4,7 +4,7 @@
 local ecs = require("ecs")
 local net = require("net")
 local process = require("process")
-local project = require("onlr_project")
+local project = require("project")
 local console = require("console")
 local link = require("link")
 local hints = require("hints")
@@ -12,7 +12,7 @@ local hints = require("hints")
 local players = {}
 
 ---A player: LÖVE as the editor started it, and its link.
----@class onlr_player.Player
+---@class onlr.editor.Player
 ---@field mode "edit"|"play"
 ---@field process any
 ---@field server any the link's listening end
@@ -26,9 +26,9 @@ local players = {}
 ---@field since integer when it was last asked, or last heard
 ---@field stopping boolean? the editor asked it to end
 
----@type onlr_player.Player?
+---@type onlr.editor.Player?
 local edit
----@type onlr_player.Player?
+---@type onlr.editor.Player?
 local play
 
 ---The views that the node views show, by number: what the edit player draws (DESIGN 12.3).
@@ -59,7 +59,7 @@ ecs.setting.declare({
 })
 
 local function lovePath()
-  local path = ecs.setting.get("onlr_player.love")
+  local path = ecs.setting.get("onlr.love")
   if type(path) == "string" and path ~= "" then
     return path
   end
@@ -70,7 +70,7 @@ local isWindows = package.config:sub(1, 1) == "\\"
 
 ---@param mode "edit"|"play"
 ---@param startPath string?
----@return onlr_player.Player?
+---@return onlr.editor.Player?
 local function start(mode, startPath)
   local folder = project.folder()
   if folder == "" then
@@ -96,7 +96,7 @@ local function start(mode, startPath)
   end
   command[#command + 1] = lovePath()
   command[#command + 1] = folder:gsub("/$", "")
-  command[#command + 1] = "--onlr-player=" .. project.home() .. "player"
+  command[#command + 1] = "--onlr-player=" .. project.home() .. "plugins/onlr/player"
   command[#command + 1] = "--onlr-mode=" .. mode
   command[#command + 1] = "--onlr-port=" .. port
   if startPath then
@@ -104,10 +104,10 @@ local function start(mode, startPath)
   end
   local started, err = process.start(command, folder)
   if not started then
-    console.add(("LÖVE did not start: %s. The setting onlr_player.love names its executable."):format(tostring(err)), "error")
+    console.add(("LÖVE did not start: %s. The setting onlr.love names its executable."):format(tostring(err)), "error")
     return nil
   end
-  ---@type onlr_player.Player
+  ---@type onlr.editor.Player
   return {
     mode = mode, process = started, server = server, buffer = "", ready = false, output = {}, partial = "",
     sent = {}, owed = {}, since = os.time(),
@@ -204,7 +204,7 @@ function players.ensureEdit()
   edit = start("edit")
   if edit then
     players.down = nil
-    ecs.event.emit("onlr_player.state")
+    ecs.event.emit("onlr.state")
   end
 end
 
@@ -277,7 +277,7 @@ local function editEnded(why)
     console.add("The edit player stopped twice in a row. It starts again when asked: Start the edit player again.", "error")
   end
   players.onView("down", { message = why })
-  ecs.event.emit("onlr_player.state")
+  ecs.event.emit("onlr.state")
 end
 
 local edits = {}
@@ -295,7 +295,7 @@ function edits.hello(message)
   for _, name in ipairs(project.typeNames()) do
     ask(name)
   end
-  ecs.event.emit("onlr_player.state")
+  ecs.event.emit("onlr.state")
 end
 
 function edits.frame(message, block)
@@ -342,12 +342,12 @@ end
 
 function plays.tree(message)
   players.running.tree = message.nodes
-  ecs.event.emit("onlr_player.running", "tree")
+  ecs.event.emit("onlr.running", "tree")
 end
 
 function plays.values(message)
   players.running.values = message.nodes
-  ecs.event.emit("onlr_player.running", "values")
+  ecs.event.emit("onlr.running", "values")
 end
 
 function plays.error(message)
@@ -376,7 +376,7 @@ function players.play(startPath)
   end
   play = start("play", startPath)
   players.running = { playing = play ~= nil, paused = false }
-  ecs.event.emit("onlr_player.state")
+  ecs.event.emit("onlr.state")
   return play ~= nil
 end
 
@@ -389,7 +389,7 @@ function players.pause(paused)
   if play then
     players.running.paused = paused
     send(play, { type = paused and "pause" or "resume" })
-    ecs.event.emit("onlr_player.state")
+    ecs.event.emit("onlr.state")
   end
 end
 
@@ -397,7 +397,7 @@ function players.step()
   if play then
     players.running.paused = true
     send(play, { type = "step" })
-    ecs.event.emit("onlr_player.state")
+    ecs.event.emit("onlr.state")
   end
 end
 
@@ -512,8 +512,8 @@ local function poll()
       end
       play = nil
       players.running = { playing = false, paused = false }
-      ecs.event.emit("onlr_player.state")
-      ecs.event.emit("onlr_player.running", "tree")
+      ecs.event.emit("onlr.state")
+      ecs.event.emit("onlr.running", "tree")
     end
   end
 end

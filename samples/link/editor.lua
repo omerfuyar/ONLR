@@ -37,7 +37,7 @@ function editor.start(sample, mode, more)
   local log = os.tmpname()
   -- timeout ends a player that the test leaves behind, such as one that shows an error.
   os.execute(("timeout 60 %q %q --onlr-player=%q --onlr-mode=%s --onlr-port=%d %s > %q 2>&1 &"):format(
-    love2d, root .. "/samples/" .. sample, root .. "/player", mode, port, more or "", log))
+    love2d, root .. "/samples/" .. sample, root .. "/plugins/onlr/player", mode, port, more or "", log))
   server:settimeout(10)
   local connection = assert(server:accept(), "the player did not connect")
   server:close()

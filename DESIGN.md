@@ -72,8 +72,8 @@ A game made with ONLR is built in layers. Each uses only the layers above it in 
 | -------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- | ------- |
 | Engine         | `packages/onlr/`         | The Lua library that every project holds a copy of, as `packages/onlr/` (8.3).                                  | LÖVE    |
 | Packages       | `packages/`              | The packages that ONLR ships, each in a folder of its own beside the engine, such as `packages/bump/` (11.2).   | LÖVE    |
-| Player's files | `player/`                | The Lua code that the engine loads when the editor starts it: the link and the views (12). No project holds it. | LÖVE    |
 | Editor         | `plugins/`, `preset.lua` | OpenECS plugins and their preset (13).                                                                          | OpenECS |
+| Player's files | `plugins/onlr/player/`   | The Lua code that the engine loads when the editor starts it: the link and the views (12). No project holds it. | LÖVE    |
 | Samples        | `samples/`               | Small projects, which are the tests (16).                                                                       | Both    |
 
 ## 3. Projects
@@ -567,7 +567,7 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 - So code written for plain LÖVE in `main.lua` keeps working beside the nodes, such as an interface drawn in `love.draw`.
 - The engine runs on LÖVE's main thread, as a LÖVE game does. A script may use `love.thread` as in any game.
 - An error is LÖVE's: the game stops and LÖVE's error handler shows it, as in any game. A game may set its own handler, as LÖVE allows.
-- In an exported game the loop does this and nothing else. What serves the editor is not in the project: the engine loads it from ONLR's own folder, and only when the editor starts it (12.1).
+- In an exported game the loop does this and nothing else. What serves the editor is not in the project: the engine loads it from the editor's plugin, and only when the editor starts it (12.1).
 
 ### 8.2 How the tree is kept
 
@@ -905,7 +905,7 @@ What the sample shows of every package:
 ### 12.1 The player
 
 - The editor starts LÖVE itself, unchanged, as a program of its own on the project's folder. Arguments tell the engine that the editor started it, the mode, where the editor listens, and where the player's files are: `--onlr-player=FOLDER`, `--onlr-mode=edit` or `play`, `--onlr-port=PORT`, and for Play This File `--onlr-start=PATH`.
-- The player's files are the Lua code that serves the editor: the link and the views. They are in ONLR's own folder, and no project holds them. The engine loads them with Lua's own `loadfile`, which reads any path, where LÖVE's file functions read only the game's folder (3.1). So a project and its exports hold nothing of the editor, and both ends of the link are of one version of ONLR.
+- The player's files are the Lua code that serves the editor: the link and the views. They belong to the editor, in its plugin's `player/` folder (13.1), and no project or export holds them. The engine loads them with Lua's own `loadfile`, which reads any path, where LÖVE's file functions read only the game's folder (3.1). So a project and its exports hold nothing of the editor, and both ends of the link are of one version of ONLR.
 - A player runs in one of two modes:
 
   | Mode | Runs                                        | Draws into                                     |
@@ -1006,20 +1006,26 @@ What the sample shows of every package:
 - Such a plugin is told what ONLR needs through its functions. The files panel takes handlers: how a file opens, which files it makes, what a rename and a delete do, and what the question before a delete adds. It drags a file as a list of paths, as another application's files come. The console takes lines, and the folder that their files are in.
 - A panel of ONLR's own, such as the inspector or the nodes panel, is built from generic parts, such as ui's elements. A part that it needs and that knows nothing of ONLR is added to the standard plugin that it belongs to, not written inside ONLR, and not worked around.
 
-| Plugin         | Does                                                                                          |
-| -------------- | --------------------------------------------------------------------------------------------- |
-| `onlr_project` | Holds the open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. |
-| `onlr_player`  | Starts the players and speaks the link. It gives the node view, and the functions Play, Play This File, Pause, Step and Stop. |
-| `onlr_views`   | The other panels of ONLR's own: the nodes panel, the inspector, the tools and the project settings. |
-| `onlr_export`  | Export (14), and LÖVE's runtimes (15).                                                        |
+ONLR's own panels and functions are one plugin, `onlr`, whose names all start with `onlr.`, such as `onlr.play` and the panel type `onlr.view`. It has a file for each part:
 
-- The project's data lives in `onlr_project`, not in a panel (OpenECS OVERVIEW 9.2). Panels show it, change it through its functions, and hear of changes through its events.
-- Every panel can be open many times. What belongs to the project is one, in `onlr_project`: its files, the chosen nodes, the chosen tool, snapping and the history. So two node views of one file show the same nodes, two inspectors show the same chosen nodes, and a change made in one panel shows in every other at once.
+| In `plugins/onlr/`                      | Holds                                                                                         |
+| --------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `init.lua`                              | Loads the parts, and registers the functions that they give as the plugin's.                  |
+| `project.lua`, `format.lua`, `resolve.lua` | The open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. |
+| `nodeview.lua`, `players.lua`, `link.lua`, `hints.lua` | The node view, the players and the link, and the functions Play, Play This File, Pause, Step and Stop. |
+| `panels.lua`, `nodes.lua`, `inspector.lua`, `tools.lua`, `settings.lua`, `shared.lua` | The other panels of ONLR's own: the nodes panel, the inspector, the tools and the project settings. |
+| `export.lua`, `runtimes.lua`, `tar.lua` | Export (14), and LÖVE's runtimes (15).                                                        |
+| `player/`                               | The player's files (12.1), which the editor names to LÖVE and never loads itself.              |
+
+- The parts call each other's functions as Lua functions, and other plugins call them as `onlr.*`.
+
+- The project's data lives in `project.lua`, not in a panel (OpenECS OVERVIEW 9.2). Panels show it, change it through its functions, and hear of changes through its events.
+- Every panel can be open many times. What belongs to the project is one, in `project.lua`: its files, the chosen nodes, the chosen tool, snapping and the history. So two node views of one file show the same nodes, two inspectors show the same chosen nodes, and a change made in one panel shows in every other at once.
 - What belongs to one panel is its own state (OpenECS OVERVIEW 5.4): where a node view looks from and its zoom, which nodes a nodes panel has open, and which components an inspector has folded.
 - The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, and a text with syntax. It shows no video, since OpenECS-std's video does not read LÖVE's Ogg Theora.
 - The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting, `console.editor`. The console first checks that the command's program is there, as a path or in the folders of `PATH`. When it is not, or does not start, the system opens the file with the program that it has for such files, and the console warns once.
-- An error of the game shows with a hint, when it is one that the editor knows: what such an error often means in a game, in plain words, and what to try. The hints are a list of patterns in `onlr_player`, matched against the error's text.
-- `onlr_project` tells of changes with events: a project opened or closed, files changed, saved or renamed, the chosen nodes, the tool, the types, and a file that changed on disk. Its functions and events are documented in its code.
+- An error of the game shows with a hint, when it is one that the editor knows: what such an error often means in a game, in plain words, and what to try. The hints are a list of patterns in `hints.lua`, matched against the error's text.
+- `project.lua` tells of changes with events, such as `onlr.chosen`: a project opened or closed, files changed, saved or renamed, the chosen nodes, the tool, the types, and a file that changed on disk. Its functions and events are documented in its code.
 
 ### 13.2 Projects
 
@@ -1066,7 +1072,7 @@ What the sample shows of every package:
 
 ### 13.6 Changes and saving
 
-- Each change of a node file or of the manifest is a record that can be undone. `onlr_project` keeps them in one history for the project. One record can change many files, such as a deleted node and the properties that named it.
+- Each change of a node file or of the manifest is a record that can be undone. `project.lua` keeps them in one history for the project. One record can change many files, such as a deleted node and the properties that named it.
 - Choosing nodes is a record of the same history, between the records of changes, as in Unity. So one key walks back through everything that the user did, and undo gives the nodes that were chosen before back. A record of choosing never marks a file as unsaved.
 - Deleting a node, with all under it, also clears every property that names one of those nodes or one of their components, and drops every change of an instance that names one of them, in every node file of the project, in the same record. Removing a component clears the properties that name it in the same way. So no file names a node that is gone.
 - When the editor reads a file that names a node that does not exist, such as after a merge in git, the inspector marks the property or the change, and offers to clear it (9).
@@ -1121,8 +1127,8 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - A runtime is LÖVE for one version and one platform, as files in a folder.
 - ONLR's archive holds the runtime of the editor's own platform, which the players run. On Linux it is the contents of LÖVE's AppImage, unpacked, so it runs without the system's AppImage support.
 - The runtime of another platform is downloaded at the first export for it: from LÖVE's releases, and for Linux from ONLR, which hosts the AppImage's contents as a `.tar.gz`, since only Linux unpacks an AppImage. The editor checks the downloaded file against the SHA-256 hash that ONLR ships for it, before it uses anything of it, and keeps the runtime in the user's data folder, by version and platform: `onlr/runtimes/11.5/windows-x86_64/`.
-- A setting names a folder to use as a runtime instead, such as a LÖVE the user built: `onlr_export.linuxRuntime` and `onlr_export.windowsRuntime`.
-- The players run the LÖVE that the setting `onlr_player.love` names, or else the one of ONLR's archive.
+- A setting names a folder to use as a runtime instead, such as a LÖVE the user built: `onlr.linuxRuntime` and `onlr.windowsRuntime`.
+- The players run the LÖVE that the setting `onlr.love` names, or else the one of ONLR's archive.
 
 ## 16. Tests
 

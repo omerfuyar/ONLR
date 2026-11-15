@@ -26,7 +26,7 @@ return {
     check(level:find("\n%s*%-%- "), "the sample's node file holds comments")
     local view
     for _, panel in ipairs(test.panels()) do
-      if panel.type == "onlr_player.view" then
+      if panel.type == "onlr.view" then
         view = test.rect(panel.id)
       end
     end
