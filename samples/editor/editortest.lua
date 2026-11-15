@@ -44,8 +44,15 @@ return {
       test.key("Ctrl+S")
       test.wait(0.2)
     end
-    -- the edit player starts, and answers what the types declare
-    test.wait(1.5)
+    -- the edit player starts, and answers what the types declare: node A's red square shows, which takes longer
+    -- on a slow computer
+    for _ = 1, 40 do
+      test.wait(0.5)
+      if test.pixel(at(56, 56)) == "#FF0000" then
+        break
+      end
+    end
+    test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
 
     -- a drag with the move tool moves the node under the pointer, as one change
@@ -273,7 +280,7 @@ return {
     -- Export: the folder that exports are written to is typed into the Export panel, which is a tab beside the inspector
     test.click(inspector.x + 210, inspector.y - 14)
     test.wait(0.2)
-    local export = test.rect(panelOf(test, "onlr.export"))
+    local export = test.rect(panelOf(test, "onlr.panel"))
     test.click(export.x + 100, export.y + 50)
     test.key("Ctrl+A")
     test.text("out")
