@@ -135,6 +135,11 @@ local function playPlayer()
   local hello = player.expect("hello")
   check.equal(hello and hello.mode, "play", "the play player says hello")
 
+  -- Stats: twice a second, the frames a second and the time of update and draw in a frame, in milliseconds.
+  local stats = assert(player.expect("stats", 2), "no stats")
+  check.equal({ type(stats.fps), type(stats.update), type(stats.draw) }, { "number", "number", "number" }, "the stats are numbers")
+  check.equal(stats.update >= 0 and stats.draw >= 0, true, "the times are not negative")
+
   -- Watch: the running tree, each node with a number.
   player.send({ type = "watch", tree = true })
   local tree = assert(player.expect("tree"), "no tree")

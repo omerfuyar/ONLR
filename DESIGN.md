@@ -953,6 +953,7 @@ What the sample shows of every package:
 | An answer        | `answer` | The edit player | A type's properties, or why its file does not load (12.5).     |
 | The tree         | `tree`   | The play player | The running tree's nodes, when it changes (12.6).              |
 | Values           | `values` | The play player | The watched nodes' places and values (12.6).                   |
+| Stats            | `stats`  | The play player | The frames a second, and the time of update and draw (12.6).   |
 | An error         | `error`  | Both players    | Its message, file, line and stack, and what raised it (13.1).  |
 
 - A change carries a node's own fields only: its name, its place, its `z` and whether it is active. The edit player sets them on the view's nodes, so a drag draws at once. For any other edit, such as a component's value, the editor sends the file again, and the edit player makes the views' nodes anew.
@@ -994,7 +995,8 @@ What the sample shows of every package:
 - The editor asks the play player for the tree. The engine sends each node's name, its children and its components' types, and sends the tree again when it changes, at most four times a second. A running node has no id of a file (9), so the engine gives each a number for the link.
 - For the chosen nodes, the engine sends their places and their components' values ten times a second. A reference is sent as what it names: a file as its path, and a node or a component as the node's number.
 - A value that the user changes is sent to the play player, which sets it between two frames, as a script sets a field. A node's active and a component's enabled are set through their functions (7).
-- The engine sends none of it unless the editor asks, and an exported game holds none of it (8.1).
+- Twice a second, the play player sends the game's frames a second, and the mean time that a frame spent in update and in draw, in milliseconds. The tools panel shows them while the game plays, so the user sees what makes a game slow. The engine's loop measures the times only when a player runs it; the time of draw leaves out `love.graphics.present`, which waits for the screen. A game with its own `love.run` sends its frames a second alone.
+- The engine sends none of the tree and the values unless the editor asks, and an exported game holds none of it (8.1).
 - A game that sets its own `love.run` does not run the engine's loop (8.1). The play player then reads the link when the game's frame ends, and Pause and Step do nothing.
 
 ## 13. The editor
@@ -1043,6 +1045,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
 - Many chosen nodes turn and scale by one amount, around a pivot that the tools panel chooses, as Unity's does. With Global, they turn and scale as one, around the middle of their places, so they move around it. With Local, each turns and scales around its own place and stays there, by the amount that the pointer turns around the place of the node that the drag started on. The pivot is a setting of the project, `pivot`, `middle` or `own`, kept with snapping.
 - A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node whose middle is in the rectangle.
+- The move tool draws two arrows on each chosen node's place, along the world's x in red and its y in green, which points down, as y grows down in LÖVE. A drag that starts on an arrow moves the chosen nodes along its axis alone, as Unity's arrows do, and only that axis snaps. An arrow is above the nodes, so it takes the press before a node under it.
 - A drag that starts on a node drags the chosen nodes with the tool: move by the pointer's way, turn by its angle around each node's place, and scale by its distance from it. The edit player draws each step (12.2), and the release is one change of the history.
 - The wheel zooms around the pointer. A drag with the middle button, or with Alt, moves the view. F fits the view to the chosen nodes, or to every node when none is chosen, as Unity's F does.
 - A right click opens a menu, as in the nodes panel: on a node, which it chooses when it is not chosen, Duplicate, Delete, Copy, Paste and Frame Chosen; in empty space, Add Node Here, at the pointer, Paste and Frame All.
