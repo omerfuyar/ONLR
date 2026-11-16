@@ -64,8 +64,8 @@ local function label(text, tooltip)
   return ui.text(text, { width = 110, tooltip = tooltip })
 end
 
--- A number's control: a number field, or an empty text field while the nodes differ.
-local function number(id, value, set, decl)
+-- A number's control: a number field, or an empty text field while the nodes differ. With a width, it keeps that width.
+local function number(id, value, set, decl, width)
   local options = decl and decl.options or {}
   if value == MIXED or type(value) ~= "number" then
     return ui.field("", { id = id, grow = 1, tooltip = "The nodes differ; Return sets the typed number on all of them", onSubmit = function(text)
@@ -76,7 +76,7 @@ local function number(id, value, set, decl)
     end })
   end
   return ui.number(value, {
-    id = id, grow = 1, min = options.min, max = options.max, step = decl and decl.kind == "integer" and 1 or nil,
+    id = id, grow = width and 0 or 1, width = width, min = options.min, max = options.max, step = decl and decl.kind == "integer" and 1 or nil,
     tooltip = "Return takes the number; Up and Down change it", onSubmit = set,
   })
 end
@@ -102,8 +102,7 @@ local function control(state, subject, id, decl, value, set)
     return ui.toggle(value == true, { id = id, tooltip = "On or off", onChange = set })
   elseif (kind == "integer" or kind == "number") and type(options.min) == "number" and type(options.max) == "number" and type(value) == "number" then
     -- A number with a range shows a slider beside its field, as Unity's Range does; the slider's release is one change.
-    local field = number(id, value, set, decl)
-    field.grow, field.width = 0, 64
+    local field = number(id, value, set, decl, 64)
     return ui.row({ gap = 4, grow = 1, align = "center" }, {
       ui.slider(value, { id = id .. ":slide", grow = 1, min = options.min, max = options.max, step = kind == "integer" and 1 or nil,
         tooltip = ("From %s to %s; a drag changes it"):format(options.min, options.max), onSubmit = set }),
