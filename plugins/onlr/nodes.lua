@@ -127,6 +127,78 @@ local function reorder(file, how)
   local _ = tree
 end
 
+-- Whether a child is written in its parent's own list of children: one of the file's own, or an instance's first node. The children of a
+-- base come first, and stay where they are.
+local function written(child)
+  return child.own or (child.holder ~= nil and child.path == child.holder.id)
+end
+
+local IMAGES = { png = true, jpg = true, jpeg = true, bmp = true, tga = true }
+
+-- A drop on the tree (DESIGN 13.4). Dragged nodes move before, into or after the node that they land on: the chosen nodes when the dragged
+-- one is chosen, or else the dragged one. A node file or an image from the files panel becomes a child of the node, as in the node view.
+local function dropped(file, id, where, dataType, value)
+  local tree = project.tree(file)
+  local target = id and tree.index[id] or tree.first
+  if not target or type(value) ~= "table" then
+    return
+  end
+  if dataType == "file-list" then
+    local folder, made = project.folder(), {}
+    for _, path in ipairs(value) do
+      path = tostring(path):gsub("\\", "/")
+      local inside = path:sub(1, #folder) == folder and path:sub(#folder + 1)
+      local ending = inside and (inside:match("%.(%w+)$") or ""):lower()
+      local madeId, message
+      if inside and inside:match("^nodes/.+%.lua$") then
+        madeId, message = project.addInstance(file, target.path, inside, 0, 0)
+      elseif inside and IMAGES[ending] then
+        local name = inside:match("([^/]*)%.%w+$")
+        madeId = project.addNode(file, target.path, { name = name:sub(1, 1):upper() .. name:sub(2), components = { onlr = { sprite = { image = inside } } } })
+      end
+      say(nil, message)
+      made[#made + 1] = madeId
+    end
+    if #made > 0 then
+      project.choose(file, made)
+    end
+    return
+  end
+  if dataType ~= "onlr.node" or value.file ~= file then
+    return
+  end
+  local paths = { value.path }
+  for _, path in ipairs(project.chosen().file == file and project.chosen().paths or {}) do
+    if path == value.path then
+      paths = project.chosen().paths
+    end
+  end
+  local moving = {}
+  for _, path in ipairs(paths) do
+    moving[path] = true
+  end
+  if moving[target.path] then
+    return
+  end
+  if where == "into" or not id or not target.parent then
+    return say(project.moveNodes(file, paths, target.path))
+  end
+  -- the place among the parent's own children, without the nodes that move, which leave their places first
+  local index = 1
+  for _, child in ipairs(target.parent.children) do
+    if child == target then
+      break
+    end
+    if written(child) and not moving[child.path] then
+      index = index + 1
+    end
+  end
+  if where == "after" then
+    index = index + 1
+  end
+  say(project.moveNodes(file, paths, target.parent.path, index))
+end
+
 -- Asks for a node's new name in the field above the tree, which gets the keys.
 local function rename(state, file, path)
   local node = project.tree(file).index[path]
@@ -273,9 +345,9 @@ local function draw(state, surface)
         })
       end
       children[#children + 1] = ui.tree({ shown }, {
-        id = "tree", open = opened, selected = paths, grow = 1, tooltip = "A right click opens a menu of the nodes",
+        id = "tree", open = opened, selected = paths, grow = 1,
+        tooltip = "A drag moves a node before, into or after another, or to a reference in the inspector; a right click opens a menu",
         onSelect = function(id, how, between)
-          state.pressed = id
           if how == "toggle" then
             local kept = {}
             for _, path in ipairs(paths) do
@@ -301,6 +373,13 @@ local function draw(state, surface)
         onMenu = function(id, x, y)
           menu(state, file, id, x, y)
         end,
+        -- a node is dragged to another place in the tree, or to a reference's row of the inspector (DESIGN 13.4)
+        onDrag = function(id)
+          return "onlr.node", { file = file, path = id }
+        end,
+        onDrop = function(id, where, dataType, value)
+          dropped(file, id, where, dataType, value)
+        end,
       })
     end
   end
@@ -317,6 +396,7 @@ ecs.panel.registerType({
       state.open, state.openFile = saved.open or {}, saved.file
     end
     shared.follow(panel)
+    panel:acceptDrops({ "onlr.node", "file-list" })
     return state
   end,
   draw = draw,
@@ -328,17 +408,6 @@ ecs.panel.registerType({
         rename(state, chosen.file, chosen.paths[1])
         return
       end
-    end
-    -- A node is dragged out of the tree to a reference's row of the inspector (DESIGN 13.4).
-    if event.type == "pointerDown" then
-      state.pressed, state.pressX, state.pressY = nil, event.x, event.y
-    elseif event.type == "pointerMove" and state.pressed and not shared.running then
-      if math.abs(event.x - state.pressX) + math.abs(event.y - state.pressY) > 8 then
-        state.panel:startDrag("onlr.node", { file = shared.file(), path = state.pressed })
-        state.pressed = nil
-      end
-    elseif event.type == "pointerUp" then
-      state.pressed = nil
     end
     ui.event(state.panel, event)
   end,
