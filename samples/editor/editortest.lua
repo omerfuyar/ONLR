@@ -329,6 +329,29 @@ return {
     test.key("Ctrl+Z")
     save()
 
+    -- a node dragged in the nodes panel moves in the tree: onto the upper quarter of a row before that node, and onto its middle into it
+    -- (DESIGN 13.4); each move is one change
+    local fromX, fromY = row(3)
+    local toX, toY = row(2)
+    test.drag(fromX, fromY, toX, toY - 8)
+    test.wait(0.2)
+    save()
+    local moved = read("nodes/start.lua")
+    check(moved:find('"bbbbbb"', 1, true) < moved:find('"aaaaaa"', 1, true), "B moves before A:\n" .. moved)
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the move is undone")
+    fromX, fromY = row(2)
+    toX, toY = row(3)
+    test.drag(fromX, fromY, toX, toY)
+    test.wait(0.2)
+    save()
+    moved = read("nodes/start.lua")
+    check(moved:find('name = "B",.-children = {%s*{%s*id = "aaaaaa"'), "A moves into B:\n" .. moved)
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the move into B is undone")
+
     -- Save as Node File, the last entry of a node's menu in the nodes panel that A can use, writes the node to a new node file named after it, and
     -- puts an instance of it in its place; Up goes round from the menu's first entry to its last
     test.click(x, y)
