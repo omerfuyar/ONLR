@@ -13,8 +13,9 @@ local rest = 0
 
 -- What the player's files set when the editor started the game (DESIGN 12.1): frame() is called once
 -- in each turn of the loop, and while paused is true the loop draws and calls nothing of the game.
--- step asks for one frame of a fixed step while paused.
----@type {frame: fun()?, paused: boolean?, step: boolean?}?
+-- step asks for one frame of a fixed step while paused. The loop adds the seconds that it spends in update and in draw to
+-- updateTime and drawTime, for the editor's count of them (DESIGN 12.6); an exported game has no player, and measures nothing.
+---@type {frame: fun()?, paused: boolean?, step: boolean?, updateTime: number?, drawTime: number?}?
 loop._player = nil
 
 -- Whether the engine's own love.run runs, and not a game's.
@@ -110,11 +111,16 @@ function loop.run()
       dt = 1 / (data.manifest().fixedRate or 60)
       rest = 0
     end
+    local started = player and love.timer and love.timer.getTime()
     if not paused then
       if love.update then
         love.update(dt)
       end
       loop.update(dt)
+    end
+    if player and started then
+      local now = love.timer.getTime()
+      player.updateTime, started = (player.updateTime or 0) + now - started, now
     end
 
     if love.graphics and love.graphics.isActive() then
@@ -123,6 +129,10 @@ function loop.run()
       loop.draw()
       if love.draw then
         love.draw()
+      end
+      -- the time of draw leaves out present, which waits for the screen
+      if player and started then
+        player.drawTime = (player.drawTime or 0) + love.timer.getTime() - started
       end
       love.graphics.present()
     end

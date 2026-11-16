@@ -952,6 +952,7 @@ What the sample shows of every package:
 | An answer        | `answer` | The edit player | A type's properties, or why its file does not load (12.5).     |
 | The tree         | `tree`   | The play player | The running tree's nodes, when it changes (12.6).              |
 | Values           | `values` | The play player | The watched nodes' places and values (12.6).                   |
+| Stats            | `stats`  | The play player | The frames a second, and the time of update and draw (12.6).   |
 | An error         | `error`  | Both players    | Its message, file, line and stack, and what raised it (13.1).  |
 
 - A change carries a node's own fields only: its name, its place, its `z` and whether it is active. The edit player sets them on the view's nodes, so a drag draws at once. For any other edit, such as a component's value, the editor sends the file again, and the edit player makes the views' nodes anew.
@@ -993,7 +994,8 @@ What the sample shows of every package:
 - The editor asks the play player for the tree. The engine sends each node's name, its children and its components' types, and sends the tree again when it changes, at most four times a second. A running node has no id of a file (9), so the engine gives each a number for the link.
 - For the chosen nodes, the engine sends their places and their components' values ten times a second. A reference is sent as what it names: a file as its path, and a node or a component as the node's number.
 - A value that the user changes is sent to the play player, which sets it between two frames, as a script sets a field. A node's active and a component's enabled are set through their functions (7).
-- The engine sends none of it unless the editor asks, and an exported game holds none of it (8.1).
+- Twice a second, the play player sends the game's frames a second, and the mean time that a frame spent in update and in draw, in milliseconds. The tools panel shows them while the game plays, so the user sees what makes a game slow. The engine's loop measures the times only when a player runs it; the time of draw leaves out `love.graphics.present`, which waits for the screen. A game with its own `love.run` sends its frames a second alone.
+- The engine sends none of the tree and the values unless the editor asks, and an exported game holds none of it (8.1).
 - A game that sets its own `love.run` does not run the engine's loop (8.1). The play player then reads the link when the game's frame ends, and Pause and Step do nothing.
 
 ## 13. The editor
