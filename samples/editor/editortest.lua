@@ -280,6 +280,18 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the paste is one change, undone")
 
+    -- a number with a range shows a slider under its heading, Movement: a drag to its end is one change, at the release (DESIGN 13.4)
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.wait(0.2)
+    test.drag(inspect.x + 130, inspect.y + 602, inspect.x + inspect.width, inspect.y + 602)
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua"):find("speed = 100,"), "the slider sets the speed:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the slider's drag is one change, undone")
+
     -- F2 renames the chosen node in a field above the tree, and Return takes the name
     rx, ry = row(2)
     test.click(rx, ry)

@@ -100,6 +100,15 @@ local function control(state, subject, id, decl, value, set)
   local options = decl.options or {}
   if kind == "bool" then
     return ui.toggle(value == true, { id = id, tooltip = "On or off", onChange = set })
+  elseif (kind == "integer" or kind == "number") and type(options.min) == "number" and type(options.max) == "number" and type(value) == "number" then
+    -- A number with a range shows a slider beside its field, as Unity's Range does; the slider's release is one change.
+    local field = number(id, value, set, decl)
+    field.grow, field.width = 0, 64
+    return ui.row({ gap = 4, grow = 1, align = "center" }, {
+      ui.slider(value, { id = id .. ":slide", grow = 1, min = options.min, max = options.max, step = kind == "integer" and 1 or nil,
+        tooltip = ("From %s to %s; a drag changes it"):format(options.min, options.max), onSubmit = set }),
+      field,
+    })
   elseif kind == "integer" or kind == "number" then
     return number(id, value, set, decl)
   elseif kind == "string" then
@@ -190,6 +199,11 @@ end
 local function rows(state, subject, out, id, decl, value, set, title, mark)
   local name = title or (decl.options and decl.options.label) or shared.words(decl.name or "")
   local description = decl.options and decl.options.description
+  -- a heading that the declaration names shows above the property, to part a type's properties
+  local heading = decl.options and decl.options.heading
+  if type(heading) == "string" and heading ~= "" then
+    out[#out + 1] = ui.text(heading, { style = STYLES.heading })
+  end
   if decl.kind == "group" then
     out[#out + 1] = ui.row({ gap = 6 }, { ui.text(name, { style = STYLES.heading, tooltip = description, grow = 1 }), mark })
     local group = type(value) == "table" and value or {}
