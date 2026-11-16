@@ -111,6 +111,10 @@ local function toWorld(view, sx, sy)
   return sx / view.zoom + view.x, sy / view.zoom + view.y
 end
 
+-- The move tool's arrows: their length on the screen, and their colours, as Unity's.
+local HANDLE = 60
+local AXIS_X, AXIS_Y = "#e06c75", "#98c379"
+
 local function nodeToWorld(node, x, y)
   local p = node.place
   return p[1] * x + p[3] * y + p[5], p[2] * x + p[4] * y + p[6]
@@ -148,6 +152,24 @@ local function hits(view, sx, sy)
     end
   end
   return found
+end
+
+-- The move tool's arrow under a point of the panel: the chosen node's path and the axis, "x" or "y", or nil.
+local function handleAt(view, sx, sy)
+  if project.tool() ~= "move" then
+    return nil
+  end
+  for _, path in ipairs(view.chosen) do
+    local node = view.byPath[path]
+    if node then
+      local x, y = toScreen(view, node.place[5], node.place[6])
+      if math.abs(sy - y) <= 6 and sx >= x + 8 and sx <= x + HANDLE + 4 then
+        return path, "x"
+      elseif math.abs(sx - x) <= 6 and sy >= y + 8 and sy <= y + HANDLE + 4 then
+        return path, "y"
+      end
+    end
+  end
 end
 
 local function isChosen(view, path)
@@ -257,8 +279,16 @@ local function drawView(view, surface)
     if node then
       local x, y = toScreen(view, node.place[5], node.place[6])
       if tool == "move" then
-        gpu.line(surface, x - 10, y, x + 10, y, 2, "accent")
-        gpu.line(surface, x, y - 10, x, y + 10, 2, "accent")
+        -- the arrows along the world's x and y, which a drag moves along their axis alone, as Unity's do; y grows down, as in LÖVE
+        local axis = view.drag and view.drag.kind == "tool" and view.drag.axis
+        local xColor, yColor = axis == "x" and "accent" or AXIS_X, axis == "y" and "accent" or AXIS_Y
+        gpu.line(surface, x, y, x + HANDLE, y, 2, xColor)
+        gpu.line(surface, x + HANDLE, y, x + HANDLE - 8, y - 5, 2, xColor)
+        gpu.line(surface, x + HANDLE, y, x + HANDLE - 8, y + 5, 2, xColor)
+        gpu.line(surface, x, y, x, y + HANDLE, 2, yColor)
+        gpu.line(surface, x, y + HANDLE, x - 5, y + HANDLE - 8, 2, yColor)
+        gpu.line(surface, x, y + HANDLE, x + 5, y + HANDLE - 8, 2, yColor)
+        frameRect(surface, x - 4, y - 4, 8, 8, 2, "accent")
       elseif tool == "turn" then
         circle(surface, x, y, 14, 2, "accent")
         local ax, ay = toScreen(view, nodeToWorld(node, 1, 0))
@@ -422,7 +452,7 @@ local function toolDrag(view, sx, sy, ctrl)
     local offX, offY = n.originX - n.pivotX, n.originY - n.pivotY
     local toX, toY
     if d.tool == "move" then
-      toX, toY = wx - d.startX, wy - d.startY
+      toX, toY = d.axis ~= "y" and wx - d.startX or 0, d.axis ~= "x" and wy - d.startY or 0
     elseif d.tool == "turn" then
       local cos, sin = math.cos(angle), math.sin(angle)
       toX, toY = offX * cos - offY * sin - offX, offX * sin + offY * cos - offY
@@ -433,7 +463,11 @@ local function toolDrag(view, sx, sy, ctrl)
     end
     -- The move in the world, as the node's parent sees it.
     local moveX, moveY = worldToNode(linear, toX, toY)
-    if d.tool == "move" then
+    if d.tool == "move" and d.axis then
+      -- along one axis, only what moves snaps, so the node keeps its place on the other axis
+      fields.posX = moveX ~= 0 and snap(n.posX + moveX, ctrl) or n.posX
+      fields.posY = moveY ~= 0 and snap(n.posY + moveY, ctrl) or n.posY
+    elseif d.tool == "move" then
       fields.posX, fields.posY = snap(n.posX + moveX, ctrl), snap(n.posY + moveY, ctrl)
     elseif offX ~= 0 or offY ~= 0 then
       fields.posX, fields.posY = n.posX + moveX, n.posY + moveY
@@ -572,6 +606,10 @@ local function pointer(view, event)
   elseif event.type == "pointerDown" then
     if event.button == 2 or (event.button == 1 and event.alt) then
       view.drag = { kind = "pan", startX = x, startY = y, viewX = view.x, viewY = view.y }
+    elseif event.button == 1 and view.file and handleAt(view, x, y) then
+      -- an arrow of the move tool is above the nodes, and drags the chosen nodes along its axis
+      local path, axis = handleAt(view, x, y)
+      view.press = { x = x, y = y, found = { path }, axis = axis, wasChosen = true }
     elseif event.button == 1 and view.file then
       local found = hits(view, x, y)
       local top = found[1]
@@ -585,6 +623,7 @@ local function pointer(view, event)
     if press and not d and (math.abs(x - press.x) > 3 or math.abs(y - press.y) > 3) then
       if press.found[1] and not press.shift then
         startToolDrag(view, press.x, press.y, press.found[1])
+        view.drag.axis = press.axis
       else
         view.drag = { kind = "rectangle", startX = press.x, startY = press.y, x = x, y = y, shift = press.shift }
       end
@@ -626,7 +665,7 @@ local function pointer(view, event)
         end
       end
       choose(view, paths)
-    elseif press and not d then
+    elseif press and not d and not press.axis then
       local found = press.found
       if press.shift then
         -- Shift adds the node to the choice, or takes it out.
