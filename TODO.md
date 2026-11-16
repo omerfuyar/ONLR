@@ -38,9 +38,9 @@ What the owner wants worked on, in this order.
 
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
   - The node view: handles that move along one axis, and a rectangle tool that sizes a node by its corners; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
-  - The nodes panel: a drag that moves a node in the tree; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there.
+  - The nodes panel: an eye that hides a node in the node view only, and a lock that keeps it from being chosen there.
   - The inspector: a lock that keeps its node while another is chosen; reordering components; a round button that picks a node or a file for a reference; a pipette for the colour picker; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
-  - The files panel: a search by name and kind; favourite folders; Show in the file manager; Find what names this file.
+  - The files panel: favourite folders; Find what names this file.
   - The console: a search; Pause on Error. An error's entry holds its stack, so no pane is needed for it.
   - Playing: a tint over the editor while the game plays, such as OpenECS's frame colour, `ecs.colorFrame`, which waits for a way to set a setting for the run only, as `ecs.setting.set` writes the user's file; the count of frames a second and the time of update and draw, from the play player; sizes of the window to choose from, such as a phone's; values that were changed in the running game, with a way to keep them.
   - The editor: a list of the history's records, to jump back to one; a search over every function, node and file with one key; a window for keys.
@@ -126,16 +126,16 @@ What the owner wants worked on, in this order.
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
   - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the player on Linux and `cmd /c` on Windows.
   - fs: a file's permissions. Until it tells them, the Linux build marks as programs LÖVE's launcher, the files of `bin/` and the libraries.
-  - ui: a tree that drags its nodes, for the nodes panel.
   - fs: watching the folders inside a folder, for the project's folder.
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7).
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
+  - The core: a panel hears where dragged data is over it, so the nodes panel shows a line where a dragged node will land. While data is dragged, the core gives no panel the pointer's moves (OpenECS DESIGN 7.9).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the players were written on Linux.
-- **What the editor does not do yet.** Dragging a node in the nodes panel to move it in the tree waits for ui's tree. Copying LÖVE's definitions into a new project's `.onlr/` takes them from `build/love2d/`, until ONLR's archive holds them. Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
+- **What the editor does not do yet.** Copying LÖVE's definitions into a new project's `.onlr/` takes them from `build/love2d/`, until ONLR's archive holds them. Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
 - **The tests on Windows.** `shuild.c` runs them on Linux only: they need SDL's offscreen driver, and set variables as a POSIX shell does.
 - **A warning when a popup opens.** On the owner's computer, a dropdown logs "[ecs] The GPU cannot present to a window (The GPU API doesn't support transparent windows)". It is OpenECS's, not ONLR's: its popups ask for a transparent window.
 - **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the player's files, and LÖVE's runtime for the host, and the Linux runtime that ONLR hosts (DESIGN 15.2).
