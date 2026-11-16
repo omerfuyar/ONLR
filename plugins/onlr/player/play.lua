@@ -13,7 +13,7 @@ local play = {}
 
 local onlr
 -- What the engine's loop reads (onlr.loop._player).
-local state = { paused = false, step = false }
+local state = { paused = false, step = false, updateTime = 0, drawTime = 0 }
 
 -- A running node has no id of a file, so each gets a number for the link.
 local numbers = setmetatable({}, { __mode = "k" })
@@ -35,6 +35,7 @@ local watchTree = false
 ---@type integer[]
 local watched = {}
 local lastTree, treeTime, valuesTime = nil, 0, 0
+local statsTime, statsFrames = 0, 0
 
 -- The running tree: each node's number, name, parent and components' types.
 local function tree()
@@ -187,6 +188,17 @@ local function frame()
       lastTree = text
       link.send({ type = "tree", nodes = list })
     end
+  end
+  -- twice a second, the frames a second and the mean time of update and draw in a frame, in milliseconds (DESIGN 12.6)
+  statsFrames = statsFrames + 1
+  if now - statsTime >= 0.5 then
+    local frames = math.max(1, statsFrames - 1)
+    link.send({
+      type = "stats", fps = love.timer.getFPS(),
+      update = onlr.loop._running and state.updateTime * 1000 / frames or nil,
+      draw = onlr.loop._running and state.drawTime * 1000 / frames or nil,
+    })
+    statsTime, statsFrames, state.updateTime, state.drawTime = now, 1, 0, 0
   end
   if #watched > 0 and now - valuesTime >= 0.1 then
     valuesTime = now

@@ -359,6 +359,12 @@ function plays.tree(message)
   ecs.event.emit("onlr.running", "tree")
 end
 
+-- The frames a second and the time of update and draw, twice a second.
+function plays.stats(message)
+  players.running.stats = { fps = message.fps, update = message.update, draw = message.draw }
+  ecs.event.emit("onlr.running", "stats")
+end
+
 function plays.values(message)
   players.running.values = message.nodes
   ecs.event.emit("onlr.running", "values")

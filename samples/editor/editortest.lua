@@ -79,6 +79,16 @@ return {
     test.key("Ctrl+Z")
     save()
 
+    -- the move tool's arrow along x moves the chosen node along x alone, though the pointer goes down too (DESIGN 13.3)
+    x, y = at(80, 40)
+    test.drag(x, y, x + 64, y + 32)
+    test.wait(0.3)
+    save()
+    check(read("nodes/start.lua") == start:gsub("posX = 40,\n      posY = 40,", "posX = 104,\n      posY = 40,"), "the arrow moves A along x:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the move along x is undone")
+
     -- with Local, two chosen nodes turn by the same angle, each around its own place (DESIGN 13.3)
     -- the tools panel's first row: Move, Turn and Scale, then Global and Local
     local tools = test.rect(panelOf(test, "onlr.tools"))

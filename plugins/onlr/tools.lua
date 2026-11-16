@@ -9,6 +9,15 @@ local shared = require("shared")
 local STYLES = ui.styles()
 local TOOLS = { "move", "turn", "scale" }
 
+-- The play player's count: frames a second, and the time of update and draw, which a game with its own love.run does not send.
+local function stats(s)
+  local text = ("%d frames a second"):format(s.fps or 0)
+  if s.update and s.draw then
+    text = text .. ("   update %.2f ms   draw %.2f ms"):format(s.update, s.draw)
+  end
+  return text
+end
+
 local function draw(state, surface)
   local selected = 1
   for i, tool in ipairs(TOOLS) do
@@ -45,6 +54,9 @@ local function draw(state, surface)
       ui.button("Stop", { id = "stop", tooltip = "Stop the game: Shift+F5", onClick = player.stop }),
       ui.text(running.playing and (running.paused and "Paused" or "Playing") or "", { style = STYLES.note }),
     }),
+    running.playing and running.stats and ui.text(stats(running.stats), {
+      id = "stats", style = STYLES.note, tooltip = "The game's frames a second, and the time that a frame spends in update and in draw",
+    }) or false,
     ui.row({ gap = 8, align = "center" }, {
       ui.button("Undo", { id = "undo", tooltip = "Take back the last change or choice: Ctrl+Z", onClick = project.undo }),
       ui.button("Redo", { id = "redo", tooltip = "Do again what Undo took back: Ctrl+Y", onClick = project.redo }),
