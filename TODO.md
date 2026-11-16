@@ -37,7 +37,7 @@ What the owner wants worked on, in this order.
 ## Editor
 
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
-  - The node view: handles that move along one axis, and a rectangle tool that sizes a node by its corners; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
+  - The node view: a rectangle tool that sizes a node by its corners; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
   - The nodes panel: a drag that moves a node in the tree; an eye that hides a node in the node view only, and a lock that keeps it from being chosen there.
   - The inspector: a lock that keeps its node while another is chosen; reordering components; a round button that picks a node or a file for a reference; a pipette for the colour picker; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
   - The files panel: a search by name and kind; favourite folders; Show in the file manager; Find what names this file.
