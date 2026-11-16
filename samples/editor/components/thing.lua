@@ -4,7 +4,7 @@ local onlr = require("onlr")
 ---@class thing : onlr.Component
 local Thing = {}
 
-Thing.speed = onlr.property.number(10, { min = 0, max = 100 })
+Thing.speed = onlr.property.number(10, { min = 0, max = 100, heading = "Movement" })
 Thing.count = onlr.property.integer(1)
 Thing.label = onlr.property.string("thing", { label = "Shown name" })
 Thing.solid = onlr.property.bool(true)

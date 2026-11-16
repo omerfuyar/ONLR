@@ -39,7 +39,7 @@ What the owner wants worked on, in this order.
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
   - The node view: a rectangle tool that sizes a node by its corners; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
   - The nodes panel: an eye that hides a node in the node view only, and a lock that keeps it from being chosen there.
-  - The inspector: a lock that keeps its node while another is chosen; reordering components; a round button that picks a node or a file for a reference; a pipette for the colour picker; a list of an instance's changes, to keep or drop them all. A property's declaration could name a range, which shows a slider, a tooltip, and a heading above it.
+  - The inspector: a lock that keeps its node while another is chosen; reordering components; a round button that picks a node or a file for a reference; a pipette for the colour picker; a list of an instance's changes, to keep or drop them all.
   - The files panel: favourite folders; Find what names this file.
   - The console: Pause on Error. An error's entry holds its stack, so no pane is needed for it.
   - Playing: a tint over the editor while the game plays, such as OpenECS's frame colour, `ecs.colorFrame`, which waits for a way to set a setting for the run only, as `ecs.setting.set` writes the user's file; sizes of the window to choose from, such as a phone's; values that were changed in the running game, with a way to keep them.

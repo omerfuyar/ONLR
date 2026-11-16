@@ -12,9 +12,10 @@ local data = require("onlr.library.data")
 ---@class onlr.PropertyOptions
 ---@field description? string shown in the inspector with the property
 ---@field label? string shown in place of the name. Without it, cellSize shows as "Cell size".
+---@field heading? string a heading that the inspector shows above the property, to part a type's properties
 
 ---@class onlr.NumberOptions : onlr.PropertyOptions
----@field min? number the least value; the inspector keeps the value between min and max
+---@field min? number the least value; the inspector keeps the value between min and max, and with both shows a slider
 ---@field max? number the most value
 
 ---@class onlr.ChoiceOptions : onlr.PropertyOptions
@@ -55,6 +56,7 @@ local count = 0
 local TAKEN = {
   description = true,
   label = true,
+  heading = true,
   min = { integer = true, number = true },
   max = { integer = true, number = true },
   choices = { choice = true },
