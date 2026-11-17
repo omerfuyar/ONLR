@@ -54,7 +54,7 @@ local function tone(frequency, seconds)
 end
 
 function love.load()
-  os.execute("mkdir -p samples/properties/images samples/properties/sounds samples/coinrun/images samples/coinrun/sounds samples/speed/images samples/loading/images samples/drawing/images")
+  os.execute("mkdir -p samples/properties/images samples/properties/sounds samples/coinrun/images samples/coinrun/sounds samples/speed/images samples/loading/images samples/drawing/images samples/animation/images")
 
   image("samples/properties/images/dot.png", 4, 4, { 1, 0, 0 })
   wav("samples/properties/sounds/beep.wav", 0.05, tone(880, 0.05))
@@ -85,6 +85,20 @@ function love.load()
     local note = notes[math.floor(t / 0.3) % 4 + 1]
     return math.sin(t * note * 2 * math.pi) * 0.25 * math.min(1, (0.3 - t % 0.3) * 20)
   end)
+
+  -- A sprite sheet of two rows of four frames, 16 pixels square: a ball that rolls across each frame, red in the first
+  -- row and blue in the second, and lighter in each column.
+  local sheet = love.image.newImageData(64, 32)
+  sheet:mapPixel(function(x, y)
+    local column, row = math.floor(x / 16), math.floor(y / 16)
+    local cx, cy = column * 16 + 4 + column * 2 + 0.5, row * 16 + 8
+    if (x + 0.5 - cx) ^ 2 + (y + 0.5 - cy) ^ 2 > 16 then
+      return 0, 0, 0, 0
+    end
+    local light = 0.4 + column * 0.2
+    return row == 0 and light or 0.2, 0.2, row == 1 and light or 0.2, 1
+  end)
+  write("samples/animation/images/sheet.png", sheet:encode("png"):getString())
 
   love.event.quit(0)
 end

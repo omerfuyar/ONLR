@@ -928,6 +928,41 @@ A package of LÖVE's own system follows 11.3 too. The first is `physics`, which 
   - `meter` is LÖVE's one setting for every world, set when a world is made.
   - Box2D's other shapes and joints, edges and chains, and the prismatic, wheel, pulley, motor, friction, mouse and gear joints, have no component yet.
 
+### 11.5 Animations of a sprite sheet
+
+`anim8` wraps kikito's anim8, which cuts an image into a grid of frames and tells which frame shows at each moment. Its one type, `anim8.animation`, needs `onlr.sprite` on its node (6.6) and draws nothing: each frame it copies the rectangle of anim8's frame into the sprite's `quad` (10), and the sprite draws it. So the sprite's colour and origin, and the node's place, turn and scale, hold for every frame, and a scale of -1 on x flips the animation.
+
+| Property                  | Is                                                                                                   |
+| ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `frameWidth`, `frameHeight` | A frame's size, in the image's pixels.                                                             |
+| `left`, `top`, `border`   | Where the first frame starts, and the space between frames, as `anim8.newGrid` takes them.           |
+| `animations`              | A list of animations, each a `name`, its `columns` and `rows` of the grid, such as `"1-4"` and `"1"`, the `duration` of each frame in seconds, and whether it `loop`s. |
+| `first`                   | The animation that plays first. Empty, the first of the list plays.                                  |
+
+``` lua
+-- components/player.lua: chooses the animation by what the player does
+function Player:update()
+  local animation = self.node.components.anim8.animation
+  animation:play(love.keyboard.isDown("right") and "walk" or "idle")
+end
+
+function Player:animationEnd(name)
+  print(name .. " ended")
+end
+```
+
+- `play(name)` plays an animation from its first frame. The one that plays already goes on, so a script may call `play` each frame; `play(name, true)` starts it again. A name that is not in the list is an error.
+- An animation that does not loop stops on its last frame, and its node is told `animationEnd(name)` (11.3). `isPlaying()` says whether one plays; `pause()` and `resume()` hold its frame and go on.
+- A range read backwards plays backwards: `"4-1"`. The frames are taken row by row, as anim8 takes them.
+- `get(name)` gives anim8's animation, the current one without a name, for all of anim8's own functions on it, such as `gotoFrame`.
+- The limits, as they are now:
+  - The node view shows the sprite as its own `quad` says, not the animation's first frame: the preview runs no `load` or `update`, and the sprite draws before the animation that needs it (6.5, 6.6). With a `quad` of 0, it shows the whole sheet. The author sets the sprite's `quad` to a frame to see one.
+  - The grid is cut, and the animations made, when the component loads. A script that changes the sprite's image or a property afterwards changes nothing that plays.
+  - Each frame of an animation shows for the same `duration`. anim8 takes a duration for each frame, and a script makes such an animation with anim8 itself.
+  - An animation takes one range of columns and one of rows. anim8 takes several, such as the end of one row and the start of the next.
+  - The animation moves on in `update`, by the time of each frame of the game.
+  - Two animations of one name: the later one is played.
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1172,7 +1207,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun` and physics for `samples/physics`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics` and anim8 for `samples/animation`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
