@@ -56,7 +56,7 @@ return {
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
 
     -- a drag with the move tool moves the node under the pointer, as one change
-    local x, y = at(56, 56)
+    local x, y = at(70, 70)
     test.drag(x, y, x + 64, y + 32)
     test.wait(0.3)
     test.match(test.panel(panelOf(test, "onlr.view")), { unsaved = true })
@@ -71,7 +71,7 @@ return {
     check(read("nodes/start.lua") == start, "undo and save give the first text again")
 
     -- with Ctrl held, a drag snaps to the grid of 32, though snapping is off
-    x, y = at(56, 56)
+    x, y = at(70, 70)
     test.drag(x, y, x + 50, y + 20, "Ctrl")
     test.wait(0.3)
     save()
@@ -88,11 +88,19 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the move along x is undone")
+    -- the square between the arrows moves on both axes
+    x, y = at(59, 59)
+    test.drag(x, y, x + 64, y + 32)
+    test.wait(0.3)
+    save()
+    check(read("nodes/start.lua") == start:gsub("posX = 40,\n      posY = 40,", "posX = 104,\n      posY = 72,"), "the square moves A:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
 
     -- with Local, two chosen nodes turn by the same angle, each around its own place (DESIGN 13.3)
     -- the tools panel's first row: Move, Turn and Scale, then Global and Local
     local tools = test.rect(panelOf(test, "onlr.tools"))
-    x, y = at(56, 56)
+    x, y = at(70, 70)
     test.click(x, y)
     local bx, by = at(136, 56)
     test.click(bx, by, nil, "Shift")
@@ -119,7 +127,7 @@ return {
     check(read("nodes/start.lua") == start, "the turns are undone")
 
     -- the inspector shows the chosen node: a new name, typed in its Name field and ended with Return, is one change
-    x, y = at(56, 56)
+    x, y = at(70, 70)
     test.click(x, y)
     test.wait(0.2)
     local inspector = test.rect(panelOf(test, "onlr.inspector"))
@@ -186,7 +194,7 @@ return {
     check(read("nodes/start.lua") == start, "the drop is undone")
 
     -- Ctrl+D duplicates the chosen node: the copy has a new id, and names what the first one names
-    x, y = at(56, 56)
+    x, y = at(70, 70)
     test.click(x, y)
     test.key("Ctrl+D")
     test.wait(0.2)
