@@ -370,6 +370,22 @@ local function draw(state, surface)
             state.open[id] = open or nil
           end
         end,
+        -- a second click on a node within 0.4 seconds, a double click, opens or closes it, as the files panel's does
+        onActivate = function(id)
+          if state.clicked == id then
+            state.clicked = nil
+            if not search then
+              state.open[id] = not state.open[id] or nil
+            end
+            return
+          end
+          state.clicked = id
+          ecs.timer.start(0.4, false, function()
+            if state.clicked == id then
+              state.clicked = nil
+            end
+          end)
+        end,
         onMenu = function(id, x, y)
           menu(state, file, id, x, y)
         end,
