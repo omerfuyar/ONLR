@@ -1075,6 +1075,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - The nodes panel shows an instance's nodes, from its base, marked as an instance's. A change to one of them, from any panel, is written as a change of the instance (9).
 - The inspector marks every value that an instance's change sets. A click on the mark puts back the base's value, and takes it out of the change.
 - Open Base opens the base's node file in a node view.
+- An instance whose base does not load, such as after its node file was deleted, is a node with an error, red in the nodes panel, without children; the rest of the file still works. Its own values cannot be changed, since its changes are keyed by the base's ids. The user deletes it, or gives its base back, which gives the instance back.
 - A node that comes from the base cannot be deleted or moved in the instance, since an instance removes nothing (9). The editor offers to turn it off instead.
 - Save as Node File writes the chosen node, with all under it, to a new node file, and puts an instance of it in its place, as one change of the history. A property of the old file that named one of those nodes names it through the instance (9). A property among them that named a node outside them is left out of the new file, and set by a change of the instance, which names the old file's node. Undoing it puts the nodes back, and leaves the new file.
 - New Variant makes a node file whose first node is an instance of the chosen node file (9).
