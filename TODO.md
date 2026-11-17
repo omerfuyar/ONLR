@@ -95,7 +95,7 @@ What the owner wants worked on, in this order.
 
   Whichever library gives bodies, its world is a component of what a root has one of, and contacts reach scripts with `node:send`, as DESIGN 11.3 shows.
 
-  hump, HC and moonshine name no licence that GitHub reads. It is checked before one is chosen.
+  Licences, checked on 2026-11-17: bump, anim8, peachy, gamera, push, shove, flux, tick, baton, ripple, Slab, shadows, binser, json.lua, love-loader, lovebird, lurker and breezefield are MIT; STI, hump, HC, moonshine and SUIT are MIT too, though GitHub does not read their files; bitser is ISC; tween.lua is BSD-2-Clause; slick is MPL-2.0. light_world's repository is gone.
 
   Libraries of entities and of classes, such as tiny-ecs, Concord, middleclass and classic, overlap ONLR's own nodes and components. A user may still use them in scripts, and no package is made for them.
 - **A bump package's details.** DESIGN 11.3 shows its outline as a sample, and `samples/coinrun` holds one that works: its body has `solid`, and other bodies pass through one that is not solid. Open if bump is chosen as a package of ONLR's own: a body on a node that is turned or scaled, since bump's boxes are not.
@@ -106,7 +106,8 @@ What the owner wants worked on, in this order.
 
 ## Tasks
 
-- **The preview's hidden window on Windows is not tested.** `plugins/onlr/runner/edit.lua` hides LÖVE's window with `SDL_HideWindow` through LuaJIT's FFI, as DESIGN 12.1 says. It was written on Linux, where the offscreen driver is used, and never run on Windows.
+- **A guide to using ONLR.** A user's guide, written for someone who knows LÖVE or is learning it: making a project, the editor's panels, nodes and components, writing a script, packages, playing and exporting. It shows what to do, step by step, and links to DESIGN for how it works. Where it lives, as a document of the repository or as pages of its own, is open.
+- **The preview's hidden window on Windows is not tested.** `plugins/onlr/runner/preview.lua` hides LÖVE's window with `SDL_HideWindow` through LuaJIT's FFI, as DESIGN 12.1 says. It was written on Linux, where the offscreen driver is used, and never run on Windows.
 - **The Windows experiment.** It tells whether the preview's window can open on Windows without showing for a moment (see [Runner and link](#runner-and-link)). The owner runs it in the command prompt:
   1. Keep `C:\t\main.lua` as it is, and make `C:\t\conf.lua` with these lines. They open LÖVE's window outside the screen, without a border, one pixel wide:
 
