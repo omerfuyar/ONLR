@@ -5,8 +5,10 @@ local onlr = require("onlr")
 
 local shape = {}
 
--- The body nearest above a node, the node's own first.
-local function bodyOf(node)
+---The body nearest above a node, the node's own first.
+---@param node onlr.Node?
+---@return physics.body?
+function shape.bodyOf(node)
   while node do
     local own = node.components.physics
     if own and own.body then
@@ -38,7 +40,7 @@ function shape.declare(Type, name)
 
   -- Each time the shape starts to run: it fixes itself to the nearest body above it.
   function Type:enable()
-    self.owner = bodyOf(self.node)
+    self.owner = shape.bodyOf(self.node)
     if not self.owner then
       error(("%s on %s has no physics.body on its node or above it"):format(name, self.node.name), 0)
     end
@@ -60,8 +62,15 @@ function shape.declare(Type, name)
 
   -- Not called by scripts: the body calls them when it starts and stops.
   function Type:_fix()
-    local b = self.owner.b
-    local fixture = love.physics.newFixture(b, self:_outline(toBody(self.node, b)), self.density)
+    local b = self.owner and self.owner.b
+    if not b then
+      return
+    end
+    local outline = self:_outline(toBody(self.node, b))
+    if not outline then
+      return
+    end
+    local fixture = love.physics.newFixture(b, outline, self.density)
     fixture:setFriction(self.friction)
     fixture:setRestitution(self.bounce)
     fixture:setSensor(self.sensor)

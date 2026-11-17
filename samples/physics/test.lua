@@ -1,5 +1,6 @@
 -- Checks the physics package (DESIGN 11.4): bodies fall and land, a body of two shapes on nodes of their own, contacts
--- told to both nodes, a node that a script moves, and a node that is turned off leaving the world.
+-- told to both nodes, a polygon, the four joints, a node that a script moves, and a node that is turned off leaving the
+-- world.
 local check = require("check")
 local onlr = require("onlr")
 
@@ -26,6 +27,36 @@ check.run(function()
   near(hit[2], 0, "the normal points up")
   near(hit[3], -1, "the normal points up")
   check.equal(ground.components.probe, nil, "the ground has no probe, and is told all the same")
+
+  -- A polygon: the triangle's base, 10 below its node, rests on the ground.
+  local triangle = assert(tree.find("Triangle"))
+  near(triangle.posY, 200, "the triangle rests on the ground")
+
+  -- Joints: each holds two bodies as its kind does, after two seconds of falling and swinging.
+  local function apart(a, b)
+    local ax, ay = a:toWorld(0, 0)
+    local bx, by = b:toWorld(0, 0)
+    return math.sqrt((ax - bx) ^ 2 + (ay - by) ^ 2)
+  end
+  local nail, bob = assert(tree.find("Nail")), assert(tree.find("Bob"))
+  near(apart(nail, bob), 40, "the hinge keeps the pendulum on its nail")
+  check.ok(bob.posY > 20, "and it swung down: " .. bob.posY)
+  local hook, weight = assert(tree.find("Hook")), assert(tree.find("Weight"))
+  near(weight.posY, 50, "the rope lets the weight fall to its length, 30 below the hook")
+  local post, swing = assert(tree.find("Post")), assert(tree.find("Swing"))
+  near(apart(post, swing), 30, "the stick keeps its distance")
+  local lid = assert(tree.find("Lid"))
+  near(lid.posY, crate.posY - 15, "the welded lid stays on the crate")
+  near(lid.posX, crate.posX, "and above it")
+  check.ok(assert(hook.components.physics.rope:get()):getMaxLength() > 29, "rope:get() gives LÖVE's joint")
+
+  -- A joint ends with either body: the weight turned off frees the hook's rope.
+  weight:setActive(false)
+  check.frames(1)
+  check.equal(hook.components.physics.rope:get(), nil, "the rope is gone with the weight")
+  weight:setActive(true)
+  check.frames(1)
+  check.ok(hook.components.physics.rope:get() ~= nil, "and comes back with it")
 
   -- A script moves a node: the body goes there, and falls from there.
   ball.posY = 0

@@ -69,7 +69,7 @@ What the owner wants worked on, in this order.
   | Job                  | Package wraps        | Its components                                                                                   |
   | -------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
   | Collision of boxes   | bump (built)         | `bump.world` on the root, `bump.body` on a node (DESIGN 11.3).                                   |
-  | Physics              | `love.physics` (built: world, body, box, circle) | A world, bodies, shapes and joints (DESIGN 11.4). No library. Open: polygons, joints, and a shape whose node moves under its body after it started. |
+  | Physics              | `love.physics` (built) | A world, bodies, shapes and joints (DESIGN 11.4). No library. Open: the limits that DESIGN 11.4 lists, such as a shape whose node moves under its body after it started, properties that a script changes after the start, and Box2D's other shapes and joints. |
   | Particles            | LÖVE's particle systems | One emitter on a node, its settings as properties, which run in the node view too. No library. |
   | Animation            | anim8                | An animation beside `onlr.sprite`, which sets the sprite's `quad` each frame.                    |
   | Tile maps from Tiled | STI                  | A map on a node, which draws its layers under the node, so a camera follows it.                  |
