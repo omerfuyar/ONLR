@@ -5,6 +5,7 @@
 -- Each function takes the default, then a table of options. A kind that names a file, a node or a component
 -- has no default and takes the options only.
 -- This file also turns a node file's values into what a component gets, such as a path into a LÖVE image.
+---@diagnostic disable: invisible -- the engine reads the fields of its nodes that a script does not see
 
 local data = require("onlr.library.data")
 
