@@ -25,17 +25,20 @@ return {
         {
           split = "horizontal",
           {
-            size = 260,
-            split = "vertical",
-            { share = 1, panels = { { type = "onlr.nodes" } } },
-            { share = 1, panels = { { type = "files.tree" } } },
-          },
-          {
             share = 1,
             split = "vertical",
-            { size = 132, panels = { { type = "onlr.tools" } } },
-            { share = 3, panels = { { type = "onlr.view" } } },
-            { share = 1, panels = { { type = "console.log" } } },
+            {
+              share = 3,
+              split = "horizontal",
+              {
+                size = 370,
+                split = "vertical",
+                { size = 118, panels = { { type = "onlr.tools" } } },
+                { share = 1, panels = { { type = "onlr.nodes" } } },
+              },
+              { share = 1, panels = { { type = "onlr.view" } } },
+            },
+            { share = 2, panels = { { type = "console.log" }, { type = "files.tree" } } },
           },
           { size = 340, panels = { { type = "onlr.inspector" }, { type = "onlr.settings" }, { type = "onlr.export" } } },
         },

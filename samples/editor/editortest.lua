@@ -391,6 +391,10 @@ return {
     check(read("nodes/start.lua") == start, "the added node is undone")
 
     -- the files panel renames a file: every path that names it changes with it, and the files are saved (DESIGN 13.7)
+    -- the files panel is a tab beside the console, which shows first
+    local console = test.rect(panelOf(test, "console.log"))
+    test.click(console.x + 125, console.y - 14)
+    test.wait(0.2)
     local files = test.rect(panelOf(test, "files.tree"))
     test.click(files.x + 21, files.y + 97)
     test.wait(0.2)
