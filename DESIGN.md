@@ -788,6 +788,7 @@ return {
 - A component type is one file, since its name is its file's (6.1). The names start with the package's: `bump.body` is `packages/bump/components/body.lua`. The types are written as scripts are (6), and the editor offers every one of them (13.4).
 - A node file of a package is named by its path, as the project's are: `packages/bump/nodes/box.lua`.
 - A package adds nothing to the engine and changes nothing in it. A game uses a package's library with its components, without them, or both.
+- A package may wrap a system of LÖVE's own instead of a library (OVERVIEW 9), as `physics` wraps `love.physics` (11.4). It has no `library/`, no `init.lua` and no definitions file, since a script calls LÖVE as it always does. Its manifest names no `source`, and its `version` is the package's own.
 - The editor copies a package into a project when the user adds it, and deletes its folder when the user removes it. In the project, the package is the project's own copy, and an export holds it.
 - The editor adds a package from ONLR's own, or from a folder that the user chooses, so anyone can make one. ONLR's own are in its `packages/`, beside the engine (2.2), each as a project holds it.
 - The user does not change a package in the project, as they do not change the engine (3.1). To change one of its components, they copy it into `components/` under another name. When ONLR ships a newer version of a package that a project holds, the editor offers it, and updating replaces the package's folder whole.
@@ -901,6 +902,22 @@ What the sample shows of every package:
 - **What a script asks of the library** is a function of the component: `body:move(x, y)`. The script names the body in `needs` (6.6), so its node always has one.
 - **What the library reports** reaches scripts with `node:send`, as a function that the script defines: `contact(other)`. Both nodes of a contact are told.
 - **What the editor shows** is `bounds`, for choosing the node, and `drawEditor`, for the outline.
+
+### 11.4 Packages of LÖVE's systems
+
+A package of LÖVE's own system follows 11.3 too. The first is `physics`, which wraps `love.physics`, LÖVE's Box2D. LÖVE asks the game to make a world, bodies, shapes and fixtures, to keep them in step with what it draws, and to route Box2D's callbacks; the package's components do that, so a node gets physics by its components alone:
+
+| Type              | On                                   | Does                                                                                         |
+| ----------------- | ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `physics.world`   | The root                             | The root's one world, with its gravity, as `bump.world` is (11.3). Each root has its own.    |
+| `physics.body`    | A node                               | A body: static, dynamic or kinematic. While the game runs, a dynamic body moves its node.   |
+| `physics.box`, `physics.circle`, `physics.polygon` | The body's node, or a node under it | A shape with its friction, bounce and density, fixed to the nearest body above it. |
+| Joints            | A node                               | A joint between two nodes' bodies, which the joint's properties name.                      |
+
+- A node has one component of each type (5), so a body of many shapes holds them on nodes under its own. The user builds a body's outline by placing nodes in the editor.
+- Where a node is has one truth, the node's place (11.3): after Box2D's step, a dynamic body sets its node's place; when a script sets a body's node itself, the body is moved there.
+- Contacts reach scripts as messages to the two nodes, `contact` and `contactEnd`, as bump's do, and never as Box2D's callbacks.
+- A node that is turned off takes its body out of the world, and turning it on puts it back (6.4).
 
 ## 12. The runner and the link
 

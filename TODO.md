@@ -8,7 +8,7 @@ What the owner wants worked on, in this order.
 
 1. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
 2. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
-3. **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
+3. **The packages.** The first set is chosen (see [Libraries](#libraries)). Each is built as bump's is, in `packages/`, with a sample that tests it.
 4. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
@@ -64,7 +64,24 @@ What the owner wants worked on, in this order.
 
 ## Libraries
 
-- **Which libraries.** None is chosen. A library works in a project as it is, and a package is made for it only when it is chosen (OVERVIEW 9). A library fits ONLR when:
+- **The first set of packages, chosen on 2026-11-17.** Each is a package in `packages/`, with components that compose as OVERVIEW 9 says:
+
+  | Job                  | Package wraps        | Its components                                                                                   |
+  | -------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
+  | Collision of boxes   | bump (built)         | `bump.world` on the root, `bump.body` on a node (DESIGN 11.3).                                   |
+  | Physics              | `love.physics`       | A world, bodies, shapes and joints (DESIGN 11.4). No library.                                    |
+  | Particles            | LÖVE's particle systems | One emitter on a node, its settings as properties, which run in the node view too. No library. |
+  | Animation            | anim8                | An animation beside `onlr.sprite`, which sets the sprite's `quad` each frame.                    |
+  | Tile maps from Tiled | STI                  | A map on a node, which draws its layers under the node, so a camera follows it.                  |
+  | Tweens               | flux                 | One component on the root that steps flux each frame; scripts call `flux.to`. Timers: flux has none, so the package also gives a small timer of its own, unless hump's timer, which does both, is chosen instead. |
+  | Input actions        | baton                | An input component that holds the bindings of keys, buttons and sticks to the game's actions.    |
+  | Scaling to the window | push                | A group on the top node that draws the game at a fixed size and scales it to the window (DESIGN 5). |
+  | Screen effects       | moonshine            | A group that draws its node and all under it through the effects.                                |
+
+  Open for each: its properties, and a sample that tests it.
+- **The second round.** In-game interface (SUIT or Slab) and light and shadows (shadows). Chosen to come, not yet weighed in detail. Later, the same way: sound sources of LÖVE's own, as a package with no library, to play, loop and set a volume.
+- **The camera's helpers.** `onlr.camera` stays the one view: gamera and hump's camera do what it does, and STALKER-X, which does more, has no licence file and needs hump. What they do better comes as small components of the engine beside the camera, which a game combines: `camera.follow` (a target node, smoothing, a deadzone), `camera.limits` (the camera stays in a rectangle of the world) and `camera.shake`. Their names and whether they are the engine's or a package's are open. A game may still use any camera library in its scripts.
+- **How a library was chosen.** A library works in a project as it is, and a package is made for it only when it is chosen (OVERVIEW 9). A library fits ONLR when:
   - it is Lua that LuaJIT runs in LÖVE 11.5, with no compiled module, so an export runs on every platform without a build;
   - it does not take `love.run` and does not replace LÖVE's callbacks. Adding to `love.handlers` is fine (DESIGN 8.1);
   - it returns a module and sets no global;
