@@ -19,7 +19,7 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | `preset.lua`               | The editor's preset: the plugins it needs, and where their panels go.                          |
 | `samples/`                 | Small projects, which are the tests, and `check.lua`, the tests' helper (DESIGN.md, section 16). |
 | `shuild.c`                 | The build script: it puts the engine into the samples, runs the tests and starts the editor (DESIGN.md, section 16). |
-| `dependencies/`            | Submodules: shuild and shu, which `shuild.c` builds with.                                      |
+| `dependencies/`            | Submodules: shuild and shu, which `shuild.c` builds with, and love2d, LÖVE's definitions from LuaCATS (DESIGN.md, section 4.3). |
 | `.clang-format`            | How clang-format formats `shuild.c`, as OpenECS's does.                                        |
 | `.github/`                 | Checks, rulesets, and the scripts that agents and CI run: `check.sh` and `test.sh`. `scripts/assets/` makes the samples' images and sounds. |
 | `.claude/`                 | Claude Code's settings, its hook for cloud sessions, and `notes.md`: why the tools are set up as they are. |

@@ -29,12 +29,7 @@ if [ "$(lua-language-server --version 2> /dev/null)" != "$luals" ]; then
     sudo ln -sf /opt/luals/bin/lua-language-server /usr/local/bin/lua-language-server
 fi
 
-# LÖVE's definitions for LuaLS, which .luarc.json names, at the commit that the check Lua (LuaLS) takes
-love2d=$(sed -n 's/.*LOVE2D_DEFINITIONS: *//p' .github/workflows/checks.yml | head -n 1)
-if [ "$(git -C build/love2d rev-parse HEAD 2> /dev/null)" != "$love2d" ]; then
-    rm -rf build/love2d
-    git clone -q https://github.com/LuaCATS/love2d build/love2d
-    git -C build/love2d checkout -q "$love2d"
-fi
+# the submodules: shu and shuild, which shuild.c builds with, and LÖVE's definitions for LuaLS, which .luarc.json names
+git submodule update --init -q
 
 exit 0
