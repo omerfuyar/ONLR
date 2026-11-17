@@ -250,6 +250,16 @@ return {
     test.click(rx, ry, nil, "Shift")
     check(#chosen() == 2 and chosen()[1] == "bbbbbb", "Shift chooses B and Part: " .. table.concat(chosen(), ", "))
 
+    -- a double click on a node opens it, and another closes it: Part shows Tip under it
+    rx, ry = row(4)
+    test.click(rx, ry)
+    test.click(rx, ry)
+    test.match(test.panel(panelOf(test, "onlr.nodes")).state.open, { p4rt01 = true }, "a double click opens Part")
+    test.wait(0.5)
+    test.click(rx, ry)
+    test.click(rx, ry)
+    check(not test.panel(panelOf(test, "onlr.nodes")).state.open.p4rt01, "another double click closes it")
+
     -- the search shows the nodes whose name holds the text, and with t:, those with a component of a type: thing is on A, B
     -- and Part's Tip, so Start, A, B, Part and Tip show, opened
     test.click(tree.x + 150, tree.y + 42)
