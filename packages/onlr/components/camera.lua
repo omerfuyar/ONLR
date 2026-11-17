@@ -84,13 +84,25 @@ function Camera:bounds()
 end
 
 -- In the node view, the frame of what it shows.
+-- It is blue and 3 pixels wide, named "Camera" inside its top left, so it is told from the window's frame, which the node view
+-- draws grey and thin, and names above it; the two are often the same rectangle.
 function Camera:drawEditor(chosen)
   local w, h = screen(self)
   w, h = w / self.zoom, h / self.zoom
-  love.graphics.setColor(1, 1, 1, chosen and 1 or 0.5)
   love.graphics.translate(self.posX, self.posY)
   love.graphics.rotate(self.rot)
+  -- the line and the name keep their sizes on the screen at any zoom of the view
+  local x0, y0 = love.graphics.transformPoint(0, 0)
+  local x1, y1 = love.graphics.transformPoint(1, 0)
+  local scale = math.sqrt((x1 - x0) ^ 2 + (y1 - y0) ^ 2)
+  if scale <= 0 then
+    return
+  end
+  love.graphics.setColor(0.38, 0.69, 0.94, chosen and 1 or 0.7)
+  love.graphics.setLineWidth(3 / scale)
   love.graphics.rectangle("line", -w / 2, -h / 2, w, h)
+  love.graphics.setLineWidth(1)
+  love.graphics.print("Camera", -w / 2 + 6 / scale, -h / 2 + 4 / scale, 0, 1 / scale)
 end
 
 return Camera
