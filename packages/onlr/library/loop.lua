@@ -11,12 +11,12 @@ local loop = {}
 -- The time that fixedUpdate has not used yet.
 local rest = 0
 
--- What the player's files set when the editor started the game (DESIGN 12.1): frame() is called once
+-- What the runner's files set when the editor started the game (DESIGN 12.1): frame() is called once
 -- in each turn of the loop, and while paused is true the loop draws and calls nothing of the game.
 -- step asks for one frame of a fixed step while paused. The loop adds the seconds that it spends in update and in draw to
--- updateTime and drawTime, for the editor's count of them (DESIGN 12.6); an exported game has no player, and measures nothing.
+-- updateTime and drawTime, for the editor's count of them (DESIGN 12.6); an exported game has no runner, and measures nothing.
 ---@type {frame: fun()?, paused: boolean?, step: boolean?, updateTime: number?, drawTime: number?}?
-loop._player = nil
+loop._runner = nil
 
 -- Whether the engine's own love.run runs, and not a game's.
 loop._running = false
@@ -80,11 +80,11 @@ function loop.run()
   local dt = 0
 
   return function()
-    local player = loop._player
-    if player and player.frame then
-      player.frame()
+    local runner = loop._runner
+    if runner and runner.frame then
+      runner.frame()
     end
-    local paused = player and player.paused and not player.step
+    local paused = runner and runner.paused and not runner.step
     if love.event then
       love.event.pump()
       for name, a, b, c, d, e, f in love.event.poll() do
@@ -107,20 +107,20 @@ function loop.run()
     if love.timer then
       dt = love.timer.step()
     end
-    if player and player.step then
+    if runner and runner.step then
       dt = 1 / (data.manifest().fixedRate or 60)
       rest = 0
     end
-    local started = player and love.timer and love.timer.getTime()
+    local started = runner and love.timer and love.timer.getTime()
     if not paused then
       if love.update then
         love.update(dt)
       end
       loop.update(dt)
     end
-    if player and started then
+    if runner and started then
       local now = love.timer.getTime()
-      player.updateTime, started = (player.updateTime or 0) + now - started, now
+      runner.updateTime, started = (runner.updateTime or 0) + now - started, now
     end
 
     if love.graphics and love.graphics.isActive() then
@@ -131,8 +131,8 @@ function loop.run()
         love.draw()
       end
       -- the time of draw leaves out present, which waits for the screen
-      if player and started then
-        player.drawTime = (player.drawTime or 0) + love.timer.getTime() - started
+      if runner and started then
+        runner.drawTime = (runner.drawTime or 0) + love.timer.getTime() - started
       end
       love.graphics.present()
     end
@@ -140,8 +140,8 @@ function loop.run()
     if not paused then
       loop.endFrame()
     end
-    if player then
-      player.step = false
+    if runner then
+      runner.step = false
     end
     if love.timer then
       love.timer.sleep(0.001)

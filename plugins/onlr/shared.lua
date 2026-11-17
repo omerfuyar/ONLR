@@ -2,7 +2,7 @@
 
 local ecs = require("ecs")
 local project = require("project")
-local player = require("nodeview")
+local nodeview = require("nodeview")
 
 local shared = {}
 
@@ -38,14 +38,14 @@ end
 ---@param running boolean
 function shared.setRunning(running)
   shared.running = running
-  player.watch(running, running and shared.runningNode and { shared.runningNode } or {})
+  nodeview.watch(running, running and shared.runningNode and { shared.runningNode } or {})
   shared.redraw()
 end
 
 ---@param n integer?
 function shared.chooseRunning(n)
   shared.runningNode = n
-  player.watch(true, n and { n } or {})
+  nodeview.watch(true, n and { n } or {})
   shared.redraw()
 end
 
@@ -80,7 +80,7 @@ for _, name in ipairs({
 end
 
 ecs.event.subscribe("onlr.state", function()
-  if shared.running and not player.running().playing then
+  if shared.running and not nodeview.running().playing then
     shared.running, shared.runningNode = false, nil
   end
   shared.redraw()

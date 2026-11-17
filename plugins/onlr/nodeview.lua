@@ -1,5 +1,5 @@
 -- The node view (DESIGN 13.3), and the functions Play, Play This File, Pause, Step and Stop.
--- A node view shows a view of a node file: the edit player draws the nodes into a frame, and the panel draws over it
+-- A node view shows a view of a node file: the preview draws the nodes into a frame, and the panel draws over it
 -- the grid, the window's frame, the outlines of the chosen nodes and the handles of the tool (DESIGN 12.3).
 -- It draws with gpu: the frame is a texture on the graphics card, which each frame replaces, so drawing the panel copies no pixels (DESIGN 12.4).
 
@@ -8,7 +8,7 @@ local draw = require("draw")
 local gpu = require("gpu")
 local project = require("project")
 local console = require("console")
-local players = require("players")
+local runners = require("runners")
 local ui = require("ui")
 
 local STATE_VERSION = 1
@@ -43,7 +43,7 @@ local function sync(view)
   if not view.file or view.width < 1 then
     return
   end
-  players.setView(view.id, {
+  runners.setView(view.id, {
     path = view.file, x = view.x, y = view.y, zoom = view.zoom * view.scale,
     width = math.floor(view.width * view.scale), height = math.floor(view.height * view.scale), chosen = view.chosen,
   })
@@ -232,7 +232,7 @@ local function drawView(view, surface)
   -- The panel draws a whole picture only: the grid, the outlines and the handles from the place and zoom of the frame
   -- that it has, not from where the view wants to be, so nothing shows that the frame does not hold yet (DESIGN 12.4).
   local wantX, wantY, wantZoom = view.x, view.y, view.zoom
-  if view.file and view.image and view.frame and not view.error and not players.down then
+  if view.file and view.image and view.frame and not view.error and not runners.down then
     view.x, view.y, view.zoom = view.frame.x, view.frame.y, view.frame.zoom
   end
 
@@ -318,7 +318,7 @@ local function drawView(view, surface)
 
   view.x, view.y, view.zoom = wantX, wantY, wantZoom
 
-  local message = view.error or players.down
+  local message = view.error or runners.down
   if not view.file then
     message = project.folder() == "" and "No project is open." or "No node file is open."
   end
@@ -334,7 +334,7 @@ end
 
 -- The link's messages for the views
 
-players.onView = function(kind, message, block)
+runners.onView = function(kind, message, block)
   for _, view in pairs(views) do
     if kind == "down" then
       view.panel:redraw()
@@ -482,7 +482,7 @@ local function toolDrag(view, sx, sy, ctrl)
       fields.posX, fields.posY = n.posX + moveX, n.posY + moveY
     end
     d.fields[n.path] = fields
-    players.change(view.file, n.path, fields)
+    runners.change(view.file, n.path, fields)
   end
 end
 
@@ -776,7 +776,7 @@ ecs.panel.registerType({
   end,
   destroy = function(view)
     ui.forget(view.panel)
-    players.setView(view.id, nil)
+    runners.setView(view.id, nil)
     dropImage(view)
     if focused == view then
       focused = nil
@@ -789,7 +789,7 @@ ecs.panel.registerType({
 
 ecs.event.subscribe("onlr.opened", function()
   console.setFolder(project.folder())
-  players.restartEdit()
+  runners.restartPreview()
   local manifest = project.manifest()
   for _, view in pairs(views) do
     if not view.file or not project.file(view.file) then
@@ -805,15 +805,15 @@ ecs.event.subscribe("onlr.opened", function()
 end)
 
 ecs.event.subscribe("onlr.closed", function()
-  players.stop()
-  players.stopEdit()
+  runners.stop()
+  runners.stopPreview()
   for _, view in pairs(views) do
     show(view, nil)
   end
 end)
 
 ecs.event.subscribe("onlr.changed", function(_, value)
-  players.filesChanged()
+  runners.filesChanged()
   for _, view in pairs(views) do
     -- A node view of a file that is gone shows no file.
     local file = view.file and project.file(view.file)
@@ -870,10 +870,10 @@ end
 
 ecs.event.subscribe("onlr.disk", function(_, value)
   if value.kind == "code" then
-    -- A script or the manifest changed: the edit player starts again, so nothing of the old code stays in it (DESIGN 12.5).
-    players.restartEdit()
+    -- A script or the manifest changed: the preview starts again, so nothing of the old code stays in it (DESIGN 12.5).
+    runners.restartPreview()
   elseif value.kind == "asset" then
-    players.reload(value.path)
+    runners.reload(value.path)
   end
 end)
 
@@ -909,24 +909,24 @@ functions = {
     return view and view.file or ""
   end },
   play = { sig = "void()", doc = "Play", fn = function()
-    players.play()
+    runners.play()
   end },
   playFile = { sig = "void()", doc = "Play This File", fn = function()
     local view = current()
-    players.play(view and view.file)
+    runners.play(view and view.file)
   end },
   pause = { sig = "void()", doc = "Pause or resume", fn = function()
-    players.pause(not players.running.paused)
+    runners.pause(not runners.running.paused)
   end },
-  step = { sig = "void()", doc = "Step", fn = players.step },
-  stop = { sig = "void()", doc = "Stop", fn = players.stop },
-  restart = { sig = "void()", doc = "Start the edit player again", fn = players.restartEdit },
+  step = { sig = "void()", doc = "Step", fn = runners.step },
+  stop = { sig = "void()", doc = "Stop", fn = runners.stop },
+  restart = { sig = "void()", doc = "Start the preview again", fn = runners.restartPreview },
   running = { sig = "value()", doc = "The running game: whether it plays and is paused, its tree and the watched values", fn = function()
-    return players.running
+    return runners.running
   end },
-  watch = { sig = "void(bool tree, value nodes)", doc = "Ask the running game for its tree, and for the values of nodes", fn = players.watch },
-  set = { sig = "void(value message)", doc = "Set a value of a running node", fn = players.set },
-  editReady = { sig = "bool()", doc = "Whether the edit player runs", fn = players.editReady },
+  watch = { sig = "void(bool tree, value nodes)", doc = "Ask the running game for its tree, and for the values of nodes", fn = runners.watch },
+  set = { sig = "void(value message)", doc = "Set a value of a running node", fn = runners.set },
+  previewReady = { sig = "bool()", doc = "Whether the preview runs", fn = runners.previewReady },
   view = { sig = "value(string file)", doc = "The node view of a node file: its place, zoom and the nodes' bounds", fn = viewOf },
   deleteChosen = { sig = "void()", doc = "Delete the chosen nodes", fn = onChosen(function(file, paths)
     say(project.deleteNodes(file, paths))
@@ -977,7 +977,7 @@ end
 
 if project.folder() ~= "" then
   console.setFolder(project.folder())
-  players.ensureEdit()
+  runners.ensurePreview()
 end
 
 -- The other parts call the functions themselves; init.lua registers them as the plugin's (DESIGN 13.1).

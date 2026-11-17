@@ -25,7 +25,7 @@ This document explains how ONLR is built: its parts, the project's files, the en
 9. Instances
 10. The engine's components
 11. Libraries
-12. The player and the link
+12. The runner and the link
 13. The editor
 14. Export
 15. LÖVE
@@ -64,7 +64,7 @@ A game made with ONLR is built in layers. Each uses only the layers above it in 
 
 - The engine and the libraries do not know each other. A component is where they meet: it is called by the engine, and it calls a library.
 - All three kinds of component are the same thing to the engine. The engine's own and a package's can do nothing that a script cannot.
-- The editor is not a layer of the game. It is another program: it reads and writes the game's data, and asks the player (12) what the components declare and how the nodes look.
+- The editor is not a layer of the game. It is another program: it reads and writes the game's data, and asks the runner (12) what the components declare and how the nodes look.
 
 ### 2.2 In this repository
 
@@ -73,7 +73,7 @@ A game made with ONLR is built in layers. Each uses only the layers above it in 
 | Engine         | `packages/onlr/`         | The Lua library that every project holds a copy of, as `packages/onlr/` (8.3).                                  | LÖVE    |
 | Packages       | `packages/`              | The packages that ONLR ships, each in a folder of its own beside the engine, such as `packages/bump/` (11.2).   | LÖVE    |
 | Editor         | `plugins/`, `preset.lua` | OpenECS plugins and their preset (13).                                                                          | OpenECS |
-| Player's files | `plugins/onlr/player/`   | The Lua code that the engine loads when the editor starts it: the link and the views (12). No project holds it. | LÖVE    |
+| Runner's files | `plugins/onlr/runner/`   | The Lua code that the engine loads when the editor starts it: the link and the views (12). No project holds it. | LÖVE    |
 | Samples        | `samples/`               | Small projects, which are the tests (16).                                                                       | Both    |
 
 ## 3. Projects
@@ -471,13 +471,13 @@ The engine calls the functions that a type has. All are optional.
 - `drawEditor` also draws what only the editor shows, such as the outline of a body or the frame of a camera. It is LÖVE code, written with the component by its author.
 - There the engine does not call `drawTree`: a group's nodes draw through the node view alone. So a camera does not move the view, and a group's shader shows only in the game.
 - A type without `drawEditor` shows nothing in the node view. Its `draw` is not called there, since it may need what `load` or `update` sets.
-- `drawEditor` may keep in `self` what it builds from the component's values, such as a map read from a file. When a value of the component changes, the edit player makes the component anew from the node file's values, so what it kept is built again from the new ones.
+- `drawEditor` may keep in `self` what it builds from the component's values, such as a map read from a file. When a value of the component changes, the preview makes the component anew from the node file's values, so what it kept is built again from the new ones.
 - A `drawEditor` that fails marks its node in the view, and the rest draws on.
 - `drawEditor` is code, so it can do anything. The node view is kept safe from it:
   - The engine saves all of LÖVE's drawing state before each `drawEditor` and restores it after, so a colour or a shader that one component sets does not reach the next.
   - The engine's functions that change the tree (7) change nothing there, and report an error.
-  - The edit player's nodes are a copy. The editor holds the node file and only sends it (12.2), so nothing that a component does there reaches the project's files.
-  - A `drawEditor` that never returns stops the edit player only, which the editor starts again (12.1).
+  - The preview's nodes are a copy. The editor holds the node file and only sends it (12.2), so nothing that a component does there reaches the project's files.
+  - A `drawEditor` that never returns stops the preview only, which the editor starts again (12.1).
 
 ### 6.6 Types that need others
 
@@ -902,73 +902,73 @@ What the sample shows of every package:
 - **What the library reports** reaches scripts with `node:send`, as a function that the script defines: `contact(other)`. Both nodes of a contact are told.
 - **What the editor shows** is `bounds`, for choosing the node, and `drawEditor`, for the outline.
 
-## 12. The player and the link
+## 12. The runner and the link
 
-### 12.1 The player
+### 12.1 The runner
 
-- The editor starts LÖVE itself, unchanged, as a program of its own on the project's folder. Arguments tell the engine that the editor started it, the mode, where the editor listens, and where the player's files are: `--onlr-player=FOLDER`, `--onlr-mode=edit` or `play`, `--onlr-port=PORT`, and for Play This File `--onlr-start=PATH`.
-- The player's files are the Lua code that serves the editor: the link and the views. They belong to the editor, in its plugin's `player/` folder (13.1), and no project or export holds them. The engine loads them with Lua's own `loadfile`, which reads any path, where LÖVE's file functions read only the game's folder (3.1). So a project and its exports hold nothing of the editor, and both ends of the link are of one version of ONLR.
-- A player runs in one of two modes:
+- The editor starts LÖVE itself, unchanged, as a program of its own on the project's folder. Arguments tell the engine that the editor started it, the mode, where the editor listens, and where the runner's files are: `--onlr-runner=FOLDER`, `--onlr-mode=preview` or `game`, `--onlr-port=PORT`, and for Play This File `--onlr-start=PATH`.
+- The runner's files are the Lua code that serves the editor: the link and the views. They belong to the editor, in its plugin's `runner/` folder (13.1), and no project or export holds them. The engine loads them with Lua's own `loadfile`, which reads any path, where LÖVE's file functions read only the game's folder (3.1). So a project and its exports hold nothing of the editor, and both ends of the link are of one version of ONLR.
+- A runner runs in one of two modes:
 
-  | Mode | Runs                                        | Draws into                                     |
-  | ---- | ------------------------------------------- | ---------------------------------------------- |
-  | Edit | Views: node files drawn and not updated (12.3). | Frames for the node views (12.4).              |
-  | Play | The game.                                   | LÖVE's own window.                             |
+  | Mode    | Runs                                        | Draws into                                     |
+  | ------- | ------------------------------------------- | ---------------------------------------------- |
+  | Preview | Views: node files drawn and not updated (12.3). | Frames for the node views (12.4).           |
+  | Game    | The game.                                   | LÖVE's own window.                             |
 
-- The edit player runs while a project is open, and has no window that the user sees.
-- LÖVE starts every game by running its `conf.lua` and `main.lua`, so the edit player runs them too, and the code of each script that is outside its functions when the editor asks about the script (12.5). It does not call `love.load`, nor a component's `load` or `update` (6.5). So what both the game and the node view need, such as the default filter, is in the manifest (3.2), and the engine sets it in both players.
-- In the edit player, the engine sets LÖVE's volume to 0, so a sound that the game's code plays there is not heard. On Linux the editor starts it with SDL's offscreen video driver, `SDL_VIDEODRIVER=offscreen`, so it opens no window and still draws with the graphics card. On Windows that driver cannot start LÖVE, whose runtime there has no EGL. So there LÖVE opens its window, and the player's files hide it as soon as the engine loads them, with SDL's `SDL_HideWindow` through LuaJIT's FFI. The edit player then draws into canvases, as on Linux.
-- Play saves the project (13.6), then starts a second player with the manifest's start node as its first root, as an exported game starts. Play This File does the same with the node file of the node view that has the focus. The top node runs above it (5). When the file in focus is the top node's, Play This File plays as Play does. Stop ends it, and so does closing its window.
+- The preview runs while a project is open, and has no window that the user sees.
+- LÖVE starts every game by running its `conf.lua` and `main.lua`, so the preview runs them too, and the code of each script that is outside its functions when the editor asks about the script (12.5). It does not call `love.load`, nor a component's `load` or `update` (6.5). So what both the game and the node view need, such as the default filter, is in the manifest (3.2), and the engine sets it in both runners.
+- In the preview, the engine sets LÖVE's volume to 0, so a sound that the game's code plays there is not heard. On Linux the editor starts it with SDL's offscreen video driver, `SDL_VIDEODRIVER=offscreen`, so it opens no window and still draws with the graphics card. On Windows that driver cannot start LÖVE, whose runtime there has no EGL. So there LÖVE opens its window, and the runner's files hide it as soon as the engine loads them, with SDL's `SDL_HideWindow` through LuaJIT's FFI. The preview then draws into canvases, as on Linux.
+- Play saves the project (13.6), then starts a second runner with the manifest's start node as its first root, as an exported game starts. Play This File does the same with the node file of the node view that has the focus. The top node runs above it (5). When the file in focus is the top node's, Play This File plays as Play does. Stop ends it, and so does closing its window.
 - Pause stops the game, and Step runs one frame of it. While it is paused, the engine's loop handles LÖVE's events for LÖVE alone, such as quit, and draws, but calls nothing of steps 2 and 3 of a frame (8.1). Step runs those steps once, with `dt` of one fixed step (3.2), so it runs one `fixedUpdate`. Resume goes on.
-- The play player is LÖVE as an exported game runs it: the window, the keyboard, the pointer, the gamepads and the sound are LÖVE's own, and the engine stands in for nothing.
-- What a mode draws into is the one difference between the modes. Starting a player, the link, the console and the errors are the same code for both, so the editor's other parts do not know where the game is drawn.
-- A player is another program, so a game that fails or never returns leaves the editor running. The editor shows what happened, and starts the player again when asked.
-- The editor gives the edit player two seconds for each answer. When it does not answer, as when a `drawEditor` never returns, or the game's code fails before the engine has loaded, the editor ends it, shows in the console what it printed, and starts it again at the next change. When it stops twice in a row, it does not start again until the user asks, with Start the Edit Player Again.
-- The editor reads what a player prints, and shows it in the console, each line an entry, which stacks on the one before it when it repeats it (OpenECS-std DESIGN 31). In a player, the engine turns off the buffer of the game's output, so each line shows when it is printed. Play clears the console first, unless its Clear on Run toggle is off.
+- The game is LÖVE as an exported game runs it: the window, the keyboard, the pointer, the gamepads and the sound are LÖVE's own, and the engine stands in for nothing.
+- What a mode draws into is the one difference between the modes. Starting a runner, the link, the console and the errors are the same code for both, so the editor's other parts do not know where the game is drawn.
+- A runner is another program, so a game that fails or never returns leaves the editor running. The editor shows what happened, and starts the runner again when asked.
+- The editor gives the preview two seconds for each answer. When it does not answer, as when a `drawEditor` never returns, or the game's code fails before the engine has loaded, the editor ends it, shows in the console what it printed, and starts it again at the next change. When it stops twice in a row, it does not start again until the user asks, with Start the Preview Again.
+- The editor reads what a runner prints, and shows it in the console, each line an entry, which stacks on the one before it when it repeats it (OpenECS-std DESIGN 31). In a runner, the engine turns off the buffer of the game's output, so each line shows when it is printed. Play clears the console first, unless its Clear on Run toggle is off.
 
 ### 12.2 The link
 
 - The link is a TCP connection on this computer: the editor listens on a free port of `127.0.0.1`, and the engine connects to it with LuaSocket, which LÖVE ships. Each player has a link of its own.
 - A message is a Lua table written as text, and may carry a block of bytes after it, such as a frame's pixels. Each message starts with a line of the sizes of both, in bytes: `52 0`, then the text, then the block.
-- A message's `type` names it. The tables below give each message's type, and the player's files document its fields.
-- When a player has connected, it sends `hello`, with its mode and the engine's version.
+- A message's `type` names it. The tables below give each message's type, and the runner's files document its fields.
+- When a runner has connected, it sends `hello`, with its mode and the engine's version.
 
 | The editor sends | Type                      | To              | For                                                                                                        |
 | ---------------- | ------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
-| A file           | `file`                    | The edit player | A node file as the editor holds it, saved or not. The edit player reads it in place of the project's file. |
-| A change         | `change`                  | The edit player | One edit of a node's own fields in such a file, such as a moved node.                                      |
-| A view           | `view`                    | The edit player | Which node file to draw, from where, at what size, and which nodes are chosen (12.3).                      |
-| Shown            | `shown`                   | The edit player | The editor has taken the last frame (12.4).                                                                |
-| A question       | `question`                | The edit player | What a component type declares (12.5).                                                                     |
-| Reload           | `reload`                  | The edit player | A file of the project that is not Lua changed, such as an image.                                           |
-| Stop             | `stop`                    | Both players    | The player ends.                                                                                           |
-| Pause, Step, Resume | `pause`, `step`, `resume` | The play player | The game stops, runs one frame, or goes on (12.1).                                                      |
-| Watch            | `watch`                   | The play player | Which running nodes to send, or none (12.6).                                                               |
-| A running change | `set`                     | The play player | A new value for a running node (12.6).                                                                     |
+| A file           | `file`                    | The preview | A node file as the editor holds it, saved or not. The preview reads it in place of the project's file. |
+| A change         | `change`                  | The preview | One edit of a node's own fields in such a file, such as a moved node.                                      |
+| A view           | `view`                    | The preview | Which node file to draw, from where, at what size, and which nodes are chosen (12.3).                      |
+| Shown            | `shown`                   | The preview | The editor has taken the last frame (12.4).                                                                |
+| A question       | `question`                | The preview | What a component type declares (12.5).                                                                     |
+| Reload           | `reload`                  | The preview | A file of the project that is not Lua changed, such as an image.                                           |
+| Stop             | `stop`                    | Both runners    | The runner ends.                                                                                           |
+| Pause, Step, Resume | `pause`, `step`, `resume` | The game | The game stops, runs one frame, or goes on (12.1).                                                      |
+| Watch            | `watch`                   | The game | Which running nodes to send, or none (12.6).                                                               |
+| A running change | `set`                     | The game | A new value for a running node (12.6).                                                                     |
 
 | The engine sends | Type     | From            | For                                                            |
 | ---------------- | -------- | --------------- | -------------------------------------------------------------- |
-| A frame          | `frame`  | The edit player | The picture of a view (12.4).                                  |
-| Bounds           | `bounds` | The edit player | The nodes' bounds and places, when they change (12.3).         |
-| An answer        | `answer` | The edit player | A type's properties, or why its file does not load (12.5).     |
-| The tree         | `tree`   | The play player | The running tree's nodes, when it changes (12.6).              |
-| Values           | `values` | The play player | The watched nodes' places and values (12.6).                   |
-| Stats            | `stats`  | The play player | The frames a second, and the time of update and draw (12.6).   |
-| An error         | `error`  | Both players    | Its message, file, line and stack, and what raised it (13.1).  |
+| A frame          | `frame`  | The preview | The picture of a view (12.4).                                  |
+| Bounds           | `bounds` | The preview | The nodes' bounds and places, when they change (12.3).         |
+| An answer        | `answer` | The preview | A type's properties, or why its file does not load (12.5).     |
+| The tree         | `tree`   | The game | The running tree's nodes, when it changes (12.6).              |
+| Values           | `values` | The game | The watched nodes' places and values (12.6).                   |
+| Stats            | `stats`  | The game | The frames a second, and the time of update and draw (12.6).   |
+| An error         | `error`  | Both runners    | Its message, file, line and stack, and what raised it (13.1).  |
 
-- A change carries a node's own fields only: its name, its place, its `z` and whether it is active. The edit player sets them on the view's nodes, so a drag draws at once. For any other edit, such as a component's value, the editor sends the file again, and the edit player makes the views' nodes anew.
+- A change carries a node's own fields only: its name, its place, its `z` and whether it is active. The preview sets them on the view's nodes, so a drag draws at once. For any other edit, such as a component's value, the editor sends the file again, and the preview makes the views' nodes anew.
 - A node file that does not load leaves its view empty, and its error names the view.
 
 ### 12.3 Views
 
-- The edit player only draws, and what it draws are views.
+- The preview only draws, and what it draws are views.
 - A node view shows a view of an open node file. Other files, such as an image or a sound, are shown by the asset viewer (13.1) as the files they are; how the game draws them shows in the node view.
-- The edit player draws a view when the editor asks: after a change, or when the view moves. It runs no loop of frames, so it uses the processor only when something changed.
+- The preview draws a view when the editor asks: after a change, or when the view moves. It runs no loop of frames, so it uses the processor only when something changed.
 - What is drawn is split by what it depends on:
 
   | Drawn by                    | What                                                                  | Because                                                       |
   | --------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------- |
-  | The edit player, in LÖVE    | Each component's `drawEditor` (6.5): its picture, and its own outlines. | It depends on the component, and its author writes LÖVE code. |
+  | The preview, in LÖVE    | Each component's `drawEditor` (6.5): its picture, and its own outlines. | It depends on the component, and its author writes LÖVE code. |
   | The panel, over the frame   | The grid, the outline of the chosen nodes, and their handles.        | It depends on the pointer and the tool, and is the same for every component. |
 
 - The engine sends every node's `bounds` (6.3), in the node's own space, with the node's place in the world: when a node file loads, and when its nodes change, not with each frame. The panel places them in the view itself, so moving the view sends nothing, and a turned node's outline turns with it. The panel draws its part from them and finds the node under the pointer from them, so a click needs no answer from the player.
@@ -985,26 +985,26 @@ What the sample shows of every package:
 
 ### 12.5 What the editor learns from LÖVE
 
-- The editor never loads a script. To show a type's properties, it asks the edit player, which loads the file as the game would and answers with the type's properties (6.2): their names, kinds, defaults and options, in their order. It answers with the types that the type needs too (6.6).
-- When a Lua file of the project other than a node file changes on disk, such as a script or the manifest, the editor starts the edit player again, which takes about a tenth of a second, and asks again. So nothing of the old code stays in it.
-- While the edit player is down, such as after an error in `main.lua`, the node view shows the error, and the inspector shows the values that the node file holds, without their kinds.
+- The editor never loads a script. To show a type's properties, it asks the preview, which loads the file as the game would and answers with the type's properties (6.2): their names, kinds, defaults and options, in their order. It answers with the types that the type needs too (6.6).
+- When a Lua file of the project other than a node file changes on disk, such as a script or the manifest, the editor starts the preview again, which takes about a tenth of a second, and asks again. So nothing of the old code stays in it.
+- While the preview is down, such as after an error in `main.lua`, the node view shows the error, and the inspector shows the values that the node file holds, without their kinds.
 
 ### 12.6 The running game
 
 - While the game plays, the nodes panel and the inspector can show the running tree in place of a node file. A change made there changes the running game only, and is gone at Stop. The panels mark that they show the running game.
-- The editor asks the play player for the tree. The engine sends each node's name, its children and its components' types, and sends the tree again when it changes, at most four times a second. A running node has no id of a file (9), so the engine gives each a number for the link.
+- The editor asks the game for the tree. The engine sends each node's name, its children and its components' types, and sends the tree again when it changes, at most four times a second. A running node has no id of a file (9), so the engine gives each a number for the link.
 - For the chosen nodes, the engine sends their places and their components' values ten times a second. A reference is sent as what it names: a file as its path, and a node or a component as the node's number.
-- A value that the user changes is sent to the play player, which sets it between two frames, as a script sets a field. A node's active and a component's enabled are set through their functions (7).
-- Twice a second, the play player sends the game's frames a second, and the mean time that a frame spent in update and in draw, in milliseconds. The tools panel shows them while the game plays, so the user sees what makes a game slow. The engine's loop measures the times only when a player runs it; the time of draw leaves out `love.graphics.present`, which waits for the screen. A game with its own `love.run` sends its frames a second alone.
+- A value that the user changes is sent to the game, which sets it between two frames, as a script sets a field. A node's active and a component's enabled are set through their functions (7).
+- Twice a second, the game sends its frames a second, and the mean time that a frame spent in update and in draw, in milliseconds. The tools panel shows them while the game plays, so the user sees what makes a game slow. The engine's loop measures the times only when a runner runs it; the time of draw leaves out `love.graphics.present`, which waits for the screen. A game with its own `love.run` sends its frames a second alone.
 - The engine sends none of the tree and the values unless the editor asks, and an exported game holds none of it (8.1).
-- A game that sets its own `love.run` does not run the engine's loop (8.1). The play player then reads the link when the game's frame ends, and Pause and Step do nothing.
+- A game that sets its own `love.run` does not run the engine's loop (8.1). The game then reads the link when the game's frame ends, and Pause and Step do nothing.
 
 ## 13. The editor
 
 ### 13.1 Plugins and panels
 
 - The editor is an OpenECS tool: a preset and plugins, in Lua unless a part needs C. The user never sees or writes them.
-- It builds on OpenECS's standard plugins (OpenECS-std DESIGN): process starts the players, net carries the link, fs watches the project, compress and hash serve export, web downloads LÖVE, and ui and draw make the panels.
+- It builds on OpenECS's standard plugins (OpenECS-std DESIGN): process starts the runners, net carries the link, fs watches the project, compress and hash serve export, web downloads LÖVE, and ui and draw make the panels.
 - Every panel is a panel type that a plugin registers (OpenECS DESIGN 4), and the preset only places them. No panel is built into the editor, so the user opens, moves and groups them as in any OpenECS tool.
 - A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a standard plugin that knows nothing of ONLR and serves any OpenECS tool: OpenECS-std's `files`, `viewer` and `console` (OpenECS-std DESIGN 29, 30 and 31).
 - Such a plugin is told what ONLR needs through its functions. The files panel takes handlers: what a click shows, how a file opens, which files it makes, what a rename and a delete do, and what the question before a delete adds. It drags a file as a list of paths, as another application's files come. The console takes lines, and the folder that their files are in.
@@ -1016,10 +1016,10 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 | --------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `init.lua`                              | Loads the parts, and registers the functions that they give as the plugin's.                  |
 | `project.lua`, `format.lua`, `resolve.lua` | The open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. |
-| `nodeview.lua`, `players.lua`, `link.lua`, `hints.lua` | The node view, the players and the link, and the functions Play, Play This File, Pause, Step and Stop. |
+| `nodeview.lua`, `runners.lua`, `link.lua`, `hints.lua` | The node view, the runners and the link, and the functions Play, Play This File, Pause, Step and Stop. |
 | `panels.lua`, `nodes.lua`, `inspector.lua`, `tools.lua`, `settings.lua`, `shared.lua` | The other panels of ONLR's own: the nodes panel, the inspector, the tools and the project settings. |
 | `export.lua`, `runtimes.lua`           | Export (14), and LÖVE's runtimes (15).                                                        |
-| `player/`                               | The player's files (12.1), which the editor names to LÖVE and never loads itself.              |
+| `runner/`                               | The runner's files (12.1), which the editor names to LÖVE and never loads itself.              |
 
 - The parts call each other's functions as Lua functions, and other plugins call them as `onlr.*`.
 
@@ -1041,12 +1041,12 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 
 ### 13.3 The node view
 
-- Many node files can be open at once, each in a node view of its own. One edit player draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
+- Many node files can be open at once, each in a node view of its own. One preview draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
 - The node view has three tools: move, turn and scale. Each draws its handles on the chosen nodes, and a drag changes their place. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
 - Many chosen nodes turn and scale by one amount, around a pivot that the tools panel chooses, as Unity's does. With Global, they turn and scale as one, around the middle of their places, so they move around it. With Local, each turns and scales around its own place and stays there, by the amount that the pointer turns around the place of the node that the drag started on. The pivot is a setting of the project, `pivot`, `middle` or `own`, kept with snapping.
 - A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node whose middle is in the rectangle.
 - The move tool draws two arrows on each chosen node's place, along the world's x in red and its y in green, which points down, as y grows down in LÖVE. A drag that starts on an arrow moves the chosen nodes along its axis alone, as Unity's arrows do, and only that axis snaps. A square between the arrows moves them on both axes. The arrows and the square are above the nodes, so they take the press before a node under them, such as a camera's big frame.
-- A drag that starts on a node drags the chosen nodes with the tool: move by the pointer's way, turn by its angle around each node's place, and scale by its distance from it. The edit player draws each step (12.2), and the release is one change of the history.
+- A drag that starts on a node drags the chosen nodes with the tool: move by the pointer's way, turn by its angle around each node's place, and scale by its distance from it. The preview draws each step (12.2), and the release is one change of the history.
 - The wheel zooms around the pointer. A drag with the middle button, or with Alt, moves the view. F fits the view to the chosen nodes, or to every node when none is chosen, as Unity's F does.
 - A right click opens a menu, as in the nodes panel: on a node, which it chooses when it is not chosen, Duplicate, Delete, Copy, Paste and Frame Chosen; in empty space, Add Node Here, at the pointer, Paste and Frame All.
 - Snapping to a grid is a toggle. It and the grid's size are settings of the project, kept in `.onlr/editor.lua`, a data file. Ctrl held in a drag flips it, as in Unity, and makes a turn go in steps of 15 degrees.
@@ -1090,7 +1090,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - Undoing or redoing a change of a file that no node view shows opens a view of it.
 - A node file with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS OVERVIEW 5.5). A file that no view shows keeps its changes until the next save, and the editor asks about them before it closes the project.
 - When a file goes back to what is on disk, because the user does not save its changes, or keeps a change made outside the editor, every record that changed it is taken out of the history.
-- Play saves every node file with changes, and the manifest, before it starts the play player (12.1). So the game that plays is the project's files, and the play player is sent none. One game plays at a time: Play while a game plays stops it first.
+- Play saves every node file with changes, and the manifest, before it starts the game (12.1). So the game that plays is the project's files, and the game is sent none. One game plays at a time: Play while a game plays stops it first.
 - A file of the project that changes on disk is read again. When the editor's copy has unsaved changes too, the editor asks which to keep.
 - A node view of a file that is renamed follows it, and one of a file that is gone shows no file.
 
@@ -1136,10 +1136,10 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 ### 15.2 Runtimes
 
 - A runtime is LÖVE for one version and one platform, as files in a folder.
-- ONLR's archive holds the runtime of the editor's own platform, which the players run. On Linux it is the contents of LÖVE's AppImage, unpacked, so it runs without the system's AppImage support.
+- ONLR's archive holds the runtime of the editor's own platform, which the runners run. On Linux it is the contents of LÖVE's AppImage, unpacked, so it runs without the system's AppImage support.
 - The runtime of another platform is downloaded at the first export for it: from LÖVE's releases, and for Linux from ONLR, which hosts the AppImage's contents as a `.tar.gz`, since only Linux unpacks an AppImage. The editor checks the downloaded file against the SHA-256 hash that ONLR ships for it, before it uses anything of it, and keeps the runtime in the user's data folder, by version and platform: `onlr/runtimes/11.5/windows-x86_64/`.
 - A setting names a folder to use as a runtime instead, such as a LÖVE the user built: `onlr.linuxRuntime` and `onlr.windowsRuntime`.
-- The players run the LÖVE that the setting `onlr.love` names, or else the one of ONLR's archive.
+- The runners run the LÖVE that the setting `onlr.love` names, or else the one of ONLR's archive.
 
 ## 16. Tests
 
@@ -1149,7 +1149,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
-- The player and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both players on other samples, and speaks the link with them.
+- The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
 - A sample's test of the editor is its `editortest.lua`, an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes. It runs on a copy of the sample, since it writes the sample's files. The copy leaves out the sample's `.onlr/`, which the editor kept for it on this computer, such as snapping.
 - `samples/editor` is a project as the editor writes one, so its test checks that a change and its undo give the first text again.
 - One sample has thousands of nodes. It is the measure of speed: its test reports the time of a frame.
@@ -1171,17 +1171,17 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 **Definition.** A LuaLS annotation that tells a code editor a type's fields or a function's parameters.
 
-**Edit player.** The player that draws views for the editor.
-
 **Entry.** The table that a node file holds for one node, one component or one change of an instance.
 
 **Frame.** One picture that LÖVE draws: of the game, or of a view.
+
+**Game.** The runner that runs the game when the user plays it: LÖVE's own window, as an exported game.
 
 **Group.** A node that draws with all under it as one, through a component's `drawTree`.
 
 **Library.** Lua code that its author wrote for LÖVE games to use.
 
-**Link.** The connection between the editor and a player.
+**Link.** The connection between the editor and a runner.
 
 **LuaJIT.** The implementation of Lua that LÖVE runs. Its language is Lua 5.1 with additions.
 
@@ -1195,17 +1195,17 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 **Package.** A library made ready for ONLR: a folder of `packages/` with the library, its components and its node files.
 
-**Play player.** The player that runs the game when the user plays it.
-
-**Player.** LÖVE, started by the editor on the project.
-
 **Plugin.** A module that gives OpenECS panels and functions.
 
 **Preset.** The file that tells OpenECS which plugins and panels a tool starts with.
 
+**Preview.** The runner that draws views of node files for the editor's node views, with no window that the user sees.
+
 **Quad.** LÖVE's object for a rectangle of an image, with which LÖVE draws only that part of it.
 
 **Root.** The node that the game runs under the top node, with all that is under it, until a script loads another in its place.
+
+**Runner.** LÖVE, started by the editor on the project: the preview or the game.
 
 **Runtime.** LÖVE for one version and one platform, as files in a folder.
 
@@ -1219,4 +1219,4 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 **Variant.** A node file whose first node is an instance of another node file.
 
-**View.** A node file as the edit player draws it: seen from a point, at a zoom and a size.
+**View.** A node file as the preview draws it: seen from a point, at a zoom and a size.

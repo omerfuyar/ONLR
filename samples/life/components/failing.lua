@@ -1,4 +1,4 @@
--- A type that fails when it loads: the link's test reads the error that the player sends.
+-- A type that fails when it loads: the link's test reads the error that the runner sends.
 ---@class failing : onlr.Component
 local Failing = {}
 

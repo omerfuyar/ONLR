@@ -5,7 +5,7 @@ local ecs = require("ecs")
 local ui = require("ui")
 local fs = require("fs")
 local project = require("project")
-local player = require("nodeview")
+local nodeview = require("nodeview")
 local console = require("console")
 local shared = require("shared")
 local format = require("format")
@@ -299,7 +299,7 @@ local function fileSubject(state, out)
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       ui.text("Instance of " .. first.instanceOf, { style = STYLES.note, grow = 1 }),
       ui.button("Open base", { id = "openBase", tooltip = "Open the node file that this instance is of", onClick = function()
-        player.openFile(first.instanceOf)
+        nodeview.openFile(first.instanceOf)
       end }),
     })
   elseif #nodes == 1 and not first.own then
@@ -443,7 +443,7 @@ local function fileSubject(state, out)
     elseif info and info.error then
       body[#body + 1] = ui.text(tostring(info.error), { color = RED, wrap = true })
     elseif not info then
-      body[#body + 1] = ui.text("The edit player is down, so the values show without their kinds.", { style = STYLES.note, wrap = true })
+      body[#body + 1] = ui.text("The preview is down, so the values show without their kinds.", { style = STYLES.note, wrap = true })
     end
     for _, decl in ipairs(info and info.properties or {}) do
       declared[decl.name] = true
@@ -522,9 +522,9 @@ local function fileSubject(state, out)
   })
 end
 
--- The running game's chosen node: a change is sent to the play player, and is gone at Stop (DESIGN 12.6).
+-- The running game's chosen node: a change is sent to the game, and is gone at Stop (DESIGN 12.6).
 local function runningSubject(state, out)
-  local running = player.running()
+  local running = nodeview.running()
   local node
   for _, n in ipairs(running.values or {}) do
     if n.n == shared.runningNode then
@@ -539,7 +539,7 @@ local function runningSubject(state, out)
   local key = "run" .. node.n
   local function setField(field)
     return function(value)
-      player.set({ node = node.n, field = field, value = value })
+      nodeview.set({ node = node.n, field = field, value = value })
     end
   end
   out[#out + 1] = ui.text(node.name or "(no name)", { style = STYLES.title })
@@ -572,7 +572,7 @@ local function runningSubject(state, out)
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       ui.text(typeName, { style = STYLES.heading, grow = 1 }),
       ui.toggle(values.enabled == true, { id = cid .. ":enabled", tooltip = "Whether the component is on", onChange = function(on)
-        player.set({ node = node.n, component = typeName, property = "enabled", value = on })
+        nodeview.set({ node = node.n, component = typeName, property = "enabled", value = on })
       end }),
     })
     for _, decl in ipairs(info and info.properties or {}) do
@@ -581,7 +581,7 @@ local function runningSubject(state, out)
         out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
           label(decl.options and decl.options.label or shared.words(decl.name)),
           control(state, { tree = { index = {} } }, cid .. ":" .. decl.name, decl, value, function(new)
-            player.set({ node = node.n, component = typeName, property = decl.name, value = new })
+            nodeview.set({ node = node.n, component = typeName, property = decl.name, value = new })
           end),
         })
       else
@@ -626,7 +626,7 @@ local function draw(state, surface)
   state.drops = {}
   state.scale = surface.scale
   local out = {}
-  if shared.running and player.running().playing then
+  if shared.running and nodeview.running().playing then
     runningSubject(state, out)
   elseif shared.chosenFile then
     chosenFileSubject(out)

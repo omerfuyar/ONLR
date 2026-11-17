@@ -1,4 +1,4 @@
--- The edit player (DESIGN 12.3 to 12.5): it draws views of node files for the editor's node views, and answers
+-- The preview (DESIGN 12.3 to 12.5): it draws views of node files for the editor's node views, and answers
 -- what a component type declares. It runs no game: no load, update or event reaches a component.
 -- It draws a view only when the editor asked and has taken the view's last frame.
 ---@diagnostic disable: invisible -- the engine reads the fields of its nodes that a script does not see
@@ -11,9 +11,9 @@ local life = require("onlr.library.life")
 local build = require("onlr.library.build")
 local component = require("onlr.library.component")
 
-local edit = {}
+local preview = {}
 
----A view: a node file as the edit player draws it.
+---A view: a node file as the preview draws it.
 ---@class onlr.View
 ---@field id integer the editor's number for it
 ---@field path string the node file
@@ -316,7 +316,7 @@ function handlers.stop()
   love.event.quit(0)
 end
 
--- The edit player's loop, in place of the game's: it waits for the editor, and draws when asked.
+-- The preview's loop, in place of the game's: it waits for the editor, and draws when asked.
 local function run()
   return function()
     love.event.pump()
@@ -373,14 +373,14 @@ local function hideWindow()
   end)
 end
 
----Makes the game's start the edit player's: called from onlr.start, in main.lua.
-function edit.start()
-  life.mode = "edit"
+---Makes the game's start the preview's: called from onlr.start, in main.lua.
+function preview.start()
+  life.mode = "preview"
   hideWindow()
   if love.audio then
     love.audio.setVolume(0)
   end
-  -- main.lua goes on after onlr.start, and may set love.run or love.load of its own: the edit player keeps its loop.
+  -- main.lua goes on after onlr.start, and may set love.run or love.load of its own: the preview keeps its loop.
   rawset(love, "run", nil)
   setmetatable(love, {
     __index = { run = run },
@@ -392,4 +392,4 @@ function edit.start()
   })
 end
 
-return edit
+return preview

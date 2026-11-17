@@ -67,8 +67,8 @@ local function isRuntime(folder, platform)
   return fs.info(folder .. program) ~= nil
 end
 
--- On Linux, the LÖVE that runs the players is a runtime when it is an AppImage's contents, as ONLR's archive holds it.
-local function playersRuntime()
+-- On Linux, the LÖVE that runs the preview and the game is a runtime when it is an AppImage's contents, as ONLR's archive holds it.
+local function runnersRuntime()
   if isWindows then
     return nil
   end
@@ -106,7 +106,7 @@ function runtimes.get(platform, done)
     return done(kept)
   end
   if platform == "linux-x86_64" then
-    local own = playersRuntime()
+    local own = runnersRuntime()
     if own then
       return done(own)
     end

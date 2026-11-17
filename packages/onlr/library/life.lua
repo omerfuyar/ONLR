@@ -36,7 +36,7 @@ life.top = nil
 ---@type onlr.Record?
 life.current = nil
 
----"game", or "edit" in the node view, where nothing changes the tree (DESIGN 6.5).
+---"game", or "preview" in the node view, where nothing changes the tree (DESIGN 6.5).
 life.mode = "game"
 
 -- Frame functions that lists keep: the updates, and the events that loop.event was asked for.
@@ -60,7 +60,7 @@ local removals = {}
 ---Raises an error when the node view runs: the functions that change the tree change nothing there (DESIGN 6.5).
 ---@param what string
 function life.guard(what)
-  if life.mode == "edit" then
+  if life.mode == "preview" then
     error(what .. " changes nothing in the node view", 3)
   end
 end

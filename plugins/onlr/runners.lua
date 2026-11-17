@@ -1,5 +1,5 @@
--- The players (DESIGN 12.1): LÖVE started on the project's folder, as programs of their own, and the link with each.
--- The edit player runs while a project is open, and the play player while the game plays.
+-- The runners (DESIGN 12.1): LÖVE started on the project's folder, as programs of their own, and the link with each.
+-- The preview runs while a project is open, and the game while the user plays it.
 
 local ecs = require("ecs")
 local net = require("net")
@@ -9,14 +9,14 @@ local console = require("console")
 local link = require("link")
 local hints = require("hints")
 
-local players = {}
+local runners = {}
 
----A player: LÖVE as the editor started it, and its link.
----@class onlr.editor.Player
----@field mode "edit"|"play"
+---A runner: LÖVE as the editor started it, and its link.
+---@class onlr.editor.Runner
+---@field mode "preview"|"game"
 ---@field process any
 ---@field server any the link's listening end
----@field connection any? the link, once the player has connected
+---@field connection any? the link, once the runner has connected
 ---@field buffer string what arrived and was not read yet
 ---@field ready boolean it sent hello
 ---@field output string[] what it printed
@@ -26,35 +26,35 @@ local players = {}
 ---@field since integer when it was last asked, or last heard
 ---@field stopping boolean? the editor asked it to end
 
----@type onlr.editor.Player?
-local edit
----@type onlr.editor.Player?
-local play
+---@type onlr.editor.Runner?
+local preview
+---@type onlr.editor.Runner?
+local game
 
----The views that the node views show, by number: what the edit player draws (DESIGN 12.3).
+---The views that the node views show, by number: what the preview draws (DESIGN 12.3).
 ---@type table<integer, table>
-players.views = {}
+runners.views = {}
 
----Why the edit player is down, when it is.
+---Why the preview is down, when it is.
 ---@type string?
-players.down = nil
--- A view that stopped the edit player twice in a row is not drawn again until the user asks.
+runners.down = nil
+-- A view that stopped the preview twice in a row is not drawn again until the user asks.
 local strikes, blocked = 0, false
 
----The running game: whether it is paused, and what the play player sent of it.
-players.running = { playing = false, paused = false, tree = nil, values = nil }
+---The running game: whether it is paused, and what the game sent of it.
+runners.running = { playing = false, paused = false, tree = nil, values = nil }
 
----Called with each message of the edit player for a view: its type, the message and its block.
+---Called with each message of the preview for a view: its type, the message and its block.
 ---@type fun(type: string, message: table, block: string?)
-players.onView = function() end
+runners.onView = function() end
 
-ecs.event.declare("state", "A player started, ended, paused or went on")
-ecs.event.declare("running", "The play player sent the running tree, or the watched nodes' values")
+ecs.event.declare("state", "A runner started, ended, paused or went on")
+ecs.event.declare("running", "The game sent the running tree, or the watched nodes' values")
 
 ecs.setting.declare({
   name = "love",
   type = "string",
-  description = "LÖVE's executable, which runs the players; when empty, the variable LOVE names it, or else it is love",
+  description = "LÖVE's executable, which runs the preview and the game; when empty, the variable LOVE names it, or else it is love",
   default = "",
 })
 
@@ -68,9 +68,9 @@ end
 
 local isWindows = package.config:sub(1, 1) == "\\"
 
----@param mode "edit"|"play"
+---@param mode "preview"|"game"
 ---@param startPath string?
----@return onlr.editor.Player?
+---@return onlr.editor.Runner?
 local function start(mode, startPath)
   local folder = project.folder()
   if folder == "" then
@@ -90,13 +90,13 @@ local function start(mode, startPath)
     return nil
   end
   local command = {}
-  -- The edit player opens no window: on Linux, SDL's offscreen driver draws with the graphics card all the same.
-  if mode == "edit" and not isWindows then
+  -- The preview opens no window: on Linux, SDL's offscreen driver draws with the graphics card all the same.
+  if mode == "preview" and not isWindows then
     command = { "env", "SDL_VIDEODRIVER=offscreen" }
   end
   command[#command + 1] = lovePath()
   command[#command + 1] = folder:gsub("/$", "")
-  command[#command + 1] = "--onlr-player=" .. project.home() .. "plugins/onlr/player"
+  command[#command + 1] = "--onlr-runner=" .. project.home() .. "plugins/onlr/runner"
   command[#command + 1] = "--onlr-mode=" .. mode
   command[#command + 1] = "--onlr-port=" .. port
   if startPath then
@@ -107,7 +107,7 @@ local function start(mode, startPath)
     console.add(("LÖVE did not start: %s. The setting onlr.love names its executable."):format(tostring(err)), "error")
     return nil
   end
-  ---@type onlr.editor.Player
+  ---@type onlr.editor.Runner
   return {
     mode = mode, process = started, server = server, buffer = "", ready = false, output = {}, partial = "",
     sent = {}, owed = {}, since = os.time(),
@@ -137,20 +137,20 @@ local function sayError(text, stack, source)
   end
 end
 
-local function send(player, message, block)
-  if player and player.connection then
-    player.connection:send(link.pack(message, block))
+local function send(runner, message, block)
+  if runner and runner.connection then
+    runner.connection:send(link.pack(message, block))
   end
 end
 
-local function stop(player)
-  if not player then
+local function stop(runner)
+  if not runner then
     return
   end
-  player.stopping = true
-  send(player, { type = "stop" })
-  local started = player.process
-  -- A player that does not end when asked is ended.
+  runner.stopping = true
+  send(runner, { type = "stop" })
+  local started = runner.process
+  -- A runner that does not end when asked is ended.
   ecs.timer.start(1, false, function()
     if not started:exited() then
       started:kill(true)
@@ -158,96 +158,96 @@ local function stop(player)
   end)
 end
 
--- The edit player
+-- The preview
 
 local function sendView(id)
-  local view = players.views[id]
-  if edit and edit.ready and view then
-    send(edit, {
+  local view = runners.views[id]
+  if preview and preview.ready and view then
+    send(preview, {
       type = "view", id = id, path = view.path, x = view.x, y = view.y, zoom = view.zoom,
       width = view.width, height = view.height, chosen = view.chosen,
     })
     if view.width >= 1 and view.height >= 1 then
-      edit.owed[id] = true
-      edit.since = os.time()
+      preview.owed[id] = true
+      preview.since = os.time()
     end
   end
 end
 
 local function oweFrames(path)
-  if not edit then
+  if not preview then
     return
   end
-  for id, view in pairs(players.views) do
+  for id, view in pairs(runners.views) do
     if (not path or view.path == path) and view.width >= 1 and view.height >= 1 then
-      edit.owed[id] = true
+      preview.owed[id] = true
     end
   end
-  edit.since = os.time()
+  preview.since = os.time()
 end
 
--- Sends the node files that the editor holds otherwise than the edit player does (DESIGN 12.2).
+-- Sends the node files that the editor holds otherwise than the preview does (DESIGN 12.2).
 local function sendFiles()
-  if not (edit and edit.ready) then
+  if not (preview and preview.ready) then
     return
   end
   for _, path in ipairs(project.nodeFiles()) do
     local file = project.file(path)
     local text = project.text(path)
-    if file and file.data and (edit.sent[path] and edit.sent[path] ~= text or not edit.sent[path] and file.dirty) then
-      edit.sent[path] = text
-      send(edit, { type = "file", path = path, text = text })
+    if file and file.data and (preview.sent[path] and preview.sent[path] ~= text or not preview.sent[path] and file.dirty) then
+      preview.sent[path] = text
+      send(preview, { type = "file", path = path, text = text })
       oweFrames()
     end
   end
 end
 
 local function ask(name)
-  if edit and edit.ready then
-    send(edit, { type = "question", name = name })
-    edit.owed[name] = true
-    edit.since = os.time()
+  if preview and preview.ready then
+    send(preview, { type = "question", name = name })
+    preview.owed[name] = true
+    preview.since = os.time()
   end
 end
 
----Starts the edit player, when a project is open and none runs.
-function players.ensureEdit()
-  if edit or blocked or project.folder() == "" then
+---Starts the preview, when a project is open and none runs.
+function runners.ensurePreview()
+  if preview or blocked or project.folder() == "" then
     return
   end
-  edit = start("edit")
-  if edit then
-    players.down = nil
+  preview = start("preview")
+  if preview then
+    runners.down = nil
     ecs.event.emit("onlr.state")
   end
 end
 
----Starts the edit player again, also after a view stopped it twice.
-function players.restartEdit()
+---Starts the preview again, also after a view stopped it twice.
+function runners.restartPreview()
   blocked, strikes = false, 0
-  if edit then
-    stop(edit)
-    edit = nil
+  if preview then
+    stop(preview)
+    preview = nil
   end
-  players.ensureEdit()
+  runners.ensurePreview()
 end
 
----Ends the edit player, such as when the project closes.
-function players.stopEdit()
-  stop(edit)
-  edit = nil
+---Ends the preview, such as when the project closes.
+function runners.stopPreview()
+  stop(preview)
+  preview = nil
 end
 
----Sets what a node view shows, and asks the edit player to draw it.
+---Sets what a node view shows, and asks the preview to draw it.
 ---@param id integer the view's number
 ---@param view table? its node file, its place, zoom and size, and the chosen nodes; nil closes it
-function players.setView(id, view)
+function runners.setView(id, view)
   if view then
-    players.views[id] = view
+    runners.views[id] = view
     sendView(id)
-  elseif players.views[id] then
-    players.views[id] = nil
-    send(edit, { type = "view", id = id, closed = true })
+  elseif runners.views[id] then
+    runners.views[id] = nil
+    send(preview, { type = "view", id = id, closed = true })
   end
 end
 
@@ -255,55 +255,55 @@ end
 ---@param path string the node file
 ---@param node string the node's path of ids
 ---@param fields table<string, any>
-function players.change(path, node, fields)
-  if edit and edit.ready then
-    send(edit, { type = "change", path = path, node = node, fields = fields })
+function runners.change(path, node, fields)
+  if preview and preview.ready then
+    send(preview, { type = "change", path = path, node = node, fields = fields })
     oweFrames(path)
   end
 end
 
----The project's files changed in the editor: the edit player gets them.
-function players.filesChanged()
-  players.ensureEdit()
+---The project's files changed in the editor: the preview gets them.
+function runners.filesChanged()
+  runners.ensurePreview()
   sendFiles()
 end
 
 ---A file that is not Lua changed on disk, such as an image.
 ---@param path string
-function players.reload(path)
-  if edit and edit.ready then
-    send(edit, { type = "reload", path = path })
+function runners.reload(path)
+  if preview and preview.ready then
+    send(preview, { type = "reload", path = path })
     oweFrames()
   end
 end
 
-local function editEnded(why)
-  local player = edit
-  if not player then
+local function previewEnded(why)
+  local runner = preview
+  if not runner then
     return
   end
-  edit = nil
-  players.down = why
+  preview = nil
+  runners.down = why
   console.add(why, "error")
   strikes = strikes + 1
   if strikes >= 2 then
     blocked = true
-    console.add("The edit player stopped twice in a row. It starts again when asked: Start the edit player again.", "error")
+    console.add("The preview stopped twice in a row. It starts again when asked: Start the preview again.", "error")
   end
-  players.onView("down", { message = why })
+  runners.onView("down", { message = why })
   ecs.event.emit("onlr.state")
 end
 
-local edits = {}
+local fromPreview = {}
 
-function edits.hello(message)
-  local player = assert(edit)
-  player.ready = true
+function fromPreview.hello(message)
+  local runner = assert(preview)
+  runner.ready = true
   if message.engine then
-    ecs.log.info("the edit player runs the engine " .. tostring(message.engine))
+    ecs.log.info("the preview runs the engine " .. tostring(message.engine))
   end
   sendFiles()
-  for id in pairs(players.views) do
+  for id in pairs(runners.views) do
     sendView(id)
   end
   for _, name in ipairs(project.typeNames()) do
@@ -312,79 +312,79 @@ function edits.hello(message)
   ecs.event.emit("onlr.state")
 end
 
-function edits.frame(message, block)
-  local player = assert(edit)
-  player.owed[message.view] = nil
+function fromPreview.frame(message, block)
+  local runner = assert(preview)
+  runner.owed[message.view] = nil
   strikes = 0
-  -- The player may draw the next frame while the editor shows this one (DESIGN 12.4).
-  send(player, { type = "shown", id = message.view })
-  players.onView("frame", message, block)
+  -- The runner may draw the next frame while the editor shows this one (DESIGN 12.4).
+  send(runner, { type = "shown", id = message.view })
+  runners.onView("frame", message, block)
 end
 
-function edits.bounds(message)
-  players.onView("bounds", message)
+function fromPreview.bounds(message)
+  runners.onView("bounds", message)
 end
 
-function edits.answer(message)
-  assert(edit).owed[message.name] = nil
+function fromPreview.answer(message)
+  assert(preview).owed[message.name] = nil
   project.setTypeInfo(message.name, message)
   if message.error then
     sayError(tostring(message.error))
   end
 end
 
-function edits.error(message)
+function fromPreview.error(message)
   local where = message.file and (message.file .. (message.line and (":" .. message.line) or "") .. ": ") or ""
   sayError(where .. tostring(message.message), nil, message.source)
   if message.view then
-    assert(edit).owed[message.view] = nil
-    players.onView("error", message)
+    assert(preview).owed[message.view] = nil
+    runners.onView("error", message)
   end
 end
 
--- The play player
+-- The game
 
-local plays = {}
+local fromGame = {}
 
-function plays.hello()
-  local player = assert(play)
-  player.ready = true
-  if players.watching then
-    send(player, players.watching)
+function fromGame.hello()
+  local runner = assert(game)
+  runner.ready = true
+  if runners.watching then
+    send(runner, runners.watching)
   end
 end
 
-function plays.tree(message)
-  players.running.tree = message.nodes
+function fromGame.tree(message)
+  runners.running.tree = message.nodes
   ecs.event.emit("onlr.running", "tree")
 end
 
 -- The frames a second and the time of update and draw, twice a second.
-function plays.stats(message)
-  players.running.stats = { fps = message.fps, update = message.update, draw = message.draw }
+function fromGame.stats(message)
+  runners.running.stats = { fps = message.fps, update = message.update, draw = message.draw }
   ecs.event.emit("onlr.running", "stats")
 end
 
-function plays.values(message)
-  players.running.values = message.nodes
+function fromGame.values(message)
+  runners.running.values = message.nodes
   ecs.event.emit("onlr.running", "values")
 end
 
-function plays.error(message)
+function fromGame.error(message)
   local where = message.file and (message.file .. (message.line and (":" .. message.line) or "") .. ": ") or ""
   sayError(where .. tostring(message.message), message.stack, message.source)
 end
 
----Plays the game: saves the project, then starts the play player (DESIGN 13.6).
+---Plays the game: saves the project, then starts the game (DESIGN 13.6).
 ---@param startPath string? for Play This File, the node file to run as the first root
 ---@return boolean started
-function players.play(startPath)
+function runners.play(startPath)
   if project.folder() == "" or not project.saveAll() then
     return false
   end
-  if play then
-    stop(play)
-    play = nil
+  if game then
+    stop(game)
+    game = nil
   end
   -- The console clears for the new game, unless its Clear on run toggle is off (DESIGN 12.1).
   console.run()
@@ -393,49 +393,49 @@ function players.play(startPath)
     -- The top node's own file plays as Play does (DESIGN 12.1).
     startPath = nil
   end
-  play = start("play", startPath)
-  players.running = { playing = play ~= nil, paused = false }
+  game = start("game", startPath)
+  runners.running = { playing = game ~= nil, paused = false }
   ecs.event.emit("onlr.state")
-  return play ~= nil
+  return game ~= nil
 end
 
-function players.stop()
-  stop(play)
+function runners.stop()
+  stop(game)
 end
 
 ---@param paused boolean
-function players.pause(paused)
-  if play then
-    players.running.paused = paused
-    send(play, { type = paused and "pause" or "resume" })
+function runners.pause(paused)
+  if game then
+    runners.running.paused = paused
+    send(game, { type = paused and "pause" or "resume" })
     ecs.event.emit("onlr.state")
   end
 end
 
-function players.step()
-  if play then
-    players.running.paused = true
-    send(play, { type = "step" })
+function runners.step()
+  if game then
+    runners.running.paused = true
+    send(game, { type = "step" })
     ecs.event.emit("onlr.state")
   end
 end
 
----Asks the play player for the running tree, and for the values of running nodes (DESIGN 12.6).
+---Asks the game for the running tree, and for the values of running nodes (DESIGN 12.6).
 ---@param tree boolean
 ---@param nodes integer[] the nodes' numbers
-function players.watch(tree, nodes)
-  players.watching = { type = "watch", tree = tree, nodes = nodes }
-  send(play, players.watching)
+function runners.watch(tree, nodes)
+  runners.watching = { type = "watch", tree = tree, nodes = nodes }
+  send(game, runners.watching)
 end
 
 ---Sets a value of a running node.
 ---@param message table the node's number, and a field, or a component and a property, with the value
-function players.set(message)
+function runners.set(message)
   message.type = "set"
-  send(play, message)
+  send(game, message)
 end
 
--- Reading both players
+-- Reading both runners
 
 -- The size of the message that some bytes start, when they hold its first line.
 local function wanted(bytes)
@@ -443,33 +443,33 @@ local function wanted(bytes)
   return textSize and headerEnd - 1 + tonumber(textSize) + tonumber(blockSize)
 end
 
-local function read(player, handlers)
-  local text = player.process:read() .. player.process:readErrors()
+local function read(runner, handlers)
+  local text = runner.process:read() .. runner.process:readErrors()
   if text ~= "" then
-    text = player.partial .. text
+    text = runner.partial .. text
     local last = 1
     for line, after in text:gmatch("(.-)\r?\n()") do
       last = after
       -- OpenAL Soft says on every start that it found no sound device, which says nothing of the game.
       if not line:match("^%[ALSOFT%]") then
-        player.output[#player.output + 1] = line
-        if player.mode == "play" then
+        runner.output[#runner.output + 1] = line
+        if runner.mode == "game" then
           console.add(line, "info")
         end
       end
     end
-    player.partial = text:sub(last)
+    runner.partial = text:sub(last)
   end
-  if not player.connection then
-    player.connection = player.server:accept()
+  if not runner.connection then
+    runner.connection = runner.server:accept()
   end
-  if player.connection then
-    local chunks = { player.buffer }
-    local size = #player.buffer
+  if runner.connection then
+    local chunks = { runner.buffer }
+    local size = #runner.buffer
     local function take()
       local got = false
       while true do
-        local bytes = player.connection:receive(4 * 1024 * 1024)
+        local bytes = runner.connection:receive(4 * 1024 * 1024)
         if not bytes or bytes == "" then
           return got
         end
@@ -479,18 +479,18 @@ local function read(player, handlers)
       end
     end
     if take() then
-      -- A frame is bigger than what the system holds of a connection, so it arrives in parts while the player sends on.
+      -- A frame is bigger than what the system holds of a connection, so it arrives in parts while the runner sends on.
       -- The rest of a message that has started is read now, for a short while, not at the next tick.
       local need = wanted(chunks[1] ~= "" and chunks[1] or chunks[2])
       local limit = os.clock() + 0.03
       while need and size < need and os.clock() < limit do
         take()
       end
-      player.buffer = table.concat(chunks)
+      runner.buffer = table.concat(chunks)
       local messages
-      messages, player.buffer = link.unpack(player.buffer)
+      messages, runner.buffer = link.unpack(runner.buffer)
       for _, item in ipairs(messages) do
-        player.since = os.time()
+        runner.since = os.time()
         local handler = handlers[item[1].type]
         if handler then
           handler(item[1], item[2])
@@ -501,36 +501,36 @@ local function read(player, handlers)
 end
 
 local function poll()
-  if edit then
-    local player = edit
-    read(player, edits)
-    if edit == player then
-      local exited = player.process:exited()
-      if exited and not player.stopping then
+  if preview then
+    local runner = preview
+    read(runner, fromPreview)
+    if preview == runner then
+      local exited = runner.process:exited()
+      if exited and not runner.stopping then
         -- What it printed tells why, such as an error in main.lua before the engine loaded.
-        for _, line in ipairs(player.output) do
+        for _, line in ipairs(runner.output) do
           console.add(line, "error")
         end
-        editEnded("The edit player ended. It starts again at the next change.")
-      elseif next(player.owed) and os.time() - player.since > 2 then
+        previewEnded("The preview ended. It starts again at the next change.")
+      elseif next(runner.owed) and os.time() - runner.since > 2 then
         -- It gets two seconds for each answer (DESIGN 12.1).
-        player.process:kill(true)
-        for _, line in ipairs(player.output) do
+        runner.process:kill(true)
+        for _, line in ipairs(runner.output) do
           console.add(line, "error")
         end
-        editEnded("The edit player did not answer in two seconds, so it was ended. It starts again at the next change.")
+        previewEnded("The preview did not answer in two seconds, so it was ended. It starts again at the next change.")
       end
     end
   end
-  if play then
-    local player = play
-    read(player, plays)
-    if player.process:exited() then
-      if player.partial ~= "" then
-        console.add(player.partial, "info")
+  if game then
+    local runner = game
+    read(runner, fromGame)
+    if runner.process:exited() then
+      if runner.partial ~= "" then
+        console.add(runner.partial, "info")
       end
-      play = nil
-      players.running = { playing = false, paused = false }
+      game = nil
+      runners.running = { playing = false, paused = false }
       ecs.event.emit("onlr.state")
       ecs.event.emit("onlr.running", "tree")
     end
@@ -540,12 +540,12 @@ end
 -- Often, so a frame waits little for the editor to take it.
 ecs.timer.start(0.004, true, poll)
 
----Whether the edit player runs and has connected.
+---Whether the preview runs and has connected.
 ---@return boolean
-function players.editReady()
-  return edit ~= nil and edit.ready
+function runners.previewReady()
+  return preview ~= nil and preview.ready
 end
 
--- A player ends by itself when the editor is gone: its link closes.
+-- A runner ends by itself when the editor is gone: its link closes.
 
-return players
+return runners

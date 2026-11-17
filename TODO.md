@@ -7,7 +7,7 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 What the owner wants worked on, in this order.
 
 1. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
-2. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the edit player on Windows is built as DESIGN 12.1 says, and not tested.
+2. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
 3. **Which libraries.** How a library meets the engine is designed (DESIGN 11). The candidates are under [Libraries](#libraries); none is chosen.
 4. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
@@ -17,21 +17,21 @@ What the owner wants worked on, in this order.
 - **Tags.** A component type serves as a tag (DESIGN 7). An idea for later: tags or groups of their own. `onlr.tree.findAll` and `findAllComponents` stay so that a function that finds by tag can join them.
 - **Loading.** A root's files are loaded when the root loads, and those that the next root does not name are let go (DESIGN 6.2). An idea for later: reading a big root's images and sounds in a thread, while a picture of progress shows, as love-loader and lily do.
 
-## Player and link
+## Runner and link
 
-- **The edit player on Windows.** SDL's offscreen driver gets OpenGL only through EGL, and LÖVE's runtime for Windows holds no `libEGL.dll`. The owner's experiment showed it, with LÖVE 11.5 and an NVIDIA card: with the offscreen driver LÖVE stops with "Could not initialize OpenGL / GLES library", and shows a message box that waits for a click; with SDL's normal driver it gets OpenGL 3.3. So the edit player does not start on Windows as DESIGN 12.1 starts it on Linux.
+- **The preview on Windows.** SDL's offscreen driver gets OpenGL only through EGL, and LÖVE's runtime for Windows holds no `libEGL.dll`. The owner's experiment showed it, with LÖVE 11.5 and an NVIDIA card: with the offscreen driver LÖVE stops with "Could not initialize OpenGL / GLES library", and shows a message box that waits for a click; with SDL's normal driver it gets OpenGL 3.3. So the preview does not start on Windows as DESIGN 12.1 starts it on Linux.
 
-  The second experiment checked a normal window that the engine hides at once, with SDL's `SDL_HideWindow` through LuaJIT's FFI: LÖVE reports it hidden, it draws into a canvas, and reads the canvas back right. DESIGN 12.1 takes this way. But a black window shows for a moment, between LÖVE opening it and the engine hiding it, and the edit player starts again at every change of a script (DESIGN 12.5). The next experiment opens the window outside the screen, borderless and one pixel wide, then hides it (see [Tasks](#tasks)). If it still shows:
-  - ANGLE's `libEGL.dll` and `libGLESv2.dll` beside LÖVE's files in ONLR's archive. LÖVE itself stays unchanged. The edit player then draws with OpenGL ES over Direct3D, not with the OpenGL of the exported game, so a shader may look different in the node view. The offscreen driver also asks EGL for its list of devices, which ANGLE may not give.
+  The second experiment checked a normal window that the engine hides at once, with SDL's `SDL_HideWindow` through LuaJIT's FFI: LÖVE reports it hidden, it draws into a canvas, and reads the canvas back right. DESIGN 12.1 takes this way. But a black window shows for a moment, between LÖVE opening it and the engine hiding it, and the preview starts again at every change of a script (DESIGN 12.5). The next experiment opens the window outside the screen, borderless and one pixel wide, then hides it (see [Tasks](#tasks)). If it still shows:
+  - ANGLE's `libEGL.dll` and `libGLESv2.dll` beside LÖVE's files in ONLR's archive. LÖVE itself stays unchanged. The preview then draws with OpenGL ES over Direct3D, not with the OpenGL of the exported game, so a shader may look different in the node view. The offscreen driver also asks EGL for its list of devices, which ANGLE may not give.
 - **The offscreen driver elsewhere.** It is checked on Linux with an NVIDIA card, with the system's LÖVE 11.5 and with LÖVE's own AppImage, and on a computer with no display and no graphics card, where Mesa draws in software. It needs the system's EGL library. Not checked: Intel and AMD cards.
-- **The node view's speed.** Measured on the owner's computer, on Linux with an NVIDIA card, with the node view filling the editor's window at 946×1006 pixels: about 41 frames a second when draw blended the frame into the panel's pixels, 10.7 ms of the panel's 14.4 ms. The node view now draws with gpu (DESIGN 13.3), which leaves about 6.5 ms a frame of moving the pixels through the link and into the texture. To measure again on the owner's computer; if it is still slow, the player sends a frame only when the picture changed, or a smaller one while dragging.
+- **The node view's speed.** Measured on the owner's computer, on Linux with an NVIDIA card, with the node view filling the editor's window at 946×1006 pixels: about 41 frames a second when draw blended the frame into the panel's pixels, 10.7 ms of the panel's 14.4 ms. The node view now draws with gpu (DESIGN 13.3), which leaves about 6.5 ms a frame of moving the pixels through the link and into the texture. To measure again on the owner's computer; if it is still slow, the runner sends a frame only when the picture changed, or a smaller one while dragging.
 
 - **The game in a panel.** Play shows the game in LÖVE's own window, and only what a mode draws into differs between the modes (DESIGN 12.1). Showing the game in a panel is an idea for later. What it needs:
-  - Frames from the play player. `love.graphics.captureScreenshot` reads the window's picture, also when there is no window, so the game draws as always. Drawing into a canvas of the engine's instead would break a game that sets canvases of its own.
+  - Frames from the game. `love.graphics.captureScreenshot` reads the window's picture, also when there is no window, so the game draws as always. Drawing into a canvas of the engine's instead would break a game that sets canvases of its own.
   - A pace. Without a window LÖVE does not wait for the screen, and runs hundreds of frames a second.
   - The panel's keys, text and pointer, sent to the game, and the engine answering for `love.keyboard.isDown`, `love.mouse.getPosition` and the like. Also the pointer's modes, gamepads, the desktop's size, and the keys that the editor takes before a panel gets them.
 - **Reloading while playing.** For later. A changed script or image takes effect in the running game without a restart. Open: what happens to the values a component keeps.
-- **Previews of node files.** For later. A small picture of a node file, such as in the files panel, would be a view that the edit player draws (DESIGN 12.3). No panel shows one: the files panel and the asset viewer know nothing of ONLR. The edit player draws when asked and updates nothing, so a preview of an animation or of particles would stand still.
+- **Previews of node files.** For later. A small picture of a node file, such as in the files panel, would be a view that the preview draws (DESIGN 12.3). No panel shows one: the files panel and the asset viewer know nothing of ONLR. The preview draws when asked and updates nothing, so a preview of an animation or of particles would stand still.
 - **A debugger.** Stopping at a line and reading variables. Not planned; an error's file, line and stack are shown (DESIGN 12.2).
 
 ## Editor
@@ -91,7 +91,7 @@ What the owner wants worked on, in this order.
   | Screen effects              | moonshine                                      | Draws a group (DESIGN 5).                                                                              |
   | Saved games and data        | bitser; binser; json.lua                       | bitser uses LuaJIT's FFI, which LÖVE has.                                                              |
   | Loading in a thread         | love-loader; lily                              | For the [Engine](#engine)'s loading.                                                                   |
-  | Debugging                   | lovebird; lurker                               | lurker swaps changed files in a running game, which may clash with the engine's loaded types (see [Player and link](#player-and-link), reloading while playing). |
+  | Debugging                   | lovebird; lurker                               | lurker swaps changed files in a running game, which may clash with the engine's loaded types (see [Runner and link](#runner-and-link), reloading while playing). |
 
   Whichever library gives bodies, its world is a component of what a root has one of, and contacts reach scripts with `node:send`, as DESIGN 11.3 shows.
 
@@ -106,8 +106,8 @@ What the owner wants worked on, in this order.
 
 ## Tasks
 
-- **The edit player's hidden window on Windows is not tested.** `plugins/onlr/player/edit.lua` hides LÖVE's window with `SDL_HideWindow` through LuaJIT's FFI, as DESIGN 12.1 says. It was written on Linux, where the offscreen driver is used, and never run on Windows.
-- **The Windows experiment.** It tells whether the edit player's window can open on Windows without showing for a moment (see [Player and link](#player-and-link)). The owner runs it in the command prompt:
+- **The preview's hidden window on Windows is not tested.** `plugins/onlr/runner/edit.lua` hides LÖVE's window with `SDL_HideWindow` through LuaJIT's FFI, as DESIGN 12.1 says. It was written on Linux, where the offscreen driver is used, and never run on Windows.
+- **The Windows experiment.** It tells whether the preview's window can open on Windows without showing for a moment (see [Runner and link](#runner-and-link)). The owner runs it in the command prompt:
   1. Keep `C:\t\main.lua` as it is, and make `C:\t\conf.lua` with these lines. They open LÖVE's window outside the screen, without a border, one pixel wide:
 
      ``` lua
@@ -124,7 +124,7 @@ What the owner wants worked on, in this order.
   3. Report everything that it prints, any error, and whether anything showed: a window, a flash, or a button in the task bar, even for a moment.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. They are the owner's too, so they change when that is the better solution:
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
-  - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the player on Linux and `cmd /c` on Windows.
+  - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the runner on Linux and `cmd /c` on Windows.
   - fs: a file's permissions. Until it tells them, the Linux build marks as programs LÖVE's launcher, the files of `bin/` and the libraries.
   - fs: watching the folders inside a folder, for the project's folder.
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
@@ -134,12 +134,12 @@ What the owner wants worked on, in this order.
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The core: a panel hears where dragged data is over it, so the nodes panel shows a line where a dragged node will land. While data is dragged, the core gives no panel the pointer's moves (OpenECS DESIGN 7.9).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
-- **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the players were written on Linux.
+- **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the runners were written on Linux.
 - **What the editor does not do yet.** Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
 - **The tests on Windows.** `shuild.c` runs them on Linux only: they need SDL's offscreen driver, and set variables as a POSIX shell does.
 - **A warning when a popup opens.** On the owner's computer, a dropdown logs "[ecs] The GPU cannot present to a window (The GPU API doesn't support transparent windows)". It is OpenECS's, not ONLR's: its popups ask for a transparent window.
-- **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the player's files, and LÖVE's runtime for the host, and the Linux runtime that ONLR hosts (DESIGN 15.2).
-- **The Linux runtime has no address.** DESIGN 15.2 downloads it from ONLR, which hosts the contents of LÖVE's AppImage as a `.tar.gz`. Nothing hosts it yet, so `plugins/onlr/runtimes.lua` has no address and no hash for it. Until then a Linux build uses the LÖVE that runs the players, when it is an unpacked AppImage, or the folder that `onlr.linuxRuntime` names. The AppImage's own SHA-256 hash is `65a673406431eff7167a15a032bf7a2e4ba50108e091eb7b176465831f9b5e00`.
+- **ONLR's archive.** How the one archive of OVERVIEW 2 is made: OpenECS's release, ONLR's plugins and preset, the engine, the runner's files, and LÖVE's runtime for the host, and the Linux runtime that ONLR hosts (DESIGN 15.2).
+- **The Linux runtime has no address.** DESIGN 15.2 downloads it from ONLR, which hosts the contents of LÖVE's AppImage as a `.tar.gz`. Nothing hosts it yet, so `plugins/onlr/runtimes.lua` has no address and no hash for it. Until then a Linux build uses the LÖVE that runs the preview and the game, when it is an unpacked AppImage, or the folder that `onlr.linuxRuntime` names. The AppImage's own SHA-256 hash is `65a673406431eff7167a15a032bf7a2e4ba50108e091eb7b176465831f9b5e00`.
 - **Export on Windows is not tested.** The user's data folder there, `%APPDATA%`, and a Linux build made on Windows, which cannot find LÖVE's AppImage.
 - **OpenECS's TODO.md** still lists this editor's open questions. Replace them there with a link to this repository.
 - **Rulesets.** `.github/rulesets/` holds the rules of `dev` and `main`. The owner imports them in the repository's settings.

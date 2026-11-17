@@ -43,7 +43,7 @@ local resolve = require("resolve")
 ---@field space table the names that components can hold
 ---@field typeNames string[]
 ---@field typeFiles table<string, string>
----@field types table<string, table> what the edit player answered of each type
+---@field types table<string, table> what the preview answered of each type
 ---@field trees table<string, onlr.editor.Tree>
 ---@field watches table<string, any>
 ---@field touch (fun(path: string))?
@@ -547,7 +547,7 @@ local function diskChanged()
     emitChanged(reread, true)
   end
   if code then
-    -- A script changed: what the edit player answered of the types is old (DESIGN 12.5).
+    -- A script changed: what the preview answered of the types is old (DESIGN 12.5).
     scanTypes()
     p.types = {}
     p.trees = {}
@@ -634,7 +634,7 @@ local function whole(path)
   return start .. table.concat(parts, "/") .. (path:sub(-1) == "/" and "/" or "")
 end
 
--- ONLR's own folder, which holds packages/, with the engine in it, and the player's files beside plugins/.
+-- ONLR's own folder, which holds packages/, with the engine in it, and the runner's files beside plugins/.
 local function home()
   return whole(ecs.plugin.folder .. "../../")
 end
@@ -1837,10 +1837,10 @@ local functions = {
   typeFile = { sig = "string(string type)", doc = "The file of a component type", fn = function(name)
     return P and P.typeFiles[name] or ""
   end },
-  typeInfo = { sig = "value(string type)", doc = "What the edit player answered of a type: its properties, or nil", fn = function(name)
+  typeInfo = { sig = "value(string type)", doc = "What the preview answered of a type: its properties, or nil", fn = function(name)
     return P and P.types[name]
   end },
-  setTypeInfo = { sig = "void(string type, value info)", doc = "Keep what the edit player answered of a type", fn = function(name, info)
+  setTypeInfo = { sig = "void(string type, value info)", doc = "Keep what the preview answered of a type", fn = function(name, info)
     if P then
       P.types[name] = info
       P.trees = {}

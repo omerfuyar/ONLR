@@ -35,7 +35,7 @@ local function sandbox()
   return env
 end
 
--- Texts that the player gives in place of a file on disk, such as a node file that the editor holds unsaved (DESIGN 12.2).
+-- Texts that the runner gives in place of a file on disk, such as a node file that the editor holds unsaved (DESIGN 12.2).
 ---@type table<string, string>
 data.texts = {}
 
@@ -100,7 +100,7 @@ local function get(key, make)
 end
 
 -- What each loaded object was loaded from: an image's or a sound's path, and a font's path and size.
--- The play player sends a reference as what it names (DESIGN 12.6).
+-- The game sends a reference as what it names (DESIGN 12.6).
 ---@type table<any, string|table>
 data.paths = setmetatable({}, { __mode = "k" })
 
@@ -190,7 +190,7 @@ function data.collect()
   end
 end
 
----Forgets every loaded file, held or not, such as when the player reads a changed image again (DESIGN 12.2).
+---Forgets every loaded file, held or not, such as when the runner reads a changed image again (DESIGN 12.2).
 ---@param path string? only the files of this path
 function data.forget(path)
   for key in pairs(loaded) do

@@ -26,25 +26,25 @@ local OWN = {
   window = true, defaultFilter = true, fixedRate = true, exclude = true,
 }
 
--- The folder of the player's files, when the editor started the game (DESIGN 12.1).
-local function playerFolder()
+-- The folder of the runner's files, when the editor started the game (DESIGN 12.1).
+local function runnerFolder()
   for _, a in ipairs(arg or {}) do
-    local folder = type(a) == "string" and a:match("^%-%-onlr%-player=(.+)$")
+    local folder = type(a) == "string" and a:match("^%-%-onlr%-runner=(.+)$")
     if folder then
       return folder
     end
   end
 end
 
--- Loads the player's files, once, with Lua's own loadfile, which reads any path.
-local player
-local function loadPlayer()
-  local folder = playerFolder()
-  if folder and not player then
+-- Loads the runner's files, once, with Lua's own loadfile, which reads any path.
+local runner
+local function loadRunner()
+  local folder = runnerFolder()
+  if folder and not runner then
     local chunk = assert(loadfile(folder .. "/init.lua"))
-    player = chunk(folder)
+    runner = chunk(folder)
   end
-  return player
+  return runner
 end
 
 ---Sets LÖVE's settings from the project's manifest. Called from conf.lua (DESIGN 3.1).
@@ -68,7 +68,7 @@ function onlr.conf(t)
       end
     end
   end
-  local p = loadPlayer()
+  local p = loadRunner()
   if p and p.conf then
     p.conf(t)
   end
@@ -82,7 +82,7 @@ function onlr.start()
     love.graphics.setDefaultFilter(manifest.defaultFilter, manifest.defaultFilter)
   end
   love.run = onlr.loop.run
-  local p = loadPlayer()
+  local p = loadRunner()
   if p and p.start then
     p.start(onlr)
   end
