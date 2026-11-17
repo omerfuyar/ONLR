@@ -54,6 +54,8 @@ return {
     end
     test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
+    -- opening a project that lacks LÖVE's definitions, as the sample does, gives it them, for a code editor
+    check(read(".onlr/love2d/love.lua"):find("---@class love", 1, true), "the project holds LÖVE's definitions")
 
     -- a drag with the move tool moves the node under the pointer, as one change
     local x, y = at(70, 70)

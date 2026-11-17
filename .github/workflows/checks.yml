@@ -112,9 +112,11 @@ jobs:
     needs: openecs
     env:
       LUALS_VERSION: 3.15.0
-      LOVE2D_DEFINITIONS: c630dd883cda128a19d850bd5e3911110b271609
     steps:
+      # LÖVE's definitions, from LuaCATS, are a submodule, which .luarc.json names: the check finds code that misuses LÖVE
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # the definitions of the ecs module and of the standard plugins, which .luarc.json names for the editor's plugins
       - uses: actions/download-artifact@v4
@@ -128,12 +130,6 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/luals"
           curl -sSL "https://github.com/LuaLS/lua-language-server/releases/download/$LUALS_VERSION/lua-language-server-$LUALS_VERSION-linux-x64.tar.gz" | tar -xz -C "$RUNNER_TEMP/luals"
-
-      # LÖVE's definitions, from LuaCATS, which .luarc.json names: the check finds code that misuses LÖVE
-      - name: Get LÖVE's definitions
-        run: |
-          git clone -q https://github.com/LuaCATS/love2d build/love2d
-          git -C build/love2d checkout -q "$LOVE2D_DEFINITIONS"
 
       - name: Check the Lua files
         run: |

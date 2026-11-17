@@ -4,3 +4,6 @@
 [submodule "dependencies/shuild"]
 	path = dependencies/shuild
 	url = https://github.com/omerfuyar/shuild
+[submodule "dependencies/love2d"]
+	path = dependencies/love2d
+	url = https://github.com/LuaCATS/love2d

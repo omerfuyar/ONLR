@@ -671,6 +671,16 @@ local function close()
   return true
 end
 
+-- Gives a project LÖVE's own definitions, for a code editor (DESIGN 4.3), when its .onlr/ lacks them, as a project that was
+-- just made or cloned does.
+local function addLove(folder)
+  local definitions = home() .. "dependencies/love2d/library"
+  if fs.info(definitions) and not fs.info(folder .. ".onlr/love2d") then
+    fs.makeFolder(folder .. ".onlr")
+    copyFolder(definitions, folder .. ".onlr/love2d")
+  end
+end
+
 local function open(folder)
   folder = whole(folder)
   local info = fs.info(folder)
@@ -710,6 +720,7 @@ local function open(folder)
     removeFolder(folder .. "packages/onlr")
     copyFolder(home() .. "packages/onlr", folder .. "packages/onlr")
   end
+  addLove(folder)
 
   P = {
     folder = folder, files = {}, history = {}, position = 0, chosen = { paths = {} }, tool = "move", settings = {},
@@ -794,10 +805,7 @@ local function new(folder)
   end
   write("nodes/start.lua", format.write({ format = format.FORMAT, id = format.newId({}), name = "Start" }, "node"))
   copyFolder(home() .. "packages/onlr", folder .. "packages/onlr")
-  -- LÖVE's own definitions, for a code editor (DESIGN 4.3), where ONLR holds them.
-  if fs.info(home() .. "build/love2d/library") then
-    copyFolder(home() .. "build/love2d/library", folder .. ".onlr/love2d")
-  end
+  addLove(folder)
   return open(folder)
 end
 
