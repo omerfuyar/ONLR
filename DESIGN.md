@@ -741,7 +741,7 @@ Their properties use LÖVE's names wherever LÖVE has one:
 |               | `zoom`            | `number`                                      | 1          | How large the camera shows its nodes: 2 is twice as large.                                       |
 |               | `width`, `height` | `number`                                      | 0          | The size of its screen, in pixels. 0 is the window's.                                            |
 
-- Each has `bounds` and `drawEditor` (6.3). A camera's `drawEditor` draws the frame of what it shows.
+- Each has `bounds` and `drawEditor` (6.3). A camera's `drawEditor` draws the frame of what it shows, in blue and 3 pixels wide, named "Camera" inside its top left, at the same size at any zoom.
 
 ## 11. Libraries
 
@@ -1051,7 +1051,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - A right click opens a menu, as in the nodes panel: on a node, which it chooses when it is not chosen, Duplicate, Delete, Copy, Paste and Frame Chosen; in empty space, Add Node Here, at the pointer, Paste and Frame All.
 - Snapping to a grid is a toggle. It and the grid's size are settings of the project, kept in `.onlr/editor.lua`, a data file. Ctrl held in a drag flips it, as in Unity, and makes a turn go in steps of 15 degrees.
 - The node view draws with OpenECS-std's gpu, on a panel's GPU surface (OpenECS-std DESIGN 15). The frame is a texture on the graphics card, which each new frame replaces, and the grid, the outlines, the handles and the messages are gpu's rectangles, lines and text. So drawing the panel copies no pixels, and costs the same at any size. Without a graphics card that gpu can use, the view shows why in place of the nodes.
-- The node view draws the window's frame: a rectangle from 0, 0, of the size of the manifest's `window`. So the user sees where the nodes that no camera holds show, such as a score.
+- The node view draws the window's frame: a rectangle from 0, 0, of the size of the manifest's `window`. So the user sees where the nodes that no camera holds show, such as a score. It is grey, and named above its top left with its size, such as "Window 1280 × 720", so it is told from a camera's frame. A camera's frame shows what the camera shows of the world under its node when the game runs; the window's frame shows where nodes outside any camera draw on the screen.
 - Dragging an image from the files panel into the node view makes a node with a sprite of it, and dragging a node file makes an instance of it (9).
 - The editor does not tell a level from a coin. Any node file can be the start node and can be held in another (5, 9), so the manifest's start node is chosen from every node file.
 
