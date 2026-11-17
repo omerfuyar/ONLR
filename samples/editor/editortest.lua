@@ -258,6 +258,16 @@ return {
     test.click(rx, ry, nil, "Shift")
     check(#chosen() == 2 and chosen()[1] == "bbbbbb", "Shift chooses B and Part: " .. table.concat(chosen(), ", "))
 
+    -- a double click on a node opens it, and another closes it: Part shows Tip under it
+    rx, ry = row(4)
+    test.click(rx, ry)
+    test.click(rx, ry)
+    test.match(test.panel(panelOf(test, "onlr.nodes")).state.open, { p4rt01 = true }, "a double click opens Part")
+    test.wait(0.5)
+    test.click(rx, ry)
+    test.click(rx, ry)
+    check(not test.panel(panelOf(test, "onlr.nodes")).state.open.p4rt01, "another double click closes it")
+
     -- the search shows the nodes whose name holds the text, and with t:, those with a component of a type: thing is on A, B
     -- and Part's Tip, so Start, A, B, Part and Tip show, opened
     test.click(tree.x + 150, tree.y + 42)
@@ -359,6 +369,21 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the move into B is undone")
+
+    -- a deleted base breaks only its instance: the rest of the file still shows in the nodes panel, and A is chosen there; the base back
+    -- gives the instance back (DESIGN 9)
+    local partText = read("nodes/part.lua")
+    rx, ry = row(3)
+    test.click(rx, ry)
+    os.remove("nodes/part.lua")
+    test.wait(1.5)
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.match(chosen(), { "aaaaaa" }, "the nodes panel works without the instance's base")
+    local back = assert(io.open("nodes/part.lua", "wb"))
+    back:write(partText)
+    back:close()
+    test.wait(0.5)
 
     -- Save as Node File, the last entry of a node's menu in the nodes panel that A can use, writes the node to a new node file named after it, and
     -- puts an instance of it in its place; Up goes round from the menu's first entry to its last

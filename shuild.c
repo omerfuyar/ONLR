@@ -203,9 +203,26 @@ static void PutPackages(const char *path, SHUFileType type, void *data)
     CopyFolder("packages/onlr/", SHU_UtilFormat("%sonlr/", packages));
     SHU_UtilCopyFile("samples/check.lua", packages);
 
+    // the sample's name is its folder's, which ends with / or, on Windows, with a backslash
+    usz end = strlen(path);
+
+    while (end > 0 && (path[end - 1] == '/' || path[end - 1] == '\\'))
+    {
+        end--;
+    }
+
+    usz start = end;
+
+    while (start > 0 && path[start - 1] != '/' && path[start - 1] != '\\')
+    {
+        start--;
+    }
+
+    char *name = SHU_UtilFormat("%.*s", (int)(end - start), path + start);
+
     for (usz i = 0; i < sizeof(SAMPLE_PACKAGES) / sizeof(SAMPLE_PACKAGES[0]); i++)
     {
-        if (SHU_UtilMatch(path, SHU_UtilFormat("*samples/%s/", SAMPLE_PACKAGES[i][0])))
+        if (!strcmp(name, SAMPLE_PACKAGES[i][0]))
         {
             CopyFolder(SHU_UtilFormat("packages/%s/", SAMPLE_PACKAGES[i][1]), SHU_UtilFormat("%s%s/", packages, SAMPLE_PACKAGES[i][1]));
         }
@@ -228,8 +245,25 @@ static void RunEditor(void)
         SHU_UtilFail("OpenECS's release is not in " SHUM_LOG_PATH("%s") "; unpack it there, or name its folder with " SHUM_LOG_COMMAND("-o") ".", CONFIG.FLAGS.openecs);
     }
 
-    const char *project = CONFIG.FLAGS.project != NULL ? SHU_UtilFormat(" \"%s\"", SHU_UtilGetPath(CONFIG.FLAGS.project)) : "";
-    SHU_UtilRun("\"%s\" --preset \"%s\"%s", openecs, SHU_UtilGetPath("preset.lua"), project);
+    // a project's folder loses its last separator: on Windows, a backslash before a closing quote would keep the quote in the argument
+    char *project = "";
+
+    if (CONFIG.FLAGS.project != NULL)
+    {
+        project = SHU_UtilGetPath(CONFIG.FLAGS.project);
+        usz length = strlen(project);
+
+        while (length > 1 && (project[length - 1] == '/' || project[length - 1] == '\\'))
+        {
+            project[--length] = '\0';
+        }
+
+        project = SHU_UtilFormat(" \"%s\"", project);
+    }
+
+    // cmd, which runs the command on Windows, takes away its first and last quotes when it has more than two, so the command gets a pair of its own
+    const char *wrap = SHUM_HOST_WINDOWS ? "\"" : "";
+    SHU_UtilRun("%s\"%s\" --preset \"%s\"%s%s", wrap, openecs, SHU_UtilGetPath("preset.lua"), project, wrap);
 }
 
 static bool IsTested(const char *name)

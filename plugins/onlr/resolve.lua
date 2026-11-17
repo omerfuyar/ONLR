@@ -180,7 +180,26 @@ local function expandEntry(entry, scope, overlays, ctx)
     if scope.top then
       ctx.instances[id] = entry
     end
-    local node, innerScope = expandFile(instance.base, inner, ctx, scope.prefix .. id)
+    -- A base that does not load, such as a deleted node file, makes this instance a node with an error, and the rest of the file
+    -- still loads, so the user can delete the instance or give it its file back.
+    local stack = {}
+    for file in pairs(ctx.stack) do
+      stack[file] = true
+    end
+    local ok, node, innerScope = pcall(expandFile, instance.base, inner, ctx, scope.prefix .. id)
+    if not ok then
+      ctx.stack = stack
+      ---@type onlr.editor.Node
+      local broken = {
+        path = scope.prefix .. id, id = id, file = scope.file, own = false, instanceOf = instance.base,
+        posX = 0, posY = 0, rot = 0, sclX = 1, sclY = 1, z = 0, active = true,
+        base = {}, changed = {}, components = {}, children = {}, errors = { tostring(node) },
+      }
+      scope.nodes[id] = broken
+      ctx.index[broken.path] = broken
+      ctx.order[#ctx.order + 1] = broken
+      return broken
+    end
     node.instanceOf = instance.base
     scope.nodes[id] = node
     for path, other in pairs(innerScope.nodes) do
