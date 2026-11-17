@@ -258,11 +258,12 @@ local function drawView(view, surface)
     gpu.image(surface, view.image, x, y, f.width * ratio, f.height * ratio)
   end
 
-  -- The window's frame: where the nodes that no camera holds show (DESIGN 13.3).
+  -- The window's frame: where the nodes that no camera holds show, such as a score, named above its top left (DESIGN 13.3).
   local manifest = project.manifest()
   local window = manifest and manifest.window or {}
   local x0, y0 = toScreen(view, 0, 0)
   frameRect(surface, x0, y0, (window.width or 800) * view.zoom, (window.height or 600) * view.zoom, 1, "textDim")
+  gpu.text(surface, draw.font("ui"), ("Window %d × %d"):format(window.width or 800, window.height or 600), x0, y0 - 16, 12, "textDim")
 
   for _, node in ipairs(view.nodes) do
     local chosen = isChosen(view, node.path)
