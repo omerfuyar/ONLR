@@ -114,6 +114,8 @@ end
 -- The move tool's arrows: their length on the screen, and their colours, as Unity's.
 local HANDLE = 60
 local AXIS_X, AXIS_Y = "#e06c75", "#98c379"
+-- The square between the arrows: where it starts from the node's place, and its size.
+local SQUARE, SQUARE_SIZE = 10, 18
 
 local function nodeToWorld(node, x, y)
   local p = node.place
@@ -154,7 +156,8 @@ local function hits(view, sx, sy)
   return found
 end
 
--- The move tool's arrow under a point of the panel: the chosen node's path and the axis, "x" or "y", or nil.
+-- The move tool's handle under a point of the panel: the chosen node's path and the axis, "x" or "y" for an arrow and "both" for the
+-- square between them, or nil.
 local function handleAt(view, sx, sy)
   if project.tool() ~= "move" then
     return nil
@@ -163,7 +166,9 @@ local function handleAt(view, sx, sy)
     local node = view.byPath[path]
     if node then
       local x, y = toScreen(view, node.place[5], node.place[6])
-      if math.abs(sy - y) <= 6 and sx >= x + 8 and sx <= x + HANDLE + 4 then
+      if sx >= x + SQUARE and sx <= x + SQUARE + SQUARE_SIZE and sy >= y + SQUARE and sy <= y + SQUARE + SQUARE_SIZE then
+        return path, "both"
+      elseif math.abs(sy - y) <= 6 and sx >= x + 8 and sx <= x + HANDLE + 4 then
         return path, "x"
       elseif math.abs(sx - x) <= 6 and sy >= y + 8 and sy <= y + HANDLE + 4 then
         return path, "y"
@@ -288,7 +293,11 @@ local function drawView(view, surface)
         gpu.line(surface, x, y, x, y + HANDLE, 2, yColor)
         gpu.line(surface, x, y + HANDLE, x - 5, y + HANDLE - 8, 2, yColor)
         gpu.line(surface, x, y + HANDLE, x + 5, y + HANDLE - 8, 2, yColor)
-        frameRect(surface, x - 4, y - 4, 8, 8, 2, "accent")
+        -- the square between them moves on both axes, above whatever node is under it
+        if axis == "both" then
+          gpu.fill(surface, x + SQUARE, y + SQUARE, SQUARE_SIZE, SQUARE_SIZE, "accent")
+        end
+        frameRect(surface, x + SQUARE, y + SQUARE, SQUARE_SIZE, SQUARE_SIZE, 2, "accent")
       elseif tool == "turn" then
         circle(surface, x, y, 14, 2, "accent")
         local ax, ay = toScreen(view, nodeToWorld(node, 1, 0))
@@ -464,7 +473,7 @@ local function toolDrag(view, sx, sy, ctrl)
     -- The move in the world, as the node's parent sees it.
     local moveX, moveY = worldToNode(linear, toX, toY)
     if d.tool == "move" and d.axis then
-      -- along one axis, only what moves snaps, so the node keeps its place on the other axis
+      -- with a handle, only what moves snaps, so a node moved along one axis keeps its place on the other
       fields.posX = moveX ~= 0 and snap(n.posX + moveX, ctrl) or n.posX
       fields.posY = moveY ~= 0 and snap(n.posY + moveY, ctrl) or n.posY
     elseif d.tool == "move" then
@@ -607,7 +616,7 @@ local function pointer(view, event)
     if event.button == 2 or (event.button == 1 and event.alt) then
       view.drag = { kind = "pan", startX = x, startY = y, viewX = view.x, viewY = view.y }
     elseif event.button == 1 and view.file and handleAt(view, x, y) then
-      -- an arrow of the move tool is above the nodes, and drags the chosen nodes along its axis
+      -- a handle of the move tool is above the nodes, and drags the chosen nodes along its axis, or both
       local path, axis = handleAt(view, x, y)
       view.press = { x = x, y = y, found = { path }, axis = axis, wasChosen = true }
     elseif event.button == 1 and view.file then
