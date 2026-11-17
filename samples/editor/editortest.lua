@@ -362,6 +362,21 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the move into B is undone")
 
+    -- a deleted base breaks only its instance: the rest of the file still shows in the nodes panel, and A is chosen there; the base back
+    -- gives the instance back (DESIGN 9)
+    local partText = read("nodes/part.lua")
+    rx, ry = row(3)
+    test.click(rx, ry)
+    os.remove("nodes/part.lua")
+    test.wait(1.5)
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.match(chosen(), { "aaaaaa" }, "the nodes panel works without the instance's base")
+    local back = assert(io.open("nodes/part.lua", "wb"))
+    back:write(partText)
+    back:close()
+    test.wait(0.5)
+
     -- Save as Node File, the last entry of a node's menu in the nodes panel that A can use, writes the node to a new node file named after it, and
     -- puts an instance of it in its place; Up goes round from the menu's first entry to its last
     test.click(x, y)
