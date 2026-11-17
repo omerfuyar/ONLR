@@ -12,10 +12,10 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | -------------------------- | ---------------------------------------------------------------------------------------------- |
 | [README.md](README.md)     | Short introduction.                                                                            |
 | [OVERVIEW.md](OVERVIEW.md) | What ONLR is: its users, scope, principles and product decisions.                              |
-| [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the player and the link, the editor, export. |
+| [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the runner and the link, the editor, export. |
 | [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
 | `packages/`                | The engine, in `packages/onlr/`, which every project holds as its `packages/onlr/` (DESIGN.md, section 8.3), and the packages that ONLR ships, such as `packages/bump/` (DESIGN.md, section 11.2). |
-| `plugins/`                 | The editor's plugin, `onlr`, with a file for each part and the player's files in `onlr/player/` (DESIGN.md, sections 12.1 and 13.1). The panels that know nothing of ONLR, `files`, `viewer` and `console`, are OpenECS-std's. |
+| `plugins/`                 | The editor's plugin, `onlr`, with a file for each part and the runner's files in `onlr/runner/` (DESIGN.md, sections 12.1 and 13.1). The panels that know nothing of ONLR, `files`, `viewer` and `console`, are OpenECS-std's. |
 | `preset.lua`               | The editor's preset: the plugins it needs, and where their panels go.                          |
 | `samples/`                 | Small projects, which are the tests, and `check.lua`, the tests' helper (DESIGN.md, section 16). |
 | `shuild.c`                 | The build script: it puts the engine into the samples, runs the tests and starts the editor (DESIGN.md, section 16). |

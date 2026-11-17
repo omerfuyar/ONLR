@@ -353,7 +353,7 @@ function build.file(path, lenient)
     error("a node file is named by its path", 0)
   end
   ---@type onlr.BuildContext
-  local ctx = { lenient = lenient or life.mode == "edit", stack = {}, todo = {} }
+  local ctx = { lenient = lenient or life.mode == "preview", stack = {}, todo = {} }
   local first, scope = buildFile(path, {}, ctx)
   for _, node in ipairs(ctx.todo) do
     make(node, ctx)

@@ -4,7 +4,7 @@
 local ecs = require("ecs")
 local project = require("project")
 local console = require("console")
-local player = require("nodeview")
+local nodeview = require("nodeview")
 local files = require("files")
 local viewer = require("viewer")
 local shared = require("shared")
@@ -41,7 +41,7 @@ files.setHandlers({
   -- A double click opens it: a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
   open = function(path)
     if path:match("^nodes/.+%.lua$") then
-      player.openFile(path)
+      nodeview.openFile(path)
     elseif path:match("%.lua$") then
       console.open(path, 1)
     else
@@ -56,7 +56,7 @@ files.setHandlers({
       end
       local ok, message = project.newNodeFile(path)
       if ok then
-        player.openFile(path)
+        nodeview.openFile(path)
       end
       return ok, message
     end },

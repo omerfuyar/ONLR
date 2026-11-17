@@ -44,7 +44,7 @@ return {
       test.key("Ctrl+S")
       test.wait(0.2)
     end
-    -- the edit player starts, and answers what the types declare: node A's red square shows, which takes longer
+    -- the preview starts, and answers what the types declare: node A's red square shows, which takes longer
     -- on a slow computer
     for _ = 1, 40 do
       test.wait(0.5)

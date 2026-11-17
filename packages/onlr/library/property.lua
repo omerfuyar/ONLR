@@ -35,7 +35,7 @@ local data = require("onlr.library.data")
 ---@field preload? boolean the node file, and the files that it names, load with the component's own node file,
 ---so a spawn of it reads nothing from disk
 
----A declaration, as the engine keeps it, and as the edit player sends it to the editor (DESIGN 12.5).
+---A declaration, as the engine keeps it, and as the preview sends it to the editor (DESIGN 12.5).
 ---@class onlr.Declaration
 ---@field kind string the function's name, such as "number"
 ---@field default any the default value, as a node file holds it

@@ -31,7 +31,7 @@ return {
       end
     end
 
-    -- the score's text is at the window's top left: a drag moves it, once the edit player has sent where the nodes are,
+    -- the score's text is at the window's top left: a drag moves it, once the preview has sent where the nodes are,
     -- which takes longer on a slow computer; until then a drag only chooses
     local x, y = view.x + 40 + 30, view.y + 40 + 24
     for _ = 1, 40 do

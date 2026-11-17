@@ -10,7 +10,7 @@ local resolve = {}
 ---@class onlr.editor.Source
 ---@field file fun(path: string): table?, string? a node file's table, or nil and why it does not load
 ---@field space table the names that components can hold: true for a type, a table for a folder or a package
----@field properties fun(type: string): table[]? a type's properties, as the edit player answers them, when known
+---@field properties fun(type: string): table[]? a type's properties, as the preview answers them, when known
 
 ---A node of a node file, as the panels show it.
 ---@class onlr.editor.Node

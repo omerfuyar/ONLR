@@ -3,13 +3,13 @@
 local ecs = require("ecs")
 local ui = require("ui")
 local project = require("project")
-local player = require("nodeview")
+local nodeview = require("nodeview")
 local shared = require("shared")
 
 local STYLES = ui.styles()
 local TOOLS = { "move", "turn", "scale" }
 
--- The play player's count: frames a second, and the time of update and draw, which a game with its own love.run does not send.
+-- The game's count: frames a second, and the time of update and draw, which a game with its own love.run does not send.
 local function stats(s)
   local text = ("%d frames a second"):format(s.fps or 0)
   if s.update and s.draw then
@@ -25,7 +25,7 @@ local function draw(state, surface)
       selected = i
     end
   end
-  local running = player.running()
+  local running = nodeview.running()
   local history = project.historyState()
   ui.show(state.panel, surface, ui.column({ padding = 8, gap = 8 }, {
     ui.row({ gap = 8, align = "center" }, {
@@ -47,11 +47,11 @@ local function draw(state, surface)
       end }),
     }),
     ui.row({ gap = 8, align = "center" }, {
-      ui.button("Play", { id = "play", tooltip = "Play the game from its start node: F5", onClick = player.play }),
-      ui.button("Play this file", { id = "playFile", tooltip = "Play the focused node file as the start node: F6", onClick = player.playFile }),
-      ui.button(running.paused and "Resume" or "Pause", { id = "pause", tooltip = "Pause or resume the game: F7", onClick = player.pause }),
-      ui.button("Step", { id = "step", tooltip = "Run one frame of the paused game: F8", onClick = player.step }),
-      ui.button("Stop", { id = "stop", tooltip = "Stop the game: Shift+F5", onClick = player.stop }),
+      ui.button("Play", { id = "play", tooltip = "Play the game from its start node: F5", onClick = nodeview.play }),
+      ui.button("Play this file", { id = "playFile", tooltip = "Play the focused node file as the start node: F6", onClick = nodeview.playFile }),
+      ui.button(running.paused and "Resume" or "Pause", { id = "pause", tooltip = "Pause or resume the game: F7", onClick = nodeview.pause }),
+      ui.button("Step", { id = "step", tooltip = "Run one frame of the paused game: F8", onClick = nodeview.step }),
+      ui.button("Stop", { id = "stop", tooltip = "Stop the game: Shift+F5", onClick = nodeview.stop }),
       ui.text(running.playing and (running.paused and "Paused" or "Playing") or "", { style = STYLES.note }),
     }),
     running.playing and running.stats and ui.text(stats(running.stats), {

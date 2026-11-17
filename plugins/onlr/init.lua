@@ -1,6 +1,6 @@
 -- ONLR's editor plugin (DESIGN 13.1). Each part is a file of its own: project.lua holds the open project, nodeview.lua
--- the node view and Play, players.lua and link.lua the players and the link, panels.lua the other panels, and export.lua
--- export. player/ holds the player's files, which the engine loads when the editor starts LÖVE (DESIGN 12.1).
+-- the node view and Play, runners.lua and link.lua the runners and the link, panels.lua the other panels, and export.lua
+-- export. runner/ holds the runner's files, which the engine loads when the editor starts LÖVE (DESIGN 12.1).
 
 local ecs = require("ecs")
 

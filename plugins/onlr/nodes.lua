@@ -4,7 +4,7 @@
 local ecs = require("ecs")
 local ui = require("ui")
 local project = require("project")
-local player = require("nodeview")
+local nodeview = require("nodeview")
 local console = require("console")
 local fs = require("fs")
 local shared = require("shared")
@@ -61,7 +61,7 @@ local function treeNodes(node, open, search, opened)
   return { id = node.path, label = label, color = color, children = children }
 end
 
--- The running game's nodes, as the play player sent them.
+-- The running game's nodes, as the game sent them.
 local function runningNodes(list, open, seen)
   local byNumber, tops = {}, {}
   for _, n in ipairs(list or {}) do
@@ -245,7 +245,7 @@ menu = function(state, file, id, x, y)
         local ok, message = project.newNodeFile(path, file)
         say(ok, message)
         if ok then
-          player.openFile(path)
+          nodeview.openFile(path)
         end
       end },
     })
@@ -282,14 +282,14 @@ menu = function(state, file, id, x, y)
       say(project.saveAsNodeFile(file, id, freePath(node.name)))
     end },
     { label = "Open base", enabled = one and node.instanceOf ~= nil, onClick = function()
-      player.openFile(node.instanceOf)
+      nodeview.openFile(node.instanceOf)
     end },
   })
 end
 
 local function draw(state, surface)
   local file = shared.file()
-  local running = player.running()
+  local running = nodeview.running()
   local children = {}
 
   if running.playing then

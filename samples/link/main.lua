@@ -1,4 +1,4 @@
--- The test of the player and the link (DESIGN 12, 16): this program listens as the editor does, starts players
+-- The test of the runner and the link (DESIGN 12, 16): this program listens as the editor does, starts runners
 -- on other samples, and speaks the link with them over LuaSocket.
 love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";packages/?.lua")
 

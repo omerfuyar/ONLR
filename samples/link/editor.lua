@@ -1,4 +1,4 @@
--- The editor's side of the link, for the test: it listens on a free port of 127.0.0.1, starts a player,
+-- The editor's side of the link, for the test: it listens on a free port of 127.0.0.1, starts a runner,
 -- and sends and reads messages as DESIGN 12.2 says.
 local socket = require("socket")
 
@@ -26,27 +26,27 @@ local function write(value)
   return tostring(value)
 end
 
----Starts a player on a sample, and waits for it to connect.
+---Starts a runner on a sample, and waits for it to connect.
 ---@param sample string such as "coinrun"
----@param mode "edit"|"play"
+---@param mode "preview"|"game"
 ---@param more string? more arguments
----@return table player with send, receive, expect and stopped
+---@return table runner with send, receive, expect and stopped
 function editor.start(sample, mode, more)
   local server = assert(socket.bind("127.0.0.1", 0))
   local _, port = server:getsockname()
   local log = os.tmpname()
-  -- timeout ends a player that the test leaves behind, such as one that shows an error.
-  os.execute(("timeout 60 %q %q --onlr-player=%q --onlr-mode=%s --onlr-port=%d %s > %q 2>&1 &"):format(
-    love2d, root .. "/samples/" .. sample, root .. "/plugins/onlr/player", mode, port, more or "", log))
+  -- timeout ends a runner that the test leaves behind, such as one that shows an error.
+  os.execute(("timeout 60 %q %q --onlr-runner=%q --onlr-mode=%s --onlr-port=%d %s > %q 2>&1 &"):format(
+    love2d, root .. "/samples/" .. sample, root .. "/plugins/onlr/runner", mode, port, more or "", log))
   server:settimeout(10)
-  local connection = assert(server:accept(), "the player did not connect")
+  local connection = assert(server:accept(), "the runner did not connect")
   server:close()
   connection:settimeout(0)
 
-  local player = { log = log }
+  local runner = { log = log }
   local buffer = ""
 
-  function player.send(message)
+  function runner.send(message)
     local text = write(message)
     connection:settimeout(5)
     connection:send(("%d 0\n"):format(#text) .. text)
@@ -54,7 +54,7 @@ function editor.start(sample, mode, more)
   end
 
   -- Reads one message, waiting at most some seconds. Gives the message and its block of bytes, or nil.
-  function player.receive(seconds)
+  function runner.receive(seconds)
     local deadline = socket.gettime() + (seconds or 5)
     while true do
       local textSize, blockSize, headerEnd = buffer:match("^(%d+) (%d+)\n()")
@@ -76,17 +76,17 @@ function editor.start(sample, mode, more)
       if bytes and #bytes > 0 then
         buffer = buffer .. bytes
       elseif err == "closed" then
-        player.closed = true
+        runner.closed = true
         return nil
       end
     end
   end
 
   -- Reads messages until one of a type arrives, and gives it. The others are dropped.
-  function player.expect(kind, seconds)
+  function runner.expect(kind, seconds)
     local deadline = socket.gettime() + (seconds or 5)
     while socket.gettime() < deadline do
-      local message, block = player.receive(deadline - socket.gettime())
+      local message, block = runner.receive(deadline - socket.gettime())
       if not message then
         return nil
       end
@@ -96,17 +96,17 @@ function editor.start(sample, mode, more)
     end
   end
 
-  -- Whether the player closed the link, which it does when it ends.
-  function player.stopped(seconds)
+  -- Whether the runner closed the link, which it does when it ends.
+  function runner.stopped(seconds)
     local deadline = socket.gettime() + (seconds or 5)
-    while not player.closed and socket.gettime() < deadline do
-      player.receive(0.1)
+    while not runner.closed and socket.gettime() < deadline do
+      runner.receive(0.1)
     end
-    return player.closed == true
+    return runner.closed == true
   end
 
-  -- What the player printed.
-  function player.printed()
+  -- What the runner printed.
+  function runner.printed()
     local file = io.open(log)
     local text = file and file:read("*a") or ""
     if file then
@@ -115,7 +115,7 @@ function editor.start(sample, mode, more)
     return text
   end
 
-  return player
+  return runner
 end
 
 return editor

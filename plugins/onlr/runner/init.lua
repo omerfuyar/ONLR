@@ -1,15 +1,15 @@
--- The player's files (DESIGN 12): the Lua code that serves the editor. They are in ONLR's own folder, and no project holds them.
+-- The runner's files (DESIGN 12): the Lua code that serves the editor. They are in ONLR's own folder, and no project holds them.
 -- The engine loads this file with Lua's loadfile when the editor started LÖVE, and gets what it returns:
 -- conf, which the engine calls from onlr.conf, and start, which it calls from onlr.start.
 -- The editor's arguments, after the project's folder:
---   --onlr-player=FOLDER   this folder
---   --onlr-mode=edit|play  the mode
+--   --onlr-runner=FOLDER   this folder
+--   --onlr-mode=preview|game  the mode
 --   --onlr-port=PORT       where the editor listens, on 127.0.0.1
---   --onlr-start=PATH      in play mode, the node file to run as the first root in place of the manifest's start node
+--   --onlr-start=PATH      in the game, the node file to run as the first root in place of the manifest's start node
 
 local folder = ...
 
--- Loads another of the player's files, once.
+-- Loads another of the runner's files, once.
 local loaded = {}
 local function part(name)
   if loaded[name] == nil then
@@ -60,14 +60,14 @@ local function report(message, traceback)
   })
 end
 
--- An error goes to the editor, with its file, line and stack (DESIGN 12.2). In play mode LÖVE's own handler then shows it;
--- the edit player ends, and the editor starts it again at the next change.
+-- An error goes to the editor, with its file, line and stack (DESIGN 12.2). In the game LÖVE's own handler then shows it;
+-- the preview ends, and the editor starts it again at the next change.
 local shown = love.errorhandler
 function love.errorhandler(message)
   local traceback = debug.traceback("", 2):gsub("^\n", "")
   print("Error: " .. tostring(message) .. "\n" .. traceback)
   report(message, traceback)
-  if options.mode == "play" and shown then
+  if options.mode == "game" and shown then
     return shown(message)
   end
   return function()
@@ -75,13 +75,13 @@ function love.errorhandler(message)
   end
 end
 
-local player = { options = options, report = report }
+local runner = { options = options, report = report }
 
 ---Called from onlr.conf, after the manifest's settings.
 ---@param t table what love.conf gets
-function player.conf(t)
-  if options.mode == "edit" then
-    -- The edit player draws into canvases and shows nothing, so it waits for no screen.
+function runner.conf(t)
+  if options.mode == "preview" then
+    -- The preview draws into canvases and shows nothing, so it waits for no screen.
     t.window.vsync = 0
     t.window.fullscreen = false
     t.console = false
@@ -90,13 +90,13 @@ end
 
 ---Called from onlr.start.
 ---@param onlr onlr
-function player.start(onlr)
+function runner.start(onlr)
   link.send({ type = "hello", mode = options.mode, engine = require("onlr.library.data").read("packages/onlr/manifest.lua").version })
-  if options.mode == "edit" then
-    part("edit").start(onlr)
+  if options.mode == "preview" then
+    part("preview").start(onlr)
   else
-    part("play").start(onlr, options)
+    part("game").start(onlr, options)
   end
 end
 
-return player
+return runner

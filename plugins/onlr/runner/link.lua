@@ -1,4 +1,4 @@
--- The link (DESIGN 12.2): a TCP connection on this computer between the editor, which listens, and a player.
+-- The link (DESIGN 12.2): a TCP connection on this computer between the editor, which listens, and a runner.
 -- A message is a Lua table written as text, and may carry a block of bytes after it, such as a frame's pixels.
 -- Each message starts with a line of two numbers: the size of the text and the size of the block.
 

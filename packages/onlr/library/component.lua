@@ -309,7 +309,7 @@ function component.type(name)
   return info
 end
 
----Every type that was loaded, by name, for the edit player's answers.
+---Every type that was loaded, by name, for the preview's answers.
 ---@return table<string, onlr.Type>
 function component.loaded()
   return types

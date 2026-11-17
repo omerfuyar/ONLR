@@ -1,4 +1,4 @@
--- The play player (DESIGN 12.1 and 12.6): the game, as an exported game runs it, with the link beside it.
+-- The game (DESIGN 12.1 and 12.6): the game, as an exported game runs it, with the link beside it.
 -- The editor stops, pauses and steps it, watches its running tree, and changes a running value.
 
 local part = ...
@@ -9,10 +9,10 @@ local life = require("onlr.library.life")
 local component = require("onlr.library.component")
 local nodes = require("onlr.library.node")
 
-local play = {}
+local game = {}
 
 local onlr
--- What the engine's loop reads (onlr.loop._player).
+-- What the engine's loop reads (onlr.loop._runner).
 local state = { paused = false, step = false, updateTime = 0, drawTime = 0 }
 
 -- A running node has no id of a file, so each gets a number for the link.
@@ -174,10 +174,10 @@ local function frame()
       handler(item[1], item[2])
     end
   end
-  if link.closed and play.linked then
+  if link.closed and game.linked then
     -- The editor is gone, so the game ends too.
     love.event.quit(0)
-    play.linked = false
+    game.linked = false
   end
   local now = love.timer.getTime()
   if watchTree and now - treeTime >= 0.25 then
@@ -209,14 +209,14 @@ end
 ---Starts the game with the link beside it: called from onlr.start, in main.lua.
 ---@param engine onlr
 ---@param options table<string, string> the editor's arguments
-function play.start(engine, options)
+function game.start(engine, options)
   onlr = engine
-  play.linked = not link.closed
+  game.linked = not link.closed
   if options.start then
     onlr.tree._startNode = options.start
   end
   state.frame = frame
-  onlr.loop._player = state
+  onlr.loop._runner = state
   -- A game with a love.run of its own does not run the engine's loop, so the link is read when its frame ends.
   local endFrame = onlr.loop.endFrame
   onlr.loop.endFrame = function()
@@ -228,4 +228,4 @@ function play.start(engine, options)
   life.mode = "game"
 end
 
-return play
+return game
