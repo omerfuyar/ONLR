@@ -911,8 +911,8 @@ A package of LÖVE's own system follows 11.3 too. The first is `physics`, which 
 | ----------------- | ------------------------------------ | -------------------------------------------------------------------------------------------- |
 | `physics.world`   | The root                             | The root's one world, with its gravity, as `bump.world` is (11.3). Each root has its own.    |
 | `physics.body`    | A node                               | A body: static, dynamic or kinematic. While the game runs, a dynamic body moves its node.   |
-| `physics.box`, `physics.circle` | The body's node, or a node under it | A shape with its friction, bounce, density and whether it is a sensor, fixed to the nearest body above it. |
-| Joints            | A node                               | A joint between two nodes' bodies, which the joint's properties name.                      |
+| `physics.box`, `physics.circle`, `physics.polygon` | The body's node, or a node under it | A shape with its friction, bounce, density and whether it is a sensor, fixed to the nearest body above it. |
+| `physics.hinge`, `physics.weld`, `physics.distance`, `physics.rope` | The body's node, or a node under it | A joint that holds the nearest body above it to the body that its `other` names, at its node's place. |
 
 - A node has one component of each type (5), so a body of many shapes holds them on nodes under its own. The user builds a body's outline by placing nodes in the editor. A shape takes its node's place, angle and scale in the body when the body starts; a box is centred on its node's place plus its `center`, since a body turns around its node's place.
 - The world steps in its `fixedUpdate` (6.3). Before each step, each body whose node a script moved or turned goes there; after it, each body that is not static sets its node's place and `rot`. `meter` is how many pixels are a meter, which love.physics is told when the world is made, and `gravity` is in pixels a second, each second.
@@ -920,6 +920,13 @@ A package of LÖVE's own system follows 11.3 too. The first is `physics`, which 
 - Where a node is has one truth, the node's place (11.3): after Box2D's step, a dynamic body sets its node's place; when a script sets a body's node itself, the body is moved there.
 - Contacts reach scripts as messages to the two bodies' nodes, `contact(other, nx, ny)` and `contactEnd(other)`, as bump's do, and never as Box2D's callbacks: Box2D tells of them during its step, when nothing may change the world, so the world tells the nodes after it. The normal points away from the other node, so a body that lands on the ground gets 0, -1.
 - A node that is turned off takes its body out of the world, and turning it on puts it back (6.4).
+- A polygon takes 3 to 8 corners that make a convex polygon, as Box2D does. A new one has none, and collides with nothing until it has 3; more than 8, or a polygon that is not convex, is an error that names its node.
+- A joint is Box2D's joint of its kind: a hinge is the revolute joint, with a limit of its angle and a motor; a weld holds the bodies as one; a distance keeps its node's place and the other body's `otherAnchor` as far apart as they were, or springs towards it with a `frequency`; a rope lets them come no further apart than its `length`. A joint is made when both bodies run, and ends when either stops, as Box2D ends a joint whose body is destroyed; it is made again when that body starts again. `get()` gives the joint of love.physics.
+- The limits, as they are now:
+  - A shape and a joint take their node's place when they are made. A node of a shape or of a joint that moves under its body afterwards, as an animation might move it, does not move the fixture or the joint.
+  - The properties are read when the body, the shape or the joint is made. A script that changes one afterwards, such as a shape's `friction`, changes it with LÖVE's own function on what `get()` gives, such as `fixture:setFriction`.
+  - `meter` is LÖVE's one setting for every world, set when a world is made.
+  - Box2D's other shapes and joints, edges and chains, and the prismatic, wheel, pulley, motor, friction, mouse and gear joints, have no component yet.
 
 ## 12. The runner and the link
 

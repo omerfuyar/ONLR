@@ -1,13 +1,14 @@
 -- The component type physics.body: a body of love.physics, as a component.
 -- It does what a game with love.physics does by hand: it makes the body in the root's world at the node's place,
 -- fixes to it the shapes of its node and of the nodes under it, keeps it and the node in step, and ends it.
--- Its shapes are components of their own: physics.box and physics.circle.
+-- Its shapes are components of their own: physics.box, physics.circle and physics.polygon. So are its joints.
 local onlr = require("onlr")
 
 ---@class physics.body : onlr.Component
 ---@field world physics.world
 ---@field b love.Body? the body of love.physics while the component runs
 ---@field shapes table[] the shapes fixed to it, which their own components add
+---@field joints table[] the joints that hold it, which their own components add
 ---@field private x number where the node was when the body and it were last in step
 ---@field private y number
 ---@field private angle number
@@ -34,6 +35,7 @@ end
 function Body:load()
   self.world = onlr.tree.findComponent("physics.world") or onlr.tree.root:addComponent("physics.world")
   self.shapes = self.shapes or {}
+  self.joints = self.joints or {}
 end
 
 -- Each time the body starts to run: it is made at the node's place, with the shapes that are fixed to it.
@@ -51,11 +53,18 @@ function Body:enable()
     shape:_fix()
   end
   self.world:_add(self)
+  -- a joint is made when both of its bodies run, so the second of the two to start makes it
+  for _, joint in ipairs(self.joints) do
+    joint:_join()
+  end
 end
 
 -- Each time the body stops running: it leaves the world, so a node that is turned off collides with nothing.
 function Body:disable()
   self.world:_remove(self)
+  for _, joint in ipairs(self.joints) do
+    joint:_unjoin()
+  end
   for _, shape in ipairs(self.shapes) do
     shape:_unfix()
   end
@@ -90,6 +99,22 @@ function Body:_detach(shape)
     end
   end
   shape:_unfix()
+end
+
+---A joint's component holds the body. Not called by scripts.
+function Body:_hold(joint)
+  self.joints = self.joints or {}
+  self.joints[#self.joints + 1] = joint
+end
+
+---A joint's component lets the body go. Not called by scripts.
+function Body:_release(joint)
+  for i, other in ipairs(self.joints or {}) do
+    if other == joint then
+      table.remove(self.joints, i)
+      return
+    end
+  end
 end
 
 -- Before each step: when a script moved or turned the node, the body goes there.

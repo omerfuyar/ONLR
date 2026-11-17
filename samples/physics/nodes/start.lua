@@ -1,4 +1,5 @@
--- The physics package's sample: a ball and a crate fall onto the ground. The crate is one body of two boxes, each on a
+-- The physics package's sample: a ball, a crate, a triangle and a welded lid fall onto the ground, and a pendulum, a
+-- weight on a rope and a ball on a stick hang from static bodies. The crate is one body of two boxes, each on a
 -- node of its own under the body's node. The root has the world; a body would add one if it had none.
 ---@type onlr.NodeFile
 return {
@@ -82,6 +83,152 @@ return {
               },
             },
           },
+        },
+      },
+    },
+    {
+      id = "tr1ang",
+      name = "Triangle",
+      posX = 150,
+      posY = 50,
+      components = {
+        physics = {
+          body = {
+            fixedRotation = true,
+          },
+          polygon = {
+            points = {
+              {
+                x = -15,
+                y = 10,
+              },
+              {
+                x = 15,
+                y = 10,
+              },
+              {
+                x = 0,
+                y = -10,
+              },
+            },
+          },
+
+        },
+      },
+    },
+    {
+      id = "n4il00",
+      name = "Nail",
+      posX = 290,
+      posY = 20,
+      components = {
+        physics = {
+          body = {
+            type = "static",
+          },
+          hinge = {
+            other = "b0b000",
+          },
+
+        },
+      },
+    },
+    {
+      id = "b0b000",
+      name = "Bob",
+      posX = 250,
+      posY = 20,
+      components = {
+        physics = {
+          body = {},
+          circle = {
+            radius = 5,
+          },
+
+        },
+      },
+    },
+    {
+      id = "h00k00",
+      name = "Hook",
+      posX = 20,
+      posY = 20,
+      components = {
+        physics = {
+          body = {
+            type = "static",
+          },
+          rope = {
+            length = 30,
+            other = "w8ight",
+          },
+
+        },
+      },
+    },
+    {
+      id = "w8ight",
+      name = "Weight",
+      posX = 20,
+      posY = 40,
+      components = {
+        physics = {
+          body = {},
+          circle = {
+            radius = 5,
+          },
+
+        },
+      },
+    },
+    {
+      id = "p0st00",
+      name = "Post",
+      posX = 300,
+      posY = 150,
+      components = {
+        physics = {
+          body = {
+            type = "static",
+          },
+          distance = {
+            other = "sw1ng0",
+          },
+
+        },
+      },
+    },
+    {
+      id = "sw1ng0",
+      name = "Swing",
+      posX = 300,
+      posY = 120,
+      components = {
+        physics = {
+          body = {},
+          circle = {
+            radius = 5,
+          },
+
+        },
+      },
+    },
+    {
+      id = "l1d000",
+      name = "Lid",
+      posX = 220,
+      posY = 35,
+      components = {
+        physics = {
+          body = {},
+          box = {
+            height = 10,
+            width = 10,
+          },
+          weld = {
+            other = "cr8te0",
+          },
+
         },
       },
     },
