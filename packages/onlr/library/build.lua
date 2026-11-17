@@ -2,6 +2,7 @@
 -- It works in steps. First it makes every node, and notes for each component the values that the file
 -- and each change of an instance give it. Then it makes every component, and then gives them their values,
 -- so a property that names a node finds it, wherever in the file that node is.
+---@diagnostic disable: invisible -- the engine reads the fields of its nodes that a script does not see
 
 local data = require("onlr.library.data")
 local life = require("onlr.library.life")

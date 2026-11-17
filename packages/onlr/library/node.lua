@@ -18,38 +18,38 @@ local property = require("onlr.library.property")
 ---@field sclX number its scale in its parent
 ---@field sclY number
 ---@field components onlr.Components the node's components, by their types' names: node.components.bump.body
----@field _parent onlr.Node? the engine's, as every field below: read them through the node's functions
----@field _children onlr.Node[]
----@field _records onlr.Record[] its components' records, in the order they run in
----@field _byType table<string, onlr.Component> its components by their types' names, dots and all
----@field _active boolean its own active
----@field _paused boolean its own paused
----@field _z number
----@field _activeIn boolean it and every node above it are active
----@field _pausedIn boolean it or a node above it is paused
----@field _destroyed boolean
----@field _gone boolean? it was taken out of the tree
----@field _id string? its id in its node file
----@field _path string? its path of ids from the node file that was loaded
----@field _file string? the node file that wrote it
----@field _layers table? its components' values, while its node file is made
----@field _errors string[]? what was wrong with it, in the node view
----@field _a number the place in the world, as a matrix
----@field _b number
----@field _c number
----@field _d number
----@field _tx number
----@field _ty number
----@field _wv integer the version of that matrix
----@field _ws integer? the draw that worked it out last
----@field _tv integer? the version that _transform holds
----@field _transform love.Transform?
----@field _px number? the place that the matrix was worked out from
----@field _py number?
----@field _pr number?
----@field _psx number?
----@field _psy number?
----@field _ppv integer?
+---@field package _parent onlr.Node? the engine's, as every field below: read them through the node's functions
+---@field package _children onlr.Node[]
+---@field package _records onlr.Record[] its components' records, in the order they run in
+---@field package _byType table<string, onlr.Component> its components by their types' names, dots and all
+---@field package _active boolean its own active
+---@field package _paused boolean its own paused
+---@field package _z number
+---@field package _activeIn boolean it and every node above it are active
+---@field package _pausedIn boolean it or a node above it is paused
+---@field package _destroyed boolean
+---@field package _gone boolean? it was taken out of the tree
+---@field package _id string? its id in its node file
+---@field package _path string? its path of ids from the node file that was loaded
+---@field package _file string? the node file that wrote it
+---@field package _layers table? its components' values, while its node file is made
+---@field package _errors string[]? what was wrong with it, in the node view
+---@field package _a number the place in the world, as a matrix
+---@field package _b number
+---@field package _c number
+---@field package _d number
+---@field package _tx number
+---@field package _ty number
+---@field package _wv integer the version of that matrix
+---@field package _ws integer? the draw that worked it out last
+---@field package _tv integer? the version that _transform holds
+---@field package _transform love.Transform?
+---@field package _px number? the place that the matrix was worked out from
+---@field package _py number?
+---@field package _pr number?
+---@field package _psx number?
+---@field package _psy number?
+---@field package _ppv integer?
 local Node = {}
 
 local meta = { __index = Node }

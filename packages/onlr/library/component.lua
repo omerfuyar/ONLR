@@ -1,5 +1,6 @@
 -- Component types (DESIGN 6.1): finding a type's file by its name, loading it, and reading its properties and needs.
 -- And a node's components: the table components, which holds them by their types' names, and the order they run in.
+---@diagnostic disable: invisible -- the engine reads the fields of its nodes that a script does not see
 
 local life = require("onlr.library.life")
 local property = require("onlr.library.property")

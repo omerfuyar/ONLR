@@ -3,6 +3,7 @@
 -- Scripts never see the records; they call node:setActive, component:setEnabled and the like, which act here.
 -- A list holds the records of the components that have one function, in the tree's order, or for draw in the order of drawing.
 -- A list that a change touches is built again from the tree the next time it is walked.
+---@diagnostic disable: invisible -- the engine reads the fields of its nodes that a script does not see
 
 local life = {}
 

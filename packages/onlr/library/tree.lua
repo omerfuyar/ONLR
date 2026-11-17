@@ -1,6 +1,7 @@
 -- onlr.tree: the top node, the root, which is the node that the game runs, and the tree (DESIGN 5 and 7).
 -- The tree is the top node, which the manifest names and the game keeps, with all under it.
 -- The root runs as the top node's last child, so the tree's order is the top node's own nodes, then the root's.
+---@diagnostic disable: invisible -- the engine reads the fields of its nodes that a script does not see
 
 local data = require("onlr.library.data")
 local life = require("onlr.library.life")

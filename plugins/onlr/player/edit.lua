@@ -1,6 +1,7 @@
 -- The edit player (DESIGN 12.3 to 12.5): it draws views of node files for the editor's node views, and answers
 -- what a component type declares. It runs no game: no load, update or event reaches a component.
 -- It draws a view only when the editor asked and has taken the view's last frame.
+---@diagnostic disable: invisible -- the engine reads the fields of its nodes that a script does not see
 
 local part = ...
 local link = part("link")
