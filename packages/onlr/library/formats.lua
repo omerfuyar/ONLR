@@ -75,5 +75,5 @@
 ---@field name string
 ---@field description string
 ---@field version string
----@field source string
+---@field source string? where the library comes from; a package of a system of LÖVE's own has none
 ---@field license string
