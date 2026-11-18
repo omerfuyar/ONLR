@@ -1028,6 +1028,46 @@ end
   - flux's `stop` and tick's `stop` on one tween or one event are the libraries' own, with the problem above when many stop in one walk; the components' `stop` has none.
   - The node view shows nothing of them: it runs no `update` (6.5).
 
+### 11.9 Input actions
+
+`baton` wraps tesselode's baton, which reads keys, mouse buttons and joysticks as a game's own controls. Its one type, `baton.input`, is a player's controls. A script asks for a control by its name, such as `jump`, and never for a key, so the game's keys are set in one place, in the inspector, and a gamepad works as the keyboard does.
+
+| Property                 | Is                                                                                                        |
+| ------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `controls`               | A list of controls, each a `name` and its `sources`, as baton writes them, apart by commas: `key:left, key:a, axis:leftx-, button:dpleft`. |
+| `pairs`                  | A list of pairs, each a `name` and the four controls that are its `left`, `right`, `up` and `down`, read as one stick. |
+| `deadzone`, `squareDeadzone` | How far a stick moves before it counts, and whether a pair's deadzone is a square or a circle.       |
+| `joystick`               | Which joystick is this player's, by the order they were connected: 1 is the first, and 0 reads none. Two players are two nodes, of joysticks 1 and 2. |
+
+``` lua
+-- components/player.lua: walks by the pair move, and jumps
+local Player = {}
+
+Player.needs = { "baton.input" }
+
+function Player:update(dt)
+  local input = self.node.components.baton.input
+  local x = input:get("move")
+  self.node.posX = self.node.posX + x * 120 * dt
+  if input:pressed("jump") then
+    self:jump()
+  end
+end
+```
+
+- `get(name)` gives a control's value from 0 to 1, or a pair's x and y from -1 to 1. `down`, `pressed` and `released` say whether it is held, went down this frame, or went up this frame. `getActiveDevice()` says whether the keyboard and the mouse or the joystick was used last, for a game that shows "press Enter" or "press A".
+- The input reads its sources in its `update`. A script that reads it in its own `update` gets this frame's controls when the input updates first: on the script's node, which `needs` gives (6.6), or on a node above.
+- A joystick that is connected or taken out reaches the component as LÖVE's events, `joystickadded` and `joystickremoved` (6.3), and it takes the joystick that its number names again.
+- `apply()` binds the controls again from the properties, after a script changed them, as a game's menu of keys does. The controls start again, as none were down.
+- A source of no kind, and a pair that names no control, are errors that name them when the input loads, as baton itself does not check them. A control that is not there is baton's error when a script asks for it.
+- `getPlayer()` gives baton's player.
+- The limits, as they are now:
+  - `pressed` and `released` are true for one frame. A script that reads them in `fixedUpdate` misses them in a frame with no fixed step, and sees them twice in a frame of two (3.2).
+  - A script on a node that updates before the input's node reads the controls of the frame before.
+  - The mouse's place and its wheel, and touches, are not sources: baton reads the mouse's buttons only. A script reads them with LÖVE's own functions.
+  - A joystick is chosen by the order of connecting, not by its name or its id.
+  - The inspector takes the sources as text. It does not listen for a key to bind.
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1272,7 +1312,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, and flux and tick for `samples/tweens`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, and baton for `samples/input`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
