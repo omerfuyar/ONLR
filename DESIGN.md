@@ -1126,6 +1126,33 @@ end
   - A colour of an effect is the inspector's colour without its alpha.
   - Each frame the chain compares every parameter with what it sent. `fastgaussianblur` and `glow` make their shaders anew when theirs change, so a tween of them is slow.
 
+### 11.12 Sound
+
+`audio` wraps LÖVE's own sound, `love.audio`, as `physics` and `particles` wrap theirs (11.4): it holds no library. LÖVE plays a file through a source, which a game makes, plays, loops and stops by hand; the package's components do that at a node, so a sound is placed and set in the editor.
+
+| Type             | Is                                                                                                       |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| `audio.source`   | A sound at its node that LÖVE decodes whole when it loads, LÖVE's `static` source: for short sounds, such as a jump or a coin. |
+| `audio.music`    | The same, streamed as it plays, LÖVE's `stream` source: for music and other long sounds.                 |
+| `audio.listener` | Where the game hears from: LÖVE's one listener, at its node.                                             |
+
+- Streaming is the `sound` property's option (6.2), set when its type is declared, so a source and music are two types of one code, the package's `player.lua`. By default music plays from its start and loops, and a source waits for a script.
+- Their properties are LÖVE's setters' names: `sound`, `autoPlay`, `looping`, `volume` and `pitch`, and for a sound with a place `positional`, `attenuation`, a group of `reference` and `max` as `setAttenuationDistances` takes them, and `rolloff`. A value that a script or a tween changes, such as music's `volume` that flux fades out (11.8), reaches LÖVE in the next frame.
+- A script calls `play()`, `pause()`, `stop()`, `isPlaying()`, `seek(seconds)`, `tell()` and `getDuration()`, which are LÖVE's, and `get()` for LÖVE's source itself, such as for `setFilter`. `play` plays on a sound that plays already, as LÖVE does; `playNew()` plays a new copy over those that play, as shots and footsteps need, and gives its source. `stop` stops the copies too.
+- When a sound plays to its end, its node is told `soundEnd()` (11.3), and not at `stop`. A node that plays a last sound and goes destroys itself there.
+- A node that is turned off pauses its sounds and its copies, and turning it on plays them on (6.4). Its destroy stops them, so a level's sounds end with the level, and music on the top node plays on through every level (5).
+- A sound with a place, `positional`, plays from its node's place in the world, and follows it: louder near the listener, and from its left or its right. Nearer than `reference` it plays at its volume, and it fades until `max`, by the listener's `distanceModel`. Without a place, a sound plays at the listener, wherever that is.
+- The listener sets LÖVE's listener in `lateUpdate`, after what it follows moved: at its node's place, or, on a camera's node, at the camera's point (10), so the game hears what the screen shows. Its `volume` is every sound's, `love.audio.setVolume`, and `distanceModel` is `love.audio.setDistanceModel`'s. A game has one listener at a time, as LÖVE has; a second that runs is an error. Without one, LÖVE's listener stays at 0, 0.
+- The node view draws a speaker at a source's node, and for a chosen sound with a place, its `reference` and `max` as circles. The preview plays nothing (12.1).
+- The limits, as they are now:
+  - A sound with a place must be mono, as OpenAL, under LÖVE, places only mono sounds. A stereo file with `positional` is an error that names its node.
+  - `positional` is read when the component loads; a script that changes it afterwards changes nothing.
+  - A node that `node:setPaused` pauses (6.4) plays its sounds on, as pausing calls no function of a component. A pause menu that should quiet the level pauses its sounds itself, or turns their nodes off.
+  - `playNew`'s copies take the values of their start: a later `volume` reaches the sound and not its copies. With a place, they follow their node.
+  - Each frame the listener may run before a camera's follow on its node, since a node's components run by their names (5): it hears from where the camera was a frame before.
+  - LÖVE's effects, such as reverb, and its filters have no property: a script sets them on `get()`.
+  - Grouping sounds by kind, such as a volume for effects and one for music, as ripple does (TODO.md, Libraries), is not offered yet.
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1370,7 +1397,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, baton for `samples/input`, push for `samples/screen`, and moonshine for `samples/effects`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, baton for `samples/input`, push for `samples/screen`, moonshine for `samples/effects`, and audio for `samples/audio`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
