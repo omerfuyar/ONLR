@@ -17,7 +17,7 @@ check.run(function()
   local gallery = assert(tree.findComponent("gallery"))
   local title = assert(tree.find("Title")).components.suit.label
   check.frames(2)
-  check.ok(#gallery.rooms >= 14, "the gallery finds its rooms: " .. #gallery.rooms)
+  check.ok(#gallery.rooms >= 15, "the gallery finds its rooms: " .. #gallery.rooms)
   check.ok(title.text:find("^1 of %d+   Nodes and drawing"), "the bar names the first room: " .. title.text)
 
   -- Each room in turn, by the bar's button: it loads, runs, and its root has a room component with a title.

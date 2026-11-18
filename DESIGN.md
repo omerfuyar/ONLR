@@ -807,7 +807,7 @@ return {
 ```
 
 - The manifest and `init.lua` stay two files. The editor reads the manifest as any data file (4.1), which cannot load the library. So the manifest describes the package and holds none of its code.
-- `library/` holds what the library's author ships. A newer version of the library replaces that folder and nothing else.
+- `library/` holds what the library's author ships. A newer version of the library replaces that folder and nothing else. One library is the exception: a library that breaks a rule of ONLR's, such as one that sets a global, is shipped as ONLR's own copy, changed only as far as the rule needs. Each change is marked in its code, and a note in `library/`, `ONLR.md`, says what was changed and how to change a newer version the same way. `shadows` is so (11.14).
 - A component type is one file, since its name is its file's (6.1). The names start with the package's: `bump.body` is `packages/bump/components/body.lua`. The types are written as scripts are (6), and the editor offers every one of them (13.4).
 - A node file of a package is named by its path, as the project's are: `packages/bump/nodes/box.lua`.
 - A package adds nothing to the engine and changes nothing in it. A game uses a package's library with its components, without them, or both.
@@ -1182,6 +1182,32 @@ end
   - SUIT's keyboard reads one key and one text a frame. A held Backspace repeats only when the game turns LÖVE's key repeat on, `love.keyboard.setKeyRepeat(true)`.
   - The theme is one for the game; a widget has no colours of its own. SUIT's layout, which places widgets in rows and columns, is not used: nodes place them.
 
+### 11.14 Light and shadows
+
+`shadows` wraps Matías Hermosilla's Shädows, which darkens a scene but where lights reach it, and casts shadows from shapes in a light's way. Its world draws the light into a canvas: dark, of its `color`, where no light reaches, and each light's colour, fading with distance, where one does. The canvas is multiplied over the scene, so a white ground under a white light shows as it is, and in the dark it is black.
+
+| Type                    | Is                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `shadows.world`         | A group (5): it draws its node and all under it, then the light over them.                |
+| `shadows.light`         | A light at its node: `radius`, `color`, the `arc` that it lights around its node's way, and soft edges, `blur` and `sizeRadius`. |
+| `shadows.shape.box`, `.circle`, `.polygon` | A shape that blocks light, as `onlr.shape`'s rectangle, circle and polygon are (10): a box from its node's place, a circle around it, a polygon of corners in its node's space. |
+
+- A light and a shape belong to the nearest `shadows.world` on their node or above it, as a physics shape belongs to the nearest body (11.4); without one, they are an error that names their node. So a level puts the world on the node of all that it lights, and a world's lights light only its own shapes.
+- Lights and shapes follow their nodes: a light takes its node's place and its angle, which turns a beam, and a shape its node's place, angle and scale. Before the world draws, each is given its node's place in the world, and a shape is moved only when it moved, since Shädows makes the shadows of the lights that reach a moved shape again.
+- A value that a script or a tween changes, such as a light's `color` that flickers or its `radius`, shows in the same frame.
+- The world draws the light where the drawing is, as `moonshine.chain` does (11.11): a camera above it moves and zooms the light with the world (10). Its canvas is of the size of what it draws into, the window or push's canvas under a `push.screen` (11.10).
+- A node that is turned off takes its light or its shape out of the world, and turning it on puts it back (6.4).
+- `get()` gives Shädows' own object, for what the components do not do: the world's `LightWorld`, with its rooms and stars, a light's `Light`, with `SetImage`, and a shape's shadow shape.
+- Shädows sets a global, `shadows`, through Lua's `module`. So the package ships ONLR's copy of it, changed so that it sets none, and the `lights` sample checks so (11.2). `library/ONLR.md` lists the changes.
+- The node view shows a light's reach, or its beam, and a shape's outline. The light itself shows only in the game, as the node view does not call `drawTree` (6.5).
+- The limits, as they are now:
+  - Shädows takes a camera's place and zoom, not its angle: under a camera that turns, the light does not turn with the world.
+  - The light's canvas is multiplied over all that is in what the world draws into, also what drew before the world's node. So the world belongs on a node that draws first, such as the level's root, and what draws after it, such as a score, is not darkened.
+  - A light's `radius` does not grow with its node's scale.
+  - Each shape is a body of Shädows' own. Shädows' bodies of many shapes, its heights, its images, normal maps and height maps, its rooms and its stars have no component: a script makes them on `get()`.
+  - A polygon is meant to be convex, as `physics.shape.polygon`'s is (11.4); a concave one is not tested.
+  - Each shape that moves makes the shadows of the lights that reach it again, which is slow for many moving shapes.
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1426,7 +1452,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, baton for `samples/input`, push for `samples/screen`, moonshine for `samples/effects`, audio for `samples/audio`, suit and push for `samples/interface`, and nearly all of them for `samples/gallery`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, baton for `samples/input`, push for `samples/screen`, moonshine for `samples/effects`, audio for `samples/audio`, suit and push for `samples/interface`, shadows for `samples/lights`, and all of them for `samples/gallery`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
