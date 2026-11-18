@@ -873,7 +873,7 @@ local function new(folder)
   write("conf.lua", 'function love.conf(t)\n  require("packages.onlr").conf(t)\nend\n')
   write("manifest.lua", format.write({
     format = format.FORMAT, name = name, id = name:lower():gsub("[^%w]", ""), gameVersion = "0.1.0", loveVersion = "11.5",
-    startNode = "nodes/start.lua", window = { width = 1280, height = 720 },
+    startNode = "nodes/start.lua", window = { width = 1920, height = 1080 },
   }, "manifest"))
   write(".gitignore", ".onlr/\n")
   write(".luarc.json", '{\n  "runtime.version": "LuaJIT",\n'

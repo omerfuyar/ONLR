@@ -121,6 +121,9 @@ What the owner wants worked on, in this order.
   Libraries of entities and of classes, such as tiny-ecs, Concord, middleclass and classic, overlap ONLR's own nodes and components. A user may still use them in scripts, and no package is made for them.
 - **A bump package's details.** DESIGN 11.3 shows its outline as a sample, and `samples/coinrun` holds one that works: its body has `solid`, and other bodies pass through one that is not solid. Open if bump is chosen as a package of ONLR's own: a body on a node that is turned or scaled, since bump's boxes are not.
 
+- **A new project's default filter.** The engine keeps LÖVE's `linear` when the manifest names none (DESIGN 3.2). Open, for the owner: whether a new project writes `defaultFilter = "nearest"`, which keeps pixel art sharp and makes large images that are scaled down rough. It depends on whether most games made with ONLR are pixel art.
+- **Highdpi.** A window that the system scales, at a display scale above 100%, is stretched by the system and blurred, unless the manifest's `window` has `highdpi`. Not checked on the owner's computers: Windows and Linux at the owner's display scale.
+
 ## LÖVE
 
 - **LÖVE 12.0.** It is not released. It changes the default font, removes functions that 11 deprecated, and builds on SDL3. When it is released: which versions a project may name, and whether the engine serves both.

@@ -12,4 +12,6 @@ return {
     resizable = true,
     width = 960,
   },
+  -- its pictures are pixel art, which the scale of 1.5 would blur
+  defaultFilter = "nearest",
 }

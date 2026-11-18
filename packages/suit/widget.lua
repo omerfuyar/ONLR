@@ -55,7 +55,11 @@ local function pointer(self)
     local n = self.node
     while n do
       if n == screen.node then
-        return screen:toGame(x, y)
+        -- without push's canvas, the drawing's scale is in the node's space already
+        if screen:hasCanvas() then
+          return screen:toGame(x, y)
+        end
+        return x, y
       end
       n = n:getParent()
     end
@@ -96,6 +100,32 @@ function Widget:textedited(text, start, length)
   core:textedited(text, start, length)
 end
 
+-- Draws what SUIT drew for the widget. A widget with a font draws at the size that the drawing shows it (onlr.font): the
+-- drawing is scaled back by the font's scale, and the theme gets the sharp font and its place and size in that scale.
+local function show(self, d)
+  local opt = d[2]
+  if type(opt) ~= "table" or not opt.font or d.n < 6 then
+    return self:_draw(unpack(d, 1, d.n))
+  end
+  love.graphics.push()
+  local sharp, scale = onlr.font.apply(opt.font)
+  local args = { unpack(d, 1, d.n) }
+  local o = {}
+  for k, v in pairs(opt) do
+    o[k] = v
+  end
+  o.font, o.cornerRadius = sharp, (opt.cornerRadius or suit.theme.cornerRadius) / scale
+  args[2] = o
+  for i = 3, 6 do
+    args[i] = args[i] / scale
+  end
+  local ok, err = pcall(self._draw, self, unpack(args, 1, d.n))
+  love.graphics.pop()
+  if not ok then
+    error(err, 0)
+  end
+end
+
 -- Draws what SUIT would have drawn, and keeps the node's space, from which the pointer is read in the next update.
 function Widget:draw()
   local ox, oy = love.graphics.inverseTransformPoint(0, 0)
@@ -105,7 +135,7 @@ function Widget:draw()
   local d = self.drawn
   if d then
     love.graphics.push("all")
-    self:_draw(unpack(d, 1, d.n))
+    show(self, d)
     love.graphics.pop()
   end
 end
@@ -117,7 +147,7 @@ function Widget:drawEditor()
   ask(self, still, math.huge, math.huge, false)
   local d = self.drawn
   if d then
-    self:_draw(unpack(d, 1, d.n))
+    show(self, d)
   end
 end
 

@@ -134,6 +134,67 @@ end
 
 local IDENTITY = { 1, 0, 0, 1, 0, 0 }
 
+-- The middle of a node's bounds in the world, or its place for a node without bounds.
+local function boundsMiddle(node)
+  local r = node.rect
+  if r then
+    return nodeToWorld(node, r[1] + r[3] / 2, r[2] + r[4] / 2)
+  end
+  return node.place[5], node.place[6]
+end
+
+-- The middle of the rectangle in the world that holds every chosen node: their bounds' corners, or their places.
+local function selectionMiddle(view)
+  local x1, y1, x2, y2
+  local function add(x, y)
+    x1, y1 = math.min(x1 or x, x), math.min(y1 or y, y)
+    x2, y2 = math.max(x2 or x, x), math.max(y2 or y, y)
+  end
+  for _, path in ipairs(view.chosen) do
+    local node = view.byPath[path]
+    if node and node.rect then
+      local r = node.rect
+      add(nodeToWorld(node, r[1], r[2]))
+      add(nodeToWorld(node, r[1] + r[3], r[2]))
+      add(nodeToWorld(node, r[1], r[2] + r[4]))
+      add(nodeToWorld(node, r[1] + r[3], r[2] + r[4]))
+    elseif node then
+      add(node.place[5], node.place[6])
+    end
+  end
+  if x1 then
+    return (x1 + x2) / 2, (y1 + y2) / 2
+  end
+end
+
+-- The pivot that the chosen nodes turn and scale around, a setting of the project (DESIGN 13.3): each node's own place,
+-- the middle of each node's bounds, or the middle of the whole choice.
+local function pivotMode()
+  local pivot = project.setting("pivot")
+  return (pivot == "bounds" or pivot == "selection") and pivot or "own"
+end
+
+-- The one gizmo of the chosen nodes: its place in the world, and the node that leads, the one chosen last. It is at the lead's
+-- place, the middle of the lead's bounds, or the middle of the choice, by the pivot.
+local function gizmo(view)
+  local lead
+  for i = #view.chosen, 1, -1 do
+    lead = lead or view.byPath[view.chosen[i]]
+  end
+  if not lead then
+    return nil
+  end
+  local mode = pivotMode()
+  if mode == "own" then
+    return lead.place[5], lead.place[6], lead
+  elseif mode == "bounds" then
+    local x, y = boundsMiddle(lead)
+    return x, y, lead
+  end
+  local x, y = selectionMiddle(view)
+  return x, y, lead
+end
+
 -- The nodes under a point of the view, the one that draws last first.
 local function hits(view, sx, sy)
   local wx, wy = toWorld(view, sx, sy)
@@ -156,24 +217,25 @@ local function hits(view, sx, sy)
   return found
 end
 
--- The move tool's handle under a point of the panel: the chosen node's path and the axis, "x" or "y" for an arrow and "both" for the
--- square between them, or nil.
+-- The gizmo's handle under a point of the panel (DESIGN 13.3): the leading node's path and the axis, "x" or "y" for an arrow of the
+-- move tool and "both" for the square between them, or for the turn tool's ring and the scale tool's square; or nil.
 local function handleAt(view, sx, sy)
-  if project.tool() ~= "move" then
+  local gx, gy, lead = gizmo(view)
+  if not gx or not lead then
     return nil
   end
-  for _, path in ipairs(view.chosen) do
-    local node = view.byPath[path]
-    if node then
-      local x, y = toScreen(view, node.place[5], node.place[6])
-      if sx >= x + SQUARE and sx <= x + SQUARE + SQUARE_SIZE and sy >= y + SQUARE and sy <= y + SQUARE + SQUARE_SIZE then
-        return path, "both"
-      elseif math.abs(sy - y) <= 6 and sx >= x + 8 and sx <= x + HANDLE + 4 then
-        return path, "x"
-      elseif math.abs(sx - x) <= 6 and sy >= y + 8 and sy <= y + HANDLE + 4 then
-        return path, "y"
-      end
+  local x, y = toScreen(view, gx, gy)
+  local tool = project.tool()
+  if tool == "move" then
+    if sx >= x + SQUARE and sx <= x + SQUARE + SQUARE_SIZE and sy >= y + SQUARE and sy <= y + SQUARE + SQUARE_SIZE then
+      return lead.path, "both"
+    elseif math.abs(sy - y) <= 6 and sx >= x + 8 and sx <= x + HANDLE + 4 then
+      return lead.path, "x"
+    elseif math.abs(sx - x) <= 6 and sy >= y + 8 and sy <= y + HANDLE + 4 then
+      return lead.path, "y"
     end
+  elseif math.abs(sx - x) <= 16 and math.abs(sy - y) <= 16 then
+    return lead.path, "both"
   end
 end
 
@@ -278,36 +340,35 @@ local function drawView(view, surface)
     end
   end
 
-  -- The tool's handles, on each chosen node's place.
+  -- The one gizmo of the chosen nodes, at the pivot's place (DESIGN 13.3).
   local tool = project.tool()
-  for _, path in ipairs(view.chosen) do
-    local node = view.byPath[path]
-    if node then
-      local x, y = toScreen(view, node.place[5], node.place[6])
-      if tool == "move" then
-        -- the arrows along the world's x and y, which a drag moves along their axis alone, as Unity's do; y grows down, as in LÖVE
-        local axis = view.drag and view.drag.kind == "tool" and view.drag.axis
-        local xColor, yColor = axis == "x" and "accent" or AXIS_X, axis == "y" and "accent" or AXIS_Y
-        gpu.line(surface, x, y, x + HANDLE, y, 2, xColor)
-        gpu.line(surface, x + HANDLE, y, x + HANDLE - 8, y - 5, 2, xColor)
-        gpu.line(surface, x + HANDLE, y, x + HANDLE - 8, y + 5, 2, xColor)
-        gpu.line(surface, x, y, x, y + HANDLE, 2, yColor)
-        gpu.line(surface, x, y + HANDLE, x - 5, y + HANDLE - 8, 2, yColor)
-        gpu.line(surface, x, y + HANDLE, x + 5, y + HANDLE - 8, 2, yColor)
-        -- the square between them moves on both axes, above whatever node is under it
-        if axis == "both" then
-          gpu.fill(surface, x + SQUARE, y + SQUARE, SQUARE_SIZE, SQUARE_SIZE, "accent")
-        end
-        frameRect(surface, x + SQUARE, y + SQUARE, SQUARE_SIZE, SQUARE_SIZE, 2, "accent")
-      elseif tool == "turn" then
-        circle(surface, x, y, 14, 2, "accent")
-        local ax, ay = toScreen(view, nodeToWorld(node, 1, 0))
-        local length = math.max(1e-6, math.sqrt((ax - x) ^ 2 + (ay - y) ^ 2))
-        gpu.line(surface, x, y, x + (ax - x) / length * 14, y + (ay - y) / length * 14, 2, "accent")
-      else
-        frameRect(surface, x - 12, y - 12, 24, 24, 2, "accent")
-        gpu.fill(surface, x + 8, y + 8, 8, 8, "accent")
+  local gx, gy, lead = gizmo(view)
+  if gx and lead then
+    local x, y = toScreen(view, gx, gy)
+    if tool == "move" then
+      -- the arrows along the world's x and y, which a drag moves along their axis alone, as Unity's do; y grows down, as in LÖVE
+      local axis = view.drag and view.drag.kind == "tool" and view.drag.axis
+      local xColor, yColor = axis == "x" and "accent" or AXIS_X, axis == "y" and "accent" or AXIS_Y
+      gpu.line(surface, x, y, x + HANDLE, y, 2, xColor)
+      gpu.line(surface, x + HANDLE, y, x + HANDLE - 8, y - 5, 2, xColor)
+      gpu.line(surface, x + HANDLE, y, x + HANDLE - 8, y + 5, 2, xColor)
+      gpu.line(surface, x, y, x, y + HANDLE, 2, yColor)
+      gpu.line(surface, x, y + HANDLE, x - 5, y + HANDLE - 8, 2, yColor)
+      gpu.line(surface, x, y + HANDLE, x + 5, y + HANDLE - 8, 2, yColor)
+      -- the square between them moves on both axes, above whatever node is under it
+      if axis == "both" then
+        gpu.fill(surface, x + SQUARE, y + SQUARE, SQUARE_SIZE, SQUARE_SIZE, "accent")
       end
+      frameRect(surface, x + SQUARE, y + SQUARE, SQUARE_SIZE, SQUARE_SIZE, 2, "accent")
+    elseif tool == "turn" then
+      circle(surface, x, y, 14, 2, "accent")
+      local ox, oy = toScreen(view, lead.place[5], lead.place[6])
+      local ax, ay = toScreen(view, nodeToWorld(lead, 1, 0))
+      local length = math.max(1e-6, math.sqrt((ax - ox) ^ 2 + (ay - oy) ^ 2))
+      gpu.line(surface, x, y, x + (ax - ox) / length * 14, y + (ay - oy) / length * 14, 2, "accent")
+    else
+      frameRect(surface, x - 12, y - 12, 24, 24, 2, "accent")
+      gpu.fill(surface, x + 8, y + 8, 8, 8, "accent")
     end
   end
 
@@ -399,7 +460,7 @@ local function snap(value, flip)
   return value
 end
 
-local function startToolDrag(view, sx, sy, lead)
+local function startToolDrag(view, sx, sy)
   local tree = project.tree(view.file)
   local nodes = {}
   for _, path in ipairs(view.chosen) do
@@ -419,20 +480,18 @@ local function startToolDrag(view, sx, sy, lead)
       }
     end
   end
-  -- Many nodes turn and scale as one, around the middle of their places, or each around its own place:
-  -- the pivot, a setting of the project (DESIGN 13.3).
-  local midX, midY = 0, 0
+  -- Each node turns and scales around its pivot, a setting of the project (DESIGN 13.3): its own place, the middle of its bounds, or
+  -- the middle of the choice. The pointer's turn and distance are seen from the gizmo, so every node turns and scales by one amount.
+  local mode = pivotMode()
+  local centerX, centerY = gizmo(view)
+  local midX, midY = selectionMiddle(view)
   for _, n in ipairs(nodes) do
-    midX, midY = midX + n.originX / #nodes, midY + n.originY / #nodes
-  end
-  -- The pointer's turn and distance are seen from the middle, or, with each node's own pivot, from the place of the node
-  -- that the drag started on, so every node turns and scales by the same amount.
-  local own = project.setting("pivot") == "own"
-  local centerX, centerY = midX, midY
-  for _, n in ipairs(nodes) do
-    n.pivotX, n.pivotY = own and n.originX or midX, own and n.originY or midY
-    if own and n.path == lead then
-      centerX, centerY = n.originX, n.originY
+    if mode == "own" then
+      n.pivotX, n.pivotY = n.originX, n.originY
+    elseif mode == "bounds" then
+      n.pivotX, n.pivotY = boundsMiddle(view.byPath[n.path])
+    else
+      n.pivotX, n.pivotY = midX, midY
     end
   end
   local wx, wy = toWorld(view, sx, sy)
@@ -631,7 +690,7 @@ local function pointer(view, event)
     local d, press = view.drag, view.press
     if press and not d and (math.abs(x - press.x) > 3 or math.abs(y - press.y) > 3) then
       if press.found[1] and not press.shift then
-        startToolDrag(view, press.x, press.y, press.found[1])
+        startToolDrag(view, press.x, press.y)
         view.drag.axis = press.axis
       else
         view.drag = { kind = "rectangle", startX = press.x, startY = press.y, x = x, y = y, shift = press.shift }
@@ -961,6 +1020,15 @@ functions = {
   end },
   toolScale = { sig = "void()", doc = "The scale tool", fn = function()
     project.setTool("scale")
+  end },
+  pivotOwn = { sig = "void()", doc = "Turn and scale the chosen nodes each around its own place", fn = function()
+    project.setSetting("pivot", "own")
+  end },
+  pivotBounds = { sig = "void()", doc = "Turn and scale the chosen nodes each around the middle of its bounds", fn = function()
+    project.setSetting("pivot", "bounds")
+  end },
+  pivotSelection = { sig = "void()", doc = "Turn and scale the chosen nodes around the middle of all of them", fn = function()
+    project.setSetting("pivot", "selection")
   end },
 }
 
