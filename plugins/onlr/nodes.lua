@@ -19,19 +19,20 @@ local function say(_, message)
   end
 end
 
--- Whether a node matches a search: its name holds the text, or with "t:" first, the name of one of its components' types,
--- as Unity's search does. Case does not count.
+-- Whether a node matches a search: its name holds each word of the text, as every search of the tool matches
+-- (ui.matches), or with "t:" first, the name of one of its components' types holds them, as Unity's search does.
+-- Case does not count.
 local function matches(node, search)
   local typeName = search:match("^t:%s*(.*)$")
   if typeName then
     for name in pairs(node.components or {}) do
-      if name:lower():find(typeName, 1, true) then
+      if ui.matches(typeName, name) then
         return true
       end
     end
     return false
   end
-  return (node.name or ""):lower():find(search, 1, true) ~= nil
+  return ui.matches(search, node.name or "")
 end
 
 -- The nodes of the tree element, from a node of the file. With a search, only the nodes that match and those above them
@@ -324,10 +325,10 @@ local function draw(state, surface)
         state.openFile, state.open = file, { [first.path] = true }
       end
       local paths = chosen.file == file and chosen.paths or {}
-      children[#children + 1] = ui.field(state.search or "", { id = "search", placeholder = "Search", tooltip = "Shows the nodes whose name holds the text; t: and a text, those with a component of such a type", onChange = function(text)
+      children[#children + 1] = ui.search(state.search or "", { placeholder = "Search nodes", tooltip = "Shows the nodes whose name holds each word; t: and words, those with a component of such a type", onChange = function(text)
         state.search = text ~= "" and text or nil
       end })
-      local search = state.search and state.search:lower()
+      local search = state.search
       local opened = search and {} or state.open
       local shown = treeNodes(first, state.open, search, opened)
       local renaming = state.renaming
