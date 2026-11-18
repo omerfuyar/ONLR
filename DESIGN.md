@@ -980,6 +980,26 @@ end
   - A system takes up to 8 sizes and 8 colours, as LÖVE does; more is an error.
   - Particles from a sprite sheet, LÖVE's `setQuads`, and the image's `offset` have no property: a script sets them on `get()`.
 
+### 11.7 Tile maps
+
+`sti` wraps STI, Simple Tiled Implementation, which loads a map made with [Tiled](https://www.mapeditor.org) and draws it with LÖVE's sprite batches. Its one type, `sti.map`, is a map at its node: `map` names a map that Tiled exported as Lua, such as `maps/level.lua`, with its tilesets' images beside it. The map's top left corner is at the node's place, the node's turn and scale turn and scale it, and a camera above it moves it, as it moves every node.
+
+- `layers` names the layers that the node draws, in that order; empty, it draws every visible layer. So a game puts its player between a map's layers: one node draws the ground, and a node drawn after the player draws the treetops (5). A named layer draws even when Tiled hides it; a name that the map lacks is an error.
+- Animated tiles move on in the component's `update`.
+- `toTile(x, y)` gives the column and the row, from 1, of the tile at a place in the world, and `toWorld(column, row)` the place of a tile's corner, so a script finds what is under a node: `map:get():getTileProperties("ground", map:toTile(x, y))`.
+- `get()` gives STI's map, for all of STI's own functions: its layers by name with their objects, the properties that Tiled gives tiles, layers and objects, `setLayerTile`, and layers that a script draws.
+- The node view draws the map as the game does, loaded once and kept until a value changes (6.5).
+- The component draws each layer itself, where the node draws, and does not call STI's `map:draw`, which draws through a canvas of the window's size from the screen's corner, so a node's place and a camera would not reach it.
+- The limits, as they are now:
+  - The map is loaded when the component loads. A script that changes `map` afterwards changes nothing; one that changes `layers` changes what draws.
+  - Only maps that Tiled exports as Lua, with their tilesets embedded, as STI takes them: not `.tmx` files, nor tilesets in files of their own.
+  - A layer's parallax, which STI's own `map:draw` applies, is not applied.
+  - An object layer that is visible draws its objects as STI's grey outlines, as a debugging aid. A game hides it in Tiled, or leaves it out of `layers`. Tiled's objects do not become nodes: a script reads them from the layer.
+  - Tiles do not collide. STI's plugins for bump and Box2D are not tied to `bump.world` and `physics.world` yet.
+  - `bounds` is right for orthogonal maps only.
+  - The node view reloads the map only when it makes the component again, and STI keeps the images that it loaded. So a map or a tileset that Tiled saves again shows after the preview starts again.
+  - STI makes a canvas of the window's size for each map, for its own `map:draw`, which the component does not use.
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1224,7 +1244,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation` and particles for `samples/particles`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles` and sti for `samples/tilemap`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.

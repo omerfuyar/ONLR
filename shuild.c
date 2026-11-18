@@ -35,7 +35,7 @@ static struct
 } CONFIG = {.FLAGS = {.openecs = "OpenECS/", .compiler = SHUM_HOST_WINDOWS || SHUM_HOST_MACOS ? "clang" : "gcc"}};
 
 /// @brief The packages that a sample holds beside the engine, by the sample's name.
-static const char *const SAMPLE_PACKAGES[][2] = {{"coinrun", "bump"}, {"physics", "physics"}, {"animation", "anim8"}, {"particles", "particles"}};
+static const char *const SAMPLE_PACKAGES[][2] = {{"coinrun", "bump"}, {"physics", "physics"}, {"animation", "anim8"}, {"particles", "particles"}, {"tilemap", "sti"}};
 
 #pragma endregion Setup
 
