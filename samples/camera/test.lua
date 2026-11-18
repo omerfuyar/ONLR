@@ -11,9 +11,9 @@ end
 
 check.run(function()
   local world, player = assert(onlr.tree.find("World")), assert(onlr.tree.find("Player"))
-  local camera = assert(world.components.onlr.camera)
-  local follow, shake = assert(world.components.onlr.cameraFollow), assert(world.components.onlr.cameraShake)
-  check.ok(world.components.onlr.cameraLimits ~= nil, "the world has its limits")
+  local camera = assert(world.components.onlr.camera.view)
+  local follow, shake = assert(world.components.onlr.camera.follow), assert(world.components.onlr.camera.shake)
+  check.ok(world.components.onlr.camera.limits ~= nil, "the world has its limits")
   check.equal(follow.target, player, "the target is the player, by its id")
   check.equal(select(1, camera:getSize()), 160, "the camera's screen is the window")
 

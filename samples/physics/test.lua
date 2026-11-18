@@ -48,15 +48,15 @@ check.run(function()
   local lid = assert(tree.find("Lid"))
   near(lid.posY, crate.posY - 15, "the welded lid stays on the crate")
   near(lid.posX, crate.posX, "and above it")
-  check.ok(assert(hook.components.physics.rope:get()):getMaxLength() > 29, "rope:get() gives LÖVE's joint")
+  check.ok(assert(hook.components.physics.joint.rope:get()):getMaxLength() > 29, "rope:get() gives LÖVE's joint")
 
   -- A joint ends with either body: the weight turned off frees the hook's rope.
   weight:setActive(false)
   check.frames(1)
-  check.equal(hook.components.physics.rope:get(), nil, "the rope is gone with the weight")
+  check.equal(hook.components.physics.joint.rope:get(), nil, "the rope is gone with the weight")
   weight:setActive(true)
   check.frames(1)
-  check.ok(hook.components.physics.rope:get() ~= nil, "and comes back with it")
+  check.ok(hook.components.physics.joint.rope:get() ~= nil, "and comes back with it")
 
   -- A script moves a node: the body goes there, and falls from there.
   ball.posY = 0

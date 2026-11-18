@@ -22,9 +22,11 @@ return {
           body = {
             type = "static",
           },
-          box = {
-            height = 20,
-            width = 300,
+          shape = {
+            box = {
+              height = 20,
+              width = 300,
+            },
           },
         },
       },
@@ -37,8 +39,10 @@ return {
       components = {
         physics = {
           body = {},
-          circle = {
-            radius = 10,
+          shape = {
+            circle = {
+              radius = 10,
+            },
           },
         },
         probe = {},
@@ -64,9 +68,11 @@ return {
           posX = -10,
           components = {
             physics = {
-              box = {
-                height = 20,
-                width = 10,
+              shape = {
+                box = {
+                  height = 20,
+                  width = 10,
+                },
               },
             },
           },
@@ -77,9 +83,11 @@ return {
           posX = 10,
           components = {
             physics = {
-              box = {
-                height = 20,
-                width = 10,
+              shape = {
+                box = {
+                  height = 20,
+                  width = 10,
+                },
               },
             },
           },
@@ -96,23 +104,24 @@ return {
           body = {
             fixedRotation = true,
           },
-          polygon = {
-            points = {
-              {
-                x = -15,
-                y = 10,
-              },
-              {
-                x = 15,
-                y = 10,
-              },
-              {
-                x = 0,
-                y = -10,
+          shape = {
+            polygon = {
+              points = {
+                {
+                  x = -15,
+                  y = 10,
+                },
+                {
+                  x = 15,
+                  y = 10,
+                },
+                {
+                  x = 0,
+                  y = -10,
+                },
               },
             },
           },
-
         },
       },
     },
@@ -126,10 +135,11 @@ return {
           body = {
             type = "static",
           },
-          hinge = {
-            other = "b0b000",
+          joint = {
+            hinge = {
+              other = "b0b000",
+            },
           },
-
         },
       },
     },
@@ -141,10 +151,11 @@ return {
       components = {
         physics = {
           body = {},
-          circle = {
-            radius = 5,
+          shape = {
+            circle = {
+              radius = 5,
+            },
           },
-
         },
       },
     },
@@ -158,11 +169,12 @@ return {
           body = {
             type = "static",
           },
-          rope = {
-            length = 30,
-            other = "w8ight",
+          joint = {
+            rope = {
+              length = 30,
+              other = "w8ight",
+            },
           },
-
         },
       },
     },
@@ -174,10 +186,11 @@ return {
       components = {
         physics = {
           body = {},
-          circle = {
-            radius = 5,
+          shape = {
+            circle = {
+              radius = 5,
+            },
           },
-
         },
       },
     },
@@ -191,10 +204,11 @@ return {
           body = {
             type = "static",
           },
-          distance = {
-            other = "sw1ng0",
+          joint = {
+            distance = {
+              other = "sw1ng0",
+            },
           },
-
         },
       },
     },
@@ -206,10 +220,11 @@ return {
       components = {
         physics = {
           body = {},
-          circle = {
-            radius = 5,
+          shape = {
+            circle = {
+              radius = 5,
+            },
           },
-
         },
       },
     },
@@ -221,14 +236,17 @@ return {
       components = {
         physics = {
           body = {},
-          box = {
-            height = 10,
-            width = 10,
+          joint = {
+            weld = {
+              other = "cr8te0",
+            },
           },
-          weld = {
-            other = "cr8te0",
+          shape = {
+            box = {
+              height = 10,
+              width = 10,
+            },
           },
-
         },
       },
     },

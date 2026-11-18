@@ -1,9 +1,9 @@
--- The component type physics.box: a rectangle that collides, fixed to the nearest physics.body on its node or above it.
+-- The component type physics.shape.box: a rectangle that collides, fixed to the nearest physics.body on its node or above it.
 -- It turns and scales with its node, so a box on a node under the body may sit anywhere on it, at any angle.
 local onlr = require("onlr")
 local shape = require("physics.shape")
 
----@class physics.box : onlr.Component
+---@class physics.shape.box : onlr.Component
 ---@field owner physics.body? the body that it is fixed to
 ---@field fixture love.Fixture?
 local Box = {}
@@ -11,7 +11,7 @@ local Box = {}
 Box.width = onlr.property.number(32, { min = 0 })
 Box.height = onlr.property.number(32, { min = 0 })
 Box.center = onlr.property.vector(0, 0, { description = "The box's middle, from the node's place. A body turns around its node's place" })
-shape.declare(Box, "physics.box")
+shape.declare(Box, "physics.shape.box")
 
 -- Its four corners, in the body's space.
 function Box:_outline(toBody)

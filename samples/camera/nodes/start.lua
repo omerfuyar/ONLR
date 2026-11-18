@@ -11,15 +11,17 @@ return {
       name = "World",
       components = {
         onlr = {
-          camera = {},
-          cameraFollow = {
-            target = "p1ayer",
+          camera = {
+            follow = {
+              target = "p1ayer",
+            },
+            limits = {
+              height = 200,
+              width = 400,
+            },
+            shake = {},
+            view = {},
           },
-          cameraLimits = {
-            height = 200,
-            width = 400,
-          },
-          cameraShake = {},
         },
       },
       children = {

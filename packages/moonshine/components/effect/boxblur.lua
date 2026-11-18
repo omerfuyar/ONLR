@@ -1,10 +1,10 @@
--- The component type moonshine.boxblur: moonshine's effect boxblur. Blurs the screen by averaging pixels: cheap, and square.
+-- The component type moonshine.effect.boxblur: moonshine's effect boxblur. Blurs the screen by averaging pixels: cheap, and square.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.boxblur : onlr.Component
+---@class moonshine.effect.boxblur : onlr.Component
 local Effect = {}
 
 Effect.radius = onlr.property.vector(3, 3, { description = "How far it blurs across and down, in pixels" })

@@ -1,9 +1,9 @@
--- The component type physics.hinge: Box2D's revolute joint. The two bodies turn around one pin, at the hinge's node,
+-- The component type physics.joint.hinge: Box2D's revolute joint. The two bodies turn around one pin, at the hinge's node,
 -- as a door on its hinge, a wheel on its axle or a pendulum on its nail. It may limit the angle and turn by a motor.
 local onlr = require("onlr")
 local joint = require("physics.joint")
 
----@class physics.hinge : onlr.Component
+---@class physics.joint.hinge : onlr.Component
 ---@field other physics.body? the body that it joins to its own
 ---@field collide boolean
 ---@field joint love.RevoluteJoint?
@@ -15,7 +15,7 @@ Hinge.upper = onlr.property.number(math.pi / 4, { description = "The greatest an
 Hinge.motor = onlr.property.bool(false, { description = "A motor turns the bodies" })
 Hinge.motorSpeed = onlr.property.number(0, { description = "Radians a second" })
 Hinge.motorTorque = onlr.property.number(1000, { min = 0, description = "How hard the motor turns" })
-joint.declare(Hinge, "physics.hinge")
+joint.declare(Hinge, "physics.joint.hinge")
 
 function Hinge:_make(a, b, x, y)
   local j = love.physics.newRevoluteJoint(a, b, x, y, self.collide)

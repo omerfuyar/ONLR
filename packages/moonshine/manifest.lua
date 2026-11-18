@@ -9,5 +9,5 @@ return {
   source = "https://github.com/vrld/moonshine",
   license = "MIT",
   -- Its component types are the files of components/: components/chain.lua is moonshine.chain, and each effect is one,
-  -- such as components/vignette.lua, moonshine.vignette.
+  -- such as components/vignette.lua, moonshine.effect.vignette.
 }

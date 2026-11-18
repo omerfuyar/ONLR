@@ -14,10 +14,12 @@ return {
       components = {
         moonshine = {
           chain = {},
-          desaturate = {
-            strength = 1,
+          effect = {
+            colorgradesimple = {},
+            desaturate = {
+              strength = 1,
+            },
           },
-          colorgradesimple = {},
         },
       },
       children = {

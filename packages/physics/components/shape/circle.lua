@@ -1,15 +1,15 @@
--- The component type physics.circle: a circle that collides, fixed to the nearest physics.body on its node or above it.
+-- The component type physics.shape.circle: a circle that collides, fixed to the nearest physics.body on its node or above it.
 local onlr = require("onlr")
 local shape = require("physics.shape")
 
----@class physics.circle : onlr.Component
+---@class physics.shape.circle : onlr.Component
 ---@field owner physics.body? the body that it is fixed to
 ---@field fixture love.Fixture?
 local Circle = {}
 
 Circle.radius = onlr.property.number(16, { min = 0 })
 Circle.center = onlr.property.vector(0, 0, { description = "The circle's middle, from the node's place" })
-shape.declare(Circle, "physics.circle")
+shape.declare(Circle, "physics.shape.circle")
 
 -- Its middle in the body's space, and its radius as large as its node is in the world.
 function Circle:_outline(toBody)

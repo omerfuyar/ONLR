@@ -1,11 +1,11 @@
--- The component type onlr.cameraFollow: moves its node's camera to follow a node, as most games' cameras do.
+-- The component type onlr.camera.follow: moves its node's camera to follow a node, as most games' cameras do.
 -- It moves the camera's own point, posX and posY, in lateUpdate, after the scripts and the physics moved the target.
 local onlr = require("onlr")
 
----@class onlr.cameraFollow : onlr.Component
+---@class onlr.camera.follow : onlr.Component
 local Follow = {}
 
-Follow.needs = { "onlr.camera" }
+Follow.needs = { "onlr.camera.view" }
 
 Follow.target = onlr.property.node({ description = "The node that the camera follows, such as the player. A script may set it" })
 Follow.offset = onlr.property.vector(0, 0, { description = "Added to the target's place: the camera shows a point ahead of it or above it" })
@@ -18,8 +18,8 @@ Follow.deadzone = onlr.property.vector(0, 0, {
 })
 
 -- The point that the camera goes to: the target's place, kept inside the deadzone. Nil without a target.
----@param self onlr.cameraFollow
----@param camera onlr.camera
+---@param self onlr.camera.follow
+---@param camera onlr.camera.view
 local function aim(self, camera)
   local target = self.target
   if not target or target:isDestroyed() then
@@ -44,7 +44,7 @@ end
 
 -- After it moves the camera, the node's camera limits keep it in, whichever of the two updated first.
 local function limit(self)
-  local limits = self.node.components.onlr.cameraLimits
+  local limits = self.node.components.onlr.camera.limits
   if limits and limits:isEnabled() then
     limits:clamp()
   end
@@ -53,7 +53,7 @@ end
 -- Not called by the engine: scripts call it. Puts the camera on its target at once, as after a level starts or the
 -- player is put somewhere else. It is called when the component starts to run.
 function Follow:snap()
-  local camera = self.node.components.onlr.camera --[[@as onlr.camera]]
+  local camera = self.node.components.onlr.camera.view --[[@as onlr.camera.view]]
   local x, y = aim(self, camera)
   if x and y then
     camera.posX, camera.posY = x, y
@@ -66,7 +66,7 @@ function Follow:enable()
 end
 
 function Follow:lateUpdate(dt)
-  local camera = self.node.components.onlr.camera --[[@as onlr.camera]]
+  local camera = self.node.components.onlr.camera.view --[[@as onlr.camera.view]]
   local x, y = aim(self, camera)
   if not x or not y then
     return
@@ -83,7 +83,7 @@ end
 
 -- In the node view, the deadzone, around the camera's point.
 function Follow:drawEditor(chosen)
-  local camera = self.node.components.onlr.camera --[[@as onlr.camera]]
+  local camera = self.node.components.onlr.camera.view --[[@as onlr.camera.view]]
   local w, h = self.deadzone.x, self.deadzone.y
   if w <= 0 and h <= 0 then
     return

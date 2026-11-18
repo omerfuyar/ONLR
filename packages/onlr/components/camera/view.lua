@@ -1,10 +1,10 @@
--- The component type onlr.camera: a view (DESIGN 10).
+-- The component type onlr.camera.view: a view (DESIGN 10).
 -- It draws its node and all under it as a group, moved, turned and zoomed so that the middle of its screen,
 -- the window by default, shows its point. What is outside its node, such as a score, it does not move.
 local onlr = require("onlr")
 
----@class onlr.camera : onlr.Component
----@field shakeX number? added to its point when it draws, and to nothing else: onlr.cameraShake sets it
+---@class onlr.camera.view : onlr.Component
+---@field shakeX number? added to its point when it draws, and to nothing else: onlr.camera.shake sets it
 ---@field shakeY number?
 ---@field shakeRot number? added to its angle when it draws
 local Camera = {}

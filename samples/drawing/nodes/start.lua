@@ -9,7 +9,9 @@ return {
       name = "World",
       components = {
         onlr = {
-          camera = {},
+          camera = {
+            view = {},
+          },
         },
       },
       children = {

@@ -8,7 +8,7 @@ local joint = {}
 
 ---Gives a joint's type the properties and functions that every joint has.
 ---@param Type table
----@param name string the type's name, such as "physics.hinge"
+---@param name string the type's name, such as "physics.joint.hinge"
 function joint.declare(Type, name)
   Type.other = onlr.property.component("physics.body", { description = "The body that it joins to its own" })
   Type.collide = onlr.property.bool(false, { description = "Its two bodies still collide with each other" })

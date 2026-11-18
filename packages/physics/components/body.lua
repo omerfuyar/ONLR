@@ -1,7 +1,7 @@
 -- The component type physics.body: a body of love.physics, as a component.
 -- It does what a game with love.physics does by hand: it makes the body in the root's world at the node's place,
 -- fixes to it the shapes of its node and of the nodes under it, keeps it and the node in step, and ends it.
--- Its shapes are components of their own: physics.box, physics.circle and physics.polygon. So are its joints.
+-- Its shapes are components of their own: physics.shape.box, physics.shape.circle and physics.shape.polygon. So are its joints.
 local onlr = require("onlr")
 
 ---@class physics.body : onlr.Component

@@ -1,10 +1,10 @@
--- The component type moonshine.glow: moonshine's effect glow. Makes what is bright shine around it.
+-- The component type moonshine.effect.glow: moonshine's effect glow. Makes what is bright shine around it.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.glow : onlr.Component
+---@class moonshine.effect.glow : onlr.Component
 local Effect = {}
 
 Effect.strength = onlr.property.number(5, { min = 0, description = "How far the light spreads" })

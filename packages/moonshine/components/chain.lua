@@ -1,7 +1,8 @@
 -- The component type moonshine.chain: a group (DESIGN 5) that draws its node and all under it through moonshine's
--- effects. The effects are the components of moonshine's other types on the same node, such as moonshine.vignette,
--- applied in their order on the node. An effect whose component is off is skipped, and a property that a script or a
--- tween changes reaches the effect in the next frame.
+-- effects. The effects are the components of moonshine's effect types on the same node, such as
+-- moonshine.effect.vignette, applied in the order that order names them, and the rest after, by their names. An effect
+-- whose component is off is skipped, and a property that a script or a tween changes reaches the effect in the next frame.
+local onlr = require("onlr")
 local moonshine = require("moonshine")
 
 ---@class moonshine.chain : onlr.Component
@@ -10,7 +11,12 @@ local moonshine = require("moonshine")
 ---@field private dirty boolean? the effects changed since the chain was made
 ---@field private width number?
 ---@field private height number?
+---@field private ordered string? the order that the chain was made in
 local Chain = {}
+
+Chain.order = onlr.property.list(onlr.property.string("vignette"), {
+  description = "The effects' names, such as vignette, in the order they apply. Those it does not name apply after, by their names",
+})
 
 function Chain:load()
   self.effects = self.effects or {}
@@ -45,8 +51,25 @@ local function key(v)
   return table.concat(parts, ",")
 end
 
+-- The effects' components in the order they apply: those that order names, in its order, then the rest by name.
+function Chain:_sort()
+  local rank = {}
+  for i, name in ipairs(self.order) do
+    rank[name] = rank[name] or i
+  end
+  table.sort(self.effects, function(a, b)
+    local ra, rb = rank[a._effect] or math.huge, rank[b._effect] or math.huge
+    if ra ~= rb then
+      return ra < rb
+    end
+    return a._effect < b._effect
+  end)
+  return table.concat(self.order, ",")
+end
+
 -- Makes moonshine's chain anew, at a size, with the effects of the components.
 function Chain:_build(w, h)
+  self.ordered = self:_sort()
   local first = self.effects[1]
   local built = moonshine(w, h, moonshine.effects[first._effect])
   for i = 2, #self.effects do
@@ -98,7 +121,7 @@ function Chain:drawTree(draw)
   else
     w, h = love.graphics.getDimensions()
   end
-  if self.dirty or not self.built then
+  if self.dirty or not self.built or self.ordered ~= table.concat(self.order, ",") then
     self:_build(w, h)
   elseif w ~= self.width or h ~= self.height then
     self.built.resize(w, h)

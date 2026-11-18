@@ -28,7 +28,7 @@ local component = {}
 ---In the game, the engine's name, each package's and each folder of components/ are always tables, empty on a node
 ---without their types: node.components.bump.body is nil on a node without a body, and components.bmup.body is an error.
 ---@class onlr.Components
----@field onlr {sprite: onlr.sprite?, text: onlr.text?, shape: onlr.shape?, camera: onlr.camera?, cameraFollow: onlr.cameraFollow?, cameraLimits: onlr.cameraLimits?, cameraShake: onlr.cameraShake?}
+---@field onlr {sprite: onlr.sprite?, text: onlr.text?, shape: onlr.shape?, camera: {view: onlr.camera.view?, follow: onlr.camera.follow?, limits: onlr.camera.limits?, shake: onlr.camera.shake?}}
 ---@field [string] any a script's component, or the table of a package or of a folder
 
 ---A component type, as the engine keeps it.

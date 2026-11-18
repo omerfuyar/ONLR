@@ -1,10 +1,10 @@
--- The component type moonshine.godsray: moonshine's effect godsray. Rays of light that spread from a point of the screen.
+-- The component type moonshine.effect.godsray: moonshine's effect godsray. Rays of light that spread from a point of the screen.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.godsray : onlr.Component
+---@class moonshine.effect.godsray : onlr.Component
 local Effect = {}
 
 Effect.exposure = onlr.property.number(0.25, { min = 0, max = 1 })

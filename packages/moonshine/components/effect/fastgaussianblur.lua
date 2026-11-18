@@ -1,10 +1,10 @@
--- The component type moonshine.fastgaussianblur: moonshine's effect fastgaussianblur. Blurs the screen, faster than gaussianblur for a large blur.
+-- The component type moonshine.effect.fastgaussianblur: moonshine's effect fastgaussianblur. Blurs the screen, faster than gaussianblur for a large blur.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.fastgaussianblur : onlr.Component
+---@class moonshine.effect.fastgaussianblur : onlr.Component
 local Effect = {}
 
 Effect.taps = onlr.property.integer(7, { min = 3, description = "Samples on each side and the middle: odd, and more is a larger, slower blur" })
