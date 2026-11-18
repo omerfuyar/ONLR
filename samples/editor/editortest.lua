@@ -54,6 +54,13 @@ return {
     end
     test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
+    -- the preset puts the asset viewer under the inspector, in the same column
+    local inspector, viewer = test.rect(panelOf(test, "onlr.inspector")), test.rect(panelOf(test, "viewer.file"))
+    check(math.abs(viewer.x - inspector.x) < 2 and viewer.y > inspector.y + inspector.height - 2, "the asset viewer is under the inspector")
+    -- the rest of the test clicks far down the inspector, which gets the whole column back when the viewer closes
+    test.click(viewer.x + viewer.width / 2, viewer.y + viewer.height / 2)
+    test.call("ecs.layout.close")
+    test.wait(0.2)
     -- opening a project that lacks LÖVE's definitions, as the sample does, gives it them, for a code editor
     check(read(".onlr/love2d/love.lua"):find("---@class love", 1, true), "the project holds LÖVE's definitions")
 
