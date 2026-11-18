@@ -13,7 +13,7 @@ What the owner wants worked on, in this order.
 
 ## Engine
 
-- **Components for sound, animation and particles.** Ideas. Libraries come first (OVERVIEW 9): anim8 animates a sprite through its `quad` (DESIGN 11.5), and peachy, for Aseprite's files, could too; ripple for sounds and their volumes; and LÖVE's own particle systems, whose settings Hot Particles edits. A sound property already streams with the option `stream` (DESIGN 6.2), and a node under the top node plays music for the whole game (DESIGN 5).
+- **Components for sound, animation and particles.** Ideas. Libraries come first (OVERVIEW 9): anim8 animates a sprite through its `quad` (DESIGN 11.5), and peachy, for Aseprite's files, could too; ripple for sounds and their volumes; and LÖVE's own particle systems, now `particles.emitter` (DESIGN 11.6), whose settings Hot Particles edits, as a panel of the editor could. A sound property already streams with the option `stream` (DESIGN 6.2), and a node under the top node plays music for the whole game (DESIGN 5).
 - **Tags.** A component type serves as a tag (DESIGN 7). An idea for later: tags or groups of their own. `onlr.tree.findAll` and `findAllComponents` stay so that a function that finds by tag can join them.
 - **Loading.** A root's files are loaded when the root loads, and those that the next root does not name are let go (DESIGN 6.2). An idea for later: reading a big root's images and sounds in a thread, while a picture of progress shows, as love-loader and lily do.
 
@@ -70,7 +70,7 @@ What the owner wants worked on, in this order.
   | -------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
   | Collision of boxes   | bump (built)         | `bump.world` on the root, `bump.body` on a node (DESIGN 11.3).                                   |
   | Physics              | `love.physics` (built) | A world, bodies, shapes and joints (DESIGN 11.4). No library. Open: the limits that DESIGN 11.4 lists, such as a shape whose node moves under its body after it started, properties that a script changes after the start, and Box2D's other shapes and joints. |
-  | Particles            | LÖVE's particle systems | One emitter on a node, its settings as properties, which run in the node view too. No library. |
+  | Particles            | LÖVE's particle systems (built) | `particles.emitter` on a node, its settings as properties (DESIGN 11.6). No library. Open: the limits that DESIGN 11.6 lists; the node view shows a still picture, and a moving one needs the preview to update what it shows. |
   | Animation            | anim8 (built)        | `anim8.animation` beside `onlr.sprite`, which sets the sprite's `quad` each frame (DESIGN 11.5). Open: the limits that DESIGN 11.5 lists; the node view should show the first frame, which needs a function that the preview calls once a node's components are made, as Unity calls `OnValidate`, or the preview drawing a node's components after those they need. |
   | Tile maps from Tiled | STI                  | A map on a node, which draws its layers under the node, so a camera follows it.                  |
   | Tweens               | flux                 | One component on the root that steps flux each frame; scripts call `flux.to`. Timers: flux has none, so the package also gives a small timer of its own, unless hump's timer, which does both, is chosen instead. |
