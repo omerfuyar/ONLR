@@ -229,6 +229,25 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the drop is undone")
 
+    -- an image from outside the project is copied in first, into images/, after asking (DESIGN 13.4)
+    local outside = folder .. "../gem.png"
+    local copy = assert(io.open(outside, "wb"))
+    copy:write(read("images/coin.png"))
+    copy:close()
+    os.remove("images/gem.png")
+    test.dropFiles(x, y, { outside })
+    test.match(test.dialog(), { title = "Copy into the project" }, "a file from outside asks")
+    test.key("Return")
+    test.wait(0.3)
+    save()
+    check(read("images/gem.png") == read("images/coin.png"), "the copy is in images/")
+    check(read("nodes/start.lua"):find('image = "images/gem.png"'), "and the sprite names it:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    os.remove("images/gem.png")
+    os.remove(outside)
+    check(read("nodes/start.lua") == start, "the drop from outside is undone")
+
     -- Ctrl+D duplicates the chosen node: the copy has a new id, and names what the first one names
     x, y = at(70, 70)
     test.click(x, y)
