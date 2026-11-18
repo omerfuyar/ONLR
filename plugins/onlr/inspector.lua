@@ -87,6 +87,41 @@ local function text(id, value, set, valid)
   end })
 end
 
+-- The endings that the system's dialog shows for a kind of file, as LÖVE reads them.
+local PATTERNS = {
+  image = "png;jpg;jpeg;bmp;tga;hdr;pic;exr;dds;ktx",
+  sound = "wav;ogg;oga;ogv;mp3;flac;abc;mod;s3m;xm;it",
+  font = "ttf;otf;fnt",
+  nodeFile = "lua",
+}
+
+-- A path that the dialog gave or the user typed, from the project's folder. A game reads only its own folder (DESIGN
+-- 3.1), so a file outside it is refused: nil, and the console says why.
+local function fromProject(path)
+  path = path:gsub("\\", "/")
+  if not path:match("^/") and not path:match("^%a:/") then
+    return path
+  end
+  local folder = project.folder():gsub("\\", "/")
+  if path:sub(1, #folder) == folder then
+    return path:sub(#folder + 1)
+  end
+  console.add(("%s is outside the project. A game reads only its own folder: copy the file into the project first"):format(path), "warn")
+  return nil
+end
+
+-- The field of a file's path, with a button that chooses the file in the system's dialog.
+local function filePath(id, value, kind, extensions, set, valid)
+  local pattern = PATTERNS[kind] or (extensions and table.concat(extensions, ";")) or nil
+  return ui.path(value ~= MIXED and type(value) == "string" and value or "", { id = id, grow = 1, valid = valid, dialog = "openFile", pattern = pattern,
+    tooltip = "Return takes a typed path; the button chooses a file of the project", onSubmit = function(new)
+      local path = new == "" and "" or fromProject(new)
+      if path then
+        set(path)
+      end
+    end })
+end
+
 ---What an inspector shows: the chosen nodes of a node file.
 ---@class onlr.editor.Subject
 ---@field file string
@@ -159,10 +194,10 @@ local function control(state, subject, id, decl, value, set)
     end
     return ui.row({ gap = 4, grow = 1 }, { part("x"), part("y") })
   elseif kind == "image" or kind == "sound" or kind == "file" or kind == "nodeFile" then
-    -- A file is set by dragging it from the files panel onto the row, or by typing its path.
+    -- A file is set by dragging it from the files panel onto the row, by the system's dialog, or by typing its path.
     local known = value == nil or value == MIXED or value == "" or fs.info(project.folder() .. tostring(value)) ~= nil
     state.drops[#state.drops + 1] = { id = id, type = "file-list", set = set, extensions = options.extensions, nodeFile = kind == "nodeFile" }
-    return text(id, value, function(new)
+    return filePath(id, value, kind, options.extensions, function(new)
       set(new ~= "" and new or nil)
     end, known)
   elseif kind == "font" then
@@ -172,7 +207,7 @@ local function control(state, subject, id, decl, value, set)
       set({ path = path, size = font.size or options.size or 12 })
     end }
     return ui.row({ gap = 4, grow = 1 }, {
-      text(id, value ~= MIXED and font.path or MIXED, function(new)
+      filePath(id, value ~= MIXED and font.path or MIXED, "font", nil, function(new)
         set({ path = new ~= "" and new or nil, size = font.size or options.size or 12 })
       end, known),
       number(id .. ":size", value ~= MIXED and (font.size or options.size or 12) or MIXED, function(n)
