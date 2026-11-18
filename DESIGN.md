@@ -149,8 +149,8 @@ return {
   startNode = "nodes/menu.lua",
   topNode = "nodes/game.lua",
   window = {
-    height = 720,
-    width = 1280,
+    height = 1080,
+    width = 1920,
   },
   defaultFilter = "nearest",
   exclude = {
@@ -1344,7 +1344,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - The menu has New Project, which asks for an empty folder, and Open Project, which asks for a folder. The project settings panel has both too, and while no project is open it lists the projects opened last.
 - The editor's session keeps the open project's folder, so the editor starts with the project it was closed with.
 - The editor holds one project at a time. Opening another closes the one that is open, after asking about unsaved work.
-- A new project holds the files that section 3.1 says the editor writes, the engine in `packages/onlr/`, empty `components/` and `shared/` folders, and `nodes/start.lua`, an empty node. Its manifest names that file as the start node, and the folder's name as the game's `name` and `id`.
+- A new project holds the files that section 3.1 says the editor writes, the engine in `packages/onlr/`, empty `components/` and `shared/` folders, and `nodes/start.lua`, an empty node. Its manifest names that file as the start node, the folder's name as the game's `name` and `id`, and a window of 1920 by 1080, the size of most screens. On a screen of that size the window does not fit beside the title bar and the task bar, so the system shrinks it or lets it pass the screen's edge; the user makes it smaller, `resizable` or `fullscreen` in the project settings.
 
 ### 13.3 The node view
 
@@ -1358,7 +1358,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - A right click opens a menu, as in the nodes panel: on a node, which it chooses when it is not chosen, Duplicate, Delete, Copy, Paste and Frame Chosen; in empty space, Add Node Here, at the pointer, Paste and Frame All.
 - Snapping to a grid is a toggle. It and the grid's size are settings of the project, kept in `.onlr/editor.lua`, a data file. Ctrl held in a drag flips it, as in Unity, and makes a turn go in steps of 15 degrees.
 - The node view draws with OpenECS-std's gpu, on a panel's GPU surface (OpenECS-std DESIGN 15). The frame is a texture on the graphics card, which each new frame replaces, and the grid, the outlines, the handles and the messages are gpu's rectangles, lines and text. So drawing the panel copies no pixels, and costs the same at any size. Without a graphics card that gpu can use, the view shows why in place of the nodes.
-- The node view draws the window's frame: a rectangle from 0, 0, of the size of the manifest's `window`. So the user sees where the nodes that no camera holds show, such as a score. It is grey, and named above its top left with its size, such as "Window 1280 × 720", so it is told from a camera's frame. A camera's frame shows what the camera shows of the world under its node when the game runs; the window's frame shows where nodes outside any camera draw on the screen.
+- The node view draws the window's frame: a rectangle from 0, 0, of the size of the manifest's `window`. So the user sees where the nodes that no camera holds show, such as a score. It is grey, and named above its top left with its size, such as "Window 1920 × 1080", so it is told from a camera's frame. A camera's frame shows what the camera shows of the world under its node when the game runs; the window's frame shows where nodes outside any camera draw on the screen.
 - Dragging an image from the files panel into the node view makes a node with a sprite of it, and dragging a node file makes an instance of it (9).
 - The editor does not tell a level from a coin. Any node file can be the start node and can be held in another (5, 9), so the manifest's start node is chosen from every node file.
 
