@@ -1,0 +1,20 @@
+-- The component type bump.world: bump's world, as a component.
+-- bump's world is bump's own list of boxes. It is not the tree and knows nothing of nodes.
+-- It is a component of the root, so each root has its own world,
+-- and its node file keeps the world's settings.
+local onlr = require("onlr")
+local bump = require("bump")
+
+---@class bump.world : onlr.Component
+local World = {}
+
+World.cellSize = onlr.property.number(64, { min = 1, description = "The size of the cells that bump sorts boxes into" })
+
+-- Not called by the engine: bodies call it. It makes bump's world at the first call,
+-- so it does not matter whose load runs first.
+function World:get()
+  self.world = self.world or bump.newWorld(self.cellSize)
+  return self.world
+end
+
+return World

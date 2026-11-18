@@ -1,194 +1,137 @@
+# Checks every change to dev and main: the Lua annotations of every Lua file, and the samples' tests.
+# The samples are the tests (DESIGN.md, section 16): a sample's test of the engine runs it in LÖVE with SDL's offscreen driver,
+# and its test of the editor is an OpenECS test, which a Debug build of OpenECS runs.
 name: Checks
 
 on:
-    push:
-        branches: [dev, main]
-    pull_request:
-        branches: [dev, main]
-    workflow_dispatch:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
 
 # a new push to a branch or a pull request cancels its older run, whose result no longer counts
 concurrency:
-    group: checks-${{ github.ref }}
-    cancel-in-progress: true
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    format:
-        name: Format
-        runs-on: ubuntu-24.04
-        env:
-            CLANG_FORMAT: clang-format-18
-        steps:
-            - uses: actions/checkout@v4
+  # OpenECS, built in Debug from its dev and laid out as a release has it: the editor's tests run in it, and the Lua check reads its definitions
+  openecs:
+    name: OpenECS
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Name OpenECS's commit
+        id: commit
+        run: echo "sha=$(git ls-remote https://github.com/omerfuyar/OpenECS refs/heads/dev | cut -f1)" >> "$GITHUB_OUTPUT"
 
-            # the C files must be as clang-format 18, Ubuntu 24.04's, writes them; agents format them with check.sh
-            - name: Install clang-format
-              run: sudo apt-get install -y clang-format-18
+      - name: Restore OpenECS
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: OpenECS
+          key: openecs-debug-linux-${{ steps.commit.outputs.sha }}
 
-            - name: Check the C files' format
-              run: .github/scripts/format.sh
+      - uses: actions/checkout@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          repository: omerfuyar/OpenECS
+          ref: ${{ steps.commit.outputs.sha }}
+          submodules: recursive
+          path: source
 
-    test-linux:
-        name: Test (Linux)
-        runs-on: ubuntu-24.04
-        steps:
-            # shuild and shu, which build the plugins in C, are submodules
-            - uses: actions/checkout@v4
-              with:
-                  submodules: true
+      - name: Build OpenECS
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: source
+        run: |
+          .github/scripts/install-linux.sh
+          gcc shuild.c -o shuild.ignore -O3 -Wno-format-truncation
+          ./shuild.ignore -b debug > build.log 2>&1 || true
+          test -x build/Debug/bin/OpenECS || (tail -n 40 build.log && exit 1)
 
-            # the template follows OpenECS's dev: its Debug build runs tests, which releases do not
-            - uses: actions/checkout@v4
-              with:
-                  repository: omerfuyar/OpenECS
-                  ref: dev
-                  submodules: recursive
-                  path: OpenECS
+      # the program writes include/ as a release has it: the plugin interface and the standard plugins' definitions
+      - name: Lay out OpenECS as a release
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir OpenECS
+          cp -r source/build/Debug/bin/. OpenECS/
+          OpenECS/OpenECS --definitions OpenECS/include > definitions.log 2>&1 || (cat definitions.log && exit 1)
 
-            - name: Install the build tools
-              run: OpenECS/.github/scripts/install-linux.sh
+      # a tar keeps the files' permissions, which an artifact does not
+      - name: Pack OpenECS
+        run: tar -czf openecs.tar.gz OpenECS
 
-            - name: Name the dependencies' versions
-              id: dependencies
-              working-directory: OpenECS
-              run: echo "key=$( (git submodule status --recursive; sha256sum shuild.c dependencies/other/*/*) | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openecs
+          path: openecs.tar.gz
+          retention-days: 1
 
-            - name: Restore the built dependencies
-              uses: actions/cache@v4
-              with:
-                  path: |
-                      OpenECS/.shu/Debug/dependencies
-                  key: debug-linux-${{ steps.dependencies.outputs.key }}
+  test-linux:
+    name: Test (Linux)
+    runs-on: ubuntu-24.04
+    needs: openecs
+    steps:
+      # shuild, which runs the tests, is a submodule
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-            # std builds glslang and SPIRV-Cross with CMake only when their archives are missing, so they are kept until they or std's build change
-            - name: Name the C++ libraries' versions
-              id: cpp
-              working-directory: OpenECS
-              run: echo "key=$( (git -C std submodule status dependencies/glslang dependencies/SPIRV-Cross; sha256sum std/shuild.c) | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          name: openecs
 
-            - name: Restore the C++ libraries
-              uses: actions/cache@v4
-              with:
-                  path: |
-                      OpenECS/std/.shu/Debug/cmake
-                  key: cpp-debug-linux-${{ steps.cpp.outputs.key }}
+      # OpenECS needs the libraries that its build's packages bring, such as those of SDL
+      - name: Unpack OpenECS
+        run: |
+          tar -xzf openecs.tar.gz
+          git clone -q --depth 1 https://github.com/omerfuyar/OpenECS "$RUNNER_TEMP/openecs-source"
+          "$RUNNER_TEMP/openecs-source/.github/scripts/install-linux.sh"
 
-            - name: Build OpenECS
-              working-directory: OpenECS
-              run: |
-                  gcc shuild.c -o shuild.ignore -O3 -Wno-format-truncation
-                  ./shuild.ignore -b debug > build.log 2>&1 || true
-                  test -x build/Debug/bin/OpenECS || (tail -n 40 build.log && exit 1)
+      # EGL, with Mesa drawing in software, lets LÖVE draw with SDL's offscreen driver on a runner without a graphics card
+      - name: Install EGL
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libegl-mesa0 libgl1-mesa-dri
 
-            # the program writes include/ as a release has it: the plugin interface and the standard plugins' definitions
-            - name: Lay out OpenECS as a release
-              run: |
-                  cp -r OpenECS/build/Debug/bin/. OpenECS/
-                  OpenECS/OpenECS --definitions OpenECS/include > definitions.log 2>&1 || (cat definitions.log && exit 1)
+      # LÖVE's AppImage, unpacked, as ONLR's archive holds it (DESIGN.md, section 15.2)
+      - name: Install LÖVE
+        run: |
+          curl -sSL -o "$RUNNER_TEMP/love.AppImage" https://github.com/love2d/love/releases/download/11.5/love-11.5-x86_64.AppImage
+          chmod +x "$RUNNER_TEMP/love.AppImage"
+          (cd "$RUNNER_TEMP" && ./love.AppImage --appimage-extract > /dev/null)
+          echo "LOVE=$RUNNER_TEMP/squashfs-root/AppRun" >> "$GITHUB_ENV"
 
-            - name: Build the plugins in C
-              run: cc shuild.c -o shuild && ./shuild
+      - name: Run the samples' tests
+        run: .github/scripts/test.sh
 
-            - name: Run the test
-              run: |
-                  OpenECS/OpenECS --test test.lua > test.log 2>&1 && ! grep -q -E 'Sanitizer|runtime error:' test.log || (cat test.log && exit 1)
-                  grep "The test" test.log
+  lua:
+    name: Lua (LuaLS)
+    runs-on: ubuntu-24.04
+    needs: openecs
+    env:
+      LUALS_VERSION: 3.15.0
+    steps:
+      # LÖVE's definitions, from LuaCATS, are a submodule, which .luarc.json names: the check finds code that misuses LÖVE
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
 
-    test-windows:
-        name: Test (Windows)
-        runs-on: windows-2025
-        defaults:
-            run:
-                shell: bash
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  submodules: true
+      # the definitions of the ecs module and of the standard plugins, which .luarc.json names for the editor's plugins
+      - uses: actions/download-artifact@v4
+        with:
+          name: openecs
 
-            - uses: actions/checkout@v4
-              with:
-                  repository: omerfuyar/OpenECS
-                  ref: dev
-                  submodules: recursive
-                  path: OpenECS
+      - name: Unpack OpenECS
+        run: tar -xzf openecs.tar.gz
 
-            # LLVM-MinGW with the UCRT runtime, which OpenECS is built with, and CMake and Ninja for SDL
-            - name: Install the build tools
-              shell: pwsh
-              run: OpenECS/.github/scripts/install-windows.ps1
+      - name: Install the Lua language server
+        run: |
+          mkdir -p "$RUNNER_TEMP/luals"
+          curl -sSL "https://github.com/LuaLS/lua-language-server/releases/download/$LUALS_VERSION/lua-language-server-$LUALS_VERSION-linux-x64.tar.gz" | tar -xz -C "$RUNNER_TEMP/luals"
 
-            - name: Name the dependencies' versions
-              id: dependencies
-              working-directory: OpenECS
-              run: echo "key=$( (git submodule status --recursive; sha256sum shuild.c dependencies/other/*/*) | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
-
-            - name: Restore the built dependencies
-              uses: actions/cache@v4
-              with:
-                  path: |
-                      OpenECS/.shu/Debug/dependencies
-                  key: debug-windows-${{ steps.dependencies.outputs.key }}
-
-            # std builds glslang and SPIRV-Cross with CMake only when their archives are missing, so they are kept until they or std's build change
-            - name: Name the C++ libraries' versions
-              id: cpp
-              working-directory: OpenECS
-              run: echo "key=$( (git -C std submodule status dependencies/glslang dependencies/SPIRV-Cross; sha256sum std/shuild.c) | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
-
-            - name: Restore the C++ libraries
-              uses: actions/cache@v4
-              with:
-                  path: |
-                      OpenECS/std/.shu/Debug/cmake
-                  key: cpp-debug-windows-${{ steps.cpp.outputs.key }}
-
-            - name: Build OpenECS
-              working-directory: OpenECS
-              run: |
-                  clang shuild.c -o shuild.ignore.exe -O3 -Wno-format-truncation
-                  ./shuild.ignore.exe -b debug -c clang > build.log 2>&1 || true
-                  test -f build/Debug/bin/OpenECS.exe || (tail -n 40 build.log && exit 1)
-
-            # as a release is laid out: the program writes include/, and lib/ has OpenECS's import library that a plugin's DLL links
-            - name: Lay out OpenECS as a release
-              run: |
-                  cp -r OpenECS/build/Debug/bin/. OpenECS/
-                  cp -r OpenECS/build/Debug/lib OpenECS/
-                  OpenECS/OpenECS.exe --definitions OpenECS/include > definitions.log 2>&1 || (cat definitions.log && exit 1)
-
-            - name: Build the plugins in C
-              run: clang shuild.c -o shuild.exe && ./shuild.exe
-
-            - name: Run the test
-              run: |
-                  OpenECS/OpenECS.exe --test test.lua > test.log 2>&1 || (cat test.log && exit 1)
-                  grep "The test" test.log
-
-    lua:
-        name: Lua (LuaLS)
-        runs-on: ubuntu-24.04
-        env:
-            LUALS_VERSION: 3.15.0
-        steps:
-            - uses: actions/checkout@v4
-
-            - uses: actions/checkout@v4
-              with:
-                  repository: omerfuyar/OpenECS
-                  ref: dev
-                  path: OpenECS-source
-
-            - name: Install the Lua language server
-              run: |
-                  mkdir -p "$RUNNER_TEMP/luals"
-                  curl -sSL "https://github.com/LuaLS/lua-language-server/releases/download/$LUALS_VERSION/lua-language-server-$LUALS_VERSION-linux-x64.tar.gz" | tar -xz -C "$RUNNER_TEMP/luals"
-
-            # ecs.lua describes the ecs module, so the check finds Lua code that misuses it
-            - name: Check the Lua files
-              run: |
-                  mkdir -p OpenECS && mv OpenECS-source/include OpenECS/include && rm -rf OpenECS-source
-                  "$RUNNER_TEMP/luals/bin/lua-language-server" --check="$GITHUB_WORKSPACE" --checklevel=Warning --logpath="$RUNNER_TEMP/luals-log" | tee luals.log
-                  grep -q "no problems found" luals.log
+      - name: Check the Lua files
+        run: |
+          "$RUNNER_TEMP/luals/bin/lua-language-server" --check="$GITHUB_WORKSPACE" --checklevel=Warning --logpath="$RUNNER_TEMP/luals-log" | tee luals.log
+          grep -q "no problems found" luals.log

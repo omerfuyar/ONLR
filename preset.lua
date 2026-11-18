@@ -1,30 +1,46 @@
--- A preset describes a tool: its name, the plugins it needs, its settings and keys, and where their panels go.
--- Run the tool with: OpenECS/OpenECS --fresh --preset preset.lua
+-- ONLR's editor, as an OpenECS tool: the plugins it needs, and where their panels go (DESIGN 13.1).
+-- Run it with: OpenECS/OpenECS --preset preset.lua, and a project's folder after it to open the project.
 ---@type ecs.Preset
 return {
-  format = 3,      -- the version of this file's format
-  name = "mytool", -- the name --preset and the launcher know the preset by
+  format = 3,
+  name = "onlr",
   version = "0.1.0",
-  -- the id names the tool's saved session and its desktop file, and the name is the window's title
-  app = { id = "org.example.MyTool", name = "My tool" },
-  depends = { notes = "0.1", pulse_c = "0.1" }, -- the plugins to load, with the lowest version each accepts
-  pluginsDir = "plugins",                       -- plugins are looked for in this folder first
-
-  -- settings of the tool, above OpenECS's defaults and below the user's settings file
-  settings = { ["notes.newestFirst"] = false },
-
-  -- keys of the tool: Ctrl+D removes the chosen note too, while a board has the focus
-  keys = { ["notes.board"] = { ["Ctrl+D"] = "notes.remove" } },
-
-  -- each workspace holds a layout tree for each OS window: here, the board beside the pulse, which is 300 units wide
+  app = { id = "io.github.omerfuyar.ONLR", name = "ONLR" },
+  depends = { onlr = "0.1", console = "0.1", files = "0.1", viewer = "0.1" },
+  pluginsDir = "plugins",
+  -- a project's folder, or a file in it, named on the command line opens the project (DESIGN 13.2)
+  open = "onlr.openPath",
+  settings = {
+    -- the tool's menu: a right click on the title bar opens it
+    ["ecs.toolMenu"] = {
+      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.undo", "onlr.redo",
+      "onlr.play", "onlr.playFile", "onlr.pause", "onlr.step", "onlr.stop",
+      "onlr.restart", "onlr.exportLove", "onlr.exportLinux", "onlr.exportWindows", "settings.open", "panels.open",
+    },
+  },
   workspaces = {
     {
-      name = "Main",
+      name = "Edit",
       windows = {
         {
           split = "horizontal",
-          { share = 1,  panels = { { type = "notes.board" } } },
-          { size = 300, panels = { { type = "pulse_c.panel" } } },
+          {
+            share = 1,
+            split = "vertical",
+            {
+              share = 3,
+              split = "horizontal",
+              {
+                size = 370,
+                split = "vertical",
+                { size = 118, panels = { { type = "onlr.tools" } } },
+                { share = 1, panels = { { type = "onlr.nodes" } } },
+              },
+              { share = 1, panels = { { type = "onlr.view" } } },
+            },
+            { share = 2, panels = { { type = "console.log" }, { type = "files.tree" } } },
+          },
+          { size = 340, panels = { { type = "onlr.inspector" }, { type = "onlr.settings" }, { type = "onlr.export" } } },
         },
       },
     },

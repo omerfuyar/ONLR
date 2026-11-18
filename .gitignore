@@ -19,3 +19,11 @@ OpenECS/
 *.so
 *.dll
 *.a
+
+# the copies of the engine, of the packages and of the tests' helper that shuild puts into each sample
+/samples/*/packages/
+
+# what the editor keeps for a project, and what a played sample leaves
+.onlr/
+/samples/editor/played.txt
+/samples/editor/out/

@@ -1,6 +1,9 @@
-[submodule "dependencies/shuild"]
-	path = dependencies/shuild
-	url = https://github.com/omerfuyar/shuild.git
 [submodule "dependencies/shu"]
 	path = dependencies/shu
-	url = https://github.com/omerfuyar/shu.git
+	url = https://github.com/omerfuyar/shu
+[submodule "dependencies/shuild"]
+	path = dependencies/shuild
+	url = https://github.com/omerfuyar/shuild
+[submodule "dependencies/love2d"]
+	path = dependencies/love2d
+	url = https://github.com/LuaCATS/love2d
