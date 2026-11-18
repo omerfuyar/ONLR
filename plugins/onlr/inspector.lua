@@ -95,19 +95,10 @@ local PATTERNS = {
   nodeFile = "lua",
 }
 
--- A path that the dialog gave or the user typed, from the project's folder. A game reads only its own folder (DESIGN
--- 3.1), so a file outside it is refused: nil, and the console says why.
+-- A path that the dialog gave or the user typed, from the project's folder. A game reads only its own folder (DESIGN 3.1),
+-- so a file outside it is copied in first, after asking (DESIGN 13.4); nil when the user declines.
 local function fromProject(path)
-  path = path:gsub("\\", "/")
-  if not path:match("^/") and not path:match("^%a:/") then
-    return path
-  end
-  local folder = project.folder():gsub("\\", "/")
-  if path:sub(1, #folder) == folder then
-    return path:sub(#folder + 1)
-  end
-  console.add(("%s is outside the project. A game reads only its own folder: copy the file into the project first"):format(path), "warn")
-  return nil
+  return project.bringIn(path)
 end
 
 -- The field of a file's path, with a button that chooses the file in the system's dialog.

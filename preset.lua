@@ -11,11 +11,10 @@ return {
   -- a project's folder, or a file in it, named on the command line opens the project (DESIGN 13.2)
   open = "onlr.openPath",
   settings = {
-    -- the tool's menu: a right click on the title bar opens it
+    -- the tool's menu: a right click on the title bar opens it. It holds what concerns the whole tool; the history,
+    -- pausing and export are in their panels and on keys (DESIGN 13.2)
     ["ecs.toolMenu"] = {
-      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.undo", "onlr.redo",
-      "onlr.play", "onlr.playFile", "onlr.pause", "onlr.step", "onlr.stop",
-      "onlr.restart", "onlr.exportLove", "onlr.exportLinux", "onlr.exportWindows", "settings.open", "panels.open",
+      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop", "settings.open", "panels.open",
     },
   },
   workspaces = {

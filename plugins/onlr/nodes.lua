@@ -145,10 +145,10 @@ local function dropped(file, id, where, dataType, value)
     return
   end
   if dataType == "file-list" then
-    local folder, made = project.folder(), {}
+    local made = {}
     for _, path in ipairs(value) do
-      path = tostring(path):gsub("\\", "/")
-      local inside = path:sub(1, #folder) == folder and path:sub(#folder + 1)
+      -- a file from outside the project is copied in first, after asking (DESIGN 13.4)
+      local inside = project.bringIn(path)
       local ending = inside and (inside:match("%.(%w+)$") or ""):lower()
       local madeId, message
       if inside and inside:match("^nodes/.+%.lua$") then

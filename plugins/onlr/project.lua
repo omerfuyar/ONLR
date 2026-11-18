@@ -66,6 +66,86 @@ local function absolute(path)
   return assert(P).folder .. path
 end
 
+-- The folder that a file from outside the project is copied into, by its kind (DESIGN 13.4).
+local KIND_FOLDERS = {
+  png = "images/", jpg = "images/", jpeg = "images/", bmp = "images/", tga = "images/",
+  ogg = "sounds/", wav = "sounds/", mp3 = "sounds/", flac = "sounds/",
+  ttf = "fonts/", otf = "fonts/", fnt = "fonts/",
+}
+
+local function contents(path)
+  local file = io.open(path, "rb")
+  if not file then
+    return nil
+  end
+  local text = file:read("a")
+  file:close()
+  return text
+end
+
+-- A path's place in the project, from its folder: a path in the project as it is, and a file from outside it copied in,
+-- into a folder by its kind, after asking, since a game reads only its own folder (DESIGN 3.1). nil when the user declines,
+-- or the copy fails.
+-- A path with / for \\, and without the . and .. that it passes through, so a path that leaves the project is not taken for one in it.
+local function normal(path)
+  path = tostring(path):gsub("\\", "/")
+  local lead = path:match("^/") or path:match("^%a:/") or ""
+  local parts = {}
+  for part in path:sub(#lead + 1):gmatch("[^/]+") do
+    if part == ".." and #parts > 0 and parts[#parts] ~= ".." then
+      parts[#parts] = nil
+    elseif part ~= "." then
+      parts[#parts + 1] = part
+    end
+  end
+  return lead .. table.concat(parts, "/")
+end
+
+local function bringIn(path)
+  path = normal(path)
+  local folder = normal(assert(P).folder) .. "/"
+  if not path:match("^/") and not path:match("^%a:/") then
+    return path
+  elseif path:sub(1, #folder) == folder then
+    return path:sub(#folder + 1)
+  end
+  local name = path:match("([^/]+)$")
+  local info = name and fs.info(path)
+  if not info or info.type ~= "file" then
+    say(path .. " is not a file.")
+    return nil
+  end
+  local dir = KIND_FOLDERS[(name:match("%.(%w+)$") or ""):lower()] or ""
+  local base, ending = name:match("^(.+)(%.[^.]*)$")
+  base, ending = base or name, base and ending or ""
+  local to, n = dir .. name, 1
+  local bytes = contents(path)
+  while fs.info(absolute(to)) do
+    -- the same file is there already: it is used
+    if contents(absolute(to)) == bytes then
+      say(("%s is in the project already, as %s"):format(path, to))
+      return to
+    end
+    n = n + 1
+    to = ("%s%s %d%s"):format(dir, base, n, ending)
+  end
+  local answer = ecs.dialog.showMessage("Copy into the project",
+    ("%s is outside the project, and a game reads only its own folder. Copy it into the project as %s?"):format(path, to), { "Copy", "Cancel" })
+  if answer ~= 1 then
+    return nil
+  end
+  if dir ~= "" then
+    fs.makeFolder(absolute(dir))
+  end
+  local ok, why = fs.copy(path, absolute(to))
+  if not ok then
+    say(("%s could not be copied: %s"):format(path, tostring(why)))
+    return nil
+  end
+  say(("%s is copied into the project as %s"):format(path, to))
+  return to
+end
+
 local function isNodeFile(path)
   return path:match("^nodes/.+%.lua$") ~= nil
 end
@@ -1785,6 +1865,9 @@ local functions = {
   end },
   recent = { sig = "value()", doc = "The folders of the projects opened last", fn = function()
     return recent
+  end },
+  bringIn = { sig = "value(string path)", doc = "A file's path in the project: a file from outside it is copied in, by its kind, after asking\n@param path A path in the project or anywhere\n@return The path from the project's folder, or nil when the user declines", fn = function(path)
+    return P and bringIn(path) or nil
   end },
   folder = { sig = "string()", doc = "The open project's folder, ending with a slash, or an empty text", fn = function()
     return P and P.folder or ""

@@ -54,6 +54,10 @@ return {
     end
     test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
+    -- the tool's menu is short: what concerns the whole tool, and no export
+    test.match(test.setting("ecs.toolMenu"), {
+      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop", "settings.open", "panels.open",
+    })
     -- the preset puts the asset viewer under the inspector, in the same column
     local inspector, viewer = test.rect(panelOf(test, "onlr.inspector")), test.rect(panelOf(test, "viewer.file"))
     check(math.abs(viewer.x - inspector.x) < 2 and viewer.y > inspector.y + inspector.height - 2, "the asset viewer is under the inspector")
@@ -224,6 +228,25 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the drop is undone")
+
+    -- an image from outside the project is copied in first, into images/, after asking (DESIGN 13.4)
+    local outside = folder .. "../gem.png"
+    local copy = assert(io.open(outside, "wb"))
+    copy:write(read("images/coin.png"))
+    copy:close()
+    os.remove("images/gem.png")
+    test.dropFiles(x, y, { outside })
+    test.match(test.dialog(), { title = "Copy into the project" }, "a file from outside asks")
+    test.key("Return")
+    test.wait(0.3)
+    save()
+    check(read("images/gem.png") == read("images/coin.png"), "the copy is in images/")
+    check(read("nodes/start.lua"):find('image = "images/gem.png"'), "and the sprite names it:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    os.remove("images/gem.png")
+    os.remove(outside)
+    check(read("nodes/start.lua") == start, "the drop from outside is undone")
 
     -- Ctrl+D duplicates the chosen node: the copy has a new id, and names what the first one names
     x, y = at(70, 70)
