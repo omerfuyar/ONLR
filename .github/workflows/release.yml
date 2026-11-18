@@ -1,0 +1,78 @@
+# Makes a release from a version tag on main, such as v0.1.0: ONLR's archive for each platform (DESIGN.md, section 15.3),
+# and checksums. The release is a draft, so its description can be checked before it is published.
+# Run by hand, it makes the same archives without a release, to try them.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # the release of OpenECS that ONLR's archive holds
+  OPENECS_VERSION: 0.7.0
+
+jobs:
+  package:
+    name: Package
+    runs-on: ubuntu-24.04
+    steps:
+      # LÖVE's definitions, from LuaCATS, and shuild, which fills the gallery's packages, are submodules
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # the version is the preset's, which the tag must name
+      - name: Find the version
+        run: |
+          version=$(sed -n 's/^  version = "\(.*\)",$/\1/p' preset.lua)
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "The tag $GITHUB_REF_NAME does not name preset.lua's version, $version."
+            exit 1
+          fi
+
+      - name: Package
+        run: |
+          .github/scripts/package.sh "$VERSION" "$OPENECS_VERSION" linux-x86_64
+          .github/scripts/package.sh "$VERSION" "$OPENECS_VERSION" windows-x86_64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onlr
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+
+  release:
+    name: Draft release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: onlr
+          path: dist
+
+      - name: Write the checksums
+        run: cd dist && sha256sum *.tar.gz *.zip > SHA256SUMS
+
+      # the description is .github/release-notes/TAG.md; a version below 1.0.0, or with a suffix such as -rc.1, is a pre-release
+      - name: Make the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          notes=".github/release-notes/$tag.md"
+          test -f "$notes" || { echo "$notes is missing."; exit 1; }
+          prerelease=""
+          case "$tag" in v0.* | *-*) prerelease="--prerelease" ;; esac
+          gh release create "$tag" dist/* --draft $prerelease --title "ONLR ${tag#v}" --notes-file "$notes"

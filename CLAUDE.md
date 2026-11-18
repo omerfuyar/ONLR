@@ -21,7 +21,7 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | `shuild.c`                 | The build script: it puts the engine into the samples, runs the tests and starts the editor (DESIGN.md, section 16). |
 | `dependencies/`            | Submodules: shuild and shu, which `shuild.c` builds with, and love2d, LÖVE's definitions from LuaCATS (DESIGN.md, section 4.3). |
 | `.clang-format`            | How clang-format formats `shuild.c`, as OpenECS's does.                                        |
-| `.github/`                 | Checks, rulesets, and the scripts that agents and CI run: `check.sh` and `test.sh`. `scripts/assets/` makes the samples' images and sounds. |
+| `.github/`                 | Checks, the release workflow, rulesets, the releases' descriptions in `release-notes/`, and the scripts that agents and CI run: `check.sh`, `test.sh` and `package.sh`, which makes ONLR's archive (DESIGN.md, section 15.3). `scripts/assets/` makes the samples' images and sounds. |
 | `.claude/`                 | Claude Code's settings, its hook for cloud sessions, and `notes.md`: why the tools are set up as they are. |
 | `.luarc.json`              | How the Lua language server checks the repository's Lua files.                                 |
 | `LICENSE.md`               | The license, zlib.                                                                             |
@@ -66,4 +66,4 @@ The plan is done, and the implementation has started. Build it in small mileston
 - Name your branch as OpenECS's file says, such as `docs/plan`, also when a session's own instructions name a generated branch. The owner wants proper names in pull requests.
 - There are two long-lived branches. `dev` is the default, where work is merged. `main` holds what is stable.
 - Merge your own work into `dev`, as the owner allowed. Open the pull request from `dev` into `main` when the owner asks; the owner merges it.
-- No releases are planned, so nothing here follows OpenECS's releases or its release descriptions.
+- Releases follow OpenECS's: a tag on `main`, a draft release that a workflow makes, and a description in `.github/release-notes/`, written as OpenECS's are. DESIGN 17 says how. Each release holds one release of OpenECS; tag only when the owner asks, and leave publishing the draft to the owner.

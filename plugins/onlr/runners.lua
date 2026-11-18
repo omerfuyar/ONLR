@@ -8,6 +8,7 @@ local project = require("project")
 local console = require("console")
 local link = require("link")
 local hints = require("hints")
+local runtimes = require("runtimes")
 
 local runners = {}
 
@@ -54,17 +55,10 @@ ecs.event.declare("running", "The game sent the running tree, or the watched nod
 ecs.setting.declare({
   name = "love",
   type = "string",
-  description = "LÖVE's executable, which runs the preview and the game; when empty, the variable LOVE names it, or else it is love",
+  description = "LÖVE's executable, which runs the preview and the game; when empty, the variable LOVE names it, or else the one of ONLR's archive, or else love",
   default = "",
 })
 
-local function lovePath()
-  local path = ecs.setting.get("onlr.love")
-  if type(path) == "string" and path ~= "" then
-    return path
-  end
-  return os.getenv("LOVE") or "love"
-end
 
 local isWindows = package.config:sub(1, 1) == "\\"
 
@@ -94,7 +88,7 @@ local function start(mode, startPath)
   if mode == "preview" and not isWindows then
     command = { "env", "SDL_VIDEODRIVER=offscreen" }
   end
-  command[#command + 1] = lovePath()
+  command[#command + 1] = runtimes.love()
   command[#command + 1] = folder:gsub("/$", "")
   command[#command + 1] = "--onlr-runner=" .. project.home() .. "plugins/onlr/runner"
   command[#command + 1] = "--onlr-mode=" .. mode

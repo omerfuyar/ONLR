@@ -41,6 +41,28 @@ end
 
 local isWindows = package.config:sub(1, 1) == "\\"
 
+-- The LÖVE that ONLR's archive holds, in love/ beside plugins/ (DESIGN 15.3): its AppRun on Linux, which finds the
+-- AppImage's libraries, and love.exe on Windows.
+local ownLove = ecs.plugin.folder .. "../../love/" .. (isWindows and "love.exe" or "AppRun")
+
+---The LÖVE that runs the preview and the game (DESIGN 15.2): the one that the setting onlr.love names, or else the
+---variable LOVE, or else the one of ONLR's archive, or else love, as the system finds it.
+---@return string
+function runtimes.love()
+  local path = ecs.setting.get("onlr.love")
+  if type(path) == "string" and path ~= "" then
+    return path
+  end
+  path = os.getenv("LOVE")
+  if path and path ~= "" then
+    return path
+  end
+  if fs.info(ownLove) then
+    return ownLove
+  end
+  return "love"
+end
+
 -- The folder where the runtimes are kept: the user's data folder.
 local function dataFolder()
   local base
@@ -67,14 +89,13 @@ local function isRuntime(folder, platform)
   return fs.info(folder .. program) ~= nil
 end
 
--- On Linux, the LÖVE that runs the preview and the game is a runtime when it is an AppImage's contents, as ONLR's archive holds it.
+-- The LÖVE that runs the preview and the game is the runtime of the editor's own platform when its folder holds one, as
+-- ONLR's archive does: an AppImage's contents on Linux, LÖVE's own folder on Windows.
 local function runnersRuntime()
+  local love = runtimes.love()
   if isWindows then
-    return nil
-  end
-  local love = ecs.setting.get("onlr.love")
-  if type(love) ~= "string" or love == "" then
-    love = os.getenv("LOVE") or "love"
+    local folder = love:gsub("\\", "/"):match("^(.*/)[^/]*$")
+    return folder and isRuntime(folder, "windows-x86_64") and folder or nil
   end
   local out = process.run({ "sh", "-c", 'readlink -f "$(command -v "$0")"', love }, "", "")
   local folder = out and out:match("^(.*/)[^/\n]*\n?$")
@@ -105,7 +126,7 @@ function runtimes.get(platform, done)
   if isRuntime(kept, platform) then
     return done(kept)
   end
-  if platform == "linux-x86_64" then
+  if platform == (isWindows and "windows-x86_64" or "linux-x86_64") then
     local own = runnersRuntime()
     if own then
       return done(own)
