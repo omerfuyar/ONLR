@@ -1350,7 +1350,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 13.2 Projects
 
 - ONLR's preset gives OpenECS an `open` function (OpenECS DESIGN 13.6), so a project's folder named on the command line opens.
-- The menu has New Project, which asks for an empty folder, and Open Project, which asks for a folder. The project settings panel has both too, and while no project is open it lists the projects opened last.
+- The tool's menu, which a right click on the title bar opens, holds only what concerns the whole tool: New Project, which asks for an empty folder, Open Project, which asks for a folder, Save, Play, Play This File, Stop, the settings and the panels. The history, Pause and Step are in the tools panel and on keys, and export in its panel. The project settings panel has both too, and while no project is open it lists the projects opened last.
 - The editor's session keeps the open project's folder, so the editor starts with the project it was closed with.
 - The editor holds one project at a time. Opening another closes the one that is open, after asking about unsaved work.
 - A new project holds the files that section 3.1 says the editor writes, the engine in `packages/onlr/`, empty `components/` and `shared/` folders, and `nodes/start.lua`, an empty node. Its manifest names that file as the start node, the folder's name as the game's `name` and `id`, and a window of 1920 by 1080, the size of most screens. On a screen of that size the window does not fit beside the title bar and the task bar, so the system shrinks it or lets it pass the screen's edge; the user makes it smaller, `resizable` or `fullscreen` in the project settings.

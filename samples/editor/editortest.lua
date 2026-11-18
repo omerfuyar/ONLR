@@ -54,6 +54,10 @@ return {
     end
     test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
+    -- the tool's menu is short: what concerns the whole tool, and no export
+    test.match(test.setting("ecs.toolMenu"), {
+      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop", "settings.open", "panels.open",
+    })
     -- the preset puts the asset viewer under the inspector, in the same column
     local inspector, viewer = test.rect(panelOf(test, "onlr.inspector")), test.rect(panelOf(test, "viewer.file"))
     check(math.abs(viewer.x - inspector.x) < 2 and viewer.y > inspector.y + inspector.height - 2, "the asset viewer is under the inspector")
