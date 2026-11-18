@@ -29,8 +29,10 @@ return {
       components = {
         onlr = {
           camera = {
-            posX = 640,
-            posY = 360,
+            view = {
+              posX = 640,
+              posY = 360,
+            },
           },
         },
       },

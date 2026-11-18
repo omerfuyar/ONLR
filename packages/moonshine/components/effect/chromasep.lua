@@ -1,10 +1,10 @@
--- The component type moonshine.chromasep: moonshine's effect chromasep. Pulls red and blue apart, as a cheap lens does.
+-- The component type moonshine.effect.chromasep: moonshine's effect chromasep. Pulls red and blue apart, as a cheap lens does.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.chromasep : onlr.Component
+---@class moonshine.effect.chromasep : onlr.Component
 local Effect = {}
 
 Effect.angle = onlr.property.number(0, { description = "The direction, in radians" })

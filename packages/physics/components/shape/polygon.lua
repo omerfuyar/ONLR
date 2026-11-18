@@ -1,16 +1,16 @@
--- The component type physics.polygon: a convex polygon that collides, fixed to the nearest physics.body on its node or
+-- The component type physics.shape.polygon: a convex polygon that collides, fixed to the nearest physics.body on its node or
 -- above it. Box2D takes 3 to 8 corners that make a convex polygon; a polygon of fewer corners, as a new one is, collides
 -- with nothing until the user adds them, and any other is an error that names the node.
 local onlr = require("onlr")
 local shape = require("physics.shape")
 
----@class physics.polygon : onlr.Component
+---@class physics.shape.polygon : onlr.Component
 ---@field owner physics.body? the body that it is fixed to
 ---@field fixture love.Fixture?
 local Polygon = {}
 
 Polygon.points = onlr.property.list(onlr.property.vector(), { description = "Its corners in the node's space: 3 to 8, making a convex polygon" })
-shape.declare(Polygon, "physics.polygon")
+shape.declare(Polygon, "physics.shape.polygon")
 
 -- Its corners in the body's space; nil, so no fixture, while it has fewer than 3.
 function Polygon:_outline(toBody)
@@ -18,7 +18,7 @@ function Polygon:_outline(toBody)
     return nil
   end
   if #self.points > 8 then
-    error(("physics.polygon on %s has %d corners, and Box2D takes at most 8"):format(self.node.name, #self.points), 0)
+    error(("physics.shape.polygon on %s has %d corners, and Box2D takes at most 8"):format(self.node.name, #self.points), 0)
   end
   local flat = {}
   for _, point in ipairs(self.points) do
@@ -28,7 +28,7 @@ function Polygon:_outline(toBody)
   end
   local ok, made = pcall(love.physics.newPolygonShape, flat)
   if not ok then
-    error(("physics.polygon on %s is not a convex polygon that Box2D takes: %s"):format(self.node.name, tostring(made)), 0)
+    error(("physics.shape.polygon on %s is not a convex polygon that Box2D takes: %s"):format(self.node.name, tostring(made)), 0)
   end
   return made
 end

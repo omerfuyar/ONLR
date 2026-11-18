@@ -1,10 +1,10 @@
--- The component type moonshine.vignette: moonshine's effect vignette. Darkens the screen's edges.
+-- The component type moonshine.effect.vignette: moonshine's effect vignette. Darkens the screen's edges.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.vignette : onlr.Component
+---@class moonshine.effect.vignette : onlr.Component
 local Effect = {}
 
 Effect.radius = onlr.property.number(0.8, { min = 0, description = "Where the darkening starts, from the middle: 1 is the screen's edge" })

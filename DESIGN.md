@@ -598,7 +598,7 @@ Each file of the engine holds one thing. The engine is laid out as a package is 
 | `library/property.lua`                              | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
 | `library/data.lua`                                  | Reading data files (4), and loading the files that properties name.                                                                                        |
 | `library/formats.lua`                               | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
-| `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua` and `camera.lua`.                                                   |
+| `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua`, and the camera's in `camera/`: `view.lua`, `follow.lua`, `limits.lua` and `shake.lua`.                                                   |
 | `license.txt`                                       | The engine's licence, which an export holds (14.1).                                                                                                        |
 
 - The engine is in `packages/` as a package is, with its components in `components/`. So the editor finds the engine's components and a package's in one way. ONLR's repository keeps it so too: its `packages/` holds the engine and the packages that ONLR ships, with the same files that a project holds. Its source carries its own definitions (4.3), so it needs no definitions file.
@@ -700,14 +700,17 @@ return {
 
 ## 10. The engine's components
 
-The engine has four component types. They are written as scripts are, with the functions of section 7 and LÖVE alone.
+The engine has seven component types: three that draw, and the camera's four in the folder `camera/`: the view, and three that help it. A folder of types (6.1) keeps a family together, so `onlr.camera.follow` is found beside `onlr.camera.view`. They are written as scripts are, with the functions of section 7 and LÖVE alone.
 
 | Type          | Is                                                                                                  |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `onlr.sprite` | An image, or a part of one.                                                                         |
 | `onlr.text`   | A text in a font.                                                                                   |
 | `onlr.shape`  | A rectangle, a circle, a line or a polygon, filled or as an outline.                                |
-| `onlr.camera` | A view: it draws its node and all under it as a group (5), moved, turned and zoomed so that the middle of its screen shows its point. |
+| `onlr.camera.view` | A view: it draws its node and all under it as a group (5), moved, turned and zoomed so that the middle of its screen shows its point. |
+| `onlr.camera.follow` | Moves its node's camera to follow a node, smoothly, with a deadzone.                          |
+| `onlr.camera.limits` | Keeps what its node's camera shows inside a rectangle, such as a level's edges.               |
+| `onlr.camera.shake`  | Shakes its node's camera when a script asks, and the shake fades.                             |
 
 - A camera shows only what is under its node. So a level puts its world under a node with the camera, and what stays on the screen, such as a score, beside that node. The score draws at the window's pixels, and the camera does not move it.
 - What no camera holds draws as plain LÖVE does, with 0, 0 at the window's top left.
@@ -736,12 +739,32 @@ Their properties use LÖVE's names wherever LÖVE has one:
 |               | `points`          | `list` of `vector`                            |            | A line's points, or a polygon's corners, in the node's space.                                    |
 |               | `lineWidth`       | `number`                                      | 1          | The width of a line and of an outline, as `love.graphics.setLineWidth`.                          |
 |               | `color`           | `color`                                       | white      | The shape's colour.                                                                              |
-| `onlr.camera` | `posX`, `posY`    | `number`                                      | 0          | The point, in its node's space, that the middle of its screen shows.                             |
+| `onlr.camera.view` | `posX`, `posY`    | `number`                                      | 0          | The point, in its node's space, that the middle of its screen shows.                             |
 |               | `rot`             | `number`                                      | 0          | Its angle, clockwise. What it shows turns the other way.                                         |
 |               | `zoom`            | `number`                                      | 1          | How large the camera shows its nodes: 2 is twice as large.                                       |
 |               | `width`, `height` | `number`                                      | 0          | The size of its screen, in pixels. 0 is the window's.                                            |
+| `onlr.camera.follow` | `target`    | `node`                                        |            | The node that the camera follows. A script may set it.                                           |
+|               | `offset`          | `vector`                                      | 0, 0       | Added to the target's place: the camera shows a point ahead of it or above it.                   |
+|               | `smoothing`       | `number`                                      | 0.1        | About the seconds that the camera takes to catch up. 0 keeps it on the target.                   |
+|               | `deadzone`        | `vector`                                      | 0, 0       | A rectangle around the camera's point in which the target moves and the camera does not.         |
+| `onlr.camera.limits` | `x`, `y`, `width`, `height` | `number`                    | 0, 0, 640, 360 | The rectangle, in the camera's node's space, that all the camera shows stays in.            |
+| `onlr.camera.shake` | `amplitude`  | `vector`                                      | 8, 8       | The farthest it moves, across and down.                                                          |
+|               | `angle`           | `number`                                      | 0.05       | The farthest it turns, in radians.                                                               |
+|               | `frequency`       | `number`                                      | 15         | How fast it shakes.                                                                              |
+|               | `decay`           | `number`                                      | 1.5        | How much of a shake of 1 fades in a second.                                                      |
 
 - Each has `bounds` and `drawEditor` (6.3). A camera's `drawEditor` draws the frame of what it shows, in blue and 3 pixels wide, named "Camera" inside its top left, at the same size at any zoom.
+- The camera's helpers are components beside `onlr.camera.view` on its node, which need it (6.6), and a game takes those that it wants. They change the camera's own properties, so a script can do all that they do, and they leave it to one when it sets the camera itself.
+  - `onlr.camera.follow` moves the camera's `posX` and `posY` in `lateUpdate` (6.4), after the scripts and the physics moved its target. Its smoothing is the same at any frame rate. `snap()` puts the camera on its target at once, as when the follow starts, a level begins, or the player is put elsewhere.
+  - `onlr.camera.limits` moves the camera's point so that all it shows, at its zoom and its angle, is inside its rectangle; a view larger than the rectangle is centred on it. It does so in `lateUpdate`, and `clamp()` does it at once: the follow calls it after each move, so the two agree whichever updates first. In the node view it draws its rectangle, orange.
+  - `onlr.camera.shake` shakes when a script calls `shake(amount)`: 0.3 is a bump, and 1, the most, an explosion. Shakes add up and fade. The shake grows as the square of the amount, and moves by LÖVE's noise, smooth from frame to frame. It sets the camera's `shakeX`, `shakeY` and `shakeRot`, which are not properties: the camera adds them to its point and its angle when it draws, and nowhere else, so a shake does not move the camera's point that the follow and the limits set.
+  - A script reaches them by the folder: `self.node.components.onlr.camera.follow`, and the view as `components.onlr.camera.view`.
+  - `camera:getSize()` gives the size of its screen, which the limits use; divided by its zoom, it is the size of what it shows.
+- The limits of the camera's helpers, as they are now:
+  - A target is a node of the same node file, as every node property is (6.2). A target of another file, such as a player that the level spawns, is set by a script.
+  - A shake can show past the limits by its amplitude.
+  - `camera:toWorld` and `toScreen` take no shake, so a click during a shake is off by it.
+  - The follow and the limits run in `lateUpdate`; a script that sets the camera in its own `lateUpdate` after them is not limited until the next frame.
 
 ## 11. Libraries
 
@@ -911,8 +934,8 @@ A package of LÖVE's own system follows 11.3 too. The first is `physics`, which 
 | ----------------- | ------------------------------------ | -------------------------------------------------------------------------------------------- |
 | `physics.world`   | The root                             | The root's one world, with its gravity, as `bump.world` is (11.3). Each root has its own.    |
 | `physics.body`    | A node                               | A body: static, dynamic or kinematic. While the game runs, a dynamic body moves its node.   |
-| `physics.box`, `physics.circle`, `physics.polygon` | The body's node, or a node under it | A shape with its friction, bounce, density and whether it is a sensor, fixed to the nearest body above it. |
-| `physics.hinge`, `physics.weld`, `physics.distance`, `physics.rope` | The body's node, or a node under it | A joint that holds the nearest body above it to the body that its `other` names, at its node's place. |
+| `physics.shape.box`, `.circle`, `.polygon` | The body's node, or a node under it | A shape with its friction, bounce, density and whether it is a sensor, fixed to the nearest body above it. |
+| `physics.joint.hinge`, `.weld`, `.distance`, `.rope` | The body's node, or a node under it | A joint that holds the nearest body above it to the body that its `other` names, at its node's place. |
 
 - A node has one component of each type (5), so a body of many shapes holds them on nodes under its own. The user builds a body's outline by placing nodes in the editor. A shape takes its node's place, angle and scale in the body when the body starts; a box is centred on its node's place plus its `center`, since a body turns around its node's place.
 - The world steps in its `fixedUpdate` (6.3). Before each step, each body whose node a script moved or turned goes there; after it, each body that is not static sets its node's place and `rot`. `meter` is how many pixels are a meter, which love.physics is told when the world is made, and `gravity` is in pixels a second, each second.
@@ -1088,9 +1111,9 @@ end
 
 ### 11.11 Screen effects
 
-`moonshine` wraps vrld's moonshine, a chain of shaders that a scene is drawn through: blur, glow, a vignette, a CRT's glass and others. `moonshine.chain` is a group (5) that draws its node and all under it through the effects. Each effect is a component type of its own beside it on the same node, named as moonshine names the effect, whose properties are the effect's parameters with moonshine's defaults: `moonshine.vignette`, `crt`, `scanlines`, `glow`, `gaussianblur`, `fastgaussianblur`, `boxblur`, `chromasep`, `desaturate`, `pixelate`, `posterize`, `filmgrain`, `colorgradesimple`, `godsray`, `dmg` and `sketch`. Each needs the chain (6.6).
+`moonshine` wraps vrld's moonshine, a chain of shaders that a scene is drawn through: blur, glow, a vignette, a CRT's glass and others. `moonshine.chain` is a group (5) that draws its node and all under it through the effects. Each effect is a component type of its own beside it on the same node, in the folder `effect/` and named as moonshine names the effect, whose properties are the effect's parameters with moonshine's defaults: `moonshine.effect.vignette`, `crt`, `scanlines`, `glow`, `gaussianblur`, `fastgaussianblur`, `boxblur`, `chromasep`, `desaturate`, `pixelate`, `posterize`, `filmgrain`, `colorgradesimple`, `godsray`, `dmg` and `sketch`. Each needs the chain (6.6).
 
-- The effects apply in their order on the node. A game composes its look by adding, removing and ordering components, as it does for anything else.
+- A node's components run in the order of their names (5), not in an order that the user gives them, so the chain orders its effects itself: its property `order` lists the effects' names, such as `pixelate` then `crt`, in the order they apply, and those it does not name apply after, by their names. A game composes its look by adding and removing components, as it does for anything else, and by `order`. A script that changes `order` makes the chain anew.
 - An effect whose component is turned off is skipped. A property that a script or a tween changes, such as a vignette's `opacity` that flux moves when the player is hurt (11.8), reaches the effect in the next frame: the chain sends each parameter that changed, before it draws.
 - An effect that joins or leaves the node makes the chain anew.
 - The chain draws into canvases of the size of what it draws into: the window, or push's canvas under a `push.screen` (11.10). It draws its nodes with the drawing's place, as a camera above it set it, and its result with none, so they are not moved twice.

@@ -1,9 +1,12 @@
--- The component type onlr.camera: a view (DESIGN 10).
+-- The component type onlr.camera.view: a view (DESIGN 10).
 -- It draws its node and all under it as a group, moved, turned and zoomed so that the middle of its screen,
 -- the window by default, shows its point. What is outside its node, such as a score, it does not move.
 local onlr = require("onlr")
 
----@class onlr.camera : onlr.Component
+---@class onlr.camera.view : onlr.Component
+---@field shakeX number? added to its point when it draws, and to nothing else: onlr.camera.shake sets it
+---@field shakeY number?
+---@field shakeRot number? added to its angle when it draws
 local Camera = {}
 
 -- Its own place, not its node's: the node's place moves the world under it.
@@ -26,6 +29,12 @@ local function screen(self)
     h = love.graphics.getHeight()
   end
   return w, h
+end
+
+-- The size of its screen, in pixels: its width and height, or the window's. Divided by zoom, it is the size of what it shows.
+---@return number width, number height
+function Camera:getSize()
+  return screen(self)
 end
 
 -- Turns a point of the camera's screen into the point of the world that the camera shows there,
@@ -56,6 +65,7 @@ local view
 
 -- The engine calls it in place of drawing the group, and gives it draw, which draws the group.
 -- The nodes draw at their places in the world, so the view first takes the camera's node's place off.
+-- A shake moves only the drawing: toWorld and toScreen, and the camera's own point, stay still.
 -- In the node view it is not called, so the camera does not move the view.
 ---@param draw fun()
 function Camera:drawTree(draw)
@@ -66,9 +76,9 @@ function Camera:drawTree(draw)
   view:setMatrix(d / det, -c / det, 0, (c * ty - d * tx) / det, -b / det, a / det, 0, (b * tx - a * ty) / det, 0, 0, 1, 0, 0, 0, 0, 1)
   love.graphics.push()
   love.graphics.translate(w / 2, h / 2)
-  love.graphics.rotate(-self.rot)
+  love.graphics.rotate(-(self.rot + (self.shakeRot or 0)))
   love.graphics.scale(self.zoom)
-  love.graphics.translate(-self.posX, -self.posY)
+  love.graphics.translate(-(self.posX + (self.shakeX or 0)), -(self.posY + (self.shakeY or 0)))
   love.graphics.applyTransform(view)
   draw()
   love.graphics.pop()

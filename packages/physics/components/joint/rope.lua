@@ -1,9 +1,9 @@
--- The component type physics.rope: Box2D's rope joint. Its node's place and a point of the other body come no further
+-- The component type physics.joint.rope: Box2D's rope joint. Its node's place and a point of the other body come no further
 -- apart than its length, and may come closer, as a rope does.
 local onlr = require("onlr")
 local joint = require("physics.joint")
 
----@class physics.rope : onlr.Component
+---@class physics.joint.rope : onlr.Component
 ---@field other physics.body? the body that it joins to its own
 ---@field collide boolean
 ---@field joint love.RopeJoint?
@@ -11,7 +11,7 @@ local Rope = {}
 
 Rope.otherAnchor = onlr.property.vector(0, 0, { description = "The point of the other body that it holds, in its node's space" })
 Rope.length = onlr.property.number(0, { min = 0, description = "The longest it gets, in pixels: 0 is as far as they were when joined" })
-joint.declare(Rope, "physics.rope")
+joint.declare(Rope, "physics.joint.rope")
 
 function Rope:_make(a, b, x, y)
   local bx, by = self.other.node:toWorld(self.otherAnchor.x, self.otherAnchor.y)

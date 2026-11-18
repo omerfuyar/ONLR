@@ -31,7 +31,7 @@ end
 
 ---Gives a shape's type the properties and functions that every shape has.
 ---@param Type table
----@param name string the type's name, such as "physics.box"
+---@param name string the type's name, such as "physics.shape.box"
 function shape.declare(Type, name)
   Type.friction = onlr.property.number(0.2, { min = 0, description = "How much it holds what slides on it: 0 is ice" })
   Type.bounce = onlr.property.number(0, { min = 0, description = "How much it bounces: 1 keeps all its speed" })

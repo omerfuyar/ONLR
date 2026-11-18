@@ -1,10 +1,10 @@
--- The component type moonshine.scanlines: moonshine's effect scanlines. Draws lines across the screen, as an old tube does.
+-- The component type moonshine.effect.scanlines: moonshine's effect scanlines. Draws lines across the screen, as an old tube does.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.scanlines : onlr.Component
+---@class moonshine.effect.scanlines : onlr.Component
 local Effect = {}
 
 Effect.width = onlr.property.number(2, { min = 0, description = "The space of a line, in pixels" })

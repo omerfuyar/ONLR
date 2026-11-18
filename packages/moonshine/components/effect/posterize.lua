@@ -1,10 +1,10 @@
--- The component type moonshine.posterize: moonshine's effect posterize. Draws with fewer colours.
+-- The component type moonshine.effect.posterize: moonshine's effect posterize. Draws with fewer colours.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.posterize : onlr.Component
+---@class moonshine.effect.posterize : onlr.Component
 local Effect = {}
 
 Effect.num_bands = onlr.property.integer(3, { min = 1, label = "Num bands", description = "The steps of each of hue, saturation and value" })

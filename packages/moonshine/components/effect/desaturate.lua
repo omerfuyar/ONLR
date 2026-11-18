@@ -1,10 +1,10 @@
--- The component type moonshine.desaturate: moonshine's effect desaturate. Takes the colour out, toward a tint.
+-- The component type moonshine.effect.desaturate: moonshine's effect desaturate. Takes the colour out, toward a tint.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.desaturate : onlr.Component
+---@class moonshine.effect.desaturate : onlr.Component
 local Effect = {}
 
 Effect.tint = onlr.property.color({ 1, 1, 1, 1 }, { description = "The colour of grey" })

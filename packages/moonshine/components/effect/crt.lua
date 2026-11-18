@@ -1,10 +1,10 @@
--- The component type moonshine.crt: moonshine's effect crt. Bends the screen as an old tube's glass.
+-- The component type moonshine.effect.crt: moonshine's effect crt. Bends the screen as an old tube's glass.
 -- It goes beside moonshine.chain on its node, and its properties are the effect's parameters, named as moonshine
 -- names them (DESIGN 11.11).
 local onlr = require("onlr")
 local effect = require("moonshine.effect")
 
----@class moonshine.crt : onlr.Component
+---@class moonshine.effect.crt : onlr.Component
 local Effect = {}
 
 Effect.distortionFactor = onlr.property.vector(1.06, 1.065, { description = "How much it bends across and down: 1 is flat" })
