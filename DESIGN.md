@@ -1068,6 +1068,24 @@ end
   - A joystick is chosen by the order of connecting, not by its name or its id.
   - The inspector takes the sources as text. It does not listen for a key to bind.
 
+### 11.10 Scaling to the window
+
+`push` wraps Ulydev's push, which draws a game at a fixed size, such as 320 by 180, and scales it to the window, with bars where the window's shape differs. Its one type, `push.screen`, is a group (5): on the top node, it holds the whole game, so every root draws at the game's size. The manifest's `window` stays the window's size, and the screen's `width` and `height` are the game's.
+
+- `pixelPerfect` scales by whole numbers only, so each pixel of the game is a square of the window's, as pixel art needs; `stretched` fills the window with no bars; `borderColor` is the bars' colour. A game of pixel art also sets the manifest's default filter to `nearest` (3.2), so push's canvas is not blurred when it is scaled.
+- A place in the window, such as the mouse's, is not a place in the game: `screen:toGame(x, y)` turns it into one, or nil on a bar, and `toReal` turns it back. So a click under a camera is `camera:toWorld(screen:toGame(love.mouse.getPosition()))`.
+- A camera under the screen names the game's size as its own, in its `width` and `height` (10). Without them it takes the window's, and its middle is off.
+- The window's new size reaches the component as LÖVE's event `resize` (6.3).
+- push is one table for the whole game, so a game has one screen: a second that starts to run while one runs is an error that names the first one's node.
+- In the node view, the screen draws its frame, green and named "Screen", as a camera draws its own (10). The window's grey frame is the manifest's window, which the game is scaled into.
+- `get()` gives push, for its own functions, such as `setShader`, which draws the scaled game through a shader at the window's size.
+- The limits, as they are now:
+  - push sets the window's mode when it is set up. The component gives it the window's own size and flags, so the window stays as the manifest made it, but LÖVE may make the window anew there.
+  - push sets LÖVE's background colour to `borderColor` each frame. So where nothing draws, inside the game too, the window shows the bars' colour.
+  - What `love.draw` draws, after the nodes (8.1), is at the window's pixels and is not scaled.
+  - Everything under the screen draws at the game's size, text too. A game that wants text at the window's size draws it outside the screen, or in `love.draw`.
+  - push's way without a canvas, which scales the drawing and cuts it with a scissor, is not offered: the screen always draws through push's canvas.
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1312,7 +1330,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, and baton for `samples/input`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, baton for `samples/input`, and push for `samples/screen`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
