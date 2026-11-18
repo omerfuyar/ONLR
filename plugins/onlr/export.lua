@@ -279,12 +279,10 @@ ecs.panel.registerType({
     else
       children = {
         ui.text("The folder that exports are written to", { style = STYLES.heading }),
-        ui.row({ gap = 6 }, {
-          ui.field(tostring(project.setting("exportFolder") or ""), { id = "folder", grow = 1, tooltip = "The folder that exports go to; Return keeps it", onSubmit = function(text)
+        ui.path(tostring(project.setting("exportFolder") or ""), { id = "folder", stretch = true, dialog = "openFolder",
+          tooltip = "The folder that exports go to: Return keeps a typed one, and the button chooses one in the system's dialog", onSubmit = function(text)
             project.setSetting("exportFolder", text)
           end }),
-          ui.button("Choose", { id = "choose", tooltip = "Choose the folder in the system's dialog", onClick = chooseFolder }),
-        }),
         ui.button("Export the .love file", { id = "love", tooltip = "The game as one file, which LÖVE runs anywhere", onClick = exportLove }),
         ui.button("Export a Linux build", { id = "linux", tooltip = "The game with LÖVE, as an AppImage and a .tar.gz", onClick = exportLinux }),
         ui.button("Export a Windows build", { id = "windows", tooltip = "The game with LÖVE, as a folder and a .zip", onClick = exportWindows }),
