@@ -75,7 +75,7 @@ What the owner wants worked on, in this order.
   | Tile maps from Tiled | STI (built)          | `sti.map` on a node, which draws its layers where the node draws (DESIGN 11.7). Open: the limits that DESIGN 11.7 lists; tiles that collide, through STI's plugins for bump and Box2D tied to `bump.world` and `physics.world`; Tiled's objects made into nodes, such as a spawn point that is a node file's instance; and parallax. |
   | Tweens and timers    | flux and tick (built) | `flux.tweens` and `tick.timers` on a node, each a group of the library's own that ends with its node (DESIGN 11.8). tick, by flux's author, was chosen over a timer of ONLR's own and over hump's timer, which would bring hump's tweens beside flux. Open: the limits that DESIGN 11.8 lists. |
   | Input actions        | baton (built)        | `baton.input` on a node: its controls and pairs as properties, its joystick by number (DESIGN 11.9). Open: the limits that DESIGN 11.9 lists; the inspector listening for a key to bind. |
-  | Scaling to the window | push                | A group on the top node that draws the game at a fixed size and scales it to the window (DESIGN 5). |
+  | Scaling to the window | push (built)        | `push.screen`, a group on the top node that draws the game at a fixed size and scales it to the window (DESIGN 11.10). Open: the limits that DESIGN 11.10 lists; a camera under the screen could take the screen's size itself, without its `width` and `height`. |
   | Screen effects       | moonshine            | A group that draws its node and all under it through the effects.                                |
 
   Open for each: its properties, and a sample that tests it.
