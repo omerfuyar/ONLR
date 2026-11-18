@@ -34,17 +34,20 @@ local function u32(n)
   return u16(n % 65536) .. u16(math.floor(n / 65536))
 end
 
--- A WAV file of one channel, 16 bits, from a function that gives each sample from -1 to 1.
-local function wav(path, seconds, wave)
+-- A WAV file of 16 bits, from a function that gives each sample from -1 to 1: of one channel, or of two, the same.
+local function wav(path, seconds, wave, channels)
+  channels = channels or 1
   local rate = 11025
   local samples = {}
   for i = 0, math.floor(seconds * rate) - 1 do
     local value = math.max(-1, math.min(1, wave(i / rate)))
-    samples[#samples + 1] = u16(math.floor(value * 32767) % 65536)
+    for _ = 1, channels do
+      samples[#samples + 1] = u16(math.floor(value * 32767) % 65536)
+    end
   end
   local body = table.concat(samples)
-  write(path, "RIFF" .. u32(36 + #body) .. "WAVEfmt " .. u32(16) .. u16(1) .. u16(1) .. u32(rate) .. u32(rate * 2) .. u16(2) .. u16(16)
-    .. "data" .. u32(#body) .. body)
+  write(path, "RIFF" .. u32(36 + #body) .. "WAVEfmt " .. u32(16) .. u16(1) .. u16(channels) .. u32(rate) .. u32(rate * 2 * channels)
+    .. u16(2 * channels) .. u16(16) .. "data" .. u32(#body) .. body)
 end
 
 local function tone(frequency, seconds)
@@ -54,10 +57,14 @@ local function tone(frequency, seconds)
 end
 
 function love.load()
-  os.execute("mkdir -p samples/properties/images samples/properties/sounds samples/coinrun/images samples/coinrun/sounds samples/speed/images samples/loading/images samples/drawing/images samples/animation/images samples/tilemap/maps")
+  os.execute("mkdir -p samples/properties/images samples/properties/sounds samples/coinrun/images samples/coinrun/sounds samples/speed/images samples/loading/images samples/drawing/images samples/animation/images samples/tilemap/maps samples/audio/sounds")
 
   image("samples/properties/images/dot.png", 4, 4, { 1, 0, 0 })
   wav("samples/properties/sounds/beep.wav", 0.05, tone(880, 0.05))
+  wav("samples/audio/sounds/beep.wav", 0.1, tone(660, 0.1))
+  wav("samples/audio/sounds/hum.wav", 0.5, tone(110, 0.5))
+  wav("samples/audio/sounds/song.wav", 1, tone(330, 1))
+  wav("samples/audio/sounds/wide.wav", 0.2, tone(440, 0.2), 2)
 
   image("samples/loading/images/one.png", 2, 2, { 1, 0, 0 })
   image("samples/loading/images/two.png", 2, 2, { 0, 1, 0 })
