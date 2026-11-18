@@ -166,6 +166,7 @@ What the owner wants worked on, in this order.
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The core: a panel hears where dragged data is over it, so the nodes panel shows a line where a dragged node will land. While data is dragged, the core gives no panel the pointer's moves (OpenECS DESIGN 7.9).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
+- **The gallery has no test of the editor.** `samples/gallery` is tested in LÖVE only. An editor test can click and read the files the editor writes, but cannot read the nodes that the preview draws, so it cannot check that each room opens and shows in a node view. A function of the test that returns the preview's nodes, or a screenshot compared with a saved one, would let it.
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the runners were written on Linux.
 - **What the editor does not do yet.** Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
 - **The tests on Windows.** `shuild.c` runs them on Linux only: they need SDL's offscreen driver, and set variables as a POSIX shell does.
