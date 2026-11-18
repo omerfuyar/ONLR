@@ -322,6 +322,33 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the slider's drag is one change, undone")
 
+    -- a file's row is a path with a button for the system's dialog: a whole path in the project is kept from the project's
+    -- folder, and one outside it is refused (DESIGN 13.4); A's picture is below, after a scroll
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.wait(0.2)
+    test.wheel(inspect.x + 150, inspect.y + 400, -5)
+    test.wait(0.2)
+    test.click(inspect.x + 200, inspect.y + 542)
+    test.key("Ctrl+A")
+    test.text(os.getenv("PWD") .. "/images/coin.png")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua"):find('picture = "images/coin.png"'), "a whole path in the project is kept from its folder:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the path is undone")
+    test.click(inspect.x + 200, inspect.y + 542)
+    test.key("Ctrl+A")
+    test.text("/outside/coin.png")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua") == start, "a path outside the project is refused")
+    test.wheel(inspect.x + 150, inspect.y + 400, 5)
+    test.wait(0.2)
+
     -- F2 renames the chosen node in a field above the tree, and Return takes the name
     rx, ry = row(2)
     test.click(rx, ry)
