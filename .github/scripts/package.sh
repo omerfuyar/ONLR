@@ -58,7 +58,11 @@ fetch() {
 
 # OpenECS's release, checked against the hashes of its own SHA256SUMS
 base=https://github.com/omerfuyar/OpenECS/releases/download/v$openecs
-curl -sSfL -o "$downloads/openecs-$openecs-SHA256SUMS" "$base/SHA256SUMS"
+if ! curl -sSfL -o "$downloads/openecs-$openecs-SHA256SUMS" "$base/SHA256SUMS" 2> /dev/null; then
+    echo "OpenECS $openecs has no release to download from https://github.com/omerfuyar/OpenECS/releases/tag/v$openecs." >&2
+    echo "The archive is made once OpenECS $openecs is released." >&2
+    exit 1
+fi
 openecs_sum=$(grep " $openecs_file\$" "$downloads/openecs-$openecs-SHA256SUMS" | cut -d' ' -f1)
 if [ -z "$openecs_sum" ]; then
     echo "OpenECS $openecs's SHA256SUMS does not name $openecs_file." >&2
