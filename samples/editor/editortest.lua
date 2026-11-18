@@ -54,6 +54,10 @@ return {
     end
     test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
+    -- the tool's menu is short: what concerns the whole tool, and no export
+    test.match(test.setting("ecs.toolMenu"), {
+      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop", "settings.open", "panels.open",
+    })
     -- opening a project that lacks LÖVE's definitions, as the sample does, gives it them, for a code editor
     check(read(".onlr/love2d/love.lua"):find("---@class love", 1, true), "the project holds LÖVE's definitions")
 
