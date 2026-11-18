@@ -1153,6 +1153,35 @@ end
   - LÖVE's effects, such as reverb, and its filters have no property: a script sets them on `get()`.
   - Grouping sounds by kind, such as a volume for effects and one for music, as ripple does (TODO.md, Libraries), is not offered yet.
 
+### 11.13 An interface inside the game
+
+`suit` wraps vrld's SUIT, a small library of buttons, labels, checkboxes, sliders and text fields, for a game's menus and its screens of settings. SUIT is immediate: a game asks for each widget every frame, with its place and its size, and SUIT answers whether it was clicked; nothing is kept between frames for an editor to place. So the package gives a component for each widget, which asks SUIT for itself each frame. The user places widgets on nodes in the editor, and sees them in the node view.
+
+| Type               | Is                                                                     | Tells its node              |
+| ------------------ | ---------------------------------------------------------------------- | --------------------------- |
+| `suit.button`      | A box with a text.                                                     | `clicked()`                 |
+| `suit.label`       | A text.                                                                | `clicked()`                 |
+| `suit.checkbox`    | A box that a click checks, with a text beside it: `checked`.           | `changed(checked)`          |
+| `suit.slider`      | A bar that the pointer drags from `min` to `max`: `value`.             | `changed(value)`            |
+| `suit.input`       | A field that the keyboard types into after a click on it: `text`.      | `changed(text)`, and at Enter `submitted(text)` |
+| `suit.imagebutton` | A button that is an image, with others while hovered and held.         | `clicked()`                 |
+
+- A widget's top left corner is at its node's place. A text's widget has a `width` and a `height`, where 0 fits the text, a `font`, and its text's `align` and `valign`, as SUIT names them.
+- A script reads and sets the values, such as `checkbox.checked` or `input.text`, which the widget shows from the next frame. A change by the pointer or the keyboard sets the value, then tells the node (11.3). A script that wants a menu's button calls nothing: its node's script has `clicked`.
+- `getState()` gives SUIT's state, `normal`, `hovered`, `active` while the pointer holds it, or `hit` in the frame of a click; `isHovered()` whether the pointer is over it. A text field's `grabFocus()` gives it the keyboard, and `hasFocus()` says whether it has it. `get()` gives the game's SUIT, for what the widgets do not do.
+- The game has one SUIT, which every widget asks, in the tree's order. SUIT ends its frame once a frame, after every widget asked: it reads the mouse's button then, and forgets the keys.
+- A widget draws in its node's `draw`, where SUIT would have drawn it from `love.draw`. So it draws in the node's order of drawing, with its node's place, and a camera above it moves and zooms it as it does any node (10). A menu is drawn at the window's pixels by putting it where no camera holds it.
+- The pointer is taken in the widget's own space: when it draws, the widget keeps how its node's space lies in the drawing, and turns the pointer into it in the next update. Under a `push.screen` (11.10), the pointer is first turned into the game's, by the screen's `toGame`. So a widget under a camera, a turned node or a scaled game is clicked where it shows.
+- The look is SUIT's theme, `suit.theme`, which every widget shares: a script sets its colours, `require("suit").theme.color.hovered.bg = { 1, 0.5, 0 }`, or its `cornerRadius`.
+- The node view draws a widget as it is with no pointer over it, by a SUIT of its own, and its rectangle is what it draws.
+- The limits, as they are now:
+  - Of two widgets under the pointer, the one first in the tree's order takes it, as SUIT gives the pointer to the first that asks, though the one drawn later shows on top.
+  - The pointer is turned with what the widget drew in the frame before: a node that moved this frame is clicked where it was.
+  - A text field cuts its text to its box with a scissor, which LÖVE keeps straight: in a turned node it cuts to the box's straight bounds.
+  - A widget that its node's `setPaused` pauses still draws, as it was, and takes no pointer.
+  - SUIT's keyboard reads one key and one text a frame. A held Backspace repeats only when the game turns LÖVE's key repeat on, `love.keyboard.setKeyRepeat(true)`.
+  - The theme is one for the game; a widget has no colours of its own. SUIT's layout, which places widgets in rows and columns, is not used: nodes place them.
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1397,7 +1426,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, baton for `samples/input`, push for `samples/screen`, moonshine for `samples/effects`, and audio for `samples/audio`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, baton for `samples/input`, push for `samples/screen`, moonshine for `samples/effects`, audio for `samples/audio`, and suit and push for `samples/interface`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
