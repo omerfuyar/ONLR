@@ -1086,6 +1086,23 @@ end
   - Everything under the screen draws at the game's size, text too. A game that wants text at the window's size draws it outside the screen, or in `love.draw`.
   - push's way without a canvas, which scales the drawing and cuts it with a scissor, is not offered: the screen always draws through push's canvas.
 
+### 11.11 Screen effects
+
+`moonshine` wraps vrld's moonshine, a chain of shaders that a scene is drawn through: blur, glow, a vignette, a CRT's glass and others. `moonshine.chain` is a group (5) that draws its node and all under it through the effects. Each effect is a component type of its own beside it on the same node, named as moonshine names the effect, whose properties are the effect's parameters with moonshine's defaults: `moonshine.vignette`, `crt`, `scanlines`, `glow`, `gaussianblur`, `fastgaussianblur`, `boxblur`, `chromasep`, `desaturate`, `pixelate`, `posterize`, `filmgrain`, `colorgradesimple`, `godsray`, `dmg` and `sketch`. Each needs the chain (6.6).
+
+- The effects apply in their order on the node. A game composes its look by adding, removing and ordering components, as it does for anything else.
+- An effect whose component is turned off is skipped. A property that a script or a tween changes, such as a vignette's `opacity` that flux moves when the player is hurt (11.8), reaches the effect in the next frame: the chain sends each parameter that changed, before it draws.
+- An effect that joins or leaves the node makes the chain anew.
+- The chain draws into canvases of the size of what it draws into: the window, or push's canvas under a `push.screen` (11.10). It draws its nodes with the drawing's place, as a camera above it set it, and its result with none, so they are not moved twice.
+- The chain's effects show only in the game: the node view does not call `drawTree` (6.5).
+- `get()` gives moonshine's chain, made when it first draws.
+- moonshine's `fog` effect is not shipped: its file names no licence, and it was translated from another's code. The rest are MIT, or in the public domain, as each file says.
+- The limits, as they are now:
+  - moonshine clears its canvas to LÖVE's background colour before it draws the group. So a chain covers what drew before it in the window, such as the nodes before its node: a chain belongs on the top node, the root, or the node of all that it should cover.
+  - Some effects measure with the window's size, `love.graphics.getWidth()`, and not with the chain's: the blurs, `glow`, `chromasep` and `filmgrain`. Under a `push.screen`, their sizes are of the window's pixels, and `glow` keeps a canvas of the window's size.
+  - A colour of an effect is the inspector's colour without its alpha.
+  - Each frame the chain compares every parameter with what it sent. `fastgaussianblur` and `glow` make their shaders anew when theirs change, so a tween of them is slow.
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1330,7 +1347,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, baton for `samples/input`, and push for `samples/screen`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, flux and tick for `samples/tweens`, baton for `samples/input`, push for `samples/screen`, and moonshine for `samples/effects`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.

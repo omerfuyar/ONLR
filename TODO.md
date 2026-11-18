@@ -8,7 +8,7 @@ What the owner wants worked on, in this order.
 
 1. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
 2. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
-3. **The packages.** The first set is chosen (see [Libraries](#libraries)). Each is built as bump's is, in `packages/`, with a sample that tests it.
+3. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, the camera's helpers, and the second round.
 4. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
@@ -64,7 +64,7 @@ What the owner wants worked on, in this order.
 
 ## Libraries
 
-- **The first set of packages, chosen on 2026-11-17.** Each is a package in `packages/`, with components that compose as OVERVIEW 9 says:
+- **The first set of packages, chosen on 2026-11-17 and built on 2026-11-18.** Each is a package in `packages/`, with components that compose as OVERVIEW 9 says:
 
   | Job                  | Package wraps        | Its components                                                                                   |
   | -------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
@@ -76,9 +76,8 @@ What the owner wants worked on, in this order.
   | Tweens and timers    | flux and tick (built) | `flux.tweens` and `tick.timers` on a node, each a group of the library's own that ends with its node (DESIGN 11.8). tick, by flux's author, was chosen over a timer of ONLR's own and over hump's timer, which would bring hump's tweens beside flux. Open: the limits that DESIGN 11.8 lists. |
   | Input actions        | baton (built)        | `baton.input` on a node: its controls and pairs as properties, its joystick by number (DESIGN 11.9). Open: the limits that DESIGN 11.9 lists; the inspector listening for a key to bind. |
   | Scaling to the window | push (built)        | `push.screen`, a group on the top node that draws the game at a fixed size and scales it to the window (DESIGN 11.10). Open: the limits that DESIGN 11.10 lists; a camera under the screen could take the screen's size itself, without its `width` and `height`. |
-  | Screen effects       | moonshine            | A group that draws its node and all under it through the effects.                                |
+  | Screen effects       | moonshine (built)    | `moonshine.chain`, a group, with an effect type of its own for each of moonshine's effects beside it (DESIGN 11.11). Open: the limits that DESIGN 11.11 lists, such as effects that measure with the window's size under `push.screen`, and a chain that covers what drew before it. |
 
-  Open for each: its properties, and a sample that tests it.
 - **The second round.** In-game interface (SUIT or Slab) and light and shadows (shadows). Chosen to come, not yet weighed in detail. Later, the same way: sound sources of LÖVE's own, as a package with no library, to play, loop and set a volume.
 - **The camera's helpers.** `onlr.camera` stays the one view: gamera and hump's camera do what it does, and STALKER-X, which does more, has no licence file and needs hump. What they do better comes as small components of the engine beside the camera, which a game combines: `camera.follow` (a target node, smoothing, a deadzone), `camera.limits` (the camera stays in a rectangle of the world) and `camera.shake`. Their names and whether they are the engine's or a package's are open. A game may still use any camera library in its scripts.
 - **How a library was chosen.** A library works in a project as it is, and a package is made for it only when it is chosen (OVERVIEW 9). A library fits ONLR when:
