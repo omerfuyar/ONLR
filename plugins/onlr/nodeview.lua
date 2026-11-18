@@ -221,7 +221,7 @@ end
 -- move tool and "both" for the square between them, or for the turn tool's ring and the scale tool's square; or nil.
 local function handleAt(view, sx, sy)
   local gx, gy, lead = gizmo(view)
-  if not gx then
+  if not gx or not lead then
     return nil
   end
   local x, y = toScreen(view, gx, gy)
@@ -343,7 +343,7 @@ local function drawView(view, surface)
   -- The one gizmo of the chosen nodes, at the pivot's place (DESIGN 13.3).
   local tool = project.tool()
   local gx, gy, lead = gizmo(view)
-  if gx then
+  if gx and lead then
     local x, y = toScreen(view, gx, gy)
     if tool == "move" then
       -- the arrows along the world's x and y, which a drag moves along their axis alone, as Unity's do; y grows down, as in LÖVE
