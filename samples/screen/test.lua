@@ -31,6 +31,27 @@ check.run(function()
   check.equal(color(shot, 637, 357), "0 0 1", "the blue square at the window's far corner")
   check.equal(color(shot, 622, 342), "0 0 1", "twice its size")
 
+  -- Without a canvas, the default, the drawing is scaled: a text under the screen draws with a font twice as large.
+  local text = onlr.tree.root:addComponent("onlr.text")
+  local got
+  screen:drawTree(function()
+    got = onlr.font.sharp(text.font)
+  end)
+  check.equal(got:getHeight(), text.font:getHeight() * 2, "a text under the screen is sharp")
+  onlr.tree.root:removeComponent("onlr.text")
+  -- With canvas, the game draws into push's canvas and the canvas is scaled: the squares are the same. canvas is read
+  -- when the screen starts, and a screen that starts again draws from the next frame on (DESIGN 6.4).
+  screen.canvas = true
+  screen:setEnabled(false)
+  screen:setEnabled(true)
+  check.frames(1)
+  shot = capture()
+  check.equal({ color(shot, 2, 2), color(shot, 18, 18), color(shot, 22, 22), color(shot, 622, 342) }, { "1 0 0", "1 0 0", "0 0 0", "0 0 1" }, "with a canvas")
+  screen.canvas = false
+  screen:setEnabled(false)
+  screen:setEnabled(true)
+  check.frames(1)
+
   -- Places between the window and the game.
   local gx, gy = screen:toGame(320, 180)
   check.equal(gx * 1000 + gy, 160090, "the window's middle is the game's")

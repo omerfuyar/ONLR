@@ -8,6 +8,9 @@ local shared = require("shared")
 
 local STYLES = ui.styles()
 local TOOLS = { "move", "turn", "scale" }
+-- The pivots, as the project keeps them (DESIGN 13.3).
+local PIVOTS = { "own", "bounds", "selection" }
+local PIVOT_INDEX = { own = 1, bounds = 2, selection = 3 }
 
 -- The game's count: frames a second, and the time of update and draw, which a game with its own love.run does not send.
 local function stats(s)
@@ -32,10 +35,10 @@ local function draw(state, surface)
       ui.selector(selected, { "Move", "Turn", "Scale" }, { id = "tool", tooltip = "What a drag on a node does: W, E and R", onSelect = function(choice)
         project.setTool(TOOLS[choice])
       end }),
-      ui.selector(project.setting("pivot") == "own" and 2 or 1, { "Global", "Local" }, {
-        id = "pivot", tooltip = "Many nodes turn and scale around their shared middle (Global), or each around its own place (Local)",
+      ui.selector(PIVOT_INDEX[project.setting("pivot")] or 1, { "Own place", "Own middle", "Selection" }, {
+        id = "pivot", tooltip = "What the chosen nodes turn and scale around, where the gizmo is: each node's own place, the middle of each node's bounds, or the middle of all of them",
         onSelect = function(choice)
-          project.setSetting("pivot", choice == 2 and "own" or "middle")
+          project.setSetting("pivot", PIVOTS[choice])
         end,
       }),
       ui.toggle(project.setting("snap") == true, { id = "snap", label = "Snap", tooltip = "Whether moved nodes keep to the grid", onChange = function(on)
