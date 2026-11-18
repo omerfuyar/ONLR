@@ -492,7 +492,6 @@ local function drop(view, event)
   if not view.file or type(event.value) ~= "table" then
     return
   end
-  local folder = project.folder()
   local tree = project.tree(view.file)
   if not tree.first then
     return
@@ -503,9 +502,9 @@ local function drop(view, event)
   x, y = snap(math.floor(x + 0.5)), snap(math.floor(y + 0.5))
   local made = {}
   for _, path in ipairs(event.value) do
-    path = tostring(path):gsub("\\", "/")
-    if path:sub(1, #folder) == folder then
-      local inside = path:sub(#folder + 1)
+    -- a file from outside the project is copied in first, after asking (DESIGN 13.4)
+    local inside = project.bringIn(path)
+    if inside then
       local ending = (inside:match("%.(%w+)$") or ""):lower()
       local id, message
       if inside:match("^nodes/.+%.lua$") then
