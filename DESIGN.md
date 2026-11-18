@@ -963,6 +963,23 @@ end
   - The animation moves on in `update`, by the time of each frame of the game.
   - Two animations of one name: the later one is played.
 
+### 11.6 Particles
+
+`particles` wraps LÖVE's particle systems, as `physics` wraps `love.physics` (11.4): it holds no library. Its one type, `particles.emitter`, is a system at its node. Its properties are the system's settings, named as LÖVE's setters name them, so `emissionRate` is `setEmissionRate` and LÖVE's wiki explains each: the `image` of a particle (a small white circle without one), `bufferSize`, `insertMode`, `emissionRate`, `emitterLifetime`, `particleLifetime`, `emissionArea`, `direction`, `spread`, `speed`, the accelerations, `linearDamping`, `sizes`, `colors`, `rotation`, `spin` and `relativeRotation`. A setting that LÖVE takes as two numbers, a least and a most, is a group of `min` and `max`.
+
+- `space` says where the particles live. In `world`, a particle stays where it was emitted, as smoke does: the system follows its node, and turns its `direction` with the node. In `local`, the particles move, turn and scale with their node, as a ring around a player does.
+- With `autoStart` it emits from its start. A script calls `play()`, `stop()`, `emit(count)` and `reset()`; `emit` works also on a stopped emitter, as an explosion needs. The function is `play`, not LÖVE's `start`, which the engine calls at a component's start (6.4).
+- When it stops emitting, at the end of its `emitterLifetime` or at `stop`, and its last particle dies, its node is told `particlesEnd()` (11.3), once until it emits again. A node that plays an explosion destroys itself there.
+- `getCount()` gives the particles that live, and `get()` LÖVE's system, for all of LÖVE's own functions on it, such as `setQuads`.
+- The node view shows a still picture: the system after it has run for a particle's lifetime, at most 5 seconds, made once and kept until a value changes (6.5). It also draws a cross at the node and the emission area.
+- The limits, as they are now:
+  - The properties are read when the emitter loads. A script that changes one afterwards calls `apply()`, which sets them all again; the particles that live keep what they had.
+  - In `world`, the node's scale does not size the particles, and its turn turns only the `direction`, not the emission area.
+  - A node that is turned off draws nothing, and its particles stand still until it is on again.
+  - The node view's picture does not move, and is drawn at the node also for a `world` emitter.
+  - A system takes up to 8 sizes and 8 colours, as LÖVE does; more is an error.
+  - Particles from a sprite sheet, LÖVE's `setQuads`, and the image's `offset` have no property: a script sets them on `get()`.
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1207,7 +1224,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics` and anim8 for `samples/animation`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation` and particles for `samples/particles`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
