@@ -1000,6 +1000,34 @@ end
   - The node view reloads the map only when it makes the component again, and STI keeps the images that it loaded. So a map or a tileset that Tiled saves again shows after the preview starts again.
   - STI makes a canvas of the window's size for each map, for its own `map:draw`, which the component does not use.
 
+### 11.8 Tweens and timers
+
+Two packages of rxi's, made to be used together: `flux` moves numbers to other values over time, a tween, and `tick` calls a function after a delay, or every few seconds. Each gives a node a component that holds a group of its own, which moves on in the component's `update`: `flux.tweens` and `tick.timers`. A script names them in `needs` (6.6).
+
+``` lua
+-- components/door.lua: slides open over half a second, and closes three seconds later
+local Door = {}
+
+Door.needs = { "flux.tweens", "tick.timers" }
+
+function Door:open()
+  local tweens, timers = self.node.components.flux.tweens, self.node.components.tick.timers
+  tweens:to(self.node, 0.5, { posY = self.node.posY - 64 }):ease("quadout")
+  timers:delay(function() self:close() end, 3)
+end
+```
+
+- The group is the node's, not the game's. So a node's tweens and timers stop with it: they wait while it is turned off or paused (6.4), and end when it is destroyed, and none calls a function of a node that is gone. A game that wants tweens of its own, beside the tree, uses the libraries as they are: `require("flux")`.
+- `tweens:to(obj, time, vars)` is flux's own: it moves any table's numbers, the node's `posX` as a sprite's `color[4]`, and returns flux's tween, whose functions chain: `ease`, `delay`, `onstart`, `onupdate`, `oncomplete` and `after`. A tween of a value that another tween moves takes it over.
+- `timers:delay(fn, seconds)` and `timers:recur(fn, seconds)` are tick's own, and return tick's event: `:stop()` on it ends one timer, and `:after(fn, seconds)` chains another.
+- `stop()` ends every tween or timer of the node; `tweens:stop(obj)` ends those of one table. A stopped tween stays where it is, and calls no `oncomplete`. It is safe to call in a tween's or a timer's own function: flux's and tick's own `stop` take one out of their list by moving the last into its place while the list is walked, which can skip one or break the walk when many stop at once, so the components leave the stopped ones in place with nothing to do, and go on in a new group.
+- `count()` gives the tweens or the timers that wait or run.
+- The limits, as they are now:
+  - A tween or a timer moves on in `update`, by the time of each frame, never in `fixedUpdate`. A tween of a physics body's node fights the body's own motion (11.4).
+  - A tween ends with the node of its component, not with the table that it moves. A tween of another node that is destroyed goes on moving numbers that nothing reads, until it ends.
+  - flux's `stop` and tick's `stop` on one tween or one event are the libraries' own, with the problem above when many stop in one walk; the components' `stop` has none.
+  - The node view shows nothing of them: it runs no `update` (6.5).
+
 ## 12. The runner and the link
 
 ### 12.1 The runner
@@ -1244,7 +1272,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The samples are the tests. A sample is a small project that shows one part of ONLR. It has a test of the engine, a test of the editor, or both.
 - A sample's test of the engine runs the sample in LÖVE with the offscreen driver; the sample checks itself and ends with a status.
 - That test is the sample's `test.lua`, a plain module that the sample's `main.lua` loads when LÖVE gets the argument `--test`. It runs beside the game, a frame at a time, checks the game through the engine's functions, and quits with status 0 when every check passed.
-- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles` and sti for `samples/tilemap`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
+- ONLR is built and tested with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is: `shuild.c` is the build script. ONLR has no C code, so the script compiles nothing. It copies the repository's packages into every sample's `packages/`, as a project holds them (3.1), so LÖVE runs a sample as it is: the engine into each, and the packages that a sample uses, which the script names for it, such as bump for `samples/coinrun`, physics for `samples/physics`, anim8 for `samples/animation`, particles for `samples/particles`, sti for `samples/tilemap`, and flux and tick for `samples/tweens`. With `--test` it runs the samples' tests, and with `--editor` it starts the editor. The script is laid out as OpenECS's is, so a person who reads one reads the other: its settings in one `CONFIG`, grouped, and `main` first. It turns on none of shuild's choices for compiling, such as `SHUC_ENABLE_INCREMENTAL`, since it compiles only itself.
 - The tests share one helper, `samples/check.lua`, which the script puts into each sample's `packages/` too. The repository does not keep those copies.
 - The editor is OpenECS's release, unpacked into the repository's `OpenECS/`, which git ignores. OpenECS is not a submodule.
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
