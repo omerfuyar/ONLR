@@ -30,7 +30,7 @@ This document explains how ONLR is built: its parts, the project's files, the en
 14. Export
 15. LÖVE
 16. Tests
-17. Versions and branches
+17. Versions and releases
 
 - Glossary
 
@@ -1446,7 +1446,23 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - ONLR's archive holds the runtime of the editor's own platform, which the runners run. On Linux it is the contents of LÖVE's AppImage, unpacked, so it runs without the system's AppImage support.
 - The runtime of another platform is downloaded at the first export for it: from LÖVE's releases, and for Linux from ONLR, which hosts the AppImage's contents as a `.tar.gz`, since only Linux unpacks an AppImage. The editor checks the downloaded file against the SHA-256 hash that ONLR ships for it, before it uses anything of it, and keeps the runtime in the user's data folder, by version and platform: `onlr/runtimes/11.5/windows-x86_64/`.
 - A setting names a folder to use as a runtime instead, such as a LÖVE the user built: `onlr.linuxRuntime` and `onlr.windowsRuntime`.
-- The runners run the LÖVE that the setting `onlr.love` names, or else the one of ONLR's archive.
+- The runners run the LÖVE that the setting `onlr.love` names, or else the one that the variable `LOVE` names, as the tests set it, or else the one of ONLR's archive (15.3), or else `love`, as the system finds it.
+- When the runners' LÖVE is a runtime of the editor's own platform, as the archive's is, a build for that platform uses it, and downloads nothing.
+
+### 15.3 ONLR's archive
+
+- ONLR ships as one archive for each platform, which the user unpacks anywhere: `onlr-0.1.0-linux-x86_64.tar.gz` and `onlr-0.1.0-windows-x86_64.zip`. Nothing is installed (OVERVIEW 2).
+- It holds the repository's own layout, so the plugin finds what it needs where it does in the repository: `plugins/onlr/`, `packages/` with the engine, `preset.lua`, LÖVE's definitions in `dependencies/love2d/library/` (4.3), and `LICENSE.md`. Beside them:
+  | Folder or file      | What it holds                                                                                                    |
+  | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
+  | `OpenECS/`          | OpenECS's release for the platform, unchanged, with its standard plugins.                                        |
+  | `love/`             | LÖVE 11.5, unchanged: on Linux the AppImage's contents, which run through `AppRun` without the system's AppImage support; on Windows LÖVE's own folder. |
+  | `gallery/`          | `samples/gallery` with its packages and without its test: a project to open first (16).                          |
+  | `ONLR`, `ONLR.cmd`  | The program that starts the editor: OpenECS with `--preset` naming the archive's preset, and what it is given. `ONLR gallery` opens the gallery, and `--install` adds ONLR to the system's launcher (OpenECS DESIGN 13.9). |
+  | `README.md`         | How to start it.                                                                                                 |
+- On Windows, `ONLR.cmd` is a command file, so a console window shows for a moment when it starts. A shortcut that `--install` makes starts OpenECS without it.
+- `.github/scripts/package.sh` makes an archive: it downloads OpenECS's release and LÖVE's, checks each against its SHA-256 hash, and lays them out with ONLR's files. It runs on Linux for both platforms, since only Linux unpacks LÖVE's AppImage.
+
 
 ## 16. Tests
 
@@ -1463,9 +1479,11 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - One sample has thousands of nodes. It is the measure of speed: its test reports the time of a frame.
 - A change that breaks a sample changes the sample in the same piece of work.
 
-## 17. Versions and branches
+## 17. Versions and releases
 
-- The engine uses semantic versioning. Its manifest names its version (8.3).
+- ONLR, its editor and its engine share one version, which `preset.lua` and the engine's manifest name (8.3). It is semantic versioning: before 1.0.0, a minor release may break anything, and a patch release only fixes.
+- Each release of ONLR holds one release of OpenECS, which the release workflow names, and the version of LÖVE that it serves (15.1).
+- A release is a tag `vMAJOR.MINOR.PATCH`, such as `v0.1.0`, on `main`, which names `preset.lua`'s version. The tag starts `.github/workflows/release.yml`, which makes the archives (15.3) and their checksums, `SHA256SUMS`, and drafts a release whose description is `.github/release-notes/TAG.md`. A version below 1.0.0 is a pre-release. The owner reads the draft, and publishes it.
 - A file's `format` is a number that changes when an older engine or editor cannot read the newer file (4.1). Nothing converts a file of an older format: while ONLR has no users, a new format may break projects.
 - `dev` is the default branch, where work is merged. `main` holds what is stable: it changes only through a pull request from `dev`, which the owner merges.
 
