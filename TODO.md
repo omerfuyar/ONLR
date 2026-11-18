@@ -8,7 +8,7 @@ What the owner wants worked on, in this order.
 
 1. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
 2. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
-3. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, the camera's helpers, and the second round.
+3. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, and the second round. The camera's helpers are built too (DESIGN 10).
 4. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
@@ -79,7 +79,7 @@ What the owner wants worked on, in this order.
   | Screen effects       | moonshine (built)    | `moonshine.chain`, a group, with an effect type of its own for each of moonshine's effects beside it (DESIGN 11.11). Open: the limits that DESIGN 11.11 lists, such as effects that measure with the window's size under `push.screen`, and a chain that covers what drew before it. |
 
 - **The second round.** In-game interface (SUIT or Slab) and light and shadows (shadows). Chosen to come, not yet weighed in detail. Later, the same way: sound sources of LÖVE's own, as a package with no library, to play, loop and set a volume.
-- **The camera's helpers.** `onlr.camera` stays the one view: gamera and hump's camera do what it does, and STALKER-X, which does more, has no licence file and needs hump. What they do better comes as small components of the engine beside the camera, which a game combines: `camera.follow` (a target node, smoothing, a deadzone), `camera.limits` (the camera stays in a rectangle of the world) and `camera.shake`. Their names and whether they are the engine's or a package's are open. A game may still use any camera library in its scripts.
+- **The camera's helpers, built on 2026-11-18.** `onlr.camera` stays the one view: gamera and hump's camera do what it does, and STALKER-X, which does more, has no licence file and needs hump. What they do better came as components of the engine beside the camera, which a game combines: `onlr.cameraFollow`, `onlr.cameraLimits` and `onlr.cameraShake` (DESIGN 10). They are the engine's, since nearly every game with a camera follows something (OVERVIEW 9), and named with the camera's name first, since `onlr.camera` is a type and cannot also be a folder of types. Open: the limits that DESIGN 10 lists. A game may still use any camera library in its scripts.
 - **How a library was chosen.** A library works in a project as it is, and a package is made for it only when it is chosen (OVERVIEW 9). A library fits ONLR when:
   - it is Lua that LuaJIT runs in LÖVE 11.5, with no compiled module, so an export runs on every platform without a build;
   - it does not take `love.run` and does not replace LÖVE's callbacks. Adding to `love.handlers` is fine (DESIGN 8.1);

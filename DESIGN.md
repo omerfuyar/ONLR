@@ -700,7 +700,7 @@ return {
 
 ## 10. The engine's components
 
-The engine has four component types. They are written as scripts are, with the functions of section 7 and LÖVE alone.
+The engine has seven component types: four that draw or view, and three that help a camera. They are written as scripts are, with the functions of section 7 and LÖVE alone.
 
 | Type          | Is                                                                                                  |
 | ------------- | --------------------------------------------------------------------------------------------------- |
@@ -708,6 +708,9 @@ The engine has four component types. They are written as scripts are, with the f
 | `onlr.text`   | A text in a font.                                                                                   |
 | `onlr.shape`  | A rectangle, a circle, a line or a polygon, filled or as an outline.                                |
 | `onlr.camera` | A view: it draws its node and all under it as a group (5), moved, turned and zoomed so that the middle of its screen shows its point. |
+| `onlr.cameraFollow` | Moves its node's camera to follow a node, smoothly, with a deadzone.                          |
+| `onlr.cameraLimits` | Keeps what its node's camera shows inside a rectangle, such as a level's edges.               |
+| `onlr.cameraShake`  | Shakes its node's camera when a script asks, and the shake fades.                             |
 
 - A camera shows only what is under its node. So a level puts its world under a node with the camera, and what stays on the screen, such as a score, beside that node. The score draws at the window's pixels, and the camera does not move it.
 - What no camera holds draws as plain LÖVE does, with 0, 0 at the window's top left.
@@ -740,8 +743,27 @@ Their properties use LÖVE's names wherever LÖVE has one:
 |               | `rot`             | `number`                                      | 0          | Its angle, clockwise. What it shows turns the other way.                                         |
 |               | `zoom`            | `number`                                      | 1          | How large the camera shows its nodes: 2 is twice as large.                                       |
 |               | `width`, `height` | `number`                                      | 0          | The size of its screen, in pixels. 0 is the window's.                                            |
+| `onlr.cameraFollow` | `target`    | `node`                                        |            | The node that the camera follows. A script may set it.                                           |
+|               | `offset`          | `vector`                                      | 0, 0       | Added to the target's place: the camera shows a point ahead of it or above it.                   |
+|               | `smoothing`       | `number`                                      | 0.1        | About the seconds that the camera takes to catch up. 0 keeps it on the target.                   |
+|               | `deadzone`        | `vector`                                      | 0, 0       | A rectangle around the camera's point in which the target moves and the camera does not.         |
+| `onlr.cameraLimits` | `x`, `y`, `width`, `height` | `number`                    | 0, 0, 640, 360 | The rectangle, in the camera's node's space, that all the camera shows stays in.            |
+| `onlr.cameraShake` | `amplitude`  | `vector`                                      | 8, 8       | The farthest it moves, across and down.                                                          |
+|               | `angle`           | `number`                                      | 0.05       | The farthest it turns, in radians.                                                               |
+|               | `frequency`       | `number`                                      | 15         | How fast it shakes.                                                                              |
+|               | `decay`           | `number`                                      | 1.5        | How much of a shake of 1 fades in a second.                                                      |
 
 - Each has `bounds` and `drawEditor` (6.3). A camera's `drawEditor` draws the frame of what it shows, in blue and 3 pixels wide, named "Camera" inside its top left, at the same size at any zoom.
+- The camera's helpers are components beside `onlr.camera` on its node, which need it (6.6), and a game takes those that it wants. They change the camera's own properties, so a script can do all that they do, and they leave it to one when it sets the camera itself.
+  - `onlr.cameraFollow` moves the camera's `posX` and `posY` in `lateUpdate` (6.4), after the scripts and the physics moved its target. Its smoothing is the same at any frame rate. `snap()` puts the camera on its target at once, as when the follow starts, a level begins, or the player is put elsewhere.
+  - `onlr.cameraLimits` moves the camera's point so that all it shows, at its zoom and its angle, is inside its rectangle; a view larger than the rectangle is centred on it. It does so in `lateUpdate`, and `clamp()` does it at once: the follow calls it after each move, so the two agree whichever updates first. In the node view it draws its rectangle, orange.
+  - `onlr.cameraShake` shakes when a script calls `shake(amount)`: 0.3 is a bump, and 1, the most, an explosion. Shakes add up and fade. The shake grows as the square of the amount, and moves by LÖVE's noise, smooth from frame to frame. It sets the camera's `shakeX`, `shakeY` and `shakeRot`, which are not properties: the camera adds them to its point and its angle when it draws, and nowhere else, so a shake does not move the camera's point that the follow and the limits set.
+  - `camera:getSize()` gives the size of its screen, which the limits use; divided by its zoom, it is the size of what it shows.
+- The limits of the camera's helpers, as they are now:
+  - A target is a node of the same node file, as every node property is (6.2). A target of another file, such as a player that the level spawns, is set by a script.
+  - A shake can show past the limits by its amplitude.
+  - `camera:toWorld` and `toScreen` take no shake, so a click during a shake is off by it.
+  - The follow and the limits run in `lateUpdate`; a script that sets the camera in its own `lateUpdate` after them is not limited until the next frame.
 
 ## 11. Libraries
 
