@@ -19,6 +19,7 @@ local data = require("onlr.library.data")
 onlr.loop = require("onlr.library.loop")
 onlr.tree = require("onlr.library.tree")
 onlr.property = require("onlr.library.property")
+onlr.font = require("onlr.library.font")
 
 -- The fields of the manifest that are ONLR's own. Every other field is one of LÖVE's settings, under LÖVE's name.
 local OWN = {

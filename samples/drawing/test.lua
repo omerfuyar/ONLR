@@ -85,6 +85,37 @@ check.run(function()
   end
   check.ok(lit, "the text")
 
+  -- A text draws at the size that the drawing shows it, so a scale does not stretch its letters (DESIGN 10).
+  local text = assert(find("Text").components.onlr.text)
+  love.graphics.push()
+  love.graphics.scale(2)
+  local sharp, scale = onlr.font.sharp(text.font)
+  love.graphics.pop()
+  check.equal({ sharp:getHeight(), scale }, { text.font:getHeight() * 2, 0.5 }, "onlr.font.sharp: a font twice as large, drawn at half")
+  check.equal(onlr.font.sharp(text.font), text.font, "unscaled, the font itself")
+  -- Scaled by 3, the letters' edges are as hard as unscaled: few pixels are neither the text's colour nor the ground's.
+  local alone = love.graphics.newCanvas(200, 200)
+  local function soft(sx)
+    love.graphics.setCanvas(alone)
+    love.graphics.clear(0, 0, 0, 1)
+    love.graphics.origin()
+    love.graphics.scale(sx)
+    text:draw()
+    love.graphics.setCanvas()
+    love.graphics.origin()
+    local pixels = alone:newImageData()
+    local grey = 0
+    for px = 0, 199 do
+      for py = 0, 199 do
+        local r = pixels:getPixel(px, py)
+        grey = grey + ((r > 0.02 and r < 0.98) and 1 or 0)
+      end
+    end
+    return grey / (sx * sx)
+  end
+  local plain, scaled = soft(1), soft(3)
+  check.ok(scaled < plain * 1.5, ("a scaled text is as sharp as a plain one: %.1f soft pixels, against %.1f"):format(scaled, plain))
+
   -- bounds: the rectangle that a component covers, in its node's space.
   check.equal({ find("Red").components.onlr.sprite:bounds() }, { 0, 0, 8, 8 }, "a sprite's bounds")
   find("Red").components.onlr.sprite.origin.x = 4

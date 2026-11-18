@@ -170,7 +170,7 @@ return {
 | `topNode`         | The node file of the top node, which the game loads once and keeps, and under which each root runs (5). An empty node when left out. |
 | `window`          | The game's window, as LÖVE's `t.window`, with its names: `width` and `height` in pixels, and any other field of it, such as `resizable`, `fullscreen` or `highdpi`. The engine adds none of its own. |
 | `modules`, `audio`, `console` and LÖVE's other settings | As in LÖVE's `t`, under LÖVE's names. LÖVE's `identity` is `id`, and its `version` is `loveVersion`. |
-| `defaultFilter`   | How images are scaled, as `love.graphics.setDefaultFilter` takes it: `linear`, LÖVE's default, or `nearest`, which keeps pixel art sharp. The engine sets it in both players, before anything loads (12.1). |
+| `defaultFilter`   | How images are scaled, as `love.graphics.setDefaultFilter` takes it: `linear`, LÖVE's default, or `nearest`, which keeps pixel art sharp. The engine sets it in both players, before anything loads (12.1). With `linear`, an image that is scaled by a number that is not whole, or drawn between two pixels, blends its neighbouring pixels, which blurs small pictures; a game of pixel art names `nearest`. |
 | `fixedRate`       | How many times a second `fixedUpdate` is called (6.3). 60 when left out.        |
 | `exclude`         | Patterns of files that an export leaves out. In a pattern, `*` stands for any part of a name, `**` for any folders, and a pattern that ends with `/` names a folder. |
 
@@ -538,6 +538,7 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 | `node:toWorld(x, y)`, `node:toLocal(x, y)`                                                                           | Turn a point of the node's space into the world's, and back.                                                |
 | `node:setWorldPosition(x, y)`                                                                                        | Moves the node to a point of the world, whatever its parents' places are.                                   |
 | `component:isEnabled()`, `component:setEnabled(enabled)`                                                             | Whether the component is on (6.4), and turns it on or off.                                                  |
+| `onlr.font.sharp(font)`, `onlr.font.apply(font)`                                                                     | The font at the size that the drawing shows it, and the scale to draw it at; `apply` also sets that scale (10). |
 
 - A node's fields are `name`, its place, `posX` to `sclY`, and `components`, which holds the components themselves (6.1). A script reads and sets them as plain fields: `self.node.posX = 10`. No function stands before a component: `self.node.components.onlr.sprite`.
 - What the engine must act on when it changes is read and changed through functions, as the values of LÖVE's own objects are: whether a node is active or paused, its `z`, its parent and children, and whether a component is enabled. So a change that does more than set a value is always a call, and never looks like a plain assignment. A node file holds them as plain values (5), apart from whether a node is paused, which only a script sets.
@@ -596,6 +597,7 @@ Each file of the engine holds one thing. The engine is laid out as a package is 
 | `library/life.lua`                                  | The life of components (6.4), and the lists that a frame walks (8.2).                                                                                      |
 | `library/build.lua`                                 | Making nodes from node files: instances, their changes and ids (9).                                                                                        |
 | `library/property.lua`                              | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
+| `library/font.lua`                                  | `onlr.font`: fonts at the size that the drawing shows them (10).                                                                                           |
 | `library/data.lua`                                  | Reading data files (4), and loading the files that properties name.                                                                                        |
 | `library/formats.lua`                               | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
 | `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua`, and the camera's in `camera/`: `view.lua`, `follow.lua`, `limits.lua` and `shake.lua`.                                                   |
@@ -753,6 +755,12 @@ Their properties use LÖVE's names wherever LÖVE has one:
 |               | `frequency`       | `number`                                      | 15         | How fast it shakes.                                                                              |
 |               | `decay`           | `number`                                      | 1.5        | How much of a shake of 1 fades in a second.                                                      |
 
+- A text draws at the size that the drawing shows it. LÖVE makes a font's letters at the font's size, so a node's scale, a camera's zoom or the node view's zoom would stretch those pixels and blur them. `onlr.text` measures how much the drawing scales, the larger of its two axes, takes the same font at that size, and draws it at the inverse scale; when the drawing neither turns nor stretches, it also puts the text's place on a whole pixel of the screen. These are `onlr.font.sharp` and `onlr.font.apply`, which a script that draws text uses the same way, and SUIT's widgets use too (11.13). The limits:
+  - A font that the engine did not load, such as one that a script made with `love.graphics.newFont`, draws as LÖVE draws it, stretched.
+  - A size is made at most 512, and each size that a scale gives is a font of its own: a text whose scale a tween moves makes many, which the engine lets go when the root changes (6.2).
+  - A text that a node stretches more on one axis is sharp along the larger one only.
+  - Lines that wrap, of a `width`, are measured with the sharp font, so they may break a little apart from where `bounds` says.
+  - Under push's canvas (11.10), the scale of the canvas is not in the drawing, so the text is as sharp as the game's own size.
 - Each has `bounds` and `drawEditor` (6.3). A camera's `drawEditor` draws the frame of what it shows, in blue and 3 pixels wide, named "Camera" inside its top left, at the same size at any zoom.
 - The camera's helpers are components beside `onlr.camera.view` on its node, which need it (6.6), and a game takes those that it wants. They change the camera's own properties, so a script can do all that they do, and they leave it to one when it sets the camera itself.
   - `onlr.camera.follow` moves the camera's `posX` and `posY` in `lateUpdate` (6.4), after the scripts and the physics moved its target. Its smoothing is the same at any frame rate. `snap()` puts the camera on its target at once, as when the follow starts, a level begins, or the player is put elsewhere.
@@ -1095,7 +1103,7 @@ end
 
 `push` wraps Ulydev's push, which draws a game at a fixed size, such as 320 by 180, and scales it to the window, with bars where the window's shape differs. Its one type, `push.screen`, is a group (5): on the top node, it holds the whole game, so every root draws at the game's size. The manifest's `window` stays the window's size, and the screen's `width` and `height` are the game's.
 
-- `pixelPerfect` scales by whole numbers only, so each pixel of the game is a square of the window's, as pixel art needs; `stretched` fills the window with no bars; `borderColor` is the bars' colour. A game of pixel art also sets the manifest's default filter to `nearest` (3.2), so push's canvas is not blurred when it is scaled.
+- `pixelPerfect` scales by whole numbers only, so each pixel of the game is a square of the window's, as pixel art needs; `stretched` fills the window with no bars; `borderColor` is the bars' colour. `canvas` chooses how the game is scaled. Without it, the default, push scales the drawing itself and cuts it to the game's rectangle with a scissor, so what the game draws is drawn at the window's pixels: text (10) and large images stay sharp. With it, the game draws into a canvas of the game's size, and push scales the canvas, as pixel art needs, so each pixel of the game is a block of the window's. A canvas of the window's size would make the screen do nothing but draw the bars, so it is not offered. A game of pixel art turns `canvas` and `pixelPerfect` on, and sets the manifest's default filter to `nearest` (3.2), so the scaled canvas is not blurred. `screen:hasCanvas()` says which way the screen draws.
 - A place in the window, such as the mouse's, is not a place in the game: `screen:toGame(x, y)` turns it into one, or nil on a bar, and `toReal` turns it back. So a click under a camera is `camera:toWorld(screen:toGame(love.mouse.getPosition()))`.
 - A camera under the screen names the game's size as its own, in its `width` and `height` (10). Without them it takes the window's, and its middle is off.
 - The window's new size reaches the component as LÖVE's event `resize` (6.3).
@@ -1106,8 +1114,9 @@ end
   - push sets the window's mode when it is set up. The component gives it the window's own size and flags, so the window stays as the manifest made it, but LÖVE may make the window anew there.
   - push sets LÖVE's background colour to `borderColor` each frame. So where nothing draws, inside the game too, the window shows the bars' colour.
   - What `love.draw` draws, after the nodes (8.1), is at the window's pixels and is not scaled.
-  - Everything under the screen draws at the game's size, text too. A game that wants text at the window's size draws it outside the screen, or in `love.draw`.
-  - push's way without a canvas, which scales the drawing and cuts it with a scissor, is not offered: the screen always draws through push's canvas.
+  - With `canvas`, everything under the screen draws at the game's size, text too. A game that wants text at the window's size there draws it outside the screen, or in `love.draw`.
+  - `canvas` is read when the screen starts; a script that changes it turns the screen off and on, and it draws again from the next frame (6.4).
+  - Without `canvas`, the game's place in the window may fall between two pixels when the scale is not whole, which `linear` blurs a little; `pixelPerfect` keeps it whole.
 
 ### 11.11 Screen effects
 
@@ -1116,13 +1125,13 @@ end
 - A node's components run in the order of their names (5), not in an order that the user gives them, so the chain orders its effects itself: its property `order` lists the effects' names, such as `pixelate` then `crt`, in the order they apply, and those it does not name apply after, by their names. A game composes its look by adding and removing components, as it does for anything else, and by `order`. A script that changes `order` makes the chain anew.
 - An effect whose component is turned off is skipped. A property that a script or a tween changes, such as a vignette's `opacity` that flux moves when the player is hurt (11.8), reaches the effect in the next frame: the chain sends each parameter that changed, before it draws.
 - An effect that joins or leaves the node makes the chain anew.
-- The chain draws into canvases of the size of what it draws into: the window, or push's canvas under a `push.screen` (11.10). It draws its nodes with the drawing's place, as a camera above it set it, and its result with none, so they are not moved twice.
+- The chain draws into canvases of the size of what it draws into: the window, or push's canvas under a `push.screen` that has one (11.10). It draws its nodes with the drawing's place, as a camera above it set it, and its result with none, so they are not moved twice.
 - The chain's effects show only in the game: the node view does not call `drawTree` (6.5).
 - `get()` gives moonshine's chain, made when it first draws.
 - moonshine's `fog` effect is not shipped: its file names no licence, and it was translated from another's code. The rest are MIT, or in the public domain, as each file says.
 - The limits, as they are now:
   - moonshine clears its canvas to LÖVE's background colour before it draws the group. So a chain covers what drew before it in the window, such as the nodes before its node: a chain belongs on the top node, the root, or the node of all that it should cover.
-  - Some effects measure with the window's size, `love.graphics.getWidth()`, and not with the chain's: the blurs, `glow`, `chromasep` and `filmgrain`. Under a `push.screen`, their sizes are of the window's pixels, and `glow` keeps a canvas of the window's size.
+  - Some effects measure with the window's size, `love.graphics.getWidth()`, and not with the chain's: the blurs, `glow`, `chromasep` and `filmgrain`. Under a `push.screen` with a canvas, their sizes are of the window's pixels, and `glow` keeps a canvas of the window's size.
   - A colour of an effect is the inspector's colour without its alpha.
   - Each frame the chain compares every parameter with what it sent. `fastgaussianblur` and `glow` make their shaders anew when theirs change, so a tween of them is slow.
 
@@ -1170,8 +1179,8 @@ end
 - A script reads and sets the values, such as `checkbox.checked` or `input.text`, which the widget shows from the next frame. A change by the pointer or the keyboard sets the value, then tells the node (11.3). A script that wants a menu's button calls nothing: its node's script has `clicked`.
 - `getState()` gives SUIT's state, `normal`, `hovered`, `active` while the pointer holds it, or `hit` in the frame of a click; `isHovered()` whether the pointer is over it. A text field's `grabFocus()` gives it the keyboard, and `hasFocus()` says whether it has it. `get()` gives the game's SUIT, for what the widgets do not do.
 - The game has one SUIT, which every widget asks, in the tree's order. SUIT ends its frame once a frame, after every widget asked: it reads the mouse's button then, and forgets the keys.
-- A widget draws in its node's `draw`, where SUIT would have drawn it from `love.draw`. So it draws in the node's order of drawing, with its node's place, and a camera above it moves and zooms it as it does any node (10). A menu is drawn at the window's pixels by putting it where no camera holds it.
-- The pointer is taken in the widget's own space: when it draws, the widget keeps how its node's space lies in the drawing, and turns the pointer into it in the next update. Under a `push.screen` (11.10), the pointer is first turned into the game's, by the screen's `toGame`. So a widget under a camera, a turned node or a scaled game is clicked where it shows.
+- A widget draws in its node's `draw`, where SUIT would have drawn it from `love.draw`. So it draws in the node's order of drawing, with its node's place, and a camera above it moves and zooms it as it does any node (10). A menu is drawn at the window's pixels by putting it where no camera holds it. A widget's text draws at the size that the drawing shows it, as `onlr.text`'s does (10): the widget draws through SUIT's theme at the inverse of the drawing's scale, with the font at that size.
+- The pointer is taken in the widget's own space: when it draws, the widget keeps how its node's space lies in the drawing, and turns the pointer into it in the next update. Under a `push.screen` with a canvas (11.10), the pointer is first turned into the game's, by the screen's `toGame`; without one, the drawing that the widget kept holds push's scale already. So a widget under a camera, a turned node or a scaled game is clicked where it shows.
 - The look is SUIT's theme, `suit.theme`, which every widget shares: a script sets its colours, `require("suit").theme.color.hovered.bg = { 1, 0.5, 0 }`, or its `cornerRadius`.
 - The node view draws a widget as it is with no pointer over it, by a SUIT of its own, and its rectangle is what it draws.
 - The limits, as they are now:
@@ -1195,7 +1204,7 @@ end
 - A light and a shape belong to the nearest `shadows.world` on their node or above it, as a physics shape belongs to the nearest body (11.4); without one, they are an error that names their node. So a level puts the world on the node of all that it lights, and a world's lights light only its own shapes.
 - Lights and shapes follow their nodes: a light takes its node's place and its angle, which turns a beam, and a shape its node's place, angle and scale. Before the world draws, each is given its node's place in the world, and a shape is moved only when it moved, since Shädows makes the shadows of the lights that reach a moved shape again.
 - A value that a script or a tween changes, such as a light's `color` that flickers or its `radius`, shows in the same frame.
-- The world draws the light where the drawing is, as `moonshine.chain` does (11.11): a camera above it moves and zooms the light with the world (10). Its canvas is of the size of what it draws into, the window or push's canvas under a `push.screen` (11.10).
+- The world draws the light where the drawing is, as `moonshine.chain` does (11.11): a camera above it moves and zooms the light with the world (10). Its canvas is of the size of what it draws into, the window or push's canvas under a `push.screen` that has one (11.10).
 - A node that is turned off takes its light or its shape out of the world, and turning it on puts it back (6.4).
 - `get()` gives Shädows' own object, for what the components do not do: the world's `LightWorld`, with its rooms and stars, a light's `Light`, with `SetImage`, and a shape's shadow shape.
 - Shädows sets a global, `shadows`, through Lua's `module`. So the package ships ONLR's copy of it, changed so that it sets none, and the `lights` sample checks so (11.2). `library/ONLR.md` lists the changes.
