@@ -239,7 +239,7 @@ local function rows(state, subject, out, id, decl, value, set, title, mark)
     out[#out + 1] = ui.text(heading, { style = STYLES.heading })
   end
   if decl.kind == "group" then
-    out[#out + 1] = ui.row({ gap = 6 }, { ui.text(name, { style = STYLES.heading, tooltip = description, grow = 1 }), mark })
+    out[#out + 1] = ui.row({ gap = 6 }, { ui.text(name, { style = STYLES.heading, tooltip = description, grow = 1 }), mark or false })
     local group = type(value) == "table" and value or {}
     for _, field in ipairs(decl.fields or {}) do
       local fieldValue = value == MIXED and MIXED or group[field.name]
@@ -256,7 +256,8 @@ local function rows(state, subject, out, id, decl, value, set, title, mark)
     local list = type(value) == "table" and value or {}
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       ui.text(name, { style = STYLES.heading, tooltip = description, grow = 1 }),
-      mark,
+      -- no mark is false, which ui leaves out: a nil would end the list before the button
+      mark or false,
       ui.button("Add", { id = id .. ":add", tooltip = "Add an item to the list", onClick = function()
         local whole = copy(list)
         local item = decl.item and decl.item.default
