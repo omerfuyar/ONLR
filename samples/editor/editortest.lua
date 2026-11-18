@@ -58,6 +58,13 @@ return {
     test.match(test.setting("ecs.toolMenu"), {
       "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop", "settings.open", "panels.open",
     })
+    -- the preset puts the asset viewer under the inspector, in the same column
+    local inspector, viewer = test.rect(panelOf(test, "onlr.inspector")), test.rect(panelOf(test, "viewer.file"))
+    check(math.abs(viewer.x - inspector.x) < 2 and viewer.y > inspector.y + inspector.height - 2, "the asset viewer is under the inspector")
+    -- the rest of the test clicks far down the inspector, which gets the whole column back when the viewer closes
+    test.click(viewer.x + viewer.width / 2, viewer.y + viewer.height / 2)
+    test.call("ecs.layout.close")
+    test.wait(0.2)
     -- opening a project that lacks LÖVE's definitions, as the sample does, gives it them, for a code editor
     check(read(".onlr/love2d/love.lua"):find("---@class love", 1, true), "the project holds LÖVE's definitions")
 
@@ -103,32 +110,55 @@ return {
     test.key("Ctrl+Z")
     save()
 
-    -- with Local, two chosen nodes turn by the same angle, each around its own place (DESIGN 13.3)
-    -- the tools panel's first row: Move, Turn and Scale, then Global and Local
-    local tools = test.rect(panelOf(test, "onlr.tools"))
+    -- one gizmo for the chosen nodes, at their pivot, turns them all (DESIGN 13.3). A and B are squares of 32 at 40, 40 and 120, 40;
+    -- B, chosen last, leads. A drag from 10 right and 10 below the gizmo to 10 left of it turns them a quarter, clockwise.
+    local function place(id)
+      local tree = assert(load(read("nodes/start.lua")))()
+      for _, node in ipairs(tree.children) do
+        if node.id == id then
+          return node.posX or 0, node.posY or 0, node.rot or 0
+        end
+      end
+    end
+    local function near(a, b)
+      return math.abs(a - b) < 1e-6
+    end
+    local function turnAround(gx, gy)
+      local fx, fy = at(gx + 10, gy + 10)
+      local tx, ty = at(gx - 10, gy + 10)
+      test.drag(fx, fy, tx, ty)
+      test.wait(0.3)
+      save()
+    end
     x, y = at(70, 70)
     test.click(x, y)
     local bx, by = at(136, 56)
     test.click(bx, by, nil, "Shift")
-    test.click(tools.x + 85, tools.y + 21)
-    test.click(tools.x + 257, tools.y + 21)
-    local toX, toY = at(24, 56)
-    test.drag(x, y, toX, toY)
-    test.wait(0.3)
-    save()
-    local turned = read("nodes/start.lua")
-    local _, turns = turned:gsub("rot = 1%.57079632679", "")
-    check(turns == 2, "both nodes turn a quarter:\n" .. turned)
-    check(turned:find("posX = 40,\n      posY = 40,") and turned:find("posX = 120,\n      posY = 40,"), "and stay in their places")
+    test.call("onlr.toolTurn")
+    -- each around its own place: the gizmo is at B's place, and both stay where they are
+    test.call("onlr.pivotOwn")
+    turnAround(120, 40)
+    local ax, ay, ar = place("aaaaaa")
+    local px, py, pr = place("bbbbbb")
+    check(near(ar, math.pi / 2) and near(pr, math.pi / 2), "both nodes turn a quarter:\n" .. read("nodes/start.lua"))
+    check(near(ax, 40) and near(ay, 40) and near(px, 120) and near(py, 40), "and stay in their places")
     test.key("Ctrl+Z")
-    -- with Global, they turn around the middle of their places, so they move
-    test.click(tools.x + 199, tools.y + 21)
-    test.drag(x, y, toX, toY)
-    test.wait(0.3)
-    save()
-    check(not read("nodes/start.lua"):find("posX = 40,\n      posY = 40,"), "with Global, the nodes move around their middle")
+    -- each around the middle of its bounds: the gizmo is at B's middle, and each turns around its own, so its place moves
+    test.call("onlr.pivotBounds")
+    turnAround(136, 56)
+    ax, ay = place("aaaaaa")
+    px, py = place("bbbbbb")
+    check(near(ax, 72) and near(ay, 40) and near(px, 152) and near(py, 40), "each turns around its middle:\n" .. read("nodes/start.lua"))
     test.key("Ctrl+Z")
-    test.click(tools.x + 20, tools.y + 21)
+    -- around the middle of the choice, 96, 56, where the one gizmo is: a press beside the nodes, on the gizmo, turns them
+    test.call("onlr.pivotSelection")
+    turnAround(96, 56)
+    ax, ay, ar = place("aaaaaa")
+    px, py = place("bbbbbb")
+    check(near(ar, math.pi / 2) and near(ax, 112) and near(ay, 0) and near(px, 112) and near(py, 80), "both turn around the choice's middle:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    test.call("onlr.pivotOwn")
+    test.call("onlr.toolMove")
     save()
     check(read("nodes/start.lua") == start, "the turns are undone")
 

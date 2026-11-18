@@ -39,7 +39,12 @@ return {
             },
             { share = 2, panels = { { type = "console.log" }, { type = "files.tree" } } },
           },
-          { size = 340, panels = { { type = "onlr.inspector" }, { type = "onlr.settings" }, { type = "onlr.export" } } },
+          {
+            size = 340,
+            split = "vertical",
+            { share = 2, panels = { { type = "onlr.inspector" }, { type = "onlr.settings" }, { type = "onlr.export" } } },
+            { share = 1, panels = { { type = "viewer.file" } } },
+          },
         },
       },
     },

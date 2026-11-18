@@ -1,6 +1,6 @@
 -- The component type push.screen: the game drawn at a fixed size, such as 320 by 180, and scaled to the window,
--- with bars where the window's shape differs. It is a group (DESIGN 5): its node and all under it draw into push's
--- canvas, at the game's size, which push then draws into the window. On the top node, it holds the whole game.
+-- with bars where the window's shape differs. It is a group (DESIGN 5): its node and all under it draw scaled to the
+-- window, or with canvas into push's canvas, at the game's size, which push then draws into the window. On the top node, it holds the whole game.
 local onlr = require("onlr")
 local push = require("push")
 
@@ -12,6 +12,7 @@ Screen.height = onlr.property.number(180, { min = 1, description = "The game's h
 Screen.pixelPerfect = onlr.property.bool(false, { description = "Scales by whole numbers only, so each pixel of the game is a square of the window's; the bars are wider" })
 Screen.stretched = onlr.property.bool(false, { description = "Fills the window, with no bars, and stretches the game where the window's shape differs" })
 Screen.borderColor = onlr.property.color({ 0, 0, 0, 1 }, { description = "The colour of the bars" })
+Screen.canvas = onlr.property.bool(false, { description = "Draws the game into a canvas of its size, then scales the canvas, as pixel art needs; without it the drawing is scaled, so text and large images stay sharp" })
 
 -- push is one table for the whole game, so one screen runs at a time.
 ---@type push.screen?
@@ -30,7 +31,7 @@ function Screen:enable()
     highdpi = flags.highdpi,
     pixelperfect = self.pixelPerfect,
     stretched = self.stretched,
-    canvas = true,
+    canvas = self.canvas,
   })
   push:setBorderColor(self.borderColor)
 end
@@ -49,9 +50,12 @@ end
 -- The engine calls it in place of drawing the group, and gives it draw, which draws the group into push's canvas.
 ---@param draw fun()
 function Screen:drawTree(draw)
+  -- Without a canvas, push's start moves the drawing outside its own push, so the screen keeps the drawing around both.
+  love.graphics.push()
   push:start()
   draw()
   push:finish()
+  love.graphics.pop()
 end
 
 -- In the node view, the frame of the game's screen, as a camera's (DESIGN 10): the window's frame shows the
@@ -68,6 +72,14 @@ function Screen:bounds()
 end
 
 -- Not called by the engine: scripts call these.
+
+-- Whether the game draws into push's canvas, as canvas said when the screen started. Without one, the drawing's
+-- transform holds push's scale, so a component that reads its place from the drawing needs no toGame.
+---@return boolean
+function Screen:hasCanvas()
+  ---@diagnostic disable-next-line: invisible
+  return push._canvas == true
+end
 
 -- The place in the game of a place in the window, such as the mouse's, or nil on the bars:
 -- camera:toWorld(screen:toGame(love.mouse.getPosition())).
