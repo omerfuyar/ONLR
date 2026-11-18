@@ -1,0 +1,12 @@
+-- The package's manifest. Data only: the editor reads it, and the game never loads it.
+---@type onlr.Package
+return {
+  format = 1,
+  name = "sti",
+  description = "Tile maps made with Tiled",
+  -- The library's own version, where it comes from, and its licence.
+  version = "1.2.3.0",
+  source = "https://github.com/karai17/Simple-Tiled-Implementation",
+  license = "MIT",
+  -- Its component type is the file of components/: components/map.lua is sti.map.
+}

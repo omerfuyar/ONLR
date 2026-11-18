@@ -54,7 +54,7 @@ local function tone(frequency, seconds)
 end
 
 function love.load()
-  os.execute("mkdir -p samples/properties/images samples/properties/sounds samples/coinrun/images samples/coinrun/sounds samples/speed/images samples/loading/images samples/drawing/images samples/animation/images")
+  os.execute("mkdir -p samples/properties/images samples/properties/sounds samples/coinrun/images samples/coinrun/sounds samples/speed/images samples/loading/images samples/drawing/images samples/animation/images samples/tilemap/maps")
 
   image("samples/properties/images/dot.png", 4, 4, { 1, 0, 0 })
   wav("samples/properties/sounds/beep.wav", 0.05, tone(880, 0.05))
@@ -99,6 +99,16 @@ function love.load()
     return row == 0 and light or 0.2, 0.2, row == 1 and light or 0.2, 1
   end)
   write("samples/animation/images/sheet.png", sheet:encode("png"):getString())
+
+  -- A tileset of two tiles, 16 pixels square: red, then blue.
+  local tiles = love.image.newImageData(32, 16)
+  tiles:mapPixel(function(x)
+    if x < 16 then
+      return 1, 0, 0, 1
+    end
+    return 0, 0, 1, 1
+  end)
+  write("samples/tilemap/maps/tiles.png", tiles:encode("png"):getString())
 
   love.event.quit(0)
 end
