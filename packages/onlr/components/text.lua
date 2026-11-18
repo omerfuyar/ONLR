@@ -12,17 +12,21 @@ Text.color = onlr.property.color({ 1, 1, 1, 1 })
 Text.width = onlr.property.number(0, { min = 0, description = "Where lines wrap" })
 Text.align = onlr.property.choice("left", { choices = { "left", "center", "right", "justify" } })
 
--- Draws the text from the node's place, and sets the colour and the font back.
+-- Draws the text from the node's place, at the size that the drawing shows it (onlr.font), and sets the colour and the
+-- font back.
 function Text:draw()
   local r, g, b, a = love.graphics.getColor()
   local font = love.graphics.getFont()
+  love.graphics.push()
+  local sharp, scale = onlr.font.apply(self.font)
   love.graphics.setColor(self.color)
-  love.graphics.setFont(self.font)
+  love.graphics.setFont(sharp)
   if self.width > 0 then
-    love.graphics.printf(self.text, 0, 0, self.width, self.align)
+    love.graphics.printf(self.text, 0, 0, self.width / scale, self.align)
   else
     love.graphics.print(self.text, 0, 0)
   end
+  love.graphics.pop()
   love.graphics.setFont(font)
   love.graphics.setColor(r, g, b, a)
 end

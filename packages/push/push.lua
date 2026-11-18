@@ -5,6 +5,7 @@
 -- sets up; a script reaches it through the component, or with require("push").
 
 ---@class push
+---@field package _canvas boolean? whether setupScreen was given canvas, which push.screen reads
 local push = {}
 
 ---Sets the game's size and the window's, and the window's mode.
@@ -16,7 +17,7 @@ local push = {}
 ---@return push
 function push:setupScreen(gameWidth, gameHeight, windowWidth, windowHeight, settings) end
 
----Starts drawing into the game's canvas.
+---Starts drawing the game: into its canvas, or scaled into the window without one.
 function push:start() end
 
 ---Ends it, and draws the canvas into the window, scaled.
