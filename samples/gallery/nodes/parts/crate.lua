@@ -7,7 +7,12 @@ return {
   components = {
     onlr = {
       paint = {
-        color = { 0.8, 0.55, 0.3, 1 },
+        color = {
+          0.8,
+          0.55,
+          0.3,
+          1,
+        },
       },
       shape = {
         height = 20,
@@ -16,13 +21,8 @@ return {
     },
     physics = {
       body = {},
-      shape = {
-        box = {
-          bounce = 0.3,
-          center = { x = 10, y = 10 },
-          height = 20,
-          width = 20,
-        },
+      fixture = {
+        restitution = 0.3,
       },
     },
   },

@@ -826,7 +826,7 @@ return {
 - A component type is one file, since its name is its file's (6.1). The names start with the package's: `bump.body` is `packages/bump/components/body.lua`. The types are written as scripts are (6), and the editor offers every one of them (13.4).
 - A node file of a package is named by its path, as the project's are: `packages/bump/nodes/box.lua`.
 - A package adds nothing to the engine and changes nothing in it. A game uses a package's library with its components, without them, or both.
-- A package may wrap a system of LÖVE's own instead of a library (OVERVIEW 9), as `physics` wraps `love.physics` (11.4). It has no `library/`, no `init.lua` and no definitions file, since a script calls LÖVE as it always does. A module that its components share is a file of the package's own, which they require by its path: `physics/shape.lua` is `require("physics.shape")`. Its manifest names no `source`, and its `version` is the package's own.
+- A package may wrap a system of LÖVE's own instead of a library (OVERVIEW 9), as `physics` wraps `love.physics` (11.4). It has no `library/`, no `init.lua` and no definitions file, since a script calls LÖVE as it always does. A module that its components share is a file of the package's own, which they require by its path: `physics/find.lua` is `require("physics.find")`. Its manifest names no `source`, and its `version` is the package's own.
 - The editor copies a package into a project when the user adds it, and deletes its folder when the user removes it. In the project, the package is the project's own copy, and an export holds it.
 - The editor adds a package from ONLR's own, or from a folder that the user chooses, so anyone can make one. ONLR's own are in its `packages/`, beside the engine (2.2), each as a project holds it.
 - The user does not change a package in the project, as they do not change the engine (3.1). To change one of its components, they copy it into `components/` under another name. When ONLR ships a newer version of a package that a project holds, the editor offers it, and updating replaces the package's folder whole.
@@ -949,22 +949,24 @@ A package of LÖVE's own system follows 11.3 too. The first is `physics`, which 
 | ----------------- | ------------------------------------ | -------------------------------------------------------------------------------------------- |
 | `physics.world`   | The root                             | The root's one world, with its gravity, as `bump.world` is (11.3). Each root has its own.    |
 | `physics.body`    | A node                               | A body: static, dynamic or kinematic. While the game runs, a dynamic body moves its node.   |
-| `physics.shape.box`, `.circle`, `.polygon` | The body's node, or a node under it | A shape with its friction, bounce, density and whether it is a sensor, fixed to the nearest body above it. |
-| `physics.joint.hinge`, `.weld`, `.distance`, `.rope` | The body's node, or a node under it | A joint that holds the nearest body above it to the body that its `other` names, at its node's place. |
+| `physics.fixture` | The body's node, or a node under it | Its node's `onlr.shape` (10), fixed to the nearest body above it, with its `friction`, `restitution`, `density` and whether it is a `sensor`, as LÖVE's fixture has them. |
+| `physics.joint`   | The body's node, or a node under it | A joint of its `kind`, hinge, weld, distance or rope, that holds the nearest body above it to the body that its `other` names, at its node's place. |
 
-- A node has one component of each type (5), so a body of many shapes holds them on nodes under its own. The user builds a body's outline by placing nodes in the editor. A shape takes its node's place, angle and scale in the body when the body starts; a box is centred on its node's place plus its `center`, since a body turns around its node's place.
+- A fixture collides with the node's own outline, which `onlr.paint` draws and a shadow caster casts (10), so the user sizes it once. A rectangle is Box2D's box, a circle its circle, a polygon its polygon, and a line its edge, or its chain of more than two points. A body turns around its node's place, so a box centred on it has the shape's `origin` at its middle.
+- A node has one component of each type (5), so a body of many fixtures holds them on nodes under its own, each with its shape. The user builds a body's outline by placing nodes in the editor. A fixture takes its node's place, angle and scale in the body when the body starts.
 - The world steps in its `fixedUpdate` (6.3). Before each step, each body whose node a script moved or turned goes there; after it, each body that is not static sets its node's place and `rot`. `meter` is how many pixels are a meter, which love.physics is told when the world is made, and `gravity` is in pixels a second, each second.
-- `body:get()` and a shape's `get()` give the body and the fixture of love.physics, for all of LÖVE's own functions on them, such as `applyLinearImpulse`: the package wraps LÖVE and hides nothing of it.
+- `body:get()` and a fixture's `get()` give the body and the fixture of love.physics, for all of LÖVE's own functions on them, such as `applyLinearImpulse`: the package wraps LÖVE and hides nothing of it.
 - Where a node is has one truth, the node's place (11.3): after Box2D's step, a dynamic body sets its node's place; when a script sets a body's node itself, the body is moved there.
 - Contacts reach scripts as messages to the two bodies' nodes, `contact(other, nx, ny)` and `contactEnd(other)`, as bump's do, and never as Box2D's callbacks: Box2D tells of them during its step, when nothing may change the world, so the world tells the nodes after it. The normal points away from the other node, so a body that lands on the ground gets 0, -1.
 - A node that is turned off takes its body out of the world, and turning it on puts it back (6.4).
-- A polygon takes 3 to 8 corners that make a convex polygon, as Box2D does. A new one has none, and collides with nothing until it has 3; more than 8, or a polygon that is not convex, is an error that names its node.
-- A joint is Box2D's joint of its kind: a hinge is the revolute joint, with a limit of its angle and a motor; a weld holds the bodies as one; a distance keeps its node's place and the other body's `otherAnchor` as far apart as they were, or springs towards it with a `frequency`; a rope lets them come no further apart than its `length`. A joint is made when both bodies run, and ends when either stops, as Box2D ends a joint whose body is destroyed; it is made again when that body starts again. `get()` gives the joint of love.physics.
+- A polygon takes 3 to 8 corners that make a convex polygon, as Box2D does. A new one has none, and collides with nothing until it has 3; more than 8, or a polygon that is not convex, is an error that names its node. A line collides with nothing until it has 2 points.
+- A joint is one type with a `kind`, whose inspector shows only the properties of the chosen kind (6.2): `other` and `collide` for all, `limit`, `lower`, `upper`, `motor`, `motorSpeed` and `motorTorque` for a hinge, `otherAnchor` for a distance and a rope, `frequency` and `damping` for a distance, and `length` for a rope. It is Box2D's joint of its kind: a hinge is the revolute joint, with a limit of its angle and a motor; a weld holds the bodies as one; a distance keeps its node's place and the other body's `otherAnchor` as far apart as they were, or springs towards it with a `frequency`; a rope lets them come no further apart than its `length`. A joint is made when both bodies run, and ends when either stops, as Box2D ends a joint whose body is destroyed; it is made again when that body starts again. `get()` gives the joint of love.physics.
 - The limits, as they are now:
-  - A shape and a joint take their node's place when they are made. A node of a shape or of a joint that moves under its body afterwards, as an animation might move it, does not move the fixture or the joint.
-  - The properties are read when the body, the shape or the joint is made. A script that changes one afterwards, such as a shape's `friction`, changes it with LÖVE's own function on what `get()` gives, such as `fixture:setFriction`.
+  - A fixture and a joint take their node's place when they are made. A node of a fixture or of a joint that moves under its body afterwards, as an animation might move it, does not move the fixture or the joint.
+  - The properties, and the shape's, are read when the body, the fixture or the joint is made. A script that changes one afterwards, such as a fixture's `friction`, changes it with LÖVE's own function on what `get()` gives, such as `fixture:setFriction`; a shape that a script resizes collides at its new size when its body starts again.
+  - A chain is open: its first and last points are not joined. A closed chain, a loop, has no option yet.
   - `meter` is LÖVE's one setting for every world, set when a world is made.
-  - Box2D's other shapes and joints, edges and chains, and the prismatic, wheel, pulley, motor, friction, mouse and gear joints, have no component yet.
+  - Box2D's other joints, the prismatic, wheel, pulley, motor, friction, mouse and gear joints, have no component yet.
 
 ### 11.5 Animations of a sprite sheet
 
@@ -1208,7 +1210,7 @@ end
 | `shadows.light`         | A light at its node: `radius`, `color`, the `arc` that it lights around its node's way, and soft edges, `blur` and `sizeRadius`. |
 | `shadows.shape.box`, `.circle`, `.polygon` | A shape that blocks light, as `onlr.shape`'s rectangle, circle and polygon are (10): a box from its node's place, a circle around it, a polygon of corners in its node's space. |
 
-- A light and a shape belong to the nearest `shadows.world` on their node or above it, as a physics shape belongs to the nearest body (11.4); without one, they are an error that names their node. So a level puts the world on the node of all that it lights, and a world's lights light only its own shapes.
+- A light and a shape belong to the nearest `shadows.world` on their node or above it, as a physics fixture belongs to the nearest body (11.4); without one, they are an error that names their node. So a level puts the world on the node of all that it lights, and a world's lights light only its own shapes.
 - Lights and shapes follow their nodes: a light takes its node's place and its angle, which turns a beam, and a shape its node's place, angle and scale. Before the world draws, each is given its node's place in the world, and a shape is moved only when it moved, since Shädows makes the shadows of the lights that reach a moved shape again.
 - A value that a script or a tween changes, such as a light's `color` that flickers or its `radius`, shows in the same frame.
 - The world draws the light where the drawing is, as `moonshine.chain` does (11.11): a camera above it moves and zooms the light with the world (10). Its canvas is of the size of what it draws into, the window or push's canvas under a `push.screen` that has one (11.10).
@@ -1221,7 +1223,7 @@ end
   - The light's canvas is multiplied over all that is in what the world draws into, also what drew before the world's node. So the world belongs on a node that draws first, such as the level's root, and what draws after it, such as a score, is not darkened.
   - A light's `radius` does not grow with its node's scale.
   - Each shape is a body of Shädows' own. Shädows' bodies of many shapes, its heights, its images, normal maps and height maps, its rooms and its stars have no component: a script makes them on `get()`.
-  - A polygon is meant to be convex, as `physics.shape.polygon`'s is (11.4); a concave one is not tested.
+  - A polygon is meant to be convex, as a physics fixture's is (11.4); a concave one is not tested.
   - Each shape that moves makes the shadows of the lights that reach it again, which is slow for many moving shapes.
 
 ## 12. The runner and the link

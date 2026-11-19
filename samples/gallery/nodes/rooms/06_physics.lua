@@ -24,14 +24,24 @@ return {
       posY = 320,
       components = {
         onlr = {
-          paint = { color = { 0.4, 0.45, 0.5, 1 } },
-          shape = { height = 20, width = 560 },
+          paint = {
+            color = {
+              0.4,
+              0.45,
+              0.5,
+              1,
+            },
+          },
+          shape = {
+            height = 20,
+            width = 560,
+          },
         },
         physics = {
-          body = { type = "static" },
-          shape = {
-            box = { center = { x = 280, y = 10 }, height = 20, width = 560 },
+          body = {
+            type = "static",
           },
+          fixture = {},
         },
       },
     },
@@ -43,14 +53,24 @@ return {
       rot = 0.4,
       components = {
         onlr = {
-          paint = { color = { 0.4, 0.45, 0.5, 1 } },
-          shape = { height = 12, width = 180 },
+          paint = {
+            color = {
+              0.4,
+              0.45,
+              0.5,
+              1,
+            },
+          },
+          shape = {
+            height = 12,
+            width = 180,
+          },
         },
         physics = {
-          body = { type = "static" },
-          shape = {
-            box = { center = { x = 90, y = 6 }, height = 12, width = 180 },
+          body = {
+            type = "static",
           },
+          fixture = {},
         },
       },
     },
@@ -59,7 +79,10 @@ return {
       instance = {
         base = "nodes/parts/crate.lua",
         changes = {
-          ["cr4t00"] = { posX = 150, posY = 80 },
+          ["cr4t00"] = {
+            posX = 150,
+            posY = 80,
+          },
         },
       },
     },
@@ -68,7 +91,11 @@ return {
       instance = {
         base = "nodes/parts/crate.lua",
         changes = {
-          ["cr4t00"] = { posX = 300, posY = 60, rot = 0.5 },
+          ["cr4t00"] = {
+            posX = 300,
+            posY = 60,
+            rot = 0.5,
+          },
         },
       },
     },
@@ -80,12 +107,17 @@ return {
       components = {
         onlr = {
           paint = {},
-          shape = { kind = "circle", radius = 4 },
+          shape = {
+            kind = "circle",
+            radius = 4,
+          },
         },
         physics = {
-          body = { type = "static" },
+          body = {
+            type = "static",
+          },
           joint = {
-            hinge = { other = "b0b006" },
+            other = "b0b006",
           },
         },
       },
@@ -97,14 +129,22 @@ return {
       posY = 80,
       components = {
         onlr = {
-          paint = { color = { 0.95, 0.6, 0.2, 1 } },
-          shape = { kind = "circle", radius = 14 },
+          paint = {
+            color = {
+              0.95,
+              0.6,
+              0.2,
+              1,
+            },
+          },
+          shape = {
+            kind = "circle",
+            radius = 14,
+          },
         },
         physics = {
           body = {},
-          shape = {
-            circle = { radius = 14 },
-          },
+          fixture = {},
         },
       },
     },

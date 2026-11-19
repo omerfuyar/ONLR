@@ -1,13 +1,13 @@
 -- The component type physics.body: a body of love.physics, as a component.
 -- It does what a game with love.physics does by hand: it makes the body in the root's world at the node's place,
--- fixes to it the shapes of its node and of the nodes under it, keeps it and the node in step, and ends it.
--- Its shapes are components of their own: physics.shape.box, physics.shape.circle and physics.shape.polygon. So are its joints.
+-- fixes to it the fixtures of its node and of the nodes under it, keeps it and the node in step, and ends it.
+-- Its fixtures are components of their own, physics.fixture, which take their nodes' onlr.shape. So are its joints, physics.joint.
 local onlr = require("onlr")
 
 ---@class physics.body : onlr.Component
 ---@field world physics.world
 ---@field b love.Body? the body of love.physics while the component runs
----@field shapes table[] the shapes fixed to it, which their own components add
+---@field fixtures physics.fixture[] the fixtures fixed to it, which their own components add
 ---@field joints table[] the joints that hold it, which their own components add
 ---@field private x number where the node was when the body and it were last in step
 ---@field private y number
@@ -34,11 +34,11 @@ end
 -- Once: finds the root's one world, and adds one to the root when the tree has none.
 function Body:load()
   self.world = onlr.tree.findComponent("physics.world") or onlr.tree.root:addComponent("physics.world")
-  self.shapes = self.shapes or {}
+  self.fixtures = self.fixtures or {}
   self.joints = self.joints or {}
 end
 
--- Each time the body starts to run: it is made at the node's place, with the shapes that are fixed to it.
+-- Each time the body starts to run: it is made at the node's place, with the fixtures that are fixed to it.
 function Body:enable()
   local x, y, angle = place(self.node)
   local b = love.physics.newBody(self.world:get(), x, y, self.type)
@@ -49,8 +49,8 @@ function Body:enable()
   b:setLinearDamping(self.linearDamping)
   b:setAngularDamping(self.angularDamping)
   self.b, self.x, self.y, self.angle = b, x, y, angle
-  for _, shape in ipairs(self.shapes) do
-    shape:_fix()
+  for _, fixture in ipairs(self.fixtures) do
+    fixture:_fix()
   end
   self.world:_add(self)
   -- a joint is made when both of its bodies run, so the second of the two to start makes it
@@ -65,8 +65,8 @@ function Body:disable()
   for _, joint in ipairs(self.joints) do
     joint:_unjoin()
   end
-  for _, shape in ipairs(self.shapes) do
-    shape:_unfix()
+  for _, fixture in ipairs(self.fixtures) do
+    fixture:_unfix()
   end
   if self.b and not self.b:isDestroyed() then
     self.b:destroy()
@@ -81,24 +81,24 @@ function Body:get()
   return self.b
 end
 
----A shape's component fixes itself to the body. Not called by scripts.
-function Body:_attach(shape)
-  self.shapes = self.shapes or {}
-  self.shapes[#self.shapes + 1] = shape
+---A fixture fixes itself to the body. Not called by scripts.
+function Body:_attach(fixture)
+  self.fixtures = self.fixtures or {}
+  self.fixtures[#self.fixtures + 1] = fixture
   if self.b then
-    shape:_fix()
+    fixture:_fix()
   end
 end
 
----A shape's component takes itself off the body. Not called by scripts.
-function Body:_detach(shape)
-  for i, other in ipairs(self.shapes or {}) do
-    if other == shape then
-      table.remove(self.shapes, i)
+---A fixture takes itself off the body. Not called by scripts.
+function Body:_detach(fixture)
+  for i, other in ipairs(self.fixtures or {}) do
+    if other == fixture then
+      table.remove(self.fixtures, i)
       break
     end
   end
-  shape:_unfix()
+  fixture:_unfix()
 end
 
 ---A joint's component holds the body. Not called by scripts.
