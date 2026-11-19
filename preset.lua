@@ -37,7 +37,7 @@ return {
               },
               { share = 1, panels = { { type = "onlr.view" } } },
             },
-            { share = 2, panels = { { type = "console.log" }, { type = "files.tree" } } },
+            { share = 2, panels = { { type = "console.log" }, { type = "files.tree" }, { type = "onlr.history" } } },
           },
           {
             size = 340,

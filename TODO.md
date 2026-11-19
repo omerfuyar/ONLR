@@ -6,7 +6,7 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in this order.
 
-1. **The editor's look and use.** The owner's wishes are under [Editor](#editor). The owner chose these from Unity's list: the eye and the lock (built, DESIGN 13.3), a button that picks a node for a reference (built, 13.4), a list of the history, and Pause on Error.
+1. **The editor's look and use.** The owner's wishes are under [Editor](#editor). The owner chose these from Unity's list: the eye and the lock (built, DESIGN 13.3), a button that picks a node for a reference (built, 13.4), a list of the history (built, 13.6), and Pause on Error.
 2. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
 3. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, and the second round. The camera's helpers are built too (DESIGN 10).
 4. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
@@ -42,7 +42,7 @@ What the owner wants worked on, in this order.
   - The files panel: favourite folders; Find what names this file.
   - The console: Pause on Error. An error's entry holds its stack, so no pane is needed for it.
   - Playing: a tint over the editor while the game plays, such as OpenECS's frame colour, `ecs.colorFrame`, which waits for a way to set a setting for the run only, as `ecs.setting.set` writes the user's file; sizes of the window to choose from, such as a phone's; values that were changed in the running game, with a way to keep them.
-  - The editor: a list of the history's records, to jump back to one; a search over every function, node and file with one key. A window for keys is OpenECS-std's key list now (below).
+  - The editor: a search over every function, node and file with one key. A window for keys is OpenECS-std's key list now (below).
   - Tools of their own, each a panel: a cutter of sprite sheets into quads, a timeline for animations, a palette for tile maps.
 - **Panels for later.** Ideas, each a panel type of a plugin (DESIGN 13.1): a node editor, in which the user connects nodes to write logic without code, as Unreal's Blueprints do, and whose output is a script, so the engine needs nothing new; a tile editor, which waits for the choice of a library for tile maps (see [Libraries](#libraries)).
 - **Video in the asset viewer.** For later. LÖVE plays Ogg Theora video, and OpenECS-std's video reads MPEG-1 only, so the asset viewer shows no video (DESIGN 13.1).

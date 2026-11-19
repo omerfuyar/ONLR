@@ -13,13 +13,14 @@ require("nodes")
 require("inspector")
 require("tools")
 require("settings")
+require("history")
 
 -- What the project says shows in the console.
 ecs.event.subscribe("onlr.said", function(_, text)
   console.add(text, "info")
 end)
 
-for _, panel in ipairs({ "onlr.nodes", "onlr.inspector", "onlr.tools", "onlr.settings" }) do
+for _, panel in ipairs({ "onlr.nodes", "onlr.inspector", "onlr.tools", "onlr.settings", "onlr.history" }) do
   for key, name in pairs({ ["Ctrl+Z"] = "onlr.undo", ["Ctrl+Y"] = "onlr.redo", ["Ctrl+S"] = "onlr.save" }) do
     ecs.key.bind(panel, key, name)
   end

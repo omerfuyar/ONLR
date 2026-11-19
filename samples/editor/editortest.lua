@@ -721,9 +721,38 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the added node is undone")
 
+    -- the history panel, the third tab beside the console, lists every record: a click on its first row, before every change, undoes
+    -- them all, and Redo brings them back (DESIGN 13.6)
+    local console = test.rect(panelOf(test, "console.log"))
+    save()
+    local before = read("nodes/start.lua")
+    local history = panelOf(test, "onlr.history")
+    local done = test.panel(history).state.position
+    check(done > 0, "the history holds the test's records")
+    local function shown()
+      local ok, rect = pcall(test.rect, history)
+      return ok and rect or nil
+    end
+    for _, across in ipairs({ 185, 200, 215, 230 }) do
+      if not shown() then
+        test.click(console.x + across, console.y - 14)
+        test.wait(0.2)
+      end
+    end
+    local list = assert(shown(), "the history's tab shows it")
+    test.click(list.x + 60, list.y + 20)
+    test.wait(0.3)
+    check(test.panel(history).state.position == 0, "a click on the first row undoes every record: " .. test.panel(history).state.position)
+    for _ = 1, done do
+      test.key("Ctrl+Y")
+    end
+    test.wait(0.3)
+    check(test.panel(history).state.position == done, "Redo brings them back")
+    save()
+    check(read("nodes/start.lua") == before, "as they were:\n" .. read("nodes/start.lua"))
+
     -- the files panel renames a file: every path that names it changes with it, and the files are saved (DESIGN 13.7)
     -- the files panel is a tab beside the console, which shows first
-    local console = test.rect(panelOf(test, "console.log"))
     test.click(console.x + 125, console.y - 14)
     test.wait(0.2)
     local files = test.rect(panelOf(test, "files.tree"))
