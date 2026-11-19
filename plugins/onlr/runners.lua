@@ -159,7 +159,7 @@ local function sendView(id)
   if preview and preview.ready and view then
     send(preview, {
       type = "view", id = id, path = view.path, x = view.x, y = view.y, zoom = view.zoom,
-      width = view.width, height = view.height, chosen = view.chosen,
+      width = view.width, height = view.height, chosen = view.chosen, hidden = view.hidden,
     })
     if view.width >= 1 and view.height >= 1 then
       preview.owed[id] = true

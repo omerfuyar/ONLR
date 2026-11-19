@@ -37,16 +37,21 @@ end
 
 -- The nodes of the tree element, from a node of the file. With a search, only the nodes that match and those above them
 -- show, all open; nil when none under the node matches.
-local function treeNodes(node, open, search, opened)
+local function treeNodes(node, open, search, opened, marked)
   local label = node.name or "(no name)"
   if node.instanceOf then
     label = label .. "  (" .. node.instanceOf:match("[^/]*$") .. ")"
+  end
+  -- the eye and the lock of the node view (DESIGN 13.4): a hidden node is dimmed, and each mark is named after the node
+  local hidden, locked = marked.hidden[node.path], marked.locked[node.path]
+  if hidden or locked then
+    label = label .. "  [" .. (hidden and locked and "hidden, locked" or hidden and "hidden" or "locked") .. "]"
   end
   local children
   if #node.children > 0 then
     children = {}
     for _, child in ipairs(node.children) do
-      children[#children + 1] = treeNodes(child, open, search, opened)
+      children[#children + 1] = treeNodes(child, open, search, opened, marked)
     end
     if #children == 0 then
       children = nil
@@ -58,7 +63,7 @@ local function treeNodes(node, open, search, opened)
     end
     opened[node.path] = true
   end
-  local color = #node.errors > 0 and "#e06c75" or not node.active and "textDim" or not node.own and "accent" or nil
+  local color = #node.errors > 0 and "#e06c75" or (not node.active or hidden) and "textDim" or not node.own and "accent" or nil
   return { id = node.path, label = label, color = color, children = children }
 end
 
@@ -274,6 +279,9 @@ menu = function(state, file, id, x, y)
       say(project.deleteNodes(file, paths))
     end },
     { line = true },
+    { label = "Hide in the view", keys = "H", onClick = nodeview.hideChosen },
+    { label = "Lock in the view", keys = "L", onClick = nodeview.lockChosen },
+    { line = true },
     { label = "Move up", enabled = one and at > 1, onClick = function() reorder(file, "up") end },
     { label = "Move down", enabled = one and at > 0 and at < #siblings, onClick = function() reorder(file, "down") end },
     { label = "Move out of its parent", enabled = one and node.parent ~= nil and node.parent.parent ~= nil, onClick = function() reorder(file, "out") end },
@@ -330,7 +338,7 @@ local function draw(state, surface)
       end })
       local search = state.search
       local opened = search and {} or state.open
-      local shown = treeNodes(first, state.open, search, opened)
+      local shown = treeNodes(first, state.open, search, opened, { hidden = nodeview.marks("hidden", file), locked = nodeview.marks("locked", file) })
       local renaming = state.renaming
       if renaming and renaming.file == file then
         children[#children + 1] = ui.row({ gap = 4, align = "center" }, {
@@ -402,6 +410,13 @@ local function draw(state, surface)
   end
   ui.show(state.panel, surface, ui.column({ padding = 8, gap = 6 }, children))
 end
+
+-- A node hidden or locked in the node view shows its mark in the tree at once.
+ecs.event.subscribe("onlr.settings", function(_, name)
+  if name == "hidden" or name == "locked" then
+    shared.redraw()
+  end
+end)
 
 ecs.panel.registerType({
   name = "nodes",

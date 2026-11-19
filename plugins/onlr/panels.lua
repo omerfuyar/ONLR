@@ -26,6 +26,8 @@ for _, panel in ipairs({ "onlr.nodes", "onlr.inspector", "onlr.tools", "onlr.set
 end
 ecs.key.bind("onlr.nodes", "Delete", "onlr.deleteChosen")
 ecs.key.bind("onlr.nodes", "Ctrl+D", "onlr.duplicateChosen")
+ecs.key.bind("onlr.nodes", "H", "onlr.hideChosen")
+ecs.key.bind("onlr.nodes", "L", "onlr.lockChosen")
 
 -- The files panel shows the project's folder, and the editor says what its files are (DESIGN 13.7).
 local function showFolder()

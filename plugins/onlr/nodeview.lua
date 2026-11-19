@@ -42,6 +42,52 @@ local views = {} ---@type table<ecs.Panel, onlr.editor.View>
 local nextId = 0
 local focused ---@type onlr.editor.View? the node view that had the focus last
 
+-- The eye and the lock (DESIGN 13.3): the nodes of a node file that the user hid in the node view, or locked against being chosen
+-- there, kept in the project's settings by the file and the node's path. A mark holds for the nodes under the node too.
+---@param kind "hidden"|"locked"
+---@return table<string, boolean>
+local function marks(kind, file)
+  local all = project.setting(kind)
+  return type(all) == "table" and type(all[file]) == "table" and all[file] or {}
+end
+
+-- Whether a node of a view, or a node above it, has the mark.
+local function isMarked(view, kind, path)
+  local set = marks(kind, view.file)
+  local node = view.byPath[path]
+  while node do
+    if set[node.path] then
+      return true
+    end
+    node = node.parent and view.byPath[node.parent]
+  end
+  return set[path] == true
+end
+
+-- Marks the nodes, or takes the mark off when each has it already, as Unity's eye does for many.
+local function toggleMarks(kind, file, paths)
+  local all = format.copy(type(project.setting(kind)) == "table" and project.setting(kind) or {})
+  local set = type(all[file]) == "table" and all[file] or {}
+  local every = #paths > 0
+  for _, path in ipairs(paths) do
+    every = every and set[path] == true
+  end
+  for _, path in ipairs(paths) do
+    set[path] = not every or nil
+  end
+  all[file] = next(set) and set or nil
+  project.setSetting(kind, all)
+end
+
+local function hiddenList(file)
+  local list = {}
+  for path in pairs(marks("hidden", file)) do
+    list[#list + 1] = path
+  end
+  table.sort(list)
+  return list
+end
+
 local function sync(view)
   if not view.file or view.width < 1 then
     return
@@ -49,6 +95,7 @@ local function sync(view)
   runners.setView(view.id, {
     path = view.file, x = view.x, y = view.y, zoom = view.zoom * view.scale,
     width = math.floor(view.width * view.scale), height = math.floor(view.height * view.scale), chosen = view.chosen,
+    hidden = hiddenList(view.file),
   })
 end
 
@@ -228,7 +275,9 @@ local function hits(view, sx, sy)
   for i = #view.nodes, 1, -1 do
     local node = view.nodes[i]
     local hit
-    if node.rect then
+    if isMarked(view, "hidden", node.path) or isMarked(view, "locked", node.path) then
+      hit = false
+    elseif node.rect then
       local x, y = worldToNode(node.place, wx, wy)
       hit = x >= node.rect[1] and y >= node.rect[2] and x <= node.rect[1] + node.rect[3] and y <= node.rect[2] + node.rect[4]
     else
@@ -481,7 +530,9 @@ local function drawView(view, surface)
   for _, node in ipairs(view.nodes) do
     local chosen = isChosen(view, node.path)
     local color = node.errors and "#e06c75" or chosen and "accent" or nil
-    if node.rect then
+    if isMarked(view, "hidden", node.path) then
+      -- a hidden node draws nothing, not even its outline or its marker
+    elseif node.rect then
       if color then
         outline(surface, view, node, color, chosen and 2 or 1)
       end
@@ -950,6 +1001,9 @@ local function menu(view, event, x, y)
     { label = "Frame chosen", keys = "F", onClick = function()
       frame(view)
     end },
+    { line = true },
+    { label = "Hide in the view", keys = "H", onClick = functions.hideChosen.fn },
+    { label = "Lock in the view", keys = "L", onClick = functions.lockChosen.fn },
   })
 end
 
@@ -1049,7 +1103,8 @@ local function pointer(view, event)
           cx, cy = node.rect[1] + node.rect[3] / 2, node.rect[2] + node.rect[4] / 2
         end
         local sx, sy = toScreen(view, nodeToWorld(node, cx, cy))
-        if sx >= x1 and sx <= x2 and sy >= y1 and sy <= y2 and not isChosen({ chosen = paths }, node.path) then
+        local free = not isMarked(view, "hidden", node.path) and not isMarked(view, "locked", node.path)
+        if free and sx >= x1 and sx <= x2 and sy >= y1 and sy <= y2 and not isChosen({ chosen = paths }, node.path) then
           paths[#paths + 1] = node.path
         end
       end
@@ -1247,8 +1302,11 @@ ecs.event.subscribe("onlr.chosen", function(_, chosen)
 end)
 
 for _, name in ipairs({ "onlr.tool", "onlr.settings" }) do
-  ecs.event.subscribe(name, function()
+  ecs.event.subscribe(name, function(_, setting)
     for _, view in pairs(views) do
+      if setting == "hidden" then
+        sync(view)
+      end
       view.panel:redraw()
     end
   end)
@@ -1345,6 +1403,12 @@ functions = {
       frame(view)
     end
   end },
+  hideChosen = { sig = "void()", doc = "Hide the chosen nodes in the node view, or show them again", fn = onChosen(function(file, paths)
+    toggleMarks("hidden", file, paths)
+  end) },
+  lockChosen = { sig = "void()", doc = "Lock the chosen nodes against being chosen in the node view, or unlock them", fn = onChosen(function(file, paths)
+    toggleMarks("locked", file, paths)
+  end) },
   toolMove = { sig = "void()", doc = "The move tool", fn = function()
     project.setTool("move")
   end },
@@ -1374,7 +1438,8 @@ for key, name in pairs({
   ["Ctrl+Shift+Z"] = "onlr.redo", ["Ctrl+S"] = "onlr.save", ["F5"] = "onlr.play",
   ["F6"] = "onlr.playFile", ["F7"] = "onlr.pause", ["F8"] = "onlr.step",
   ["Shift+F5"] = "onlr.stop", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
-  ["R"] = "onlr.toolScale", ["T"] = "onlr.toolShape", ["F"] = "onlr.frame",
+  ["R"] = "onlr.toolScale", ["T"] = "onlr.toolShape", ["F"] = "onlr.frame", ["H"] = "onlr.hideChosen",
+  ["L"] = "onlr.lockChosen",
 }) do
   ecs.key.bind("onlr.view", key, name)
 end
@@ -1386,7 +1451,7 @@ end
 
 -- The other parts call the functions themselves; init.lua registers them as the plugin's (DESIGN 13.1).
 ---@type table<string, any>
-local part = { functions = functions }
+local part = { functions = functions, marks = marks }
 for name, entry in pairs(functions) do
   part[name] = entry.fn
 end
