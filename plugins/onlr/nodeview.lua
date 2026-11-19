@@ -195,6 +195,29 @@ local function gizmo(view)
   return x, y, lead
 end
 
+-- The directions of a node's own x and y in the world, of length 1, which the scale tool's grips follow (DESIGN 13.3); the world's
+-- for an axis that a scale of 0 flattens.
+local function ownAxes(node)
+  local p = node.place
+  local xl, yl = math.sqrt(p[1] ^ 2 + p[2] ^ 2), math.sqrt(p[3] ^ 2 + p[4] ^ 2)
+  local ux, uy = 1, 0
+  local vx, vy = 0, 1
+  if xl > 1e-9 then
+    ux, uy = p[1] / xl, p[2] / xl
+  end
+  if yl > 1e-9 then
+    vx, vy = p[3] / yl, p[4] / yl
+  end
+  return ux, uy, vx, vy
+end
+
+-- The scale tool's grip on an axis: whether a point of the panel is on the line from the gizmo along the direction, or on its box.
+local function onGrip(x, y, dx, dy, sx, sy)
+  local along = (sx - x) * dx + (sy - y) * dy
+  local across = math.abs((sx - x) * -dy + (sy - y) * dx)
+  return along >= 14 and along <= HANDLE + 6 and across <= 6
+end
+
 -- The nodes under a point of the view, the one that draws last first.
 local function hits(view, sx, sy)
   local wx, wy = toWorld(view, sx, sy)
@@ -218,7 +241,7 @@ local function hits(view, sx, sy)
 end
 
 -- The gizmo's handle under a point of the panel (DESIGN 13.3): the leading node's path and the axis, "x" or "y" for an arrow of the
--- move tool and "both" for the square between them, or for the turn tool's ring and the scale tool's square; or nil.
+-- move tool and the scale tool's grips, and "both" for the square between the arrows, the turn tool's ring or the scale tool's square; or nil.
 local function handleAt(view, sx, sy)
   local gx, gy, lead = gizmo(view)
   if not gx or not lead then
@@ -232,6 +255,15 @@ local function handleAt(view, sx, sy)
     elseif math.abs(sy - y) <= 6 and sx >= x + 8 and sx <= x + HANDLE + 4 then
       return lead.path, "x"
     elseif math.abs(sx - x) <= 6 and sy >= y + 8 and sy <= y + HANDLE + 4 then
+      return lead.path, "y"
+    end
+  elseif tool == "scale" then
+    local ux, uy, vx, vy = ownAxes(lead)
+    if math.abs(sx - x) <= 12 and math.abs(sy - y) <= 12 then
+      return lead.path, "both"
+    elseif onGrip(x, y, ux, uy, sx, sy) then
+      return lead.path, "x"
+    elseif onGrip(x, y, vx, vy, sx, sy) then
       return lead.path, "y"
     end
   elseif math.abs(sx - x) <= 16 and math.abs(sy - y) <= 16 then
@@ -367,6 +399,18 @@ local function drawView(view, surface)
       local length = math.max(1e-6, math.sqrt((ax - ox) ^ 2 + (ay - oy) ^ 2))
       gpu.line(surface, x, y, x + (ax - ox) / length * 14, y + (ay - oy) / length * 14, 2, "accent")
     else
+      -- a grip along each of the leading node's own axes scales that axis alone, as Unity's do; the square scales both
+      local axis = view.drag and view.drag.kind == "tool" and view.drag.axis
+      local ux, uy, vx, vy = ownAxes(lead)
+      for _, grip in ipairs({ { "x", ux, uy, AXIS_X }, { "y", vx, vy, AXIS_Y } }) do
+        local color = axis == grip[1] and "accent" or grip[4]
+        local ex, ey = x + grip[2] * HANDLE, y + grip[3] * HANDLE
+        gpu.line(surface, x + grip[2] * 14, y + grip[3] * 14, ex, ey, 2, color)
+        gpu.fill(surface, ex - 5, ey - 5, 10, 10, color)
+      end
+      if axis == "both" then
+        gpu.fill(surface, x - 12, y - 12, 24, 24, "accent")
+      end
       frameRect(surface, x - 12, y - 12, 24, 24, 2, "accent")
       gpu.fill(surface, x + 8, y + 8, 8, 8, "accent")
     end
@@ -495,7 +539,15 @@ local function startToolDrag(view, sx, sy)
     end
   end
   local wx, wy = toWorld(view, sx, sy)
-  view.drag = { kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, centerX = centerX, centerY = centerY, fields = {} }
+  local lead = select(3, gizmo(view))
+  local ux, uy, vx, vy = 1, 0, 0, 1
+  if lead then
+    ux, uy, vx, vy = ownAxes(lead)
+  end
+  view.drag = {
+    kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, centerX = centerX, centerY = centerY, fields = {},
+    axes = { x = { ux, uy }, y = { vx, vy } },
+  }
 end
 
 local TURN_STEP = math.pi / 12
@@ -526,6 +578,16 @@ local function toolDrag(view, sx, sy, ctrl)
       local cos, sin = math.cos(angle), math.sin(angle)
       toX, toY = offX * cos - offY * sin - offX, offX * sin + offY * cos - offY
       fields.rot = n.rot + angle
+    elseif d.axis == "x" or d.axis == "y" then
+      -- a grip scales along the leading node's axis alone, by how far the pointer goes along it from the gizmo; each node scales its
+      -- own x or y by that amount
+      local u = d.axes[d.axis]
+      local from = (d.startX - cx) * u[1] + (d.startY - cy) * u[2]
+      local f = math.abs(from) > 1e-9 and ((wx - cx) * u[1] + (wy - cy) * u[2]) / from or 1
+      local along = offX * u[1] + offY * u[2]
+      toX, toY = (f - 1) * along * u[1], (f - 1) * along * u[2]
+      fields.sclX = d.axis == "x" and n.sclX * f or n.sclX
+      fields.sclY = d.axis == "y" and n.sclY * f or n.sclY
     else
       toX, toY = offX * factor - offX, offY * factor - offY
       fields.sclX, fields.sclY = n.sclX * factor, n.sclY * factor
@@ -675,7 +737,7 @@ local function pointer(view, event)
     if event.button == 2 or (event.button == 1 and event.alt) then
       view.drag = { kind = "pan", startX = x, startY = y, viewX = view.x, viewY = view.y }
     elseif event.button == 1 and view.file and handleAt(view, x, y) then
-      -- a handle of the move tool is above the nodes, and drags the chosen nodes along its axis, or both
+      -- a handle of the move or scale tool is above the nodes, and drags the chosen nodes along its axis, or both
       local path, axis = handleAt(view, x, y)
       view.press = { x = x, y = y, found = { path }, axis = axis, wasChosen = true }
     elseif event.button == 1 and view.file then
