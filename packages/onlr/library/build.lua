@@ -230,7 +230,10 @@ local function preload(path, ctx, name, seen)
     elseif kind == "image" and value then
       property.load(ctx, name, "image", value)
     elseif kind == "sound" and value then
-      property.load(ctx, name, "sound", value, decl.options.stream or false)
+      local path, stream = property.soundOf(decl, value)
+      if path then
+        property.load(ctx, name, "sound", path, stream)
+      end
     elseif kind == "font" then
       property.load(ctx, name, "font", type(value) == "table" and value.path or nil,
         type(value) == "table" and value.size or decl.options.size or 12)

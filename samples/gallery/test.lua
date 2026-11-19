@@ -59,9 +59,9 @@ check.run(function()
     elseif root.name == "Tweens" then
       check.ok(tree.find("Linear").posX > 80, "a box slides")
     elseif root.name == "Sound" then
-      check.ok(tree.find("Music").components.audio.music:isPlaying(), "the music plays")
+      check.ok(tree.find("Music").components.audio.source:isPlaying(), "the music plays")
       tree.find("Music on"):send("changed", false)
-      check.equal(tree.find("Music").components.audio.music:isPlaying(), false, "the checkbox pauses it")
+      check.equal(tree.find("Music").components.audio.source:isPlaying(), false, "the checkbox pauses it")
     elseif root.name == "Interface" then
       tree.find("Size"):send("changed", 50)
       check.equal(tree.find("Shown").components.onlr.shape.radius, 50, "the slider sizes the circle")

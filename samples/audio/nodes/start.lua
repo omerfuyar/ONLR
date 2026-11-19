@@ -1,4 +1,4 @@
--- The audio package's sample: the ears at the window's middle; music that streams and loops; a beep that a script
+-- The audio package's sample: the ears at the window's middle; music that streams and loops, a source with stream on; a beep that a script
 -- plays; and a hum to the right that plays from its node's place.
 ---@type onlr.NodeFile
 return {
@@ -25,8 +25,10 @@ return {
       name = "Song",
       components = {
         audio = {
-          music = {
-            sound = "sounds/song.wav",
+          source = {
+            autoPlay = true,
+            looping = true,
+            sound = { path = "sounds/song.wav", stream = true },
             volume = 0.4,
           },
         },

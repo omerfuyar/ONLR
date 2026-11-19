@@ -6,7 +6,7 @@ return {
   name = "Sound",
   components = {
     room = {
-      about = "audio.source, audio.music and audio.listener. The hum slides past the listener, from the left to the right.",
+      about = "audio.source, decoded whole or streamed, and audio.listener. The hum slides past the listener, from the left to the right.",
       title = "Sound (love.audio)",
     },
   },
@@ -46,7 +46,12 @@ return {
       name = "Music",
       components = {
         audio = {
-          music = { sound = "sounds/song.wav", volume = 0.3 },
+          source = {
+            autoPlay = true,
+            looping = true,
+            sound = { path = "sounds/song.wav", stream = true },
+            volume = 0.3,
+          },
         },
       },
     },

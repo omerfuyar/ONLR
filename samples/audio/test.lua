@@ -1,7 +1,7 @@
--- Checks the audio package (DESIGN 11.12): music streams and loops from its start; a source plays when a script asks,
+-- Checks the audio package (DESIGN 11.12): a source of music streams and loops from its start; a source plays when a script asks,
 -- and its node is told when it ends; playNew plays copies over each other; a sound with a place follows its node, and
 -- one without plays at the listener; a script's changes reach LÖVE; a node turned off pauses its sounds; the listener
--- hears from its node, or from its camera's point; and a stereo sound cannot have a place.
+-- hears from its node, or from its camera's point; a stereo sound cannot have a place; and a script may stream a sound.
 local check = require("check")
 local onlr = require("onlr")
 
@@ -15,8 +15,8 @@ check.run(function()
   local tree = onlr.tree
   check.frames(1)
 
-  -- Music: streamed, looping, playing from the start.
-  local song = assert(tree.find("Song")).components.audio.music
+  -- Music: a source that streams, loops and plays from its start.
+  local song = assert(tree.find("Song")).components.audio.source
   local track = assert(song:get())
   check.equal(track:getType(), "stream", "music streams")
   check.equal(track:isLooping(), true, "and loops")
@@ -101,4 +101,9 @@ check.run(function()
   wide:play()
   check.equal(wide:isPlaying(), true, "and plays without one")
   wide:stop()
+
+  -- A script gives a sound as a path, or with stream.
+  local streamed = tree.newNode("Streamed"):addComponent("audio.source", { sound = { path = "sounds/beep.wav", stream = true } })
+  check.equal(assert(streamed:get()):getType(), "stream", "a script's sound with stream streams")
+  check.equal(wide:get():getType(), "static", "and a path alone is decoded whole")
 end)

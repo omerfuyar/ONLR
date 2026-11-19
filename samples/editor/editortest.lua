@@ -458,6 +458,15 @@ return {
     save()
     check(read("nodes/start.lua") == start, "a path outside the project is refused")
 
+    -- a sound's row has a Stream toggle beside its file, which the node file keeps with the path (DESIGN 6.2)
+    test.click(inspected("aaaaaa:thing:sound:stream", 0.5))
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua"):find("sound = {%s*stream = true,?%s*}"), "Stream is kept with the sound:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "Stream is undone")
+
     -- Add component, at the inspector's end, shows the types in folders by their names' dots, a folder at a time: onlr's folder
     -- first, then marker, the project's script. Return opens onlr in place, Left goes back, and Down and Return add marker.
     fold("aaaaaa:thing")
