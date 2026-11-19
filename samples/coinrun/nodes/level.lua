@@ -47,13 +47,13 @@ return {
           components = {
             -- A package's component: packages/bump/components/body.lua.
             bump = {
-              body = {
-                height = 48,
-                width = 32,
-              },
+              body = {},
             },
-            -- One of the engine's own components: packages/onlr/components/sprite.lua.
+            -- The engine's own components: packages/onlr/components/shape.lua is the body's box, and sprite.lua the picture.
             onlr = {
+              shape = {
+                height = 48,
+              },
               sprite = {
                 image = "images/player.png",
               },
@@ -91,10 +91,7 @@ return {
           posY = 600,
           components = {
             bump = {
-              body = {
-                height = 120,
-                width = 1280,
-              },
+              body = {},
             },
             onlr = {
               paint = {

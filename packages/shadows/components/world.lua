@@ -1,6 +1,6 @@
 -- The component type shadows.world: a group (DESIGN 5) that draws its node and all under it, then darkens them where
 -- no light reaches. The lights are shadows.light components on its node or under it, and what blocks them are
--- shadows.shape components. It is Shädows' LightWorld, drawn where the drawing is, so a camera above it moves the light
+-- shadows.caster components. It is Shädows' LightWorld, drawn where the drawing is, so a camera above it moves the light
 -- with the world.
 local onlr = require("onlr")
 require("shadows") -- the library, which makes its modules ready to require
@@ -8,7 +8,7 @@ local LightWorld = require("shadows.LightWorld")
 
 ---@class shadows.world : onlr.Component
 ---@field private lit table? Shädows' LightWorld
----@field private members table[] its lights and shapes, which it moves to their nodes before it draws
+---@field private members table[] its lights and casters, which it moves to their nodes before it draws
 ---@field private width number?
 ---@field private height number?
 local World = {}
@@ -17,7 +17,7 @@ World.color = onlr.property.color({ 0, 0, 0, 1 }, {
   description = "The colour where no light reaches, which the scene is multiplied by: black is dark, white is no darkness",
 })
 
--- Shädows' world, made when it is first needed: its lights and shapes may load before it on the same node.
+-- Shädows' world, made when it is first needed: its lights and casters may load before it on the same node.
 ---@return table
 function World:_world()
   if not self.lit then
@@ -96,11 +96,11 @@ function World:get()
   return self:_world()
 end
 
--- The shadows.world on a node or the nearest above it, for a light or a shape, or an error that names the component.
+-- The shadows.world on a node or the nearest above it, for a light or a caster. When there is none, one is added to the root,
+-- as a body of physics or of bump adds its world (DESIGN 11.3).
 ---@param component onlr.Component
----@param what string
 ---@return shadows.world
-function World.find(component, what)
+function World.find(component)
   local node = component.node ---@type onlr.Node?
   while node do
     local world = node.components.shadows.world
@@ -109,7 +109,7 @@ function World.find(component, what)
     end
     node = node:getParent()
   end
-  error(("%s on %s: no shadows.world on its node or above it"):format(what, component.node.name), 0)
+  return onlr.tree.root:addComponent("shadows.world")
 end
 
 return World

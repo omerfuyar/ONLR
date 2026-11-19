@@ -48,9 +48,7 @@ return {
           },
         },
         shadows = {
-          shape = {
-            box = { height = 40, width = 40 },
-          },
+          caster = {},
         },
       },
     },
@@ -70,9 +68,7 @@ return {
           },
         },
         shadows = {
-          shape = {
-            circle = { radius = 22 },
-          },
+          caster = {},
         },
       },
     },
@@ -92,11 +88,7 @@ return {
           },
         },
         shadows = {
-          shape = {
-            polygon = {
-              points = { { x = 0, y = -24 }, { x = 22, y = 16 }, { x = -22, y = 16 } },
-            },
-          },
+          caster = {},
         },
       },
     },

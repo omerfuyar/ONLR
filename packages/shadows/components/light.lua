@@ -1,4 +1,4 @@
--- The component type shadows.light: a light at its node, which shapes in its way cast shadows from. It belongs to the
+-- The component type shadows.light: a light at its node, which casters in its way cast shadows from. It belongs to the
 -- nearest shadows.world on its node or above it, and follows its node's place and angle.
 local onlr = require("onlr")
 require("shadows")
@@ -21,7 +21,7 @@ Lamp.blur = onlr.property.bool(true, { description = "Soft edges of its shadows,
 Lamp.sizeRadius = onlr.property.number(10, { min = 0, description = "How large the light's source is: larger softens far shadows more" })
 
 function Lamp:enable()
-  self.world = World.find(self, "shadows.light")
+  self.world = World.find(self)
   self.light = Light:new(self.world:_world(), self.radius)
   self.world:_add(self)
   self:_sync()

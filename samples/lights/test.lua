@@ -48,6 +48,30 @@ check.run(function()
   check.frames(1)
   dark(58, 30, "and in shadow again")
 
+  -- The wall's shadow is its onlr.shape: a shape made longer casts a longer shadow, and one of another kind casts its own.
+  local shape = wall.components.onlr.shape
+  local caster = wall.components.shadows.caster
+  local box = caster:get()
+  shape.height = 40
+  check.frames(1)
+  dark(58, 60, "a longer wall casts a longer shadow")
+  shape.kind, shape.radius = "circle", 4
+  check.frames(1)
+  check.ok(caster:get() ~= nil and caster:get() ~= box, "a circle casts its own shadow")
+  shape.kind, shape.height = "rectangle", 10
+  check.frames(1)
+  dark(58, 30, "and the wall casts its shadow again")
+
+  -- A light with no world above it adds one to the root, as a body of physics or bump does.
+  local loose = tree.newNode("Loose")
+  check.equal(tree.root.components.shadows.world, nil, "the root has no world of its own")
+  loose:addComponent("shadows.light")
+  check.ok(tree.root.components.shadows.world ~= nil, "the light added a world to the root")
+  -- the root's world would darken all under it, the room's own world too, so it goes with the light
+  loose:destroy()
+  tree.root:removeComponent("shadows.world")
+  check.frames(1)
+
   -- The lamp follows its node, and takes its colour.
   local lamp = assert(tree.find("Lamp"))
   local light = lamp.components.shadows.light
