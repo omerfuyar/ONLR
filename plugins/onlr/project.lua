@@ -2030,6 +2030,33 @@ local functions = {
   historyState = { sig = "value()", doc = "The history: how many changes are done, and how many it holds", fn = function()
     return { position = P and P.position or 0, count = P and #P.history or 0 }
   end },
+  history = { sig = "value()", doc = "The history's records, the first done first: each one's label and the files that it changed; and how many are done",
+    fn = function()
+      local records = {}
+      for i, record in ipairs(P and P.history or {}) do
+        local paths = {}
+        for path in pairs(record.files) do
+          paths[#paths + 1] = path
+        end
+        table.sort(paths)
+        records[i] = { label = record.label, files = paths }
+      end
+      return { position = P and P.position or 0, records = records }
+    end },
+  goTo = { sig = "void(int position)", doc = "Undo or redo until that many records are done, as a jump in the history panel", fn = function(position)
+    if not P then
+      return
+    end
+    position = math.max(0, math.min(#P.history, position))
+    while P.position > position do
+      P.position = P.position - 1
+      step(P.history[P.position + 1], "before")
+    end
+    while P.position < position do
+      P.position = P.position + 1
+      step(P.history[P.position], "after")
+    end
+  end },
   openPath = { sig = "void(string path)", doc = "Open the project that holds a file or a folder", fn = function(path)
     open(path)
   end },
