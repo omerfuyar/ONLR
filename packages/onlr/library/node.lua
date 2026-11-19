@@ -166,7 +166,7 @@ function nodes.assign(r, values)
     local kind = decl.kind
     if value ~= nil and (kind == "image" or kind == "sound") and _G.type(value) == "string" then
       value = property.convert(decl, value, ctx, p.name, function() return nil end)
-    elseif value ~= nil and kind == "font" and _G.type(value) == "table" and not value.typeOf then
+    elseif value ~= nil and (kind == "font" or kind == "sound") and _G.type(value) == "table" and not value.typeOf then
       value = property.convert(decl, value, ctx, p.name, function() return nil end)
     elseif value == nil then
       value = property.merge(decl, {}, ctx, p.name)

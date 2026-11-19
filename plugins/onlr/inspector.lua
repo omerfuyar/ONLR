@@ -184,7 +184,37 @@ local function control(state, subject, id, decl, value, set)
       end)
     end
     return ui.row({ gap = 4, grow = 1 }, { part("x"), part("y") })
-  elseif kind == "image" or kind == "sound" or kind == "file" or kind == "nodeFile" then
+  elseif kind == "sound" then
+    -- A sound is a file and whether LÖVE streams it. The node file keeps a path alone while stream is the type's.
+    local path, stream = value, options.stream or false
+    if type(value) == "table" then
+      path = value.path
+      if value.stream ~= nil then
+        stream = value.stream
+      end
+    end
+    local function write(newPath, newStream)
+      if newStream == (options.stream or false) then
+        set(newPath)
+      else
+        set({ path = newPath, stream = newStream })
+      end
+    end
+    local known = path == nil or path == MIXED or path == "" or fs.info(project.folder() .. tostring(path)) ~= nil
+    state.drops[#state.drops + 1] = { id = id, type = "file-list", set = function(new)
+      write(new, stream)
+    end }
+    return ui.row({ gap = 4, grow = 1, align = "center" }, {
+      filePath(id, value ~= MIXED and path or MIXED, "sound", nil, function(new)
+        write(new ~= "" and new or nil, stream)
+      end, known),
+      ui.toggle(value ~= MIXED and stream == true, { id = id .. ":stream", label = "Stream",
+        tooltip = "LÖVE streams the file as it plays, as music needs. Off, it decodes it whole when it loads, as short sounds need",
+        onChange = function(on)
+          write(path, on)
+        end }),
+    })
+  elseif kind == "image" or kind == "file" or kind == "nodeFile" then
     -- A file is set by dragging it from the files panel onto the row, by the system's dialog, or by typing its path.
     local known = value == nil or value == MIXED or value == "" or fs.info(project.folder() .. tostring(value)) ~= nil
     state.drops[#state.drops + 1] = { id = id, type = "file-list", set = set, extensions = options.extensions, nodeFile = kind == "nodeFile" }

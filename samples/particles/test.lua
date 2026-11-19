@@ -47,7 +47,7 @@ check.run(function()
   -- A burst: no emission at its start, then 20 at once; its node is told when the last dies.
   local burst = assert(tree.find("Burst"))
   local bang = burst.components.particles.emitter
-  check.equal(bang:getCount(), 0, "without autoStart nothing is emitted")
+  check.equal(bang:getCount(), 0, "without autoPlay nothing is emitted")
   check.equal(burst.components.probe.ends, 0, "and an emitter that never emitted does not end")
   bang:emit(20)
   check.frames(1)

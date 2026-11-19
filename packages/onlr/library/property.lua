@@ -25,7 +25,8 @@ local data = require("onlr.library.data")
 ---@field choices string[] the texts to choose from
 
 ---@class onlr.SoundOptions : onlr.PropertyOptions
----@field stream? boolean LÖVE streams the file while it plays, as music needs, and does not decode it whole
+---@field stream? boolean what the property starts with: LÖVE streams the file while it plays, as music needs, and does not decode
+---it whole; the user may change it for each component
 
 ---@class onlr.FontOptions : onlr.PropertyOptions
 ---@field size? number the size that the property starts with; 12, LÖVE's own, when left out
@@ -203,11 +204,29 @@ function property.image(options)
   return declare("image", nil, options)
 end
 
----A sound file of the project. Each component gets a LÖVE source of its own, so two can play at once.
+---A sound file of the project, and whether LÖVE streams it. Each component gets a LÖVE source of its own, so two can play at
+---once. A node file keeps it as its path, decoded whole, or as { path = "sounds/song.ogg", stream = true }.
 ---@param options? onlr.SoundOptions
 ---@return love.Source?
 function property.sound(options)
   return declare("sound", nil, options)
+end
+
+---A sound's path and whether it streams, from a node file's value: a path, or a table of its path and stream. A value without
+---stream takes the declaration's.
+---@param decl onlr.Declaration
+---@param value any
+---@return string? path
+---@return boolean stream
+function property.soundOf(decl, value)
+  if type(value) == "table" then
+    local stream = value.stream
+    if stream == nil then
+      stream = decl.options.stream or false
+    end
+    return value.path, stream
+  end
+  return value, decl.options.stream or false
 end
 
 ---A font file and a size. A node file keeps it as { path = "fonts/main.ttf", size = 16 }.
@@ -377,7 +396,8 @@ function property.convert(decl, value, ctx, name, resolve)
   elseif kind == "image" then
     return value and property.load(ctx, name, "image", value)
   elseif kind == "sound" then
-    local source = value and property.load(ctx, name, "sound", value, decl.options.stream or false)
+    local path, stream = property.soundOf(decl, value)
+    local source = path and property.load(ctx, name, "sound", path, stream)
     if not source then
       return nil
     end

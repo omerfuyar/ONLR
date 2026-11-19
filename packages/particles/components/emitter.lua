@@ -20,7 +20,7 @@ Emitter.space = onlr.property.choice("world", {
   choices = { "world", "local" },
   description = "world: a particle stays where it was emitted, as smoke does. local: the particles move, turn and scale with the node",
 })
-Emitter.autoStart = onlr.property.bool(true, { description = "It emits from its start. Without, a script calls play or emit" })
+Emitter.autoPlay = onlr.property.bool(true, { description = "It emits from its start. Without, a script calls play or emit" })
 Emitter.bufferSize = onlr.property.integer(256, { min = 1, description = "The most particles that live at once" })
 Emitter.insertMode = onlr.property.choice("top", { choices = { "top", "bottom", "random" }, description = "Where a new particle is drawn: over the others, under them, or among them" })
 
@@ -137,7 +137,7 @@ function Emitter:load()
   if self.space == "world" then
     self:_follow(true)
   end
-  if self.autoStart then
+  if self.autoPlay then
     self.system:start()
   else
     self.system:stop()

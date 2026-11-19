@@ -387,7 +387,7 @@ return Player
 | `choice`                    | One of its `choices`.                             | The chosen text.                             |
 | `color`                     | A colour.                                         | A table that `love.graphics.setColor` takes. |
 | `image`                     | An image file of the project.                     | A LÖVE image.                                |
-| `sound`                     | A sound file of the project.                      | A LÖVE source of its own.                    |
+| `sound`                     | A sound file of the project, and whether LÖVE streams it. | A LÖVE source of its own.            |
 | `font`                      | A font file of the project and a size.            | A LÖVE font. Without a file, LÖVE's default font at that size. |
 | `file`                      | A file of the project, of the endings in `extensions` if given. | Its path.                      |
 | `nodeFile`                  | A node file of the project.                       | Its path.                                    |
@@ -409,7 +409,7 @@ return Player
   | `when`        | Every kind                | The values of other properties of the type that the property is shown with: `{ kind = "circle" }`, or one of a list, `{ kind = { "line", "polygon" } }`. The inspector hides it otherwise, so a component of one job with variants shows only what its chosen variant uses. The component has it all the same. A name that the type does not declare is an error when the type loads. |
   | `min`, `max`  | `integer`, `number`       | The least and the most value. The inspector keeps the value between them, and with both shows a slider; the engine does not check it. |
   | `choices`     | `choice`, which needs it  | The texts to choose from.                                                                |
-  | `stream`      | `sound`                   | LÖVE streams the file while it plays, as music needs, in place of decoding it whole when it loads. |
+  | `stream`      | `sound`                   | What the property starts with: LÖVE streams the file while it plays, as music needs, in place of decoding it whole when it loads. The user may change it for each component. |
   | `size`        | `font`                    | The size that the property starts with. 12, LÖVE's own, when left out.                    |
   | `extensions`  | `file`                    | The endings of the files that the inspector offers, such as `{ "json", "lua" }`. Every file when left out. |
   | `preload`     | `nodeFile`                | The node file loads with the component's own, so a spawn of it waits for no file (below). |
@@ -417,7 +417,7 @@ return Player
 - An option that the kind does not take, such as a misspelt one, is an error when the type loads.
 - One job is one type (OVERVIEW 11), and its variants are a `choice` with `when` on the properties of each, as `onlr.shape`'s `kind` is (10) and a joint's is (11.4), not a type for each variant. A node holds one component of a type (5), so a node of two shapes holds the second on a child node.
 - A node file keeps a colour as a list of four numbers, and a vector as a table of `x` and `y`. A value of another kind than its property's is an error, as a path that names no file is (below).
-- A node file keeps a file as its path, and a font as a table of its `path` and its `size`. It keeps a node, and a component, as the node's id, or as a path of ids when the node is inside an instance (9). When the file loads, the engine gives the component the node or the component itself.
+- A node file keeps a file as its path, and a font as a table of its `path` and its `size`. It keeps a sound as its path while it streams as the type says, and otherwise as a table of its `path` and `stream`, `{ path = "sounds/song.ogg", stream = true }`; a script gives either. It keeps a node, and a component, as the node's id, or as a path of ids when the node is inside an instance (9). When the file loads, the engine gives the component the node or the component itself.
 - The engine loads each file once, and components that name the same file share it. A sound is the exception: each component gets its own source, so two can play at once. When a root replaces another, the engine keeps the files that the new root names too, and lets go of the others. It lets go of files at no other time: a file that a destroyed node named stays loaded until the root changes.
 - A `nodeFile` property with `preload` loads that node file, and the files that it names, when its component's node file loads, as the files of its own properties load. The node files that their own such properties name load too. So `onlr.tree.spawn` of it reads nothing from disk. A node file without it loads when it is first spawned or loaded as the root.
 - A value of a property that the type no longer declares is kept in the node file (4.2), and the component does not get it.
@@ -1007,7 +1007,7 @@ end
 `particles` wraps LÖVE's particle systems, as `physics` wraps `love.physics` (11.4): it holds no library. Its one type, `particles.emitter`, is a system at its node. Its properties are the system's settings, named as LÖVE's setters name them, so `emissionRate` is `setEmissionRate` and LÖVE's wiki explains each: the `image` of a particle (a small white circle without one), `bufferSize`, `insertMode`, `emissionRate`, `emitterLifetime`, `particleLifetime`, `emissionArea`, `direction`, `spread`, `speed`, the accelerations, `linearDamping`, `sizes`, `colors`, `rotation`, `spin` and `relativeRotation`. A setting that LÖVE takes as two numbers, a least and a most, is a group of `min` and `max`.
 
 - `space` says where the particles live. In `world`, a particle stays where it was emitted, as smoke does: the system follows its node, and turns its `direction` with the node. In `local`, the particles move, turn and scale with their node, as a ring around a player does.
-- With `autoStart` it emits from its start. A script calls `play()`, `stop()`, `emit(count)` and `reset()`; `emit` works also on a stopped emitter, as an explosion needs. The function is `play`, not LÖVE's `start`, which the engine calls at a component's start (6.4).
+- With `autoPlay` it emits from its start, as a sound plays with its own (11.12). A script calls `play()`, `stop()`, `emit(count)` and `reset()`; `emit` works also on a stopped emitter, as an explosion needs. The function is `play`, not LÖVE's `start`, which the engine calls at a component's start (6.4).
 - When it stops emitting, at the end of its `emitterLifetime` or at `stop`, and its last particle dies, its node is told `particlesEnd()` (11.3), once until it emits again. A node that plays an explosion destroys itself there.
 - `getCount()` gives the particles that live, and `get()` LÖVE's system, for all of LÖVE's own functions on it, such as `setQuads`.
 - The node view shows a still picture: the system after it has run for a particle's lifetime, at most 5 seconds, made once and kept until a value changes (6.5). It also draws a cross at the node and the emission area.
@@ -1149,12 +1149,11 @@ end
 
 | Type             | Is                                                                                                       |
 | ---------------- | -------------------------------------------------------------------------------------------------------- |
-| `audio.source`   | A sound at its node that LÖVE decodes whole when it loads, LÖVE's `static` source: for short sounds, such as a jump or a coin. |
-| `audio.music`    | The same, streamed as it plays, LÖVE's `stream` source: for music and other long sounds.                 |
+| `audio.source`   | A sound at its node. LÖVE decodes it whole when it loads, its `static` source, for short sounds such as a jump or a coin; or, with Stream, streams it as it plays, its `stream` source, for music and other long sounds. |
 | `audio.listener` | Where the game hears from: LÖVE's one listener, at its node.                                             |
 
-- Streaming is the `sound` property's option (6.2), set when its type is declared, so a source and music are two types of one code, the package's `player.lua`. By default music plays from its start and loops, and a source waits for a script.
-- Their properties are LÖVE's setters' names: `sound`, `autoPlay`, `looping`, `volume` and `pitch`, and for a sound with a place `positional`, `attenuation`, a group of `reference` and `max` as `setAttenuationDistances` takes them, and `rolloff`. A value that a script or a tween changes, such as music's `volume` that flux fades out (11.8), reaches LÖVE in the next frame.
+- Streaming is part of the `sound` property's value (6.2): the inspector shows a Stream toggle beside the file. Music is a source with Stream, `autoPlay` and `looping` on, not a type of its own (OVERVIEW 11). By default a source waits for a script.
+- Its properties are LÖVE's setters' names: `sound`, `autoPlay`, `looping`, `volume` and `pitch`, and for a sound with a place `positional`, `attenuation`, a group of `reference` and `max` as `setAttenuationDistances` takes them, and `rolloff`. A value that a script or a tween changes, such as music's `volume` that flux fades out (11.8), reaches LÖVE in the next frame.
 - A script calls `play()`, `pause()`, `stop()`, `isPlaying()`, `seek(seconds)`, `tell()` and `getDuration()`, which are LÖVE's, and `get()` for LÖVE's source itself, such as for `setFilter`. `play` plays on a sound that plays already, as LÖVE does; `playNew()` plays a new copy over those that play, as shots and footsteps need, and gives its source. `stop` stops the copies too.
 - When a sound plays to its end, its node is told `soundEnd()` (11.3), and not at `stop`. A node that plays a last sound and goes destroys itself there.
 - A node that is turned off pauses its sounds and its copies, and turning it on plays them on (6.4). Its destroy stops them, so a level's sounds end with the level, and music on the top node plays on through every level (5).
