@@ -5,9 +5,10 @@ local onlr = require("onlr")
 local Widgets = {}
 
 Widgets.shape = onlr.property.component("onlr.shape")
+Widgets.paint = onlr.property.component("onlr.paint")
 Widgets.text = onlr.property.component("onlr.text")
 
--- Not resize, which is LÖVE's event of the window. A slider's change sizes the shape; a checkbox's shows or hides it; a field's text is shown.
+-- Not resize, which is LÖVE's event of the window. A slider's change sizes the shape; a checkbox's shows or hides its paint; a field's text is shown.
 function Widgets:grow(value)
   if self.shape then
     self.shape.radius = value
@@ -15,8 +16,8 @@ function Widgets:grow(value)
 end
 
 function Widgets:show(checked)
-  if self.shape then
-    self.shape:setEnabled(checked)
+  if self.paint then
+    self.paint:setEnabled(checked)
   end
 end
 

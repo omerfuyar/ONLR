@@ -30,7 +30,8 @@ return {
       posY = 280,
       components = {
         onlr = {
-          shape = { color = { 0.4, 0.9, 0.5, 1 }, kind = "circle", radius = 6 },
+          paint = { color = { 0.4, 0.9, 0.5, 1 } },
+          shape = { kind = "circle", radius = 6 },
         },
       },
     },

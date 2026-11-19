@@ -28,7 +28,7 @@ local component = {}
 ---In the game, the engine's name, each package's and each folder of components/ are always tables, empty on a node
 ---without their types: node.components.bump.body is nil on a node without a body, and components.bmup.body is an error.
 ---@class onlr.Components
----@field onlr {sprite: onlr.sprite?, text: onlr.text?, shape: onlr.shape?, camera: {view: onlr.camera.view?, follow: onlr.camera.follow?, limits: onlr.camera.limits?, shake: onlr.camera.shake?}}
+---@field onlr {sprite: onlr.sprite?, text: onlr.text?, shape: onlr.shape?, paint: onlr.paint?, camera: {view: onlr.camera.view?, follow: onlr.camera.follow?, limits: onlr.camera.limits?, shake: onlr.camera.shake?}}
 ---@field [string] any a script's component, or the table of a package or of a folder
 
 ---A component type, as the engine keeps it.
@@ -279,6 +279,13 @@ function component.type(name)
   table.sort(info.properties, function(a, b)
     return a.decl.order < b.decl.order
   end)
+  for _, p in ipairs(info.properties) do
+    for other in pairs(p.decl.options.when or {}) do
+      if not property.isDeclaration(rawget(t, other)) then
+        error(("%s: the property %s is shown when %s has a value, which the type does not declare"):format(file, p.name, other), 0)
+      end
+    end
+  end
   for _, p in ipairs(info.properties) do
     local default = p.decl.default
     t[p.name] = type(default) == "table" and property.copy(default) or default

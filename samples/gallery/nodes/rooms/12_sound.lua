@@ -21,7 +21,8 @@ return {
           listener = { distanceModel = "linearclamped" },
         },
         onlr = {
-          shape = { color = { 0.6, 0.85, 1, 1 }, kind = "circle", mode = "line", radius = 14 },
+          paint = { color = { 0.6, 0.85, 1, 1 }, mode = "line" },
+          shape = { kind = "circle", radius = 14 },
         },
       },
     },
@@ -79,7 +80,8 @@ return {
         },
         bouncer = { time = 3, to = { x = 400, y = 0 } },
         onlr = {
-          shape = { color = { 1, 0.85, 0.4, 1 }, kind = "circle", radius = 10 },
+          paint = { color = { 1, 0.85, 0.4, 1 } },
+          shape = { kind = "circle", radius = 10 },
         },
       },
     },

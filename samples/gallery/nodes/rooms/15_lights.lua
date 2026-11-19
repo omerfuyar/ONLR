@@ -22,8 +22,10 @@ return {
       posY = 54,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 0.85, 0.85, 0.8, 1 },
+          },
+          shape = {
             height = 306,
             width = 640,
           },
@@ -37,8 +39,10 @@ return {
       posY = 170,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 0.3, 0.5, 0.8, 1 },
+          },
+          shape = {
             height = 40,
             width = 40,
           },
@@ -57,8 +61,10 @@ return {
       posY = 260,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 0.8, 0.5, 0.3, 1 },
+          },
+          shape = {
             kind = "circle",
             radius = 22,
           },
@@ -77,8 +83,10 @@ return {
       posY = 150,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 0.4, 0.7, 0.4, 1 },
+          },
+          shape = {
             kind = "polygon",
             points = { { x = 0, y = -24 }, { x = 22, y = 16 }, { x = -22, y = 16 } },
           },

@@ -18,10 +18,11 @@ return {
       posY = 200,
       components = {
         onlr = {
-          shape = { color = { 0.3, 0.6, 0.95, 1 }, kind = "circle", radius = 30 },
+          paint = { color = { 0.3, 0.6, 0.95, 1 } },
+          shape = { kind = "circle", radius = 30 },
           text = { align = "center", text = "Type below", width = 200 },
         },
-        widgets = { shape = "sh0wn3", text = "sh0wn3" },
+        widgets = { paint = "sh0wn3", shape = "sh0wn3", text = "sh0wn3" },
       },
     },
     {

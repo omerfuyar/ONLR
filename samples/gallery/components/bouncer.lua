@@ -19,10 +19,10 @@ function Bouncer:start()
     end)
   end
   go(to, from)
-  local shape = self.node.components.onlr.shape
-  if shape then
+  local paint = self.node.components.onlr.paint
+  if paint then
     self.node.components.tick.timers:recur(function()
-      shape.color = { love.math.random(), love.math.random(), love.math.random(), 1 }
+      paint.color = { love.math.random(), love.math.random(), love.math.random(), 1 }
     end, 0.75)
   end
 end

@@ -24,7 +24,8 @@ return {
       posY = 320,
       components = {
         onlr = {
-          shape = { color = { 0.4, 0.45, 0.5, 1 }, height = 20, width = 560 },
+          paint = { color = { 0.4, 0.45, 0.5, 1 } },
+          shape = { height = 20, width = 560 },
         },
         physics = {
           body = { type = "static" },
@@ -42,7 +43,8 @@ return {
       rot = 0.4,
       components = {
         onlr = {
-          shape = { color = { 0.4, 0.45, 0.5, 1 }, height = 12, width = 180 },
+          paint = { color = { 0.4, 0.45, 0.5, 1 } },
+          shape = { height = 12, width = 180 },
         },
         physics = {
           body = { type = "static" },
@@ -77,6 +79,7 @@ return {
       posY = 80,
       components = {
         onlr = {
+          paint = {},
           shape = { kind = "circle", radius = 4 },
         },
         physics = {
@@ -94,7 +97,8 @@ return {
       posY = 80,
       components = {
         onlr = {
-          shape = { color = { 0.95, 0.6, 0.2, 1 }, kind = "circle", radius = 14 },
+          paint = { color = { 0.95, 0.6, 0.2, 1 } },
+          shape = { kind = "circle", radius = 14 },
         },
         physics = {
           body = {},

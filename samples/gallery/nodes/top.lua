@@ -24,8 +24,10 @@ return {
       z = 10,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 0.1, 0.1, 0.13, 0.9 },
+          },
+          shape = {
             height = 54,
             width = 640,
           },

@@ -39,7 +39,8 @@ return {
           body = { height = 200, width = 24 },
         },
         onlr = {
-          shape = { color = { 0.5, 0.5, 0.6, 1 }, height = 200, width = 24 },
+          paint = { color = { 0.5, 0.5, 0.6, 1 } },
+          shape = { height = 200, width = 24 },
         },
       },
     },
@@ -53,7 +54,8 @@ return {
           body = { height = 24, width = 360 },
         },
         onlr = {
-          shape = { color = { 0.5, 0.5, 0.6, 1 }, height = 24, width = 360 },
+          paint = { color = { 0.5, 0.5, 0.6, 1 } },
+          shape = { height = 24, width = 360 },
         },
       },
     },

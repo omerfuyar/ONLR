@@ -97,13 +97,15 @@ return {
               },
             },
             onlr = {
-              shape = {
+              paint = {
                 color = {
                   0.2,
                   0.6,
                   0.3,
                   1,
                 },
+              },
+              shape = {
                 height = 120,
                 kind = "rectangle",
                 width = 1280,

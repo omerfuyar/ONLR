@@ -65,7 +65,7 @@ local function preview()
       format = 1,
       id = "uns4v3",
       name = "Unsaved",
-      components = { onlr = { shape = { color = { 1, 0, 0, 1 }, height = 20, width = 20 } } },
+      components = { onlr = { paint = { color = { 1, 0, 0, 1 } }, shape = { height = 20, width = 20 } } },
     }
   ]] })
   runner.send({ type = "view", id = 2, path = "nodes/unsaved.lua", x = 0, y = 0, zoom = 2, width = 64, height = 64 })

@@ -33,8 +33,10 @@ return {
           z = 5,
           components = {
             onlr = {
-              shape = {
+              paint = {
                 color = { 0, 1, 0, 1 },
+              },
+              shape = {
                 height = 8,
                 width = 8,
               },
@@ -48,8 +50,10 @@ return {
           z = 1,
           components = {
             onlr = {
-              shape = {
+              paint = {
                 color = { 0, 0, 1, 1 },
+              },
+              shape = {
                 height = 8,
                 width = 8,
               },
@@ -63,6 +67,7 @@ return {
       name = "Hud",
       components = {
         onlr = {
+          paint = {},
           shape = {
             height = 4,
             width = 4,
@@ -84,8 +89,10 @@ return {
           z = 100,
           components = {
             onlr = {
-              shape = {
+              paint = {
                 color = { 1, 1, 0, 1 },
+              },
+              shape = {
                 height = 8,
                 width = 8,
               },
@@ -102,8 +109,10 @@ return {
       z = 1,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 1, 0, 1, 1 },
+          },
+          shape = {
             height = 8,
             width = 4,
           },
@@ -130,6 +139,7 @@ return {
       posY = 200,
       components = {
         onlr = {
+          paint = {},
           shape = {
             kind = "circle",
             radius = 6,
@@ -144,6 +154,7 @@ return {
       posY = 200,
       components = {
         onlr = {
+          paint = {},
           shape = {
             kind = "polygon",
             points = {

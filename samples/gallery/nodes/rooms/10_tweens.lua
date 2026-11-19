@@ -18,7 +18,7 @@ return {
       posY = 80,
       components = {
         bouncer = { ease = "linear" },
-        onlr = { shape = { height = 30, width = 30 } },
+        onlr = { paint = {}, shape = { height = 30, width = 30 } },
       },
     },
     {
@@ -28,7 +28,7 @@ return {
       posY = 140,
       components = {
         bouncer = {},
-        onlr = { shape = { height = 30, width = 30 } },
+        onlr = { paint = {}, shape = { height = 30, width = 30 } },
       },
     },
     {
@@ -38,7 +38,7 @@ return {
       posY = 200,
       components = {
         bouncer = { ease = "backinout" },
-        onlr = { shape = { height = 30, width = 30 } },
+        onlr = { paint = {}, shape = { height = 30, width = 30 } },
       },
     },
     {
@@ -48,7 +48,7 @@ return {
       posY = 260,
       components = {
         bouncer = { ease = "elasticout" },
-        onlr = { shape = { height = 30, width = 30 } },
+        onlr = { paint = {}, shape = { height = 30, width = 30 } },
       },
     },
     {
@@ -58,7 +58,7 @@ return {
       posY = 80,
       components = {
         bouncer = { ease = "expoout", to = { x = 0, y = 240 } },
-        onlr = { shape = { height = 30, kind = "circle", radius = 15, width = 30 } },
+        onlr = { paint = {}, shape = { height = 30, kind = "circle", radius = 15, width = 30 } },
       },
     },
   },

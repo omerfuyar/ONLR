@@ -1,70 +1,100 @@
--- The component type onlr.shape: a rectangle, a circle, a line or a polygon.
--- Its properties' names are LÖVE's: mode is "fill" or "line".
+-- The component type onlr.shape: a node's outline, a rectangle, a circle, a polygon or a line (DESIGN 10). It draws nothing in the
+-- game: onlr.paint draws it, physics.fixture collides with it, shadows.caster casts a shadow of it, and bump.body takes it as its box.
+-- So the node's look, its collision and its shadow are one outline, which the user sizes once.
 local onlr = require("onlr")
+
+---The shape in its node's space, as LÖVE's functions take it.
+---@class onlr.Outline
+---@field kind "rectangle"|"circle"|"polygon"|"line"
+---@field x number a rectangle's left, or a circle's middle
+---@field y number a rectangle's top, or a circle's middle
+---@field width number a rectangle's
+---@field height number a rectangle's
+---@field radius number a circle's
+---@field points number[] a polygon's corners or a line's points, x, y, x, y, as love.graphics.polygon takes them
 
 ---@class onlr.shape : onlr.Component
 local Shape = {}
 
-Shape.kind = onlr.property.choice("rectangle", { choices = { "rectangle", "circle", "line", "polygon" } })
-Shape.mode = onlr.property.choice("fill", { choices = { "fill", "line" }, description = "A line has no mode" })
--- A rectangle's size, from the node's place.
-Shape.width = onlr.property.number(32, { min = 0 })
-Shape.height = onlr.property.number(32, { min = 0 })
--- A circle's, around the node's place.
-Shape.radius = onlr.property.number(16, { min = 0 })
--- A line's points, or a polygon's corners, in the node's space.
-Shape.points = onlr.property.list(onlr.property.vector())
-Shape.lineWidth = onlr.property.number(1, { min = 0, description = "As love.graphics.setLineWidth" })
-Shape.color = onlr.property.color({ 1, 1, 1, 1 })
+Shape.kind = onlr.property.choice("rectangle", { choices = { "rectangle", "circle", "polygon", "line" } })
+Shape.width = onlr.property.number(32, { min = 0, when = { kind = "rectangle" } })
+Shape.height = onlr.property.number(32, { min = 0, when = { kind = "rectangle" } })
+Shape.radius = onlr.property.number(16, { min = 0, when = { kind = "circle" } })
+Shape.points = onlr.property.list(onlr.property.vector(), {
+  when = { kind = { "polygon", "line" } },
+  description = "A polygon's corners, or a line's points, in the node's space",
+})
+Shape.origin = onlr.property.vector(0, 0, {
+  description = "The point of the shape that is at the node's place: a rectangle's from its top left, a circle's from its middle, the points' from the node's",
+})
 
--- The points as LÖVE takes them: x, y, x, y.
-local function flat(points)
-  local list = {}
-  for _, point in ipairs(points) do
-    list[#list + 1] = point.x
-    list[#list + 1] = point.y
+---The shape in its node's space: the origin taken off.
+---@return onlr.Outline
+function Shape:outline()
+  local ox, oy = self.origin.x, self.origin.y
+  local points = {}
+  for _, point in ipairs(self.points) do
+    points[#points + 1] = point.x - ox
+    points[#points + 1] = point.y - oy
   end
-  return list
+  return {
+    kind = self.kind, x = -ox, y = -oy, width = self.width, height = self.height, radius = self.radius, points = points,
+  }
 end
 
--- Draws the shape, and sets the colour and the line width back.
-function Shape:draw()
+---Draws the shape with LÖVE in the colour and the line width that are set: filled, or as an outline. A line is drawn as a line,
+---and a polygon of fewer than 3 corners, or a line of fewer than 2 points, draws nothing.
+---@param mode "fill"|"line"
+function Shape:drawShape(mode)
+  local o = self:outline()
+  if o.kind == "rectangle" then
+    love.graphics.rectangle(mode, o.x, o.y, o.width, o.height)
+  elseif o.kind == "circle" then
+    love.graphics.circle(mode, o.x, o.y, o.radius)
+  elseif o.kind == "line" and #o.points >= 4 then
+    love.graphics.line(o.points)
+  elseif o.kind == "polygon" and #o.points >= 6 then
+    love.graphics.polygon(mode, o.points)
+  end
+end
+
+-- In the node view, the outline shows as a thin green line of one pixel at any zoom, as a collider's does: always on a node that
+-- does not paint it, and when chosen on one that does.
+function Shape:drawEditor(chosen)
+  if self.node.components.onlr.paint and not chosen then
+    return
+  end
+  local x0, y0 = love.graphics.transformPoint(0, 0)
+  local x1, y1 = love.graphics.transformPoint(1, 0)
+  local scale = math.sqrt((x1 - x0) ^ 2 + (y1 - y0) ^ 2)
+  if scale <= 0 then
+    return
+  end
   local r, g, b, a = love.graphics.getColor()
   local lineWidth = love.graphics.getLineWidth()
-  love.graphics.setColor(self.color)
-  love.graphics.setLineWidth(self.lineWidth)
-  local kind = self.kind
-  if kind == "rectangle" then
-    love.graphics.rectangle(self.mode, 0, 0, self.width, self.height)
-  elseif kind == "circle" then
-    love.graphics.circle(self.mode, 0, 0, self.radius)
-  elseif kind == "line" and #self.points >= 2 then
-    love.graphics.line(flat(self.points))
-  elseif kind == "polygon" and #self.points >= 3 then
-    love.graphics.polygon(self.mode, flat(self.points))
-  end
+  love.graphics.setColor(0.45, 0.85, 0.5, chosen and 1 or 0.7)
+  love.graphics.setLineWidth(1 / scale)
+  self:drawShape("line")
   love.graphics.setLineWidth(lineWidth)
   love.graphics.setColor(r, g, b, a)
 end
 
-Shape.drawEditor = Shape.draw
-
 -- The rectangle around the shape.
 function Shape:bounds()
-  local kind = self.kind
-  if kind == "rectangle" then
-    return 0, 0, self.width, self.height
-  elseif kind == "circle" then
-    return -self.radius, -self.radius, self.radius * 2, self.radius * 2
+  local o = self:outline()
+  if o.kind == "rectangle" then
+    return o.x, o.y, o.width, o.height
+  elseif o.kind == "circle" then
+    return o.x - o.radius, o.y - o.radius, o.radius * 2, o.radius * 2
   end
-  local points = self.points
-  if #points == 0 then
+  local p = o.points
+  if #p == 0 then
     return
   end
-  local x1, y1, x2, y2 = points[1].x, points[1].y, points[1].x, points[1].y
-  for _, point in ipairs(points) do
-    x1, y1 = math.min(x1, point.x), math.min(y1, point.y)
-    x2, y2 = math.max(x2, point.x), math.max(y2, point.y)
+  local x1, y1, x2, y2 = p[1], p[2], p[1], p[2]
+  for i = 1, #p, 2 do
+    x1, y1 = math.min(x1, p[i]), math.min(y1, p[i + 1])
+    x2, y2 = math.max(x2, p[i]), math.max(y2, p[i + 1])
   end
   return x1, y1, x2 - x1, y2 - y1
 end

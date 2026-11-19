@@ -14,7 +14,7 @@ return {
       posY = 40,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = {
               1,
               0,
@@ -22,6 +22,7 @@ return {
               1,
             },
           },
+          shape = {},
         },
         thing = {
           friend = "bbbbbb",
@@ -37,7 +38,7 @@ return {
       posY = 40,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = {
               0,
               1,
@@ -45,6 +46,7 @@ return {
               1,
             },
           },
+          shape = {},
         },
         thing = {},
       },

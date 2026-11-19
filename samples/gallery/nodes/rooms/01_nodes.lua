@@ -42,7 +42,8 @@ return {
       posY = 100,
       components = {
         onlr = {
-          shape = { color = { 0.9, 0.3, 0.35, 1 }, height = 40, width = 60 },
+          paint = { color = { 0.9, 0.3, 0.35, 1 } },
+          shape = { height = 40, width = 60 },
         },
       },
     },
@@ -53,7 +54,8 @@ return {
       posY = 120,
       components = {
         onlr = {
-          shape = { color = { 0.4, 0.9, 0.5, 1 }, kind = "circle", lineWidth = 4, mode = "line", radius = 22 },
+          paint = { color = { 0.4, 0.9, 0.5, 1 }, lineWidth = 4, mode = "line" },
+          shape = { kind = "circle", radius = 22 },
         },
       },
     },
@@ -64,8 +66,10 @@ return {
       posY = 120,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 1, 0.85, 0.3, 1 },
+          },
+          shape = {
             kind = "polygon",
             points = { { x = 0, y = -24 }, { x = 20, y = 16 }, { x = -20, y = 16 } },
           },
@@ -79,7 +83,8 @@ return {
       posY = 220,
       components = {
         onlr = {
-          shape = { color = { 0.95, 0.75, 0.3, 1 }, kind = "circle", radius = 18 },
+          paint = { color = { 0.95, 0.75, 0.3, 1 } },
+          shape = { kind = "circle", radius = 18 },
         },
         spin = {},
       },
@@ -90,7 +95,8 @@ return {
           posX = 70,
           components = {
             onlr = {
-              shape = { color = { 0.6, 0.7, 1, 1 }, kind = "circle", radius = 8 },
+              paint = { color = { 0.6, 0.7, 1, 1 } },
+              shape = { kind = "circle", radius = 8 },
             },
             spin = { speed = -4 },
           },
@@ -101,6 +107,7 @@ return {
               posX = 18,
               components = {
                 onlr = {
+                  paint = {},
                   shape = { kind = "circle", radius = 3 },
                 },
               },
@@ -116,10 +123,12 @@ return {
       posY = 300,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 0.7, 0.7, 0.75, 1 },
-            kind = "line",
             lineWidth = 2,
+          },
+          shape = {
+            kind = "line",
             points = { { x = 0, y = 0 }, { x = 100, y = -40 }, { x = 200, y = 0 }, { x = 300, y = -40 } },
           },
         },

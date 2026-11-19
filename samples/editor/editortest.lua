@@ -367,21 +367,39 @@ return {
     test.key("Return")
     test.wait(0.2)
 
+    -- The inspector's rows are found by their ids, whose rectangles the inspector saves (DESIGN 16), as A's "aaaaaa:thing:speed".
+    -- The inspector does not scroll here: a row below its end is brought up by folding the sections above it.
+    local function inspected(id, across, down)
+      local panel = panelOf(test, "onlr.inspector")
+      local box = test.rect(panel)
+      local r = test.panel(panel).state.rects[id]
+      check(r ~= nil, "the inspector shows " .. id)
+      local y = box.y + r.y + r.height * (down or 0.5)
+      check(y < box.y + box.height, id .. " is in the inspector's view")
+      return box.x + r.x + r.width * (across or 0.5), y
+    end
+    -- a click on a component's heading folds it, and another opens it, for every node with one
+    local function fold(id)
+      test.click(inspected(id .. ":heading", 0.2))
+      test.wait(0.2)
+    end
+
     -- a component's menu in the inspector copies its values, and pastes them onto the same type of another node, as one
     -- change: A's thing onto B's; Up goes round from the first entry to the last, Remove Component, then skips Paste while
     -- nothing is copied
-    local inspect = test.rect(panelOf(test, "onlr.inspector"))
     rx, ry = row(2)
     test.click(rx, ry)
     test.wait(0.2)
-    test.click(inspect.x + 41, inspect.y + 554, 3)
+    local hx, hy = inspected("aaaaaa:thing:heading", 0.2)
+    test.click(hx, hy, 3)
     test.key("Up")
     test.key("Up")
     test.key("Return")
     rx, ry = row(3)
     test.click(rx, ry)
     test.wait(0.2)
-    test.click(inspect.x + 41, inspect.y + 554, 3)
+    hx, hy = inspected("bbbbbb:thing:heading", 0.2)
+    test.click(hx, hy, 3)
     test.key("Up")
     test.key("Up")
     test.key("Return")
@@ -397,7 +415,9 @@ return {
     rx, ry = row(2)
     test.click(rx, ry)
     test.wait(0.2)
-    test.drag(inspect.x + 130, inspect.y + 608, inspect.x + inspect.width, inspect.y + 608)
+    local sx, sy = inspected("aaaaaa:thing:speed:slide", 0.05)
+    local inspect = test.rect(panelOf(test, "onlr.inspector"))
+    test.drag(sx, sy, inspect.x + inspect.width, sy)
     test.wait(0.2)
     save()
     check(read("nodes/start.lua"):find("speed = 100,"), "the slider sets the speed:\n" .. read("nodes/start.lua"))
@@ -405,25 +425,43 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the slider's drag is one change, undone")
 
-    -- a list's heading has an Add button, also when no instance marks its value: Add on A's Points adds a point, as one
-    -- change; Points is below, after a scroll
-    test.wheel(inspect.x + 150, inspect.y + 300, -2)
-    test.wait(0.2)
-    test.click(inspect.x + 297, inspect.y + 380)
+    -- A's paint and shape fold, which brings up thing's rows below them
+    fold("aaaaaa:onlr.paint")
+    fold("aaaaaa:onlr.shape")
+
+    -- a list's heading has an Add button, also when no instance marks its value: Add on A's Tags adds a tag, as one change
+    test.click(inspected("aaaaaa:thing:tags:add"))
     test.wait(0.2)
     save()
-    check(read("nodes/start.lua"):find("points = {"), "Add puts a point in the list:\n" .. read("nodes/start.lua"))
+    check(read("nodes/start.lua"):find("tags = {"), "Add puts a tag in the list:\n" .. read("nodes/start.lua"))
     test.key("Ctrl+Z")
     save()
-    check(read("nodes/start.lua") == start, "the added point is one change, undone")
-    test.wheel(inspect.x + 150, inspect.y + 300, 2)
+    check(read("nodes/start.lua") == start, "the added tag is one change, undone")
+
+    -- a file's row is a path with a button for the system's dialog: a whole path in the project is kept from the project's
+    -- folder, and one outside it is refused (DESIGN 13.4)
+    test.click(inspected("aaaaaa:thing:picture:path", 0.3))
+    test.key("Ctrl+A")
+    test.text(os.getenv("PWD") .. "/images/coin.png")
+    test.key("Return")
     test.wait(0.2)
+    save()
+    check(read("nodes/start.lua"):find('picture = "images/coin.png"'), "a whole path in the project is kept from its folder:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the path is undone")
+    test.click(inspected("aaaaaa:thing:picture:path", 0.3))
+    test.key("Ctrl+A")
+    test.text("/outside/coin.png")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua") == start, "a path outside the project is refused")
 
     -- Add component, at the inspector's end, shows the types in folders by their names' dots, a folder at a time: onlr's folder
     -- first, then marker, the project's script. Return opens onlr in place, Left goes back, and Down and Return add marker.
-    test.wheel(inspect.x + 150, inspect.y + 300, -20)
-    test.wait(0.2)
-    test.click(inspect.x + 260, inspect.y + inspect.height - 21)
+    fold("aaaaaa:thing")
+    test.click(inspected("aaaaaa:addComponent"))
     local top = test.popup(1).height
     test.key("Return")
     local inside = test.popup(1).height
@@ -437,35 +475,14 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the added component is undone")
-    test.wheel(inspect.x + 150, inspect.y + 300, 20)
-    test.wait(0.2)
+    fold("aaaaaa:thing")
+    fold("aaaaaa:onlr.shape")
+    fold("aaaaaa:onlr.paint")
 
-    -- a file's row is a path with a button for the system's dialog: a whole path in the project is kept from the project's
-    -- folder, and one outside it is refused (DESIGN 13.4); A's picture is below, after a scroll
-    rx, ry = row(2)
-    test.click(rx, ry)
-    test.wait(0.2)
-    test.wheel(inspect.x + 150, inspect.y + 400, -5)
-    test.wait(0.2)
-    test.click(inspect.x + 200, inspect.y + 548)
-    test.key("Ctrl+A")
-    test.text(os.getenv("PWD") .. "/images/coin.png")
-    test.key("Return")
-    test.wait(0.2)
-    save()
-    check(read("nodes/start.lua"):find('picture = "images/coin.png"'), "a whole path in the project is kept from its folder:\n" .. read("nodes/start.lua"))
-    test.key("Ctrl+Z")
-    save()
-    check(read("nodes/start.lua") == start, "the path is undone")
-    test.click(inspect.x + 200, inspect.y + 548)
-    test.key("Ctrl+A")
-    test.text("/outside/coin.png")
-    test.key("Return")
-    test.wait(0.2)
-    save()
-    check(read("nodes/start.lua") == start, "a path outside the project is refused")
-    test.wheel(inspect.x + 150, inspect.y + 400, 5)
-    test.wait(0.2)
+    -- a property with when shows only while the property that it names has one of its values: a rectangle shows its width,
+    -- and a circle its radius in its place (DESIGN 6.2)
+    local panelState = test.panel(panelOf(test, "onlr.inspector")).state
+    check(panelState.rects["aaaaaa:onlr.shape:width"] and not panelState.rects["aaaaaa:onlr.shape:radius"], "a rectangle shows its width only")
 
     -- F2 renames the chosen node in a field above the tree, and Return takes the name
     rx, ry = row(2)

@@ -14,6 +14,8 @@ local data = require("onlr.library.data")
 ---@field description? string shown in the inspector with the property
 ---@field label? string shown in place of the name. Without it, cellSize shows as "Cell size".
 ---@field heading? string a heading that the inspector shows above the property, to part a type's properties
+---@field when? table<string, any> the inspector shows the property only while another property of the type has a value: { kind = "circle" },
+---or one of a list, { kind = { "line", "polygon" } }; the component has it all the same
 
 ---@class onlr.NumberOptions : onlr.PropertyOptions
 ---@field min? number the least value; the inspector keeps the value between min and max, and with both shows a slider
@@ -58,6 +60,7 @@ local TAKEN = {
   description = true,
   label = true,
   heading = true,
+  when = true,
   min = { integer = true, number = true },
   max = { integer = true, number = true },
   choices = { choice = true },
@@ -84,6 +87,16 @@ local function declare(kind, default, options, extra)
     local kinds = TAKEN[name]
     if kinds ~= true and not (kinds and kinds[kind]) then
       fail(("a %s takes no option %s"):format(kind, tostring(name)))
+    end
+  end
+  if options.when ~= nil then
+    if type(options.when) ~= "table" or next(options.when) == nil then
+      fail(("the option when of a %s is a table of properties' names and their values"):format(kind))
+    end
+    for name in pairs(options.when) do
+      if type(name) ~= "string" then
+        fail(("the option when of a %s is a table of properties' names and their values"):format(kind))
+      end
     end
   end
   count = count + 1
