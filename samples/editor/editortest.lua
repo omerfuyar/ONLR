@@ -158,9 +158,39 @@ return {
     check(near(ar, math.pi / 2) and near(ax, 112) and near(ay, 0) and near(px, 112) and near(py, 80), "both turn around the choice's middle:\n" .. read("nodes/start.lua"))
     test.key("Ctrl+Z")
     test.call("onlr.pivotOwn")
+
+    -- the scale tool's grips scale one axis alone, along the leading node's own x and y: the gizmo is at B's place, its x grip
+    -- 60 to the right and its y grip 60 below. A drag along a grip from 50 to 100 from the gizmo doubles that axis of both nodes.
+    local function scales(id)
+      local tree = assert(load(read("nodes/start.lua")))()
+      for _, node in ipairs(tree.children) do
+        if node.id == id then
+          return node.sclX or 1, node.sclY or 1
+        end
+      end
+    end
+    test.call("onlr.toolScale")
+    local fx, fy = at(170, 40)
+    local tx, ty = at(220, 46)
+    test.drag(fx, fy, tx, ty)
+    test.wait(0.3)
+    save()
+    local asx, asy = scales("aaaaaa")
+    local bsx, bsy = scales("bbbbbb")
+    check(near(asx, 2) and near(asy, 1) and near(bsx, 2) and near(bsy, 1), "the x grip scales x alone:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    fx, fy = at(120, 90)
+    tx, ty = at(126, 140)
+    test.drag(fx, fy, tx, ty)
+    test.wait(0.3)
+    save()
+    asx, asy = scales("aaaaaa")
+    bsx, bsy = scales("bbbbbb")
+    check(near(asx, 1) and near(asy, 2) and near(bsx, 1) and near(bsy, 2), "the y grip scales y alone:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
     test.call("onlr.toolMove")
     save()
-    check(read("nodes/start.lua") == start, "the turns are undone")
+    check(read("nodes/start.lua") == start, "the turns and scales are undone")
 
     -- the inspector shows the chosen node: a new name, typed in its Name field and ended with Return, is one change
     x, y = at(70, 70)
