@@ -7,6 +7,7 @@ local ecs = require("ecs")
 local draw = require("draw")
 local gpu = require("gpu")
 local project = require("project")
+local format = require("format")
 local console = require("console")
 local runners = require("runners")
 local ui = require("ui")
@@ -34,6 +35,8 @@ local IMAGES = { png = true, jpg = true, jpeg = true, bmp = true, tga = true }
 ---@field error string? why the view shows no nodes
 ---@field drag table? what the pointer drags
 ---@field lastClick table? where the last click was, and which node it chose
+---@field lastDown table? where the Shape tool's last press was, for 0.4 seconds, so a second one there is a double click
+---@field point onlr.editor.Handle? the point that the Shape tool clicked last, which Delete removes
 
 local views = {} ---@type table<ecs.Panel, onlr.editor.View>
 local nextId = 0
@@ -266,9 +269,125 @@ local function handleAt(view, sx, sy)
     elseif onGrip(x, y, vx, vy, sx, sy) then
       return lead.path, "y"
     end
-  elseif math.abs(sx - x) <= 16 and math.abs(sy - y) <= 16 then
+  elseif tool == "turn" and math.abs(sx - x) <= 16 and math.abs(sy - y) <= 16 then
     return lead.path, "both"
   end
+end
+
+-- The Shape tool (DESIGN 13.3): handles of the one chosen node, in its own space. Each property that its type marks with the option
+-- handles, a vector or a list of vectors, has one at each point; onlr.shape's rectangle has one at each corner and at each edge's
+-- middle, and its circle one on its edge, to the right of its middle.
+
+local POINT = 5 -- half a handle's size, in the panel
+
+-- Whether a property shows by its option when, with the component's values (DESIGN 6.2), so a polygon's points have no handles
+-- while the shape is a rectangle.
+local function shownWith(decl, values)
+  for other, wanted in pairs(decl.options and decl.options.when or {}) do
+    local found = false
+    for _, each in ipairs(type(wanted) == "table" and wanted or { wanted }) do
+      found = found or each == values[other]
+    end
+    if not found then
+      return false
+    end
+  end
+  return true
+end
+
+---A handle of the Shape tool: a point of a property, an edge or a corner of a rectangle, or a circle's radius.
+---@class onlr.editor.Handle
+---@field type string the component's type
+---@field name string? the property of a point
+---@field index integer? the point's place in a list
+---@field edges {x: "l"|"r"|nil, y: "t"|"b"|nil}? a rectangle's edges that it moves
+---@field radius boolean? a circle's
+---@field x number in the node's space
+---@field y number
+---@field values table the component's values, its defaults for those that it lacks
+
+-- The handles of the one chosen node, and its lists of points, to which a double click adds one. Nothing while more are chosen.
+---@return onlr.editor.Handle[] handles, table[] lists, table? placed, string? path
+local function shapeHandles(view)
+  local path = #view.chosen == 1 and view.chosen[1] or nil
+  local placed = path and view.byPath[path]
+  local node = placed and view.file and project.tree(view.file).index[path]
+  if not node then
+    return {}, {}
+  end
+  local handles, lists = {}, {}
+  local typeNames = {}
+  for typeName in pairs(node.components) do
+    typeNames[#typeNames + 1] = typeName
+  end
+  table.sort(typeNames)
+  for _, typeName in ipairs(typeNames) do
+    local info = project.typeInfo(typeName)
+    local own = node.components[typeName].values or {}
+    local values = {}
+    for _, decl in ipairs(info and info.properties or {}) do
+      local value = own[decl.name]
+      if value == nil then
+        value = decl.default
+      end
+      values[decl.name] = value
+    end
+    -- while a handle is dragged, its component's handles show the dragged values, which the history gets at the release
+    local d = view.drag
+    if d and d.kind == "handle" and d.handle.type == typeName then
+      for name, value in pairs(d.changed) do
+        values[name] = value
+      end
+    end
+    for _, decl in ipairs(info and info.properties or {}) do
+      local value = values[decl.name]
+      if decl.options and decl.options.handles and type(value) == "table" and shownWith(decl, values) then
+        if decl.kind == "vector" then
+          handles[#handles + 1] = { type = typeName, name = decl.name, x = value.x or 0, y = value.y or 0, values = values }
+        elseif decl.kind == "list" then
+          for i, point in ipairs(value) do
+            handles[#handles + 1] = { type = typeName, name = decl.name, index = i, x = point.x or 0, y = point.y or 0, values = values }
+          end
+          lists[#lists + 1] = { type = typeName, name = decl.name, points = value, values = values }
+        end
+      end
+    end
+    local origin = type(values.origin) == "table" and values.origin or { x = 0, y = 0 }
+    if typeName == "onlr.shape" and values.kind == "rectangle" then
+      local l, t = -origin.x, -origin.y
+      local at = { l = l, r = l + (values.width or 0), t = t, b = t + (values.height or 0) }
+      for _, e in ipairs({ { "l", "t" }, { "r", "t" }, { "r", "b" }, { "l", "b" }, { "l" }, { "r" }, { nil, "t" }, { nil, "b" } }) do
+        handles[#handles + 1] = {
+          type = typeName, edges = { x = e[1], y = e[2] }, values = values,
+          x = e[1] and at[e[1]] or (at.l + at.r) / 2, y = e[2] and at[e[2]] or (at.t + at.b) / 2,
+        }
+      end
+    elseif typeName == "onlr.shape" and values.kind == "circle" then
+      handles[#handles + 1] = { type = typeName, radius = true, x = -origin.x + (values.radius or 0), y = -origin.y, values = values }
+    end
+  end
+  return handles, lists, placed, path
+end
+
+-- The Shape tool's handle under a point of the panel, the last drawn first.
+---@return onlr.editor.Handle?
+local function shapeHandleAt(view, sx, sy)
+  local handles, _, placed = shapeHandles(view)
+  for i = #handles, 1, -1 do
+    local h = handles[i]
+    local x, y = toScreen(view, nodeToWorld(placed, h.x, h.y))
+    if math.abs(sx - x) <= POINT + 3 and math.abs(sy - y) <= POINT + 3 then
+      return h
+    end
+  end
+end
+
+-- Whether two handles are one: the same point, edges or radius of the same component.
+local function sameHandle(a, b)
+  if not a or not b or a.type ~= b.type or a.name ~= b.name or a.index ~= b.index or a.radius ~= b.radius then
+    return false
+  end
+  return (a.edges and a.edges.x) == (b.edges and b.edges.x) and (a.edges and a.edges.y) == (b.edges and b.edges.y)
 end
 
 local function isChosen(view, path)
@@ -398,7 +517,7 @@ local function drawView(view, surface)
       local ax, ay = toScreen(view, nodeToWorld(lead, 1, 0))
       local length = math.max(1e-6, math.sqrt((ax - ox) ^ 2 + (ay - oy) ^ 2))
       gpu.line(surface, x, y, x + (ax - ox) / length * 14, y + (ay - oy) / length * 14, 2, "accent")
-    else
+    elseif tool == "scale" then
       -- a grip along each of the leading node's own axes scales that axis alone, as Unity's do; the square scales both
       local axis = view.drag and view.drag.kind == "tool" and view.drag.axis
       local ux, uy, vx, vy = ownAxes(lead)
@@ -413,6 +532,30 @@ local function drawView(view, surface)
       end
       frameRect(surface, x - 12, y - 12, 24, 24, 2, "accent")
       gpu.fill(surface, x + 8, y + 8, 8, 8, "accent")
+    end
+  end
+
+  -- The Shape tool's handles: squares, filled while dragged and for the point that Delete removes. A list's points are joined in their
+  -- order, so a path shows; a polygon's outline is the shape's own.
+  if tool == "shape" then
+    local handles, lists, placed = shapeHandles(view)
+    for _, list in ipairs(lists) do
+      for i = 2, #list.points do
+        local a, b = list.points[i - 1], list.points[i]
+        local ax, ay = toScreen(view, nodeToWorld(placed, a.x or 0, a.y or 0))
+        local bx, by = toScreen(view, nodeToWorld(placed, b.x or 0, b.y or 0))
+        gpu.line(surface, ax, ay, bx, by, 1, "#ffffff60")
+      end
+    end
+    local dragged = view.drag and view.drag.kind == "handle" and view.drag.handle
+    for _, h in ipairs(handles) do
+      local x, y = toScreen(view, nodeToWorld(placed, h.x, h.y))
+      if sameHandle(h, dragged) or h.index and sameHandle(h, view.point) then
+        gpu.fill(surface, x - POINT, y - POINT, POINT * 2, POINT * 2, "accent")
+      else
+        gpu.fill(surface, x - POINT, y - POINT, POINT * 2, POINT * 2, "background")
+      end
+      frameRect(surface, x - POINT, y - POINT, POINT * 2, POINT * 2, 1, "accent")
     end
   end
 
@@ -608,6 +751,92 @@ local function toolDrag(view, sx, sy, ctrl)
   end
 end
 
+-- The Shape tool's drag: the values that a handle moved to a point of its node's space gives its component. A point snaps to the grid
+-- in the node's space, and a radius in steps of the grid; a rectangle's edge stops at the edge across from it.
+---@param h onlr.editor.Handle
+local function handleValues(h, nx, ny, ctrl)
+  local v = h.values
+  local origin = type(v.origin) == "table" and v.origin or { x = 0, y = 0 }
+  if h.radius then
+    return { radius = snap(math.sqrt((nx + origin.x) ^ 2 + (ny + origin.y) ^ 2), ctrl) }
+  end
+  nx, ny = snap(nx, ctrl), snap(ny, ctrl)
+  if h.edges then
+    local l, t = -origin.x, -origin.y
+    local r, b = l + (v.width or 0), t + (v.height or 0)
+    if h.edges.x == "l" then
+      l = math.min(nx, r)
+    elseif h.edges.x == "r" then
+      r = math.max(nx, l)
+    end
+    if h.edges.y == "t" then
+      t = math.min(ny, b)
+    elseif h.edges.y == "b" then
+      b = math.max(ny, t)
+    end
+    return { origin = { x = -l, y = -t }, width = r - l, height = b - t }
+  elseif h.index then
+    local list = {}
+    for i, point in ipairs(v[h.name]) do
+      list[i] = { x = point.x, y = point.y }
+    end
+    list[h.index] = { x = nx, y = ny }
+    return { [h.name] = list }
+  end
+  return { [h.name] = { x = nx, y = ny } }
+end
+
+-- A double click with the Shape tool adds a point to a list: between the two neighbouring points whose line is under the pointer,
+-- or after the last, which closes a polygon between its last corner and its first.
+local function addPoint(view, sx, sy, ctrl)
+  local _, lists, placed, path = shapeHandles(view)
+  if #lists == 0 or not placed then
+    return false
+  end
+  local list, at = lists[1], #lists[1].points + 1
+  for _, each in ipairs(lists) do
+    for i = 2, #each.points do
+      local ax, ay = toScreen(view, nodeToWorld(placed, each.points[i - 1].x or 0, each.points[i - 1].y or 0))
+      local bx, by = toScreen(view, nodeToWorld(placed, each.points[i].x or 0, each.points[i].y or 0))
+      local dx, dy = bx - ax, by - ay
+      local length = dx * dx + dy * dy
+      local f = length > 0 and math.max(0, math.min(1, ((sx - ax) * dx + (sy - ay) * dy) / length)) or 0
+      if math.sqrt((ax + dx * f - sx) ^ 2 + (ay + dy * f - sy) ^ 2) <= 6 then
+        list, at = each, i
+      end
+    end
+  end
+  local nx, ny = worldToNode(placed.place, toWorld(view, sx, sy))
+  local points = {}
+  for i, point in ipairs(list.points) do
+    points[i] = { x = point.x, y = point.y }
+  end
+  table.insert(points, at, { x = snap(nx, ctrl), y = snap(ny, ctrl) })
+  project.setValues(view.file, { path }, list.type, { [list.name] = points }, "Add a point")
+  view.point = { type = list.type, name = list.name, index = at }
+  return true
+end
+
+-- Delete with the Shape tool removes the point that the user clicked last.
+local function removePoint(view)
+  local p = view.point
+  local _, lists, _, path = shapeHandles(view)
+  for _, list in ipairs(lists) do
+    if p and list.type == p.type and list.name == p.name and list.points[p.index] then
+      local points = {}
+      for i, point in ipairs(list.points) do
+        if i ~= p.index then
+          points[#points + 1] = { x = point.x, y = point.y }
+        end
+      end
+      project.setValues(view.file, { path }, list.type, { [list.name] = points }, "Remove a point")
+      view.point = nil
+      return true
+    end
+  end
+  return false
+end
+
 -- Drops: an image makes a node with a sprite of it, and a node file an instance (DESIGN 13.3).
 local function drop(view, event)
   if not view.file or type(event.value) ~= "table" then
@@ -736,11 +965,31 @@ local function pointer(view, event)
   elseif event.type == "pointerDown" then
     if event.button == 2 or (event.button == 1 and event.alt) then
       view.drag = { kind = "pan", startX = x, startY = y, viewX = view.x, viewY = view.y }
+    elseif event.button == 1 and view.file and project.tool() == "shape" and shapeHandleAt(view, x, y) then
+      -- a handle of the Shape tool is above the nodes, and drags its point, edge or radius
+      local h = assert(shapeHandleAt(view, x, y))
+      view.press = { x = x, y = y, found = {}, handle = h, wasChosen = true }
+      view.point = h.index and h or nil
+      view.panel:redraw()
+    elseif event.button == 1 and view.file and project.tool() == "shape" and view.lastDown
+      and math.abs(view.lastDown.x - x) <= 3 and math.abs(view.lastDown.y - y) <= 3 and addPoint(view, x, y, event.ctrl) then
+      -- a second press within 0.4 seconds, a double click, added a point
+      view.lastDown = nil
     elseif event.button == 1 and view.file and handleAt(view, x, y) then
       -- a handle of the move or scale tool is above the nodes, and drags the chosen nodes along its axis, or both
       local path, axis = handleAt(view, x, y)
       view.press = { x = x, y = y, found = { path }, axis = axis, wasChosen = true }
     elseif event.button == 1 and view.file then
+      if project.tool() == "shape" then
+        view.point = nil
+        local down = { x = x, y = y }
+        view.lastDown = down
+        ecs.timer.start(0.4, false, function()
+          if view.lastDown == down then
+            view.lastDown = nil
+          end
+        end)
+      end
       local found = hits(view, x, y)
       local top = found[1]
       view.press = { x = x, y = y, found = found, shift = event.shift, wasChosen = top ~= nil and isChosen(view, top) }
@@ -751,7 +1000,9 @@ local function pointer(view, event)
   elseif event.type == "pointerMove" then
     local d, press = view.drag, view.press
     if press and not d and (math.abs(x - press.x) > 3 or math.abs(y - press.y) > 3) then
-      if press.found[1] and not press.shift then
+      if press.handle then
+        view.drag = { kind = "handle", handle = press.handle, path = view.chosen[1], changed = {} }
+      elseif press.found[1] and not press.shift then
         startToolDrag(view, press.x, press.y)
         view.drag.axis = press.axis
       else
@@ -765,6 +1016,10 @@ local function pointer(view, event)
       sync(view)
     elseif d and d.kind == "tool" then
       toolDrag(view, x, y, event.ctrl)
+    elseif d and d.kind == "handle" and view.byPath[d.path] then
+      local nx, ny = worldToNode(view.byPath[d.path].place, toWorld(view, x, y))
+      d.changed = handleValues(d.handle, nx, ny, event.ctrl)
+      runners.change(view.file, d.path, nil, { [d.handle.type] = d.changed })
     elseif d and d.kind == "rectangle" then
       d.x, d.y = x, y
     end
@@ -778,6 +1033,10 @@ local function pointer(view, event)
       if next(d.fields) then
         local label = d.tool == "move" and "Move" or d.tool == "turn" and "Turn" or "Scale"
         project.setFields(view.file, d.fields, label)
+      end
+    elseif d and d.kind == "handle" then
+      if next(d.changed) then
+        project.setValues(view.file, { d.path }, d.handle.type, d.changed, d.handle.index and "Move a point" or "Change " .. d.handle.type)
       end
     elseif d and d.kind == "rectangle" then
       -- Every node whose place or bounds' middle is in the rectangle.
@@ -795,7 +1054,7 @@ local function pointer(view, event)
         end
       end
       choose(view, paths)
-    elseif press and not d and not press.axis then
+    elseif press and not d and not press.axis and not press.handle then
       local found = press.found
       if press.shift then
         -- Shift adds the node to the choice, or takes it out.
@@ -813,7 +1072,10 @@ local function pointer(view, event)
         end
         choose(view, paths)
       elseif #found == 0 then
-        choose(view, {})
+        -- the Shape tool keeps its node chosen, so a double click beside the shape adds a point there
+        if project.tool() ~= "shape" then
+          choose(view, {})
+        end
       else
         -- Another click at the same place chooses the node under the chosen one.
         local last = view.lastClick
@@ -974,6 +1236,9 @@ end)
 ecs.event.subscribe("onlr.chosen", function(_, chosen)
   for _, view in pairs(views) do
     if view.file == chosen.file then
+      if not format.same(view.chosen, chosen.paths) then
+        view.point = nil
+      end
       view.chosen = chosen.paths
       sync(view)
       view.panel:redraw()
@@ -1049,9 +1314,15 @@ functions = {
   set = { sig = "void(value message)", doc = "Set a value of a running node", fn = runners.set },
   previewReady = { sig = "bool()", doc = "Whether the preview runs", fn = runners.previewReady },
   view = { sig = "value(string file)", doc = "The node view of a node file: its place, zoom and the nodes' bounds", fn = viewOf },
-  deleteChosen = { sig = "void()", doc = "Delete the chosen nodes", fn = onChosen(function(file, paths)
-    say(project.deleteNodes(file, paths))
-  end) },
+  deleteChosen = { sig = "void()", doc = "Delete the chosen nodes; with the Shape tool, the point clicked last", fn = function()
+    local view = current()
+    if view and project.tool() == "shape" and view.point and removePoint(view) then
+      return
+    end
+    onChosen(function(file, paths)
+      say(project.deleteNodes(file, paths))
+    end)()
+  end },
   duplicateChosen = { sig = "void()", doc = "Duplicate the chosen nodes", fn = onChosen(function(file, paths)
     local made = project.duplicate(file, paths)
     if #made > 0 then
@@ -1083,6 +1354,9 @@ functions = {
   toolScale = { sig = "void()", doc = "The scale tool", fn = function()
     project.setTool("scale")
   end },
+  toolShape = { sig = "void()", doc = "The Shape tool, which drags a shape's corners and edges and the points of a property", fn = function()
+    project.setTool("shape")
+  end },
   pivotOwn = { sig = "void()", doc = "Turn and scale the chosen nodes each around its own place", fn = function()
     project.setSetting("pivot", "own")
   end },
@@ -1100,7 +1374,7 @@ for key, name in pairs({
   ["Ctrl+Shift+Z"] = "onlr.redo", ["Ctrl+S"] = "onlr.save", ["F5"] = "onlr.play",
   ["F6"] = "onlr.playFile", ["F7"] = "onlr.pause", ["F8"] = "onlr.step",
   ["Shift+F5"] = "onlr.stop", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
-  ["R"] = "onlr.toolScale", ["F"] = "onlr.frame",
+  ["R"] = "onlr.toolScale", ["T"] = "onlr.toolShape", ["F"] = "onlr.frame",
 }) do
   ecs.key.bind("onlr.view", key, name)
 end

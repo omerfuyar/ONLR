@@ -245,13 +245,14 @@ function runners.setView(id, view)
   end
 end
 
----Sends one edit of a node's own fields, such as while a drag moves it.
+---Sends one edit of a node's own fields, such as while a drag moves it, or of its components' values (values[type][name]).
 ---@param path string the node file
 ---@param node string the node's path of ids
----@param fields table<string, any>
-function runners.change(path, node, fields)
+---@param fields table<string, any>?
+---@param values table<string, table<string, any>>?
+function runners.change(path, node, fields, values)
   if preview and preview.ready then
-    send(preview, { type = "change", path = path, node = node, fields = fields })
+    send(preview, { type = "change", path = path, node = node, fields = fields, values = values })
     oweFrames(path)
   end
 end

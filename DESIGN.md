@@ -412,6 +412,7 @@ return Player
   | `stream`      | `sound`                   | What the property starts with: LÖVE streams the file while it plays, as music needs, in place of decoding it whole when it loads. The user may change it for each component. |
   | `size`        | `font`                    | The size that the property starts with. 12, LÖVE's own, when left out.                    |
   | `extensions`  | `file`                    | The endings of the files that the inspector offers, such as `{ "json", "lua" }`. Every file when left out. |
+  | `handles`     | `vector`, `list` of `vector` | `true`: the node view's Shape tool drags the point, or each point of the list, in the node's space, and adds and removes a list's points (13.3), as a polygon's corners or a script's patrol path need. |
   | `preload`     | `nodeFile`                | The node file loads with the component's own, so a spawn of it waits for no file (below). |
 
 - An option that the kind does not take, such as a misspelt one, is an error when the type loads.
@@ -741,7 +742,7 @@ Their properties use LÖVE's names wherever LÖVE has one:
 |               | `width`, `height` | `number`                                      | 32         | A rectangle's size.                                                                              |
 |               | `radius`          | `number`                                      | 16         | A circle's.                                                                                      |
 |               | `points`          | `list` of `vector`                            |            | A polygon's corners, or a line's points, in the node's space.                                    |
-|               | `origin`          | `vector`                                      | 0, 0       | The point of the shape that is at the node's place, as a sprite's (above): a rectangle's from its top left, a circle's from its middle, and the points' from the node's place. The node turns and scales around it. |
+|               | `origin`          | `vector`                                      | 0, 0       | A rectangle's and a circle's: the point of the shape that is at the node's place, as a sprite's (above), a rectangle's from its top left and a circle's from its middle. The node turns and scales around it. A polygon's and a line's points are in the node's space already, so they have none, and one value has one owner. |
 | `onlr.paint`  | `mode`            | `choice` of fill and line                     | fill       | Filled, or as an outline. A line shape is a line in either.                                      |
 |               | `lineWidth`       | `number`                                      | 1          | The width of a line and of an outline, as `love.graphics.setLineWidth`.                          |
 |               | `color`           | `color`                                       | white      | The shape's colour.                                                                              |
@@ -766,7 +767,7 @@ Their properties use LÖVE's names wherever LÖVE has one:
   - Lines that wrap, of a `width`, are measured with the sharp font, so they may break a little apart from where `bounds` says.
   - Under push's canvas (11.10), the scale of the canvas is not in the drawing, so the text is as sharp as the game's own size.
 - One value has one owner (OVERVIEW 11): `onlr.shape` holds a node's outline, and what uses an outline reads it there, each time it uses it. `onlr.paint` draws it, `physics.fixture` collides with it (11.4), a shadow caster casts a shadow of it (11.14), and `bump.body` takes its rectangle (11.3). So the user sizes a wall once, and its look, its collision and its shadow follow. Each needs `onlr.shape` (6.6).
-- `shape:outline()` gives the shape in its node's space, the origin taken off, as LÖVE's functions take it: a rectangle's `x`, `y`, `width` and `height`, a circle's `x`, `y` and `radius`, or the `points` as one list, x, y, x, y. `shape:drawShape(mode)` draws it with LÖVE in the colour that is set; a polygon of fewer than 3 corners, or a line of fewer than 2 points, draws nothing.
+- `shape:outline()` gives the shape in its node's space, the origin taken off a rectangle and a circle, as LÖVE's functions take it: a rectangle's `x`, `y`, `width` and `height`, a circle's `x`, `y` and `radius`, or the `points` as one list, x, y, x, y. `shape:drawShape(mode)` draws it with LÖVE in the colour that is set; a polygon of fewer than 3 corners, or a line of fewer than 2 points, draws nothing.
 - In the node view, an outline that no `onlr.paint` draws shows as a thin green line of one pixel at any zoom, as a collider's does in Unity, so a node of a shape alone is seen and chosen; on a node that paints it, the line shows when the node is chosen.
 - Each has `bounds` and `drawEditor` (6.3). A camera's `drawEditor` draws the frame of what it shows, in blue and 3 pixels wide, named "Camera" inside its top left, at the same size at any zoom.
 - The camera's helpers are components beside `onlr.camera.view` on its node, which need it (6.6), and a game takes those that it wants. They change the camera's own properties, so a script can do all that they do, and they leave it to one when it sets the camera itself.
@@ -1259,7 +1260,7 @@ end
 | The editor sends | Type                      | To              | For                                                                                                        |
 | ---------------- | ------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
 | A file           | `file`                    | The preview | A node file as the editor holds it, saved or not. The preview reads it in place of the project's file. |
-| A change         | `change`                  | The preview | One edit of a node's own fields in such a file, such as a moved node.                                      |
+| A change         | `change`                  | The preview | One edit of a node's own fields in such a file, such as a moved node, or of its components' values, such as a dragged point. |
 | A view           | `view`                    | The preview | Which node file to draw, from where, at what size, and which nodes are chosen (12.3).                      |
 | Shown            | `shown`                   | The preview | The editor has taken the last frame (12.4).                                                                |
 | A question       | `question`                | The preview | What a component type declares (12.5).                                                                     |
@@ -1279,7 +1280,7 @@ end
 | Stats            | `stats`  | The game | The frames a second, and the time of update and draw (12.6).   |
 | An error         | `error`  | Both runners    | Its message, file, line and stack, and what raised it (13.1).  |
 
-- A change carries a node's own fields only: its name, its place, its `z` and whether it is active. The preview sets them on the view's nodes, so a drag draws at once. For any other edit, such as a component's value, the editor sends the file again, and the preview makes the views' nodes anew.
+- A change carries a node's own fields, its name, its place, its `z` and whether it is active, and values of its components that a node file holds as they are, such as a shape's `width` or its `points` that the Shape tool drags (13.3). The preview sets them on the view's nodes, so a drag draws at once; a component reads them where it uses them, as `onlr.shape`'s users do (10). For any other edit, and at a drag's release, the editor sends the file again, and the preview makes the views' nodes anew.
 - A node file that does not load leaves its view empty, and its error names the view.
 
 ### 12.3 Views
@@ -1366,7 +1367,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 13.3 The node view
 
 - Many node files can be open at once, each in a node view of its own. One preview draws them all, since each is a view (12.3). Play This File and the panels follow the node view that has the focus.
-- The node view has three tools: move, turn and scale. Each draws one gizmo for all the chosen nodes, and a drag on the gizmo or on a chosen node changes the places of them all. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
+- The node view has four tools: move, turn, scale and Shape, chosen by W, E, R and T. The first three draw one gizmo for all the chosen nodes, and a drag on the gizmo or on a chosen node changes the places of them all. The node view draws them over the frame (12.3). The tools are a panel of their own, and every node view follows the tool chosen there.
 - The chosen nodes turn and scale by one amount, around a pivot that the tools panel chooses, as Unity's Pivot and Center do:
 
   | Pivot      | Each node turns and scales around                                                                   | The gizmo is at                         |
@@ -1379,6 +1380,12 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - A click chooses the node that draws last under the pointer, and another click at the same place chooses the one under it. Shift adds to the choice, and a drag from empty space chooses every node whose middle is in the rectangle.
 - The move tool's gizmo is two arrows, along the world's x in red and its y in green, which points down, as y grows down in LÖVE. A drag that starts on an arrow moves the chosen nodes along its axis alone, as Unity's arrows do, and only that axis snaps. A square between the arrows moves them on both axes. The arrows and the square are above the nodes, so they take the press before a node under them, such as a camera's big frame.
 - A drag that starts on a node, or on the gizmo, drags the chosen nodes with the tool: move by the pointer's way, turn by its angle around the gizmo, and scale by its distance from it. The turn tool's gizmo is a ring with a line along the leading node's x; a press within 16 pixels of it starts a drag, also beside the nodes. The scale tool's gizmo is a square, which scales both axes, and two grips, lines with a box at their ends along the leading node's own x in red and its own y in green, as Unity's are. A drag on a grip scales that axis alone, by how far the pointer goes along the grip from the gizmo: each chosen node's own Scale X or Scale Y changes by that amount, and its place moves along the grip from its pivot. A press within 12 pixels of the square, or on a grip, starts a drag, above the nodes, as the move tool's arrows do. With chosen nodes turned apart, a grip follows the leading node, and scales the others along their own axes, which may not be along it. The preview draws each step (12.2), and the release is one change of the history.
+- The Shape tool edits the one chosen node's outlines and points, as Unity's Edit Collider does, with handles, small squares above the nodes:
+  - `onlr.shape`'s rectangle has one at each corner and at each edge's middle. A drag of one moves that edge, or those two, while the edges across stay: the right edge changes `width`, and the left edge `width` and `origin`, so the node's place stays where it is in the shape. An edge stops at the one across from it.
+  - Its circle has one on its edge, to the right of its middle, whose drag sets `radius`.
+  - Each property that its type marks with `handles` (6.2) has one at its point, or at each of a list's points, as a polygon's corners, a line's points and a script's patrol path have. A list's points are joined by a thin line in their order. A double click adds a point: between the two neighbouring points whose line is under the pointer, or after the last, which closes a polygon between its last corner and its first. Delete removes the point clicked last.
+  - A handle is placed in its node's space, so it follows the node's place, angle and scale. A point and an edge snap to the grid in that space, and a radius in the grid's steps. The preview draws each step (12.2), and the release is one change of the history.
+  - With more than one node chosen, the tool shows no handles. A click on a node chooses it as the other tools do, but a click on empty space keeps the choice, so a double click beside the shape adds a point there.
 - The wheel zooms around the pointer. A drag with the middle button, or with Alt, moves the view. F fits the view to the chosen nodes, or to every node when none is chosen, as Unity's F does.
 - A right click opens a menu, as in the nodes panel: on a node, which it chooses when it is not chosen, Duplicate, Delete, Copy, Paste and Frame Chosen; in empty space, Add Node Here, at the pointer, Paste and Frame All.
 - Snapping to a grid is a toggle. It and the grid's size are settings of the project, kept in `.onlr/editor.lua`, a data file. Ctrl held in a drag flips it, as in Unity, and makes a turn go in steps of 15 degrees.

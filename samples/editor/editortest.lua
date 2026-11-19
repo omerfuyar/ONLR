@@ -192,6 +192,41 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the turns and scales are undone")
 
+    -- the Shape tool's handles (DESIGN 13.3): A's square of 32 has one at each corner and at each edge's middle. A drag of its right
+    -- edge from 32 to 64 widens it; a drag of its top left corner to -32, -32 moves its origin, so its right and bottom edges stay.
+    local function shapeOf(id)
+      local tree = assert(load(read("nodes/start.lua")))()
+      for _, node in ipairs(tree.children) do
+        if node.id == id then
+          return node.components.onlr.shape
+        end
+      end
+    end
+    x, y = at(50, 50)
+    test.click(x, y)
+    test.wait(0.2)
+    test.call("onlr.toolShape")
+    fx, fy = at(72, 56)
+    tx, ty = at(104, 56)
+    test.drag(fx, fy, tx, ty)
+    test.wait(0.3)
+    save()
+    local shape = shapeOf("aaaaaa")
+    check(shape.width == 64 and shape.height == nil and shape.origin == nil, "the right edge widens A:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    fx, fy = at(40, 40)
+    tx, ty = at(8, 8)
+    test.drag(fx, fy, tx, ty)
+    test.wait(0.3)
+    save()
+    shape = shapeOf("aaaaaa")
+    check(shape.width == 64 and shape.height == 64 and shape.origin and shape.origin.x == 32 and shape.origin.y == 32,
+      "the top left corner moves the origin:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    test.call("onlr.toolMove")
+    save()
+    check(read("nodes/start.lua") == start, "the shape's changes are undone")
+
     -- the inspector shows the chosen node: a new name, typed in its Name field and ended with Return, is one change
     x, y = at(70, 70)
     test.click(x, y)
@@ -492,6 +527,51 @@ return {
     -- and a circle its radius in its place (DESIGN 6.2)
     local panelState = test.panel(panelOf(test, "onlr.inspector")).state
     check(panelState.rects["aaaaaa:onlr.shape:width"] and not panelState.rects["aaaaaa:onlr.shape:radius"], "a rectangle shows its width only")
+
+    -- the Shape tool's points (DESIGN 13.3): A becomes a polygon, whose points have handles. A double click adds a point after the
+    -- last, also beside the shape, and one on the line between two points adds it between them; Delete removes the point clicked last.
+    local function pointsOf(id)
+      local tree = assert(load(read("nodes/start.lua")))()
+      for _, node in ipairs(tree.children) do
+        if node.id == id then
+          local list = {}
+          for _, p in ipairs(node.components.onlr.shape.points or {}) do
+            list[#list + 1] = ("%g,%g"):format(p.x, p.y)
+          end
+          return table.concat(list, " ")
+        end
+      end
+    end
+    test.click(inspected("aaaaaa:onlr.shape:kind", 0.5))
+    for _, letter in ipairs({ "p", "o", "l", "y" }) do
+      test.key(letter)
+    end
+    test.key("Return")
+    test.wait(0.3)
+    test.call("onlr.toolShape")
+    local function doubleClick(px, py)
+      local sx, sy = at(px, py)
+      test.click(sx, sy)
+      test.click(sx, sy)
+      test.wait(0.2)
+    end
+    doubleClick(40, 40)
+    doubleClick(40, 140)
+    doubleClick(100, 140)
+    doubleClick(40, 90)
+    save()
+    check(pointsOf("aaaaaa") == "0,0 0,50 0,100 60,100", "double clicks add points, and one on a line between two:\n" .. read("nodes/start.lua"))
+    test.click(at(100, 140))
+    test.key("Delete")
+    test.wait(0.2)
+    save()
+    check(pointsOf("aaaaaa") == "0,0 0,50 0,100", "Delete removes the point clicked last:\n" .. read("nodes/start.lua"))
+    for _ = 1, 6 do
+      test.key("Ctrl+Z")
+    end
+    test.call("onlr.toolMove")
+    save()
+    check(read("nodes/start.lua") == start, "the points and the kind are undone:\n" .. read("nodes/start.lua"))
 
     -- F2 renames the chosen node in a field above the tree, and Return takes the name
     rx, ry = row(2)

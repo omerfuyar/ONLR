@@ -21,6 +21,9 @@ local data = require("onlr.library.data")
 ---@field min? number the least value; the inspector keeps the value between min and max, and with both shows a slider
 ---@field max? number the most value
 
+---@class onlr.PointOptions : onlr.PropertyOptions
+---@field handles? boolean the node view's Shape tool drags the point, or each point of a list, in the node's space
+
 ---@class onlr.ChoiceOptions : onlr.PropertyOptions
 ---@field choices string[] the texts to choose from
 
@@ -68,6 +71,7 @@ local TAKEN = {
   stream = { sound = true },
   size = { font = true },
   extensions = { file = true },
+  handles = { vector = true, list = true },
   preload = { nodeFile = true },
 }
 
@@ -104,6 +108,9 @@ local function declare(kind, default, options, extra)
   local d = setmetatable({ kind = kind, default = default, options = options, order = count }, Declaration)
   for k, v in pairs(extra or {}) do
     d[k] = v
+  end
+  if options.handles ~= nil and (options.handles ~= true or kind == "list" and d.item.kind ~= "vector") then
+    fail("the option handles is true, on a vector or a list of vectors")
   end
   return d
 end
@@ -189,7 +196,7 @@ end
 ---Two numbers. A node file keeps them as { x = 1, y = 2 }, and the component gets the same.
 ---@param x? number 0 when left out
 ---@param y? number 0 when left out
----@param options? onlr.PropertyOptions
+---@param options? onlr.PointOptions
 ---@return {x: number, y: number}
 function property.vector(x, y, options)
   expect("vector", x, "number")
@@ -296,7 +303,7 @@ end
 ---Rows of one kind, which the user adds and removes. The component gets a list: self.frames[1].
 ---@generic T
 ---@param item T a property
----@param options? onlr.PropertyOptions
+---@param options? onlr.PointOptions handles only for a list of vectors
 ---@return T[]
 function property.list(item, options)
   if not property.isDeclaration(item) then

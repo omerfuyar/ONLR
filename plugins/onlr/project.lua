@@ -38,7 +38,7 @@ local resolve = require("resolve")
 ---@field position integer how many records of the history are done
 ---@field chosen onlr.editor.Chosen
 ---@field joinable onlr.editor.Record? the change just made, which a choice that follows it in the same frame joins
----@field tool "move"|"turn"|"scale"
+---@field tool "move"|"turn"|"scale"|"shape"
 ---@field settings table what the editor keeps for the project in .onlr/
 ---@field space table the names that components can hold
 ---@field typeNames string[]
@@ -1162,6 +1162,19 @@ local function setProperty(file, paths, typeName, name, value)
   end)
 end
 
+-- Sets some values of the nodes' components of a type as one change, such as a rectangle's origin and width that the Shape tool's
+-- drag of its left edge changes (DESIGN 13.3).
+local function setValues(file, paths, typeName, values, label)
+  return edit(label or ("Change " .. typeName), function(touch)
+    touch(file)
+    for _, node in ipairs((nodesOf(file, paths))) do
+      for name, value in pairs(values) do
+        setValue(node, typeName, name, value)
+      end
+    end
+  end)
+end
+
 -- Gives the nodes' components of a type the values of another, as one change: each value that it has, and the default
 -- for each that it lacks (DESIGN 13.4).
 local function pasteValues(file, paths, typeName, values)
@@ -1934,7 +1947,7 @@ local functions = {
     return P and P.chosen or { paths = {} }
   end },
   choose = { sig = "void(string file, value paths, bool unrecorded)", doc = "Choose nodes of a node file; unrecorded keeps it out of the history, for a choice that the user did not make", fn = choose },
-  tool = { sig = "string()", doc = "The chosen tool: move, turn or scale", fn = function()
+  tool = { sig = "string()", doc = "The chosen tool: move, turn, scale or shape", fn = function()
     return P and P.tool or "move"
   end },
   setTool = { sig = "void(string tool)", doc = "Choose a tool", fn = function(tool)
@@ -1959,6 +1972,8 @@ local functions = {
   pasteValues = { sig = "bool(string file, value paths, string type, value values)", doc = "Give the nodes' components of a type the values of another, as one change", fn = pasteValues },
   setProperty = { sig = "bool(string file, value paths, string type, string property, value value)",
     doc = "Set a value of the nodes' components; nil puts back the default, or the base's value", fn = setProperty },
+  setValues = { sig = "bool(string file, value paths, string type, value values, string label)",
+    doc = "Set some values of the nodes' components of a type, as one change", fn = setValues },
   addComponent = { sig = "bool(string file, value paths, string type)", doc = "Add a component to nodes", fn = addComponent },
   removeComponent = { sig = "bool(string file, value paths, string type)", doc = "Remove a component from nodes", fn = removeComponent },
   giveValues = { sig = "bool(string file, value paths, string type, string toType, string property, string toProperty)",

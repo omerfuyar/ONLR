@@ -22,20 +22,22 @@ Shape.height = onlr.property.number(32, { min = 0, when = { kind = "rectangle" }
 Shape.radius = onlr.property.number(16, { min = 0, when = { kind = "circle" } })
 Shape.points = onlr.property.list(onlr.property.vector(), {
   when = { kind = { "polygon", "line" } },
-  description = "A polygon's corners, or a line's points, in the node's space",
+  handles = true,
+  description = "A polygon's corners, or a line's points, in the node's space. The Shape tool drags them",
 })
 Shape.origin = onlr.property.vector(0, 0, {
-  description = "The point of the shape that is at the node's place: a rectangle's from its top left, a circle's from its middle, the points' from the node's",
+  when = { kind = { "rectangle", "circle" } },
+  description = "The point of the shape that is at the node's place: a rectangle's from its top left, a circle's from its middle",
 })
 
----The shape in its node's space: the origin taken off.
+---The shape in its node's space: the origin taken off a rectangle and a circle.
 ---@return onlr.Outline
 function Shape:outline()
   local ox, oy = self.origin.x, self.origin.y
   local points = {}
   for _, point in ipairs(self.points) do
-    points[#points + 1] = point.x - ox
-    points[#points + 1] = point.y - oy
+    points[#points + 1] = point.x
+    points[#points + 1] = point.y
   end
   return {
     kind = self.kind, x = -ox, y = -oy, width = self.width, height = self.height, radius = self.radius, points = points,
