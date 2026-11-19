@@ -6,11 +6,10 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in this order.
 
-1. **One way for one job, and one owner per value** (OVERVIEW 11). Built: `onlr.shape` as the outline, `onlr.paint`, and the property option `when` (DESIGN 6.2, 10). Then `physics.fixture` reading the shape in place of `physics.shape.*`, and one `physics.joint` with a `kind` (11.4). Then a shadow caster in place of `shadows.shape.*`, and `bump.body` taking the shape's rectangle (11.14, 11.3). Then the names: `restitution`, `audio.source` with a Stream toggle in place of `audio.music` (11.12), and `autoPlay` for an emitter as for a sound (11.6). Then the Shape tool, whose handles any property marked with `handles` gets, and a polygon's points in the node's space (DESIGN 13.3, 10).
-2. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
-3. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
-4. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, and the second round. The camera's helpers are built too (DESIGN 10).
-5. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
+1. **The editor's look and use.** The owner's wishes are under [Editor](#editor). The owner chose these from Unity's list: the eye and the lock (built, DESIGN 13.3), a button that picks a node for a reference, a list of the history, and Pause on Error.
+2. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
+3. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, and the second round. The camera's helpers are built too (DESIGN 10).
+4. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
 
@@ -39,7 +38,6 @@ What the owner wants worked on, in this order.
 
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
   - The node view: a rectangle tool that sizes a node by its corners; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
-  - The nodes panel: an eye that hides a node in the node view only, and a lock that keeps it from being chosen there.
   - The inspector: a lock that keeps its node while another is chosen; reordering components; a round button that picks a node for a reference (a file has the dialog's button now); a pipette for the colour picker; a list of an instance's changes, to keep or drop them all.
   - The files panel: favourite folders; Find what names this file.
   - The console: Pause on Error. An error's entry holds its stack, so no pane is needed for it.
@@ -170,6 +168,7 @@ What the owner wants worked on, in this order.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - ui: a field and a number field that tell when they lose the keys, so the inspector takes a typed value without Return; a click twice on a tree's node, apart from one click, so the files panel need not time a second click itself (DESIGN 13.7).
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
+  - ui: toggles in a tree's rows, such as an eye and a lock that a click turns on and off, as Unity's nodes panel has. The nodes panel shows a node's marks in words, and H and L set them (DESIGN 13.3).
   - The core: a panel hears where dragged data is over it, so the nodes panel shows a line where a dragged node will land. While data is dragged, the core gives no panel the pointer's moves (OpenECS DESIGN 7.9).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
 - **The gallery has no test of the editor.** `samples/gallery` is tested in LÖVE only. An editor test can click and read the files the editor writes, but cannot read the nodes that the preview draws, so it cannot check that each room opens and shows in a node view. A function of the test that returns the preview's nodes, or a screenshot compared with a saved one, would let it.

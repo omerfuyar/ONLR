@@ -388,6 +388,34 @@ return {
     test.click(rx, ry)
     check(not test.panel(panelOf(test, "onlr.nodes")).state.open.p4rt01, "another double click closes it")
 
+    -- H hides the chosen node in the node view, and L locks it there: a click in the view chooses neither. The marks are the
+    -- project's settings, not the node file's, and H and L again take them off (DESIGN 13.3, 13.4)
+    local function settings()
+      return read(".onlr/editor.lua")
+    end
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.key("H")
+    test.wait(0.2)
+    check(settings():find('hidden = {%s*%["nodes/start.lua"%] = {%s*aaaaaa = true'), "H hides A:\n" .. settings())
+    local vx, vy = at(70, 70)
+    test.click(vx, vy)
+    test.match(chosen(), {}, "a hidden node is not chosen in the view: " .. table.concat(chosen(), ","))
+    test.click(rx, ry)
+    test.key("H")
+    test.key("L")
+    test.wait(0.2)
+    check(settings():find('locked = {%s*%["nodes/start.lua"%] = {%s*aaaaaa = true') and not settings():find("hidden = {%s*%["),
+      "H shows A again, and L locks it:\n" .. settings())
+    test.click(vx, vy)
+    test.match(chosen(), {}, "a locked node is not chosen in the view")
+    test.click(rx, ry)
+    test.key("L")
+    test.wait(0.2)
+    test.click(vx, vy)
+    test.match(chosen(), { "aaaaaa" }, "an unlocked node is chosen again")
+    check(read("nodes/start.lua") == start, "the marks leave the node file as it was")
+
     -- the search shows the nodes whose name holds the text, and with t:, those with a component of a type: thing is on A, B
     -- and Part's Tip, so Start, A, B, Part and Tip show, opened
     test.click(tree.x + 150, tree.y + 42)

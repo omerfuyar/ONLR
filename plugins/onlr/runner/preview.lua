@@ -23,6 +23,7 @@ local preview = {}
 ---@field width integer in pixels
 ---@field height integer
 ---@field chosen table<string, boolean> the chosen nodes, by their paths of ids
+---@field hidden table<string, boolean> the nodes that the user hid in the node view, which draw nothing there, nor the nodes under them
 ---@field root onlr.Node? its nodes, or nil when the file did not load
 ---@field scope onlr.Scope? its nodes by their ids
 ---@field dirty boolean it must be drawn again
@@ -158,7 +159,13 @@ local function draw(view)
   local failed = false
   for _, entry in ipairs(view.root and ordered(view.root) or {}) do
     local node = entry.node
-    if entry.active then
+    local hidden = false
+    local above = node
+    while above and not hidden do
+      hidden = view.hidden[above._path] == true
+      above = above._parent
+    end
+    if entry.active and not hidden then
       for _, r in ipairs(node._records) do
         local c = r.component
         if r.enabled and c.drawEditor then
@@ -285,13 +292,19 @@ function handlers.view(message)
     return
   end
   if not view then
-    view = { id = message.id, path = message.path, chosen = {}, waiting = false, dirty = true, x = 0, y = 0, zoom = 1, width = 0, height = 0 }
+    view = { id = message.id, path = message.path, chosen = {}, hidden = {}, waiting = false, dirty = true, x = 0, y = 0, zoom = 1, width = 0, height = 0 }
     views[message.id] = view
   end
   local path = view.root and view.path
   view.path = message.path or view.path
   view.x, view.y, view.zoom = message.x or view.x, message.y or view.y, message.zoom or view.zoom
   view.width, view.height = math.floor(message.width or view.width), math.floor(message.height or view.height)
+  if message.hidden then
+    view.hidden = {}
+    for _, id in ipairs(message.hidden) do
+      view.hidden[id] = true
+    end
+  end
   if message.chosen then
     view.chosen = {}
     for _, id in ipairs(message.chosen) do
