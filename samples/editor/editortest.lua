@@ -530,6 +530,23 @@ return {
     save()
     check(read("nodes/start.lua") == start, "Stream is undone")
 
+    -- a node's row has Pick, which waits for a click on a node: in the node view, A picks itself for its target, and the choice stays;
+    -- in the nodes panel, B is picked back (DESIGN 13.4)
+    test.click(inspected("aaaaaa:thing:target:pick", 0.5))
+    local px, py = at(70, 70)
+    test.click(px, py)
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua"):find('friend = "bbbbbb",%s*speed = 25,%s*target = "aaaaaa"'), "Pick and a click in the view set the target:\n" .. read("nodes/start.lua"))
+    test.match(chosen(), { "aaaaaa" }, "and A stays chosen")
+    test.click(inspected("aaaaaa:thing:target:pick", 0.5))
+    rx, ry = row(3)
+    test.click(rx, ry)
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua") == start, "Pick and a click in the nodes panel set it back:\n" .. read("nodes/start.lua"))
+    test.match(chosen(), { "aaaaaa" }, "and A is still chosen")
+
     -- Add component, at the inspector's end, shows the types in folders by their names' dots, a folder at a time: onlr's folder
     -- first, then marker, the project's script. Return opens onlr in place, Left goes back, and Down and Return add marker.
     fold("aaaaaa:thing")

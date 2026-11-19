@@ -79,6 +79,47 @@ local function toggleMarks(kind, file, paths)
   project.setSetting(kind, all)
 end
 
+-- Picking a node for a reference (DESIGN 13.4): the inspector's Pick button waits for the next click on a node, in a node view or in
+-- the nodes panel, which sets the reference in place of choosing the node.
+---@class onlr.editor.Picking
+---@field id string the inspector's row
+---@field file string the node file whose nodes it takes
+---@field label string the property's name, for the node view's line
+---@field needs string? for a reference to a component, the type that the node must have
+---@field set fun(path: string)
+local picking ---@type onlr.editor.Picking?
+
+local function redrawViews()
+  for _, view in pairs(views) do
+    view.panel:redraw()
+  end
+end
+
+---@param p onlr.editor.Picking?
+local function startPick(p)
+  picking = p
+  redrawViews()
+  ecs.event.emit("onlr.picking", p and p.id or false)
+end
+
+-- Gives the waiting reference the node clicked; true when a pick was waiting, so the click chooses nothing.
+local function pick(file, path)
+  local p = picking
+  if not p then
+    return false
+  end
+  startPick(nil)
+  local node = path and file == p.file and project.tree(file).index[path]
+  if node and p.needs and not node.components[p.needs] then
+    console.add(("The node %s has no component %s."):format(node.name or node.path, p.needs), "warn")
+  elseif node then
+    p.set(path)
+  elseif path then
+    console.add("A reference names a node of its own node file.", "warn")
+  end
+  return true
+end
+
 local function hiddenList(file)
   local list = {}
   for path in pairs(marks("hidden", file)) do
@@ -618,6 +659,10 @@ local function drawView(view, surface)
 
   view.x, view.y, view.zoom = wantX, wantY, wantZoom
 
+  if picking and view.file == picking.file then
+    gpu.text(surface, draw.font("ui"), ("Click the node for %s, here or in the nodes panel. Escape ends it."):format(picking.label), 12, h - 22, 13, "accent")
+  end
+
   local message = view.error or runners.down
   if not view.file then
     message = project.folder() == "" and "No project is open." or "No node file is open."
@@ -1016,6 +1061,9 @@ local function pointer(view, event)
     end
   elseif event.type == "pointerUp" and event.button == 3 and view.file and not view.drag then
     menu(view, event, x, y)
+  elseif event.type == "pointerDown" and event.button == 1 and not event.alt and picking then
+    -- a pick waits: the node under the pointer is the reference's, and a click beside the nodes ends the pick
+    pick(view.file, hits(view, x, y)[1])
   elseif event.type == "pointerDown" then
     if event.button == 2 or (event.button == 1 and event.alt) then
       view.drag = { kind = "pan", startX = x, startY = y, viewX = view.x, viewY = view.y }
@@ -1403,6 +1451,9 @@ functions = {
       frame(view)
     end
   end },
+  cancelPick = { sig = "void()", doc = "End a pick of a node for a reference, setting nothing", fn = function()
+    startPick(nil)
+  end },
   hideChosen = { sig = "void()", doc = "Hide the chosen nodes in the node view, or show them again", fn = onChosen(function(file, paths)
     toggleMarks("hidden", file, paths)
   end) },
@@ -1439,7 +1490,7 @@ for key, name in pairs({
   ["F6"] = "onlr.playFile", ["F7"] = "onlr.pause", ["F8"] = "onlr.step",
   ["Shift+F5"] = "onlr.stop", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
   ["R"] = "onlr.toolScale", ["T"] = "onlr.toolShape", ["F"] = "onlr.frame", ["H"] = "onlr.hideChosen",
-  ["L"] = "onlr.lockChosen",
+  ["L"] = "onlr.lockChosen", ["Escape"] = "onlr.cancelPick",
 }) do
   ecs.key.bind("onlr.view", key, name)
 end
@@ -1451,7 +1502,15 @@ end
 
 -- The other parts call the functions themselves; init.lua registers them as the plugin's (DESIGN 13.1).
 ---@type table<string, any>
-local part = { functions = functions, marks = marks }
+local part = {
+  functions = functions,
+  marks = marks,
+  startPick = startPick,
+  pick = pick,
+  picking = function()
+    return picking
+  end,
+}
 for name, entry in pairs(functions) do
   part[name] = entry.fn
 end

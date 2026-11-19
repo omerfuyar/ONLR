@@ -236,12 +236,27 @@ local function control(state, subject, id, decl, value, set)
       end),
     })
   elseif kind == "node" or kind == "component" then
-    -- A node is set by dragging it from the nodes panel onto the row.
+    -- A node is set by dragging it from the nodes panel onto the row, or by Pick and a click on it in a node view or the nodes
+    -- panel, as Unity's round button does (DESIGN 13.4).
     local named = type(value) == "string" and subject.tree.index[value]
     local shown = value == MIXED and "" or named and (named.name or value) or value and (tostring(value) .. " (no such node)") or "(none)"
-    state.drops[#state.drops + 1] = { id = id, type = "onlr.node", set = set, needs = kind == "component" and decl.type or nil, tree = subject.tree }
+    local needs = kind == "component" and decl.type or nil
+    state.drops[#state.drops + 1] = { id = id, type = "onlr.node", set = set, needs = needs, tree = subject.tree }
+    local waiting = nodeview.picking()
+    local mine = waiting ~= nil and waiting.id == id
     return ui.row({ id = id, gap = 4, grow = 1, align = "center" }, {
-      ui.text(shown, { grow = 1, color = value and value ~= MIXED and not named and RED or nil }),
+      ui.text(mine and "Click a node..." or shown, { grow = 1, color = mine and "accent" or value and value ~= MIXED and not named and RED or nil }),
+      ui.button(mine and "Cancel" or "Pick", {
+        id = id .. ":pick",
+        tooltip = mine and "End the pick, setting nothing: Escape" or "Then click the node, in a node view or in the nodes panel",
+        onClick = function()
+          if mine then
+            nodeview.startPick(nil)
+          else
+            nodeview.startPick({ id = id, file = subject.file, label = decl.name and shared.words(decl.name) or "the reference", needs = needs, set = set })
+          end
+        end,
+      }),
       (value ~= nil and ui.button("Clear", { id = id .. ":clear", tooltip = "Take the value out", onClick = function()
         set(nil)
       end })) --[[@as ui.Element]],
@@ -773,6 +788,11 @@ local function drop(state, event)
     end
   end
 end
+
+-- A row's Pick shows that it waits, and the waiting ends when a node is clicked.
+ecs.event.subscribe("onlr.picking", function()
+  shared.redraw()
+end)
 
 ecs.panel.registerType({
   name = "inspector",

@@ -357,6 +357,11 @@ local function draw(state, surface)
         id = "tree", open = opened, selected = paths, grow = 1,
         tooltip = "A drag moves a node before, into or after another, or to a reference in the inspector; a right click opens a menu",
         onSelect = function(id, how, between)
+          -- a pick that the inspector waits for takes the node, which is not chosen (DESIGN 13.4)
+          if nodeview.picking() then
+            nodeview.pick(file, id)
+            return
+          end
           if how == "toggle" then
             local kept = {}
             for _, path in ipairs(paths) do
