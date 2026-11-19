@@ -42,11 +42,12 @@ local function treeNodes(node, open, search, opened, marked)
   if node.instanceOf then
     label = label .. "  (" .. node.instanceOf:match("[^/]*$") .. ")"
   end
-  -- the eye and the lock of the node view (DESIGN 13.4): a hidden node is dimmed, and each mark is named after the node
-  local hidden, locked = marked.hidden[node.path], marked.locked[node.path]
-  if hidden or locked then
-    label = label .. "  [" .. (hidden and locked and "hidden, locked" or hidden and "hidden" or "locked") .. "]"
-  end
+  -- the eye and the lock of the node view (DESIGN 13.4): marks at the row's end, which a click turns; a hidden node is dimmed
+  local hidden, locked = marked.hidden[node.path] == true, marked.locked[node.path] == true
+  local marks = {
+    { id = "hidden", text = "Hide", on = hidden, tooltip = hidden and "Hidden in the node view: a click shows it again (H)" or "A click hides it in the node view (H)" },
+    { id = "locked", text = "Lock", on = locked, tooltip = locked and "Locked in the node view: a click lets it be chosen there again (L)" or "A click keeps it from being chosen in the node view (L)" },
+  }
   local children
   if #node.children > 0 then
     children = {}
@@ -64,7 +65,7 @@ local function treeNodes(node, open, search, opened, marked)
     opened[node.path] = true
   end
   local color = #node.errors > 0 and "#e06c75" or (not node.active or hidden) and "textDim" or not node.own and "accent" or nil
-  return { id = node.path, label = label, color = color, children = children }
+  return { id = node.path, label = label, color = color, children = children, marks = marks }
 end
 
 -- The running game's nodes, as the game sent them.
@@ -339,6 +340,17 @@ local function draw(state, surface)
       local search = state.search
       local opened = search and {} or state.open
       local shown = treeNodes(first, state.open, search, opened, { hidden = nodeview.marks("hidden", file), locked = nodeview.marks("locked", file) })
+      -- the shown nodes' paths, whose marks' rectangles a test reads
+      state.shownPaths = {}
+      local function note(n)
+        if n then
+          state.shownPaths[#state.shownPaths + 1] = n.id
+          for _, child in ipairs(opened[n.id] and n.children or {}) do
+            note(child)
+          end
+        end
+      end
+      note(shown)
       local renaming = state.renaming
       if renaming and renaming.file == file then
         children[#children + 1] = ui.row({ gap = 4, align = "center" }, {
@@ -378,6 +390,10 @@ local function draw(state, surface)
           else
             project.choose(file, { id })
           end
+        end,
+        -- a click on a node's Hide or Lock turns that mark alone, and chooses nothing
+        onMark = function(id, mark)
+          nodeview.toggleMarks(mark, file, { id })
         end,
         onToggle = function(id, open)
           if not search then
@@ -451,7 +467,13 @@ ecs.panel.registerType({
   saveState = function(state)
     -- What is chosen is the project's, and is not read back; a test reads it here.
     local chosen = project.chosen()
-    return { open = state.open, file = state.openFile, chosen = chosen.file == state.openFile and chosen.paths or {} }
+    local marks = {}
+    for _, path in ipairs(state.shownPaths or {}) do
+      for _, mark in ipairs({ "hidden", "locked" }) do
+        marks[path .. ":" .. mark] = ui.rect(state.panel, "tree:" .. path .. ":" .. mark)
+      end
+    end
+    return { open = state.open, file = state.openFile, chosen = chosen.file == state.openFile and chosen.paths or {}, marks = marks }
   end,
   destroy = function(state)
     shared.forget(state.panel)

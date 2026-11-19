@@ -1505,6 +1505,7 @@ end
 local part = {
   functions = functions,
   marks = marks,
+  toggleMarks = toggleMarks,
   startPick = startPick,
   pick = pick,
   picking = function()
