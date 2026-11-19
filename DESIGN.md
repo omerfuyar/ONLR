@@ -572,7 +572,7 @@ These are the engine's functions for scripts. The rest is LÖVE. The engine's so
 - The events go through LÖVE's own table of handlers, `love.handlers`, as in LÖVE's loop. So a library that adds to it, such as one that draws an interface and hears the keys, works as in any game.
 - So code written for plain LÖVE in `main.lua` keeps working beside the nodes, such as an interface drawn in `love.draw`.
 - The engine runs on LÖVE's main thread, as a LÖVE game does. A script may use `love.thread` as in any game.
-- An error is LÖVE's: the game stops and LÖVE's error handler shows it, as in any game. A game may set its own handler, as LÖVE allows.
+- An error is LÖVE's: the game stops and LÖVE's error handler shows it, as in any game. A game may set its own handler, as LÖVE allows. Played from the editor, the stopped game still shows its nodes there (12.6).
 - In an exported game the loop does this and nothing else. What serves the editor is not in the project: the engine loads it from the editor's plugin, and only when the editor starts it (12.1).
 
 ### 8.2 How the tree is kept
@@ -1319,6 +1319,7 @@ end
 - The editor asks the game for the tree. The engine sends each node's name, its children and its components' types, and sends the tree again when it changes, at most four times a second. A running node has no id of a file (9), so the engine gives each a number for the link.
 - For the chosen nodes, the engine sends their places and their components' values ten times a second. A reference is sent as what it names: a file as its path, and a node or a component as the node's number.
 - A value that the user changes is sent to the game, which sets it between two frames, as a script sets a field. A node's active and a component's enabled are set through their functions (7).
+- The game stops at an error, as a LÖVE game does (8.1), and in place of Unity's Pause on Error, which a game's error cannot have, it keeps answering the link while LÖVE's handler shows the error: the nodes panel's running tree and the inspector's values show the nodes as the error left them, and a value can still be read, until Stop. The tools panel says that the game stopped at an error. Nothing runs any more, so no frame updates or draws, and Pause, Step and a changed value do nothing a game would show. LÖVE 11.5's own handler is `love.errhand`, which the runner calls; a game that sets its own `love.errorhandler` in `main.lua` replaces the runner's, and the editor gets the error from its print alone.
 - Twice a second, the game sends its frames a second, and the mean time that a frame spent in update and in draw, in milliseconds. The tools panel shows them while the game plays, so the user sees what makes a game slow. The engine's loop measures the times only when a runner runs it; the time of draw leaves out `love.graphics.present`, which waits for the screen. A game with its own `love.run` sends its frames a second alone.
 - The engine sends none of the tree and the values unless the editor asks, and an exported game holds none of it (8.1).
 - A game that sets its own `love.run` does not run the engine's loop (8.1). The game then reads the link when the game's frame ends, and Pause and Step do nothing.

@@ -55,7 +55,8 @@ local function draw(state, surface)
       ui.button(running.paused and "Resume" or "Pause", { id = "pause", tooltip = "Pause or resume the game: F7", onClick = nodeview.pause }),
       ui.button("Step", { id = "step", tooltip = "Run one frame of the paused game: F8", onClick = nodeview.step }),
       ui.button("Stop", { id = "stop", tooltip = "Stop the game: Shift+F5", onClick = nodeview.stop }),
-      ui.text(running.playing and (running.paused and "Paused" or "Playing") or "", { style = STYLES.note }),
+      ui.text(running.playing and (running.halted and "Stopped at an error: its nodes show as it left them" or running.paused and "Paused" or "Playing") or "",
+        { style = STYLES.note, color = running.halted and "#e06c75" or nil }),
     }),
     running.playing and running.stats and ui.text(stats(running.stats), {
       id = "stats", style = STYLES.note, tooltip = "The game's frames a second, and the time that a frame spends in update and in draw",

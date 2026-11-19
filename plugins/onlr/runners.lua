@@ -42,7 +42,7 @@ runners.down = nil
 -- A view that stopped the preview twice in a row is not drawn again until the user asks.
 local strikes, blocked = 0, false
 
----The running game: whether it is paused, and what the game sent of it.
+---The running game: whether it is paused, or halted at an error, and what the game sent of it.
 runners.running = { playing = false, paused = false, tree = nil, values = nil }
 
 ---Called with each message of the preview for a view: its type, the message and its block.
@@ -363,6 +363,12 @@ end
 function fromGame.values(message)
   runners.running.values = message.nodes
   ecs.event.emit("onlr.running", "values")
+end
+
+-- The game stopped at an error, and LÖVE shows it; its running tree and values still answer, until Stop (DESIGN 12.6).
+function fromGame.halted()
+  runners.running.halted = true
+  ecs.event.emit("onlr.state")
 end
 
 function fromGame.error(message)
