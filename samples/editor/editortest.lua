@@ -414,6 +414,18 @@ return {
     test.wait(0.2)
     test.click(vx, vy)
     test.match(chosen(), { "aaaaaa" }, "an unlocked node is chosen again")
+    -- each row has Hide and Lock at its end, which a click turns as H and L do, and which choose nothing
+    local function markAt(id)
+      local r = assert(test.panel(panelOf(test, "onlr.nodes")).state.marks[id], "the nodes panel shows " .. id)
+      return tree.x + r.x + r.width / 2, tree.y + r.y + r.height / 2
+    end
+    test.click(markAt("bbbbbb:hidden"))
+    test.wait(0.2)
+    check(settings():find('hidden = {%s*%["nodes/start.lua"%] = {%s*bbbbbb = true'), "a click on B's Hide hides it:\n" .. settings())
+    test.match(chosen(), { "aaaaaa" }, "and chooses nothing")
+    test.click(markAt("bbbbbb:hidden"))
+    test.wait(0.2)
+    check(not settings():find("bbbbbb = true"), "another click shows it again:\n" .. settings())
     check(read("nodes/start.lua") == start, "the marks leave the node file as it was")
 
     -- the search shows the nodes whose name holds the text, and with t:, those with a component of a type: thing is on A, B
