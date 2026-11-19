@@ -93,6 +93,9 @@ check.run(function()
   check.fails(function() a:addComponent("both") end, "both both.lua and the folder both/", "a file and a folder of one name")
   check.fails(function() a:addComponent("both.inner") end, "both both.lua and the folder both/", "and the types in that folder")
   check.fails(function() a:addComponent("badname") end, "cannot be named node", "a property with a taken name")
+  check.fails(function() a:addComponent("badwhen") end, "kidn has a value, which the type does not declare", "a when of no property")
+  ---@diagnostic disable-next-line: assign-type-mismatch -- the wrong option is what the check gives
+  check.fails(function() onlr.property.number(1, { when = "circle" }) end, "the option when of a number is a table", "a when that is no table")
   check.fails(function() a:addComponent("not-a-name") end, "each part of it is a name in Lua", "a name that is no name in Lua")
   check.fails(function() a:addComponent("nothing") end, "no component type nothing", "a type without a file")
 

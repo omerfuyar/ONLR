@@ -6,10 +6,11 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in this order.
 
-1. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
-2. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
-3. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, and the second round. The camera's helpers are built too (DESIGN 10).
-4. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
+1. **One way for one job, and one owner per value** (OVERVIEW 11). Built: `onlr.shape` as the outline, `onlr.paint`, and the property option `when` (DESIGN 6.2, 10). Next, a pull request each: `physics.fixture` reading the shape in place of `physics.shape.*`, and one `physics.joint` with a `kind` (11.4); a shadow caster in place of `shadows.shape.*`, and `bump.body` taking the shape's rectangle (11.14, 11.3); then the names: `restitution`, `audio.source` and `audio.music` as one type, and a world added to the root by every package that needs one. Then the Shape tool, whose handles any property marked for them gets (DESIGN 13.3).
+2. **The editor's look and use.** The owner's wishes are under [Editor](#editor).
+3. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
+4. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, and the second round. The camera's helpers are built too (DESIGN 10).
+5. **Linux and the `.love` file first.** Windows follows. macOS and Android are noted for later (see [Export](#export)).
 
 ## Engine
 
@@ -157,7 +158,7 @@ What the owner wants worked on, in this order.
   - **`ui.graph`**: bars of numbers, which stack in colours. A panel of the running game's frame, its update and draw times and its count of nodes, which the engine sends through the link, as Unity's profiler of the game, for later.
   - **A slider's release is one change**: `onSubmit` gets the value that a drag ends on, and the slider shows its value while dragging. The inspector's slider already takes `onSubmit`, so a drag is one record of the history; `samples/editor` checks it once.
   - **`ui.show` draws only what changed**, `ecs.scale` scales the core's own interface, and frames draw while a window moves or resizes. The editor gets these without a change.
-- **Add Component's folders wait for OpenECS-std.** The dropdown shows its folders only with OpenECS-std's `folders`, in [OpenECS-std#122](https://github.com/omerfuyar/OpenECS-std/pull/122) and tested together in [OpenECS#266](https://github.com/omerfuyar/OpenECS/pull/266). Until it lands, ui refuses the prop, and until it is in an OpenECS release, it works only with OpenECS built from `dev`.
+- **Add Component's folders wait for an OpenECS release.** They need OpenECS-std's `folders` of `ui.dropdown`, in [OpenECS-std#122](https://github.com/omerfuyar/OpenECS-std/pull/122), which OpenECS's `dev` holds. Until it is in an OpenECS release, they work only with OpenECS built from `dev`, as the checks build it.
 - **Drops into the files panel wait for an OpenECS release.** OpenECS-std's files panel takes dropped files since [OpenECS-std#121](https://github.com/omerfuyar/OpenECS-std/pull/121), with its test in OpenECS-examples' `s5_files`, and OpenECS's `dev` holds it. Until it is in an OpenECS release, DESIGN 13.7's drops work only with OpenECS built from `dev`, as the checks build it.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. They are the owner's too, so they change when that is the better solution:
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.

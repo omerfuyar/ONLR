@@ -31,7 +31,8 @@ return {
           name = "Level",
           components = {
             onlr = {
-              shape = { color = { 0.16, 0.2, 0.26, 1 }, height = 720, width = 1280 },
+              paint = { color = { 0.16, 0.2, 0.26, 1 } },
+              shape = { height = 720, width = 1280 },
             },
           },
         },
@@ -42,7 +43,8 @@ return {
           posY = 200,
           components = {
             onlr = {
-              shape = { color = { 0.5, 0.4, 0.7, 1 }, height = 200, width = 40 },
+              paint = { color = { 0.5, 0.4, 0.7, 1 } },
+              shape = { height = 200, width = 40 },
             },
           },
         },
@@ -53,7 +55,8 @@ return {
           posY = 400,
           components = {
             onlr = {
-              shape = { color = { 0.3, 0.6, 0.6, 1 }, height = 160, width = 160 },
+              paint = { color = { 0.3, 0.6, 0.6, 1 } },
+              shape = { height = 160, width = 160 },
             },
           },
         },

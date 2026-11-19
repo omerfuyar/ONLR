@@ -32,6 +32,7 @@ return {
           posY = 50,
           components = {
             onlr = {
+              paint = {},
               shape = {
                 height = 8,
                 width = 8,

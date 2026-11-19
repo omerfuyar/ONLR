@@ -28,8 +28,10 @@ return {
           name = "Square",
           components = {
             onlr = {
-              shape = {
+              paint = {
                 color = { 1, 0, 0, 1 },
+              },
+              shape = {
                 height = 10,
                 width = 10,
               },

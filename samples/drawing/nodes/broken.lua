@@ -24,8 +24,10 @@ return {
       posY = 16,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 0, 1, 0, 1 },
+          },
+          shape = {
             height = 8,
             width = 8,
           },

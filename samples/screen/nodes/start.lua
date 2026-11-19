@@ -11,8 +11,10 @@ return {
       name = "Red",
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 1, 0, 0, 1 },
+          },
+          shape = {
             height = 10,
             width = 10,
           },
@@ -26,8 +28,10 @@ return {
       posY = 170,
       components = {
         onlr = {
-          shape = {
+          paint = {
             color = { 0, 0, 1, 1 },
+          },
+          shape = {
             height = 10,
             width = 10,
           },

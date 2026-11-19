@@ -472,10 +472,34 @@ local function fileSubject(state, out)
     elseif not info then
       body[#body + 1] = ui.text("The preview is down, so the values show without their kinds.", { style = STYLES.note, wrap = true })
     end
+    -- A property with when shows only while the properties that it names have one of their values (DESIGN 6.2); with chosen nodes
+    -- of other values, it shows.
+    local defaults = {}
+    for _, decl in ipairs(info and info.properties or {}) do
+      defaults[decl.name] = decl.default
+    end
+    local function shown(decl)
+      for other, wanted in pairs(decl.options and decl.options.when or {}) do
+        local value = valueOf(other, defaults[other])
+        if value ~= MIXED then
+          local list = type(wanted) == "table" and wanted or { wanted }
+          local found = false
+          for _, each in ipairs(list) do
+            found = found or each == value
+          end
+          if not found then
+            return false
+          end
+        end
+      end
+      return true
+    end
     for _, decl in ipairs(info and info.properties or {}) do
       declared[decl.name] = true
-      rows(state, subject, body, cid .. ":" .. decl.name, decl, valueOf(decl.name, decl.default), setProperty(decl.name), nil,
-        propertyMark(decl.name))
+      if shown(decl) then
+        rows(state, subject, body, cid .. ":" .. decl.name, decl, valueOf(decl.name, decl.default), setProperty(decl.name), nil,
+          propertyMark(decl.name))
+      end
     end
     -- Values of properties that the type does not declare, as the node file writes them.
     local extra = {}
@@ -661,7 +685,27 @@ local function draw(state, surface)
   else
     fileSubject(state, out)
   end
-  ui.show(state.panel, surface, ui.scroll({ id = "inspector", padding = 8, gap = 6 }, out))
+  local root = ui.scroll({ id = "inspector", padding = 8, gap = 6 }, out)
+  ui.show(state.panel, surface, root)
+  state.shown = root
+end
+
+-- The rectangles of the elements that have ids, in the panel's pixels, as the last draw laid them out, for a test (DESIGN 16).
+local function rects(state)
+  local found = {}
+  local function walk(element)
+    if element.id and not element.id:match("^root%.") then
+      local r = ui.rect(state.panel, element.id)
+      found[element.id] = r and { x = r.x, y = r.y, width = r.width, height = r.height }
+    end
+    for _, child in ipairs(element.children or {}) do
+      walk(child)
+    end
+  end
+  if state.shown then
+    walk(state.shown)
+  end
+  return found
 end
 
 -- A file or a node dropped on a reference's row sets it (DESIGN 13.4).
@@ -723,7 +767,7 @@ ecs.panel.registerType({
   end,
   saveState = function(state)
     -- The file that it shows is not read back; a test reads it here.
-    return { folded = state.folded, file = shared.chosenFile }
+    return { folded = state.folded, file = shared.chosenFile, rects = rects(state) }
   end,
   destroy = function(state)
     shared.forget(state.panel)

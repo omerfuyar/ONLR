@@ -180,6 +180,8 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 10. **Easy to set up.** One archive holds everything that making and running a game needs.
 11. **Do not lose what is not understood.** A field or a component that the editor does not know is kept when it writes a file.
 12. **Composition, not inheritance.** A node is what its components make it, and a node file is made of nodes and of instances of other node files. No component type inherits another.
+13. **One way for one job.** Every package is used the same way. One job is one component type, and its variants are a choice in it, whose inspector shows only what the chosen one uses, such as a shape's kind; different jobs are types of their own, in a folder when they are a family. Values use LÖVE's names, and the same meaning has the same name in every package, such as `origin` for the point that is at the node's place.
+14. **One owner per value.** A value that two components of a node would hold is held by one, and the others read it there, such as a node's outline, which drawing, physics, shadows and collision share. So a change is made once.
 
 ## Glossary
 

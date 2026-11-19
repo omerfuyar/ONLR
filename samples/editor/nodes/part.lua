@@ -5,7 +5,7 @@ return {
   name = "Part",
   components = {
     onlr = {
-      shape = {
+      paint = {
         color = {
           0,
           0,
@@ -13,6 +13,7 @@ return {
           1,
         },
       },
+      shape = {},
     },
   },
   children = {
@@ -22,6 +23,7 @@ return {
       posY = 64,
       components = {
         onlr = {
+          paint = {},
           shape = {
             height = 16,
             width = 16,

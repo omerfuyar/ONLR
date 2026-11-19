@@ -6,8 +6,10 @@ return {
   name = "Crate",
   components = {
     onlr = {
-      shape = {
+      paint = {
         color = { 0.8, 0.55, 0.3, 1 },
+      },
+      shape = {
         height = 20,
         width = 20,
       },

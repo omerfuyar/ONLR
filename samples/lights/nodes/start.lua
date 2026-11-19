@@ -29,6 +29,7 @@ return {
               posY = -300,
               components = {
                 onlr = {
+                  paint = {},
                   shape = { height = 700, width = 700 },
                 },
               },

@@ -406,6 +406,7 @@ return Player
   | `description` | Every kind                | A text that the inspector shows with the property.                                       |
   | `label`       | Every kind                | What the inspector shows in place of the name (13.4).                                      |
   | `heading`     | Every kind                | A heading that the inspector shows above the property, to part a type's properties, such as Movement. |
+  | `when`        | Every kind                | The values of other properties of the type that the property is shown with: `{ kind = "circle" }`, or one of a list, `{ kind = { "line", "polygon" } }`. The inspector hides it otherwise, so a component of one job with variants shows only what its chosen variant uses. The component has it all the same. A name that the type does not declare is an error when the type loads. |
   | `min`, `max`  | `integer`, `number`       | The least and the most value. The inspector keeps the value between them, and with both shows a slider; the engine does not check it. |
   | `choices`     | `choice`, which needs it  | The texts to choose from.                                                                |
   | `stream`      | `sound`                   | LÖVE streams the file while it plays, as music needs, in place of decoding it whole when it loads. |
@@ -414,6 +415,7 @@ return Player
   | `preload`     | `nodeFile`                | The node file loads with the component's own, so a spawn of it waits for no file (below). |
 
 - An option that the kind does not take, such as a misspelt one, is an error when the type loads.
+- One job is one type (OVERVIEW 11), and its variants are a `choice` with `when` on the properties of each, as `onlr.shape`'s `kind` is (10) and a joint's is (11.4), not a type for each variant. A node holds one component of a type (5), so a node of two shapes holds the second on a child node.
 - A node file keeps a colour as a list of four numbers, and a vector as a table of `x` and `y`. A value of another kind than its property's is an error, as a path that names no file is (below).
 - A node file keeps a file as its path, and a font as a table of its `path` and its `size`. It keeps a node, and a component, as the node's id, or as a path of ids when the node is inside an instance (9). When the file loads, the engine gives the component the node or the component itself.
 - The engine loads each file once, and components that name the same file share it. A sound is the exception: each component gets its own source, so two can play at once. When a root replaces another, the engine keeps the files that the new root names too, and lets go of the others. It lets go of files at no other time: a file that a destroyed node named stays loaded until the root changes.
@@ -702,13 +704,14 @@ return {
 
 ## 10. The engine's components
 
-The engine has seven component types: three that draw, and the camera's four in the folder `camera/`: the view, and three that help it. A folder of types (6.1) keeps a family together, so `onlr.camera.follow` is found beside `onlr.camera.view`. They are written as scripts are, with the functions of section 7 and LÖVE alone.
+The engine has eight component types: `onlr.shape`, a node's outline, three that draw, and the camera's four in the folder `camera/`: the view, and three that help it. A folder of types (6.1) keeps a family together, so `onlr.camera.follow` is found beside `onlr.camera.view`. They are written as scripts are, with the functions of section 7 and LÖVE alone.
 
 | Type          | Is                                                                                                  |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `onlr.sprite` | An image, or a part of one.                                                                         |
 | `onlr.text`   | A text in a font.                                                                                   |
-| `onlr.shape`  | A rectangle, a circle, a line or a polygon, filled or as an outline.                                |
+| `onlr.shape`  | A node's outline: a rectangle, a circle, a polygon or a line. It draws nothing in the game.          |
+| `onlr.paint`  | Draws its node's `onlr.shape`, filled or as an outline, in a colour.                                 |
 | `onlr.camera.view` | A view: it draws its node and all under it as a group (5), moved, turned and zoomed so that the middle of its screen shows its point. |
 | `onlr.camera.follow` | Moves its node's camera to follow a node, smoothly, with a deadzone.                          |
 | `onlr.camera.limits` | Keeps what its node's camera shows inside a rectangle, such as a level's edges.               |
@@ -734,11 +737,12 @@ Their properties use LÖVE's names wherever LÖVE has one:
 |               | `color`           | `color`                                       | white      | The text's colour.                                                                               |
 |               | `width`           | `number`                                      | 0          | Where lines wrap, as the limit of `love.graphics.printf`. 0 wraps nothing.                       |
 |               | `align`           | `choice` of left, center, right and justify   | left       | How the lines lie within `width`.                                                                |
-| `onlr.shape`  | `kind`            | `choice` of rectangle, circle, line and polygon | rectangle | The shape.                                                                                     |
-|               | `mode`            | `choice` of fill and line                     | fill       | Filled, or as an outline. A line has no mode.                                                    |
-|               | `width`, `height` | `number`                                      | 32         | A rectangle's size, from the node's place.                                                       |
-|               | `radius`          | `number`                                      | 16         | A circle's, around the node's place.                                                             |
-|               | `points`          | `list` of `vector`                            |            | A line's points, or a polygon's corners, in the node's space.                                    |
+| `onlr.shape`  | `kind`            | `choice` of rectangle, circle, polygon and line | rectangle | The shape. The inspector shows only the properties of the chosen kind (6.2).                   |
+|               | `width`, `height` | `number`                                      | 32         | A rectangle's size.                                                                              |
+|               | `radius`          | `number`                                      | 16         | A circle's.                                                                                      |
+|               | `points`          | `list` of `vector`                            |            | A polygon's corners, or a line's points, in the node's space.                                    |
+|               | `origin`          | `vector`                                      | 0, 0       | The point of the shape that is at the node's place, as a sprite's (above): a rectangle's from its top left, a circle's from its middle, and the points' from the node's place. The node turns and scales around it. |
+| `onlr.paint`  | `mode`            | `choice` of fill and line                     | fill       | Filled, or as an outline. A line shape is a line in either.                                      |
 |               | `lineWidth`       | `number`                                      | 1          | The width of a line and of an outline, as `love.graphics.setLineWidth`.                          |
 |               | `color`           | `color`                                       | white      | The shape's colour.                                                                              |
 | `onlr.camera.view` | `posX`, `posY`    | `number`                                      | 0          | The point, in its node's space, that the middle of its screen shows.                             |
@@ -761,6 +765,9 @@ Their properties use LÖVE's names wherever LÖVE has one:
   - A text that a node stretches more on one axis is sharp along the larger one only.
   - Lines that wrap, of a `width`, are measured with the sharp font, so they may break a little apart from where `bounds` says.
   - Under push's canvas (11.10), the scale of the canvas is not in the drawing, so the text is as sharp as the game's own size.
+- One value has one owner (OVERVIEW 11): `onlr.shape` holds a node's outline, and what uses an outline reads it there, each time it uses it. `onlr.paint` draws it, `physics.fixture` collides with it (11.4), a shadow caster casts a shadow of it (11.14), and `bump.body` takes its rectangle (11.3). So the user sizes a wall once, and its look, its collision and its shadow follow. Each needs `onlr.shape` (6.6).
+- `shape:outline()` gives the shape in its node's space, the origin taken off, as LÖVE's functions take it: a rectangle's `x`, `y`, `width` and `height`, a circle's `x`, `y` and `radius`, or the `points` as one list, x, y, x, y. `shape:drawShape(mode)` draws it with LÖVE in the colour that is set; a polygon of fewer than 3 corners, or a line of fewer than 2 points, draws nothing.
+- In the node view, an outline that no `onlr.paint` draws shows as a thin green line of one pixel at any zoom, as a collider's does in Unity, so a node of a shape alone is seen and chosen; on a node that paints it, the line shows when the node is chosen.
 - Each has `bounds` and `drawEditor` (6.3). A camera's `drawEditor` draws the frame of what it shows, in blue and 3 pixels wide, named "Camera" inside its top left, at the same size at any zoom.
 - The camera's helpers are components beside `onlr.camera.view` on its node, which need it (6.6), and a game takes those that it wants. They change the camera's own properties, so a script can do all that they do, and they leave it to one when it sets the camera itself.
   - `onlr.camera.follow` moves the camera's `posX` and `posY` in `lateUpdate` (6.4), after the scripts and the physics moved its target. Its smoothing is the same at any frame rate. `snap()` puts the camera on its target at once, as when the follow starts, a level begins, or the player is put elsewhere.
@@ -1493,6 +1500,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - The runner and the link have a sample of their own, `samples/link`, which is no project: a plain LÖVE program that listens as the editor does, starts both runners on other samples, and speaks the link with them.
 - A sample's test of the editor is its `editortest.lua`, an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes. It runs on a copy of the sample, since it writes the sample's files. The copy leaves out the sample's `.onlr/`, which the editor kept for it on this computer, such as snapping.
 - `samples/editor` is a project as the editor writes one, so its test checks that a change and its undo give the first text again.
+- The inspector saves the rectangles of its elements that have ids in its state, as `rects`, such as `aaaaaa:thing:speed` for A's speed, so the editor's test finds a row by its id, not by a place that changes with every new row. ui does not tell how far a panel is scrolled, so the test brings a row up by folding the sections above it.
 - `samples/gallery` is the demonstration, not a test of one part: a project of rooms, one node file each in `nodes/rooms/`, that shows what the engine, its packages and the editor do. A bar in its top node goes from room to room, by its buttons or Page Up and Page Down; each room's root has a `room` component with the room's title and what it shows. A new feature gets a room of its own: a node file whose name orders it among the others, and nothing else to change. Its test only keeps it working: it visits every room, runs it, and checks a few things in each. It has no test of the editor, since an editor test cannot read the preview's nodes.
 - One sample has thousands of nodes. It is the measure of speed: its test reports the time of a frame.
 - A change that breaks a sample changes the sample in the same piece of work.
