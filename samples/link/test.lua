@@ -205,7 +205,8 @@ local function game()
   check.ok(not runner.printed():find("Error", 1, true), "it printed no error")
 end
 
--- An error goes to the editor with its file, line and stack, and the component and node that raised it.
+-- An error goes to the editor with its file, line and stack, and the component and node that raised it; the game stops there,
+-- and still answers the link.
 local function errors()
   local runner = editor.start("life", "game", "--onlr-start=nodes/failing.lua")
   local err = assert(runner.expect("error", 10), "no error")
@@ -214,6 +215,18 @@ local function errors()
   check.equal(err.source, { type = "failing", name = "Failing", file = "nodes/failing.lua", id = "f411ng" },
     "the component that raised it, and its node")
   check.ok(runner.printed():find("this component fails in load", 1, true), "what the game prints reaches the editor's console")
+
+  -- The game stops at its error, and still answers: its running tree is as the error left it, until Stop.
+  assert(runner.expect("halted", 5), "the game says that it stopped at the error:\n" .. runner.printed())
+  runner.send({ type = "watch", tree = true })
+  local tree = assert(runner.expect("tree", 5), "the tree after the error")
+  local names = {}
+  for _, node in ipairs(tree.nodes) do
+    names[#names + 1] = node.name
+  end
+  check.ok(table.concat(names, ","):find("Failing", 1, true), "the tree holds the node that failed: " .. table.concat(names, ","))
+  runner.send({ type = "stop" })
+  check.equal(runner.stopped(), true, "Stop ends the game at its error")
 end
 
 check.run(function()

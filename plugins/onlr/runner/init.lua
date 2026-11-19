@@ -62,13 +62,41 @@ end
 
 -- An error goes to the editor, with its file, line and stack (DESIGN 12.2). In the game LÖVE's own handler then shows it;
 -- the preview ends, and the editor starts it again at the next change.
-local shown = love.errorhandler
+-- The game stops at its error, and keeps answering the link while LÖVE's handler shows it, so the editor reads the running tree and
+-- its values as the error left them, until Stop (DESIGN 12.6).
+-- LÖVE 11.5's own handler is love.errhand, which it calls when the game sets no love.errorhandler.
+---@diagnostic disable-next-line: undefined-field
+local shown = love.errorhandler or love.errhand
 function love.errorhandler(message)
   local traceback = debug.traceback("", 2):gsub("^\n", "")
   print("Error: " .. tostring(message) .. "\n" .. traceback)
   report(message, traceback)
   if options.mode == "game" and shown then
-    return shown(message)
+    link.send({ type = "halted" })
+    local engine = package.loaded["onlr"]
+    local runnerState = engine and engine.loop and engine.loop._runner
+    local ok, result = pcall(shown, message)
+    local screen = ok and type(result) == "function" and result or nil ---@type function?
+    if not ok then
+      print("Error: LÖVE's error handler failed: " .. tostring(result))
+    end
+    if not runnerState or not runnerState.frame then
+      return screen
+    end
+    -- without LÖVE's screen, such as with no window, the link still answers until Stop
+    return function()
+      pcall(runnerState.frame)
+      if screen then
+        return screen()
+      end
+      love.event.pump()
+      for name, a in love.event.poll() do
+        if name == "quit" then
+          return a or 1
+        end
+      end
+      love.timer.sleep(0.05)
+    end
   end
   return function()
     return 1
