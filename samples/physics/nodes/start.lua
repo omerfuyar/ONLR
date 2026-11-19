@@ -18,16 +18,21 @@ return {
       posX = 160,
       posY = 220,
       components = {
+        onlr = {
+          shape = {
+            height = 20,
+            origin = {
+              x = 150,
+              y = 10,
+            },
+            width = 300,
+          },
+        },
         physics = {
           body = {
             type = "static",
           },
-          shape = {
-            box = {
-              height = 20,
-              width = 300,
-            },
-          },
+          fixture = {},
         },
       },
     },
@@ -37,13 +42,15 @@ return {
       posX = 80,
       posY = 50,
       components = {
+        onlr = {
+          shape = {
+            kind = "circle",
+            radius = 10,
+          },
+        },
         physics = {
           body = {},
-          shape = {
-            circle = {
-              radius = 10,
-            },
-          },
+          fixture = {},
         },
         probe = {},
       },
@@ -67,13 +74,18 @@ return {
           name = "Left",
           posX = -10,
           components = {
-            physics = {
+            onlr = {
               shape = {
-                box = {
-                  height = 20,
-                  width = 10,
+                height = 20,
+                origin = {
+                  x = 5,
+                  y = 10,
                 },
+                width = 10,
               },
+            },
+            physics = {
+              fixture = {},
             },
           },
         },
@@ -82,13 +94,18 @@ return {
           name = "Right",
           posX = 10,
           components = {
-            physics = {
+            onlr = {
               shape = {
-                box = {
-                  height = 20,
-                  width = 10,
+                height = 20,
+                origin = {
+                  x = 5,
+                  y = 10,
                 },
+                width = 10,
               },
+            },
+            physics = {
+              fixture = {},
             },
           },
         },
@@ -100,28 +117,30 @@ return {
       posX = 150,
       posY = 50,
       components = {
+        onlr = {
+          shape = {
+            kind = "polygon",
+            points = {
+              {
+                x = -15,
+                y = 10,
+              },
+              {
+                x = 15,
+                y = 10,
+              },
+              {
+                x = 0,
+                y = -10,
+              },
+            },
+          },
+        },
         physics = {
           body = {
             fixedRotation = true,
           },
-          shape = {
-            polygon = {
-              points = {
-                {
-                  x = -15,
-                  y = 10,
-                },
-                {
-                  x = 15,
-                  y = 10,
-                },
-                {
-                  x = 0,
-                  y = -10,
-                },
-              },
-            },
-          },
+          fixture = {},
         },
       },
     },
@@ -136,9 +155,7 @@ return {
             type = "static",
           },
           joint = {
-            hinge = {
-              other = "b0b000",
-            },
+            other = "b0b000",
           },
         },
       },
@@ -149,13 +166,15 @@ return {
       posX = 250,
       posY = 20,
       components = {
+        onlr = {
+          shape = {
+            kind = "circle",
+            radius = 5,
+          },
+        },
         physics = {
           body = {},
-          shape = {
-            circle = {
-              radius = 5,
-            },
-          },
+          fixture = {},
         },
       },
     },
@@ -170,10 +189,9 @@ return {
             type = "static",
           },
           joint = {
-            rope = {
-              length = 30,
-              other = "w8ight",
-            },
+            kind = "rope",
+            length = 30,
+            other = "w8ight",
           },
         },
       },
@@ -184,13 +202,15 @@ return {
       posX = 20,
       posY = 40,
       components = {
+        onlr = {
+          shape = {
+            kind = "circle",
+            radius = 5,
+          },
+        },
         physics = {
           body = {},
-          shape = {
-            circle = {
-              radius = 5,
-            },
-          },
+          fixture = {},
         },
       },
     },
@@ -205,9 +225,8 @@ return {
             type = "static",
           },
           joint = {
-            distance = {
-              other = "sw1ng0",
-            },
+            kind = "distance",
+            other = "sw1ng0",
           },
         },
       },
@@ -218,13 +237,15 @@ return {
       posX = 300,
       posY = 120,
       components = {
+        onlr = {
+          shape = {
+            kind = "circle",
+            radius = 5,
+          },
+        },
         physics = {
           body = {},
-          shape = {
-            circle = {
-              radius = 5,
-            },
-          },
+          fixture = {},
         },
       },
     },
@@ -234,18 +255,22 @@ return {
       posX = 220,
       posY = 35,
       components = {
+        onlr = {
+          shape = {
+            height = 10,
+            origin = {
+              x = 5,
+              y = 5,
+            },
+            width = 10,
+          },
+        },
         physics = {
           body = {},
+          fixture = {},
           joint = {
-            weld = {
-              other = "cr8te0",
-            },
-          },
-          shape = {
-            box = {
-              height = 10,
-              width = 10,
-            },
+            kind = "weld",
+            other = "cr8te0",
           },
         },
       },

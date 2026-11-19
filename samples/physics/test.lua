@@ -1,4 +1,4 @@
--- Checks the physics package (DESIGN 11.4): bodies fall and land, a body of two shapes on nodes of their own, contacts
+-- Checks the physics package (DESIGN 11.4): bodies fall and land, a body of two fixtures on nodes of their own, contacts
 -- told to both nodes, a polygon, the four joints, a node that a script moves, and a node that is turned off leaving the
 -- world.
 local check = require("check")
@@ -14,7 +14,7 @@ check.run(function()
   local tree = onlr.tree
   local ground, ball, crate = assert(tree.find("Ground")), assert(tree.find("Ball")), assert(tree.find("Crate"))
   check.equal(tree.root.components.physics.world.meter, 64, "the root has the world")
-  check.equal(#crate.components.physics.body.shapes, 2, "the crate's body holds the boxes of the nodes under it")
+  check.equal(#crate.components.physics.body.fixtures, 2, "the crate's body holds the fixtures of the nodes under it")
   check.equal(ground.components.physics.body:get():getType(), "static", "the ground's body is static")
 
   -- Both fall onto the ground, whose top is at 210: the ball's middle rests at 200, and so does the crate's.
@@ -48,15 +48,29 @@ check.run(function()
   local lid = assert(tree.find("Lid"))
   near(lid.posY, crate.posY - 15, "the welded lid stays on the crate")
   near(lid.posX, crate.posX, "and above it")
-  check.ok(assert(hook.components.physics.joint.rope:get()):getMaxLength() > 29, "rope:get() gives LÖVE's joint")
+  check.ok(assert(hook.components.physics.joint:get()):getMaxLength() > 29, "rope:get() gives LÖVE's joint")
 
   -- A joint ends with either body: the weight turned off frees the hook's rope.
   weight:setActive(false)
   check.frames(1)
-  check.equal(hook.components.physics.joint.rope:get(), nil, "the rope is gone with the weight")
+  check.equal(hook.components.physics.joint:get(), nil, "the rope is gone with the weight")
   weight:setActive(true)
   check.frames(1)
-  check.ok(hook.components.physics.joint.rope:get() ~= nil, "and comes back with it")
+  check.ok(hook.components.physics.joint:get() ~= nil, "and comes back with it")
+
+  -- A fixture takes its node's onlr.shape: a line of two points is an edge, and of more a chain, both of which collide.
+  local function lineOf(name, points)
+    local node = tree.newNode(name)
+    -- far beside the level, where nothing falls on it
+    node.posX = 2000
+    node:addComponent("onlr.shape", { kind = "line", points = points })
+    node:addComponent("physics.body", { type = "static" })
+    node:addComponent("physics.fixture")
+    return assert(node.components.physics.fixture:get()):getShape():getType()
+  end
+  check.equal(lineOf("Edge", { { x = 0, y = 0 }, { x = 40, y = 0 } }), "edge", "a line of two points is an edge")
+  check.equal(lineOf("Chain", { { x = 0, y = 0 }, { x = 40, y = 0 }, { x = 80, y = 20 } }), "chain", "a line of three is a chain")
+  check.equal(ground.components.physics.fixture:get():getShape():getType(), "polygon", "a rectangle is a box, Box2D's polygon")
 
   -- A script moves a node: the body goes there, and falls from there.
   ball.posY = 0
