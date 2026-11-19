@@ -248,7 +248,8 @@ function handlers.file(message)
   loadAll()
 end
 
--- One edit of a node's own fields, such as a moved node, set on the view's nodes without making them anew.
+-- One edit of a node's own fields, such as a moved node, or of its components' values, such as a shape's dragged point, set on the
+-- view's nodes without making them anew. A value is one that a node file holds as it is, such as a number or a list of vectors.
 function handlers.change(message)
   for _, view in pairs(views) do
     local node = view.path == message.path and view.scope and view.scope.nodes[message.node]
@@ -260,6 +261,14 @@ function handlers.change(message)
           node._z = value
         elseif field == "active" then
           node._active = value and true or false
+        end
+      end
+      for typeName, values in pairs(message.values or {}) do
+        local c = node._byType[typeName]
+        if c then
+          for name, value in pairs(values) do
+            c[name] = value
+          end
         end
       end
       view.dirty = true

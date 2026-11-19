@@ -58,6 +58,11 @@ check.run(function()
   -- An option that the kind does not take is an error when the type loads.
   check.fails(function() onlr.property.number(1, { choices = {} }) end, "a number takes no option choices", "an option of another kind")
   check.fails(function() onlr.property.string("", { lable = "x" }) end, "takes no option lable", "a misspelt option")
+  check.fails(function() onlr.property.list(onlr.property.number(0), { handles = true }) end, "on a vector or a list of vectors",
+    "handles on a list of numbers")
+  check.fails(function() onlr.property.number(1, { handles = true }) end, "a number takes no option handles", "handles on a number")
+  local points = onlr.property.list(onlr.property.vector(), { handles = true }) ---@type any
+  check.ok(points.options.handles, "handles on a list of vectors")
   check.fails(function() onlr.property.choice("up", { choices = { "left" } }) end, "not one of the choices", "a default that is no choice")
   ---@diagnostic disable-next-line: missing-parameter
   check.fails(function() onlr.property.choice("up") end, "needs its choices", "a choice without choices")
