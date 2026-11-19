@@ -51,10 +51,11 @@ return {
               posX = 45,
               posY = 25,
               components = {
+                onlr = {
+                  shape = { height = 10, width = 5 },
+                },
                 shadows = {
-                  shape = {
-                    box = { height = 10, width = 5 },
-                  },
+                  caster = {},
                 },
               },
             },

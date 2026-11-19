@@ -22,9 +22,10 @@ return {
       components = {
         arrows = {},
         bump = {
-          body = { height = 48 },
+          body = {},
         },
         onlr = {
+          shape = { height = 48 },
           sprite = { image = "images/player.png" },
         },
       },
@@ -36,7 +37,7 @@ return {
       posY = 100,
       components = {
         bump = {
-          body = { height = 200, width = 24 },
+          body = {},
         },
         onlr = {
           paint = { color = { 0.5, 0.5, 0.6, 1 } },
@@ -51,7 +52,7 @@ return {
       posY = 300,
       components = {
         bump = {
-          body = { height = 24, width = 360 },
+          body = {},
         },
         onlr = {
           paint = { color = { 0.5, 0.5, 0.6, 1 } },
@@ -66,9 +67,10 @@ return {
       posY = 200,
       components = {
         bump = {
-          body = { height = 16, solid = false, width = 16 },
+          body = { solid = false },
         },
         onlr = {
+          shape = { height = 16, width = 16 },
           sprite = { image = "images/coin.png" },
         },
         pickup = {},
@@ -81,9 +83,10 @@ return {
       posY = 140,
       components = {
         bump = {
-          body = { height = 16, solid = false, width = 16 },
+          body = { solid = false },
         },
         onlr = {
+          shape = { height = 16, width = 16 },
           sprite = { image = "images/coin.png" },
         },
         pickup = {},

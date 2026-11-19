@@ -13,16 +13,19 @@ return {
   components = {
     bump = {
       body = {
-        height = 16,
         solid = false,
-        width = 16,
       },
     },
     -- The script components/coin.lua: when the last coin is taken, it loads this node file as the root.
     coin = {
       next = "nodes/win.lua",
     },
+    -- The body's box is the node's shape, which draws nothing: the sprite is the coin's picture.
     onlr = {
+      shape = {
+        height = 16,
+        width = 16,
+      },
       sprite = {
         image = "images/coin.png",
       },

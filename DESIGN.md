@@ -842,8 +842,13 @@ local onlr = require("onlr")
 ---@class bump.body : onlr.Component
 local Body = {}
 
-Body.width = onlr.property.number(32)
-Body.height = onlr.property.number(32)
+-- its box is its node's outline, which a paint may draw too (10)
+Body.needs = { "onlr.shape" }
+
+function Body:box()
+  local o = self.node.components.onlr.shape:outline()
+  return o.x, o.y, o.width, o.height
+end
 
 function Body:load()
   local world = onlr.tree.findComponent("bump.world") or onlr.tree.root:addComponent("bump.world")
@@ -851,8 +856,9 @@ function Body:load()
 end
 
 function Body:enable()
-  self.x, self.y = self.node:toWorld(0, 0)
-  self.world:add(self, self.x, self.y, self.width, self.height)
+  local ox, oy, w, h = self:box()
+  self.x, self.y = self.node:toWorld(ox, oy)
+  self.world:add(self, self.x, self.y, w, h)
 end
 
 function Body:disable()
@@ -860,9 +866,10 @@ function Body:disable()
 end
 
 function Body:move(x, y)
+  local ox, oy = self:box()
   local hits
-  self.x, self.y, hits = self.world:move(self, x, y)
-  self.node:setWorldPosition(self.x, self.y)
+  self.x, self.y, hits = self.world:move(self, x + ox, y + oy)
+  self.node:setWorldPosition(self.x - ox, self.y - oy)
   for _, hit in ipairs(hits) do
     self.node:send("contact", hit.other.node, hit.normal.x, hit.normal.y)
     hit.other.node:send("contact", self.node, -hit.normal.x, -hit.normal.y)
@@ -870,19 +877,10 @@ function Body:move(x, y)
 end
 
 function Body:update()
-  local x, y = self.node:toWorld(0, 0)
-  if x ~= self.x or y ~= self.y then
-    self.x, self.y = x, y
-    self.world:update(self, x, y)
-  end
-end
-
-function Body:bounds()
-  return 0, 0, self.width, self.height
-end
-
-function Body:drawEditor()
-  love.graphics.rectangle("line", 0, 0, self.width, self.height)
+  local ox, oy, w, h = self:box()
+  local x, y = self.node:toWorld(ox, oy)
+  self.world:update(self, x, y, w, h)
+  self.x, self.y = x, y
 end
 
 return Body
@@ -935,11 +933,12 @@ return Player
 What the sample shows of every package:
 
 - **What a root has one of** is a component of the root (5): here `bump.world`. It is made with the root and ends with it, so each root has its own, and its node file keeps its settings. It is not a module that lives through the whole game. A component that needs it finds it with `onlr.tree.findComponent`, and adds it to the root when the tree has none. A second world, of a node file that is held in another, is not used.
-- **What the library must be told** is told by the component, in its `enable` and `disable` (6.4). bump asks for each box to be added to its world; the body does that while it runs, so the user does not, and a node that is turned off collides with nothing.
+- **What the library must be told** is told by the component, in its `enable` and `disable` (6.4).
+- **A value has one owner** (OVERVIEW 11): the box is the node's `onlr.shape`, which the body needs and reads each time it uses it, so a paint draws the same box that collides, and a script that resizes the shape resizes the box. bump's boxes do not turn, so the body takes the rectangle's corner and size, and not the node's angle or scale; a shape of another kind is an error that names the node. bump asks for each box to be added to its world; the body does that while it runs, so the user does not, and a node that is turned off collides with nothing.
 - **Where a node is** has one truth: the node's own place (5). A library that keeps a place of its own, as bump does for each box, holds a copy, and the package's component keeps the copy in step. After `move`, the node takes the library's answer. When a script sets the node's place itself, the component tells the library, in its `update`.
 - **What a script asks of the library** is a function of the component: `body:move(x, y)`. The script names the body in `needs` (6.6), so its node always has one.
 - **What the library reports** reaches scripts with `node:send`, as a function that the script defines: `contact(other)`. Both nodes of a contact are told.
-- **What the editor shows** is `bounds`, for choosing the node, and `drawEditor`, for the outline.
+- **What the editor shows** is `bounds`, for choosing the node, and `drawEditor`, for the outline. Here the shape gives both (10).
 
 ### 11.4 Packages of LÖVE's systems
 
@@ -1208,23 +1207,24 @@ end
 | ----------------------- | ----------------------------------------------------------------------------------------- |
 | `shadows.world`         | A group (5): it draws its node and all under it, then the light over them.                |
 | `shadows.light`         | A light at its node: `radius`, `color`, the `arc` that it lights around its node's way, and soft edges, `blur` and `sizeRadius`. |
-| `shadows.shape.box`, `.circle`, `.polygon` | A shape that blocks light, as `onlr.shape`'s rectangle, circle and polygon are (10): a box from its node's place, a circle around it, a polygon of corners in its node's space. |
+| `shadows.caster`        | Its node's `onlr.shape` blocks light and casts shadows (10): a rectangle, a circle or a convex polygon. A line casts nothing. |
 
-- A light and a shape belong to the nearest `shadows.world` on their node or above it, as a physics fixture belongs to the nearest body (11.4); without one, they are an error that names their node. So a level puts the world on the node of all that it lights, and a world's lights light only its own shapes.
-- Lights and shapes follow their nodes: a light takes its node's place and its angle, which turns a beam, and a shape its node's place, angle and scale. Before the world draws, each is given its node's place in the world, and a shape is moved only when it moved, since Shädows makes the shadows of the lights that reach a moved shape again.
+- A light and a caster belong to the nearest `shadows.world` on their node or above it, as a physics fixture belongs to the nearest body (11.4). Without one, a world is added to the root, as a body of physics or of bump adds its world (11.3); a world on the root darkens all of the game. So a level puts the world on the node of all that it lights, and a world's lights light only its own casters.
+- Lights and casters follow their nodes: a light takes its node's place and its angle, which turns a beam, and a caster its node's place, angle and scale. Before the world draws, each is given its node's place in the world, and a caster's shadow is moved only when its outline moved in the world, since Shädows makes the shadows of the lights that reach a moved shape again.
 - A value that a script or a tween changes, such as a light's `color` that flickers or its `radius`, shows in the same frame.
 - The world draws the light where the drawing is, as `moonshine.chain` does (11.11): a camera above it moves and zooms the light with the world (10). Its canvas is of the size of what it draws into, the window or push's canvas under a `push.screen` that has one (11.10).
-- A node that is turned off takes its light or its shape out of the world, and turning it on puts it back (6.4).
-- `get()` gives Shädows' own object, for what the components do not do: the world's `LightWorld`, with its rooms and stars, a light's `Light`, with `SetImage`, and a shape's shadow shape.
+- A caster reads its node's `onlr.shape` before each draw, so a shape that a script resizes casts its new shadow, and one whose `kind` changes casts a shadow of the new kind.
+- A node that is turned off takes its light or its caster out of the world, and turning it on puts it back (6.4).
+- `get()` gives Shädows' own object, for what the components do not do: the world's `LightWorld`, with its rooms and stars, a light's `Light`, with `SetImage`, and a caster's shadow shape, which is made again when the shape's kind changes.
 - Shädows sets a global, `shadows`, through Lua's `module`. So the package ships ONLR's copy of it, changed so that it sets none, and the `lights` sample checks so (11.2). `library/ONLR.md` lists the changes.
-- The node view shows a light's reach, or its beam, and a shape's outline. The light itself shows only in the game, as the node view does not call `drawTree` (6.5).
+- The node view shows a light's reach, or its beam, and the shape's outline (10). The light itself shows only in the game, as the node view does not call `drawTree` (6.5).
 - The limits, as they are now:
   - Shädows takes a camera's place and zoom, not its angle: under a camera that turns, the light does not turn with the world.
   - The light's canvas is multiplied over all that is in what the world draws into, also what drew before the world's node. So the world belongs on a node that draws first, such as the level's root, and what draws after it, such as a score, is not darkened.
   - A light's `radius` does not grow with its node's scale.
-  - Each shape is a body of Shädows' own. Shädows' bodies of many shapes, its heights, its images, normal maps and height maps, its rooms and its stars have no component: a script makes them on `get()`.
+  - Each caster is a body of Shädows' own. Shädows' bodies of many shapes, its heights, its images, normal maps and height maps, its rooms and its stars have no component: a script makes them on `get()`.
   - A polygon is meant to be convex, as a physics fixture's is (11.4); a concave one is not tested.
-  - Each shape that moves makes the shadows of the lights that reach it again, which is slow for many moving shapes.
+  - Each caster that moves makes the shadows of the lights that reach it again, which is slow for many moving casters.
 
 ## 12. The runner and the link
 

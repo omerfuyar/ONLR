@@ -94,4 +94,9 @@ check.run(function()
   local spawned = tree.spawn("nodes/bigcoin.lua", 10, 10)
   check.equal({ spawned.name, spawned.components.coin.worth }, { "Big coin", 5 }, "a spawned variant")
   check.ok(tree.root.components.bump.world ~= nil, "the body added a world to the root")
+
+  -- A body's box is its node's shape, a rectangle: bump has no other.
+  local round = tree.newNode("Round")
+  round:addComponent("onlr.shape", { kind = "circle" })
+  check.fails(function() round:addComponent("bump.body") end, "takes a rectangle, and its onlr.shape is a circle", "a body of a circle")
 end)
