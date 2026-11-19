@@ -53,7 +53,7 @@ local P
 
 local recent = {} ---@type string[] the folders of the projects opened last
 
-for _, name in ipairs({ "opened", "closed", "changed", "chosen", "tool", "types", "saved", "disk", "said", "settings", "renamed" }) do
+for _, name in ipairs({ "opened", "closed", "changed", "chosen", "tool", "types", "saved", "disk", "said", "settings", "renamed", "picking" }) do
   ecs.event.declare(name)
 end
 
