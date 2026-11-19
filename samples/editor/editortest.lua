@@ -419,6 +419,27 @@ return {
     test.wheel(inspect.x + 150, inspect.y + 300, 2)
     test.wait(0.2)
 
+    -- Add component, at the inspector's end, shows the types in folders by their names' dots, a folder at a time: onlr's folder
+    -- first, then marker, the project's script. Return opens onlr in place, Left goes back, and Down and Return add marker.
+    test.wheel(inspect.x + 150, inspect.y + 300, -20)
+    test.wait(0.2)
+    test.click(inspect.x + 260, inspect.y + inspect.height - 21)
+    local top = test.popup(1).height
+    test.key("Return")
+    local inside = test.popup(1).height
+    test.key("Left")
+    test.match({ inside > top, test.popup(1).height }, { true, top }, "the folders of Add component, and back")
+    test.key("Down")
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua"):find("marker = {"), "Add component adds marker:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the added component is undone")
+    test.wheel(inspect.x + 150, inspect.y + 300, 20)
+    test.wait(0.2)
+
     -- a file's row is a path with a button for the system's dialog: a whole path in the project is kept from the project's
     -- folder, and one outside it is refused (DESIGN 13.4); A's picture is below, after a scroll
     rx, ry = row(2)

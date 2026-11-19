@@ -543,7 +543,8 @@ local function fileSubject(state, out)
   out[#out + 1] = ui.separator()
   out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
     label("Add component"),
-    ui.dropdown(0, offered, { id = key .. ":addComponent", grow = 1, tooltip = "A type of the project that the nodes lack", onSelect = function(choice)
+    -- the types are in folders by their names' dots, onlr, then camera, then view, as Unity's groups; a search finds them in any folder
+    ui.dropdown(0, offered, { id = key .. ":addComponent", grow = 1, folders = ".", tooltip = "A type of the project that the nodes lack", onSelect = function(choice)
       project.addComponent(file, paths, offered[choice])
     end }),
   })
