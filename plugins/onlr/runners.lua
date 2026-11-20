@@ -53,6 +53,36 @@ ecs.event.declare("state", "A runner started, ended, paused or went on")
 ecs.event.declare("running", "The game sent the running tree, or the watched nodes' values")
 
 ecs.setting.declare({
+  name = "playTint",
+  type = "color",
+  description = "The colour of the frames around the panels while a game plays, so the user sees that changes to the running game are not kept; the frames' own colour shows none",
+  default = "#9C6B3C",
+})
+
+-- The sizes of the game's window that Play offers (DESIGN 12.1): the manifest's own, then others, as a phone's. The project's
+-- setting playSize keeps the chosen size as "WIDTHxHEIGHT".
+runners.SIZES = {
+  { label = "As the manifest" },
+  { label = "1920 × 1080", size = "1920x1080" },
+  { label = "1280 × 720", size = "1280x720" },
+  { label = "Phone 360 × 800", size = "360x800" },
+  { label = "Phone 390 × 844", size = "390x844" },
+  { label = "Phone 800 × 360", size = "800x360" },
+  { label = "Tablet 768 × 1024", size = "768x1024" },
+}
+
+-- While a game plays, the frames around the panels take the tint, for this run only: the user's colour comes back at its end. It needs
+-- OpenECS's run layer of settings, ecs.setting.setForRun; an older OpenECS shows no tint.
+local tinted = false
+ecs.event.subscribe("onlr.state", function()
+  local playing = runners.running.playing == true
+  if playing ~= tinted and ecs.setting.setForRun then
+    tinted = playing
+    ecs.setting.setForRun("ecs.colorFrame", playing and ecs.setting.get("onlr.playTint") or nil)
+  end
+end)
+
+ecs.setting.declare({
   name = "love",
   type = "string",
   description = "LÖVE's executable, which runs the preview and the game; when empty, the variable LOVE names it, or else the one of ONLR's archive, or else love",
@@ -95,6 +125,11 @@ local function start(mode, startPath)
   command[#command + 1] = "--onlr-port=" .. port
   if startPath then
     command[#command + 1] = "--onlr-start=" .. startPath
+  end
+  -- the size of the window that Play chose, for this run only: the manifest keeps its own
+  local size = project.setting("playSize")
+  if mode == "game" and type(size) == "string" then
+    command[#command + 1] = "--onlr-size=" .. size
   end
   local started, err = process.start(command, folder)
   if not started then
