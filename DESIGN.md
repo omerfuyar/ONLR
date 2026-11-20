@@ -513,7 +513,7 @@ Every function that the engine calls in a component, and what makes it call it. 
 | It stops running, or starts again   | `disable`, or `enable`                                                            | `node:setActive`, `node:setParent` and `component:setEnabled`       |
 | It leaves the tree                  | `disable` if it runs, then `destroy`, when the frame ends                         | `node:destroy`, `node:removeComponent` and `onlr.tree.loadRoot`              |
 | Another component asks              | A function of the type's own                                                      | `node:send`, or a call such as `body:move(x, y)`                    |
-| The editor draws a view             | `drawEditor` and `bounds`, and nothing else                                       | The node view (6.5, 12.3)                                           |
+| The editor shows a view             | `loadEditor` once its node is made and after a change, `updateEditor` while its node is chosen, `drawEditor` and `bounds`, and nothing else | The node view (6.5, 12.3)                                           |
 
 ### 7.2 Functions for scripts
 
