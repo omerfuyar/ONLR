@@ -265,6 +265,18 @@ local function selectionMiddle(view)
   end
 end
 
+-- What the chosen nodes are, and their places, turns and scales in the node file, to tell whether anything changed them since a
+-- turn. It reads the file, which a change writes at once, not the places that the preview sends back a frame later.
+local function placesKey(view)
+  local index = project.file(view.file) and project.tree(view.file).index or {}
+  local parts = {}
+  for _, path in ipairs(view.chosen) do
+    local n = index[path] or {}
+    parts[#parts + 1] = ("%s %s %s %s %s %s"):format(path, n.posX, n.posY, n.rot, n.sclX, n.sclY)
+  end
+  return table.concat(parts, "\n")
+end
+
 -- The pivot that the chosen nodes turn and scale around, a setting of the project (DESIGN 13.3): each node's own place,
 -- the middle of each node's bounds, or the middle of the whole choice.
 local function pivotMode()
@@ -289,6 +301,17 @@ local function gizmo(view)
     local x, y = boundsMiddle(lead)
     return x, y, lead
   end
+  -- A turn or a scale goes around the point it started from, and the gizmo stays there, though the box around the turned bounds
+  -- changes; after it, the point is kept while the chosen nodes are where it left them, so a second turn goes around the same one.
+  local d = view.drag
+  if d and d.kind == "tool" and d.tool ~= "move" then
+    return d.centerX, d.centerY, lead
+  end
+  local kept = view.keptPivot
+  if kept and kept.key == placesKey(view) then
+    return kept.x, kept.y, lead
+  end
+  view.keptPivot = nil
   local x, y = selectionMiddle(view)
   return x, y, lead
 end
@@ -830,14 +853,13 @@ local function startToolDrag(view, sx, sy)
   -- the middle of the choice. The pointer's turn and distance are seen from the gizmo, so every node turns and scales by one amount.
   local mode = pivotMode()
   local centerX, centerY = gizmo(view)
-  local midX, midY = selectionMiddle(view)
   for _, n in ipairs(nodes) do
     if mode == "own" then
       n.pivotX, n.pivotY = n.originX, n.originY
     elseif mode == "bounds" then
       n.pivotX, n.pivotY = boundsMiddle(view.byPath[n.path])
     else
-      n.pivotX, n.pivotY = midX, midY
+      n.pivotX, n.pivotY = centerX, centerY
     end
   end
   local wx, wy = toWorld(view, sx, sy)
@@ -1240,6 +1262,9 @@ local function pointer(view, event)
       if next(d.fields) then
         local label = d.tool == "move" and "Move" or d.tool == "turn" and "Turn" or "Scale"
         project.setFields(view.file, d.fields, label)
+        if d.tool ~= "move" and pivotMode() == "selection" then
+          view.keptPivot = { key = placesKey(view), x = d.centerX, y = d.centerY }
+        end
       end
     elseif d and d.kind == "bounds" then
       if d.fields then

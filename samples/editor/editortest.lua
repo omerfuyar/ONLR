@@ -157,6 +157,44 @@ return {
     px, py = place("bbbbbb")
     check(near(ar, math.pi / 2) and near(ax, 112) and near(ay, 0) and near(px, 112) and near(py, 80), "both turn around the choice's middle:\n" .. read("nodes/start.lua"))
     test.key("Ctrl+Z")
+    -- the middle of the choice stays where a turn went around, though the box around the turned bounds changes: A, turned an
+    -- eighth alone first, makes the box lopsided, and two eighths around the choice's middle end where a quarter would
+    local function eighth(gx, gy)
+      local fx, fy = at(gx + 10, gy + 10)
+      local tx, ty = at(gx, gy + math.sqrt(200))
+      test.drag(fx, fy, tx, ty)
+      test.wait(0.3)
+    end
+    local function nearly(a, b)
+      return math.abs(a - b) < 0.01
+    end
+    x, y = at(56, 56)
+    test.click(x, y)
+    test.call("onlr.pivotOwn")
+    eighth(40, 40)
+    test.click(bx, by, nil, "Shift")
+    test.call("onlr.pivotSelection")
+    -- A turned around its corner, 40, 40: its bounds reach from 40 - 16√2 to 40 + 16√2 across and from 40 to 40 + 32√2 down
+    local mx, my = (40 - 16 * math.sqrt(2) + 152) / 2, 40 + 16 * math.sqrt(2)
+    eighth(mx, my)
+    eighth(mx, my)
+    save()
+    ax, ay, ar = place("aaaaaa")
+    px, py, pr = place("bbbbbb")
+    check(nearly(ar, math.pi * 3 / 4) and nearly(pr, math.pi / 2) and nearly(ax, mx + my - 40) and nearly(ay, my - mx + 40)
+      and nearly(px, mx + my - 40) and nearly(py, my + 120 - mx), "two eighths turn around one middle:\n" .. read("nodes/start.lua"))
+    -- the choices are in the history too, so Ctrl+Z goes back until the file is as it was, and A and B are chosen again
+    for _ = 1, 8 do
+      if read("nodes/start.lua") == start then
+        break
+      end
+      test.key("Ctrl+Z")
+      save()
+    end
+    check(read("nodes/start.lua") == start, "the turns are undone:\n" .. read("nodes/start.lua"))
+    x, y = at(56, 56)
+    test.click(x, y)
+    test.click(bx, by, nil, "Shift")
     test.call("onlr.pivotOwn")
 
     -- the scale tool's grips scale one axis alone, along the leading node's own x and y: the gizmo is at B's place, its x grip
