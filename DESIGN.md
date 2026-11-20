@@ -1031,13 +1031,22 @@ end
 - `toTile(x, y)` gives the column and the row, from 1, of the tile at a place in the world, and `toWorld(column, row)` the place of a tile's corner, so a script finds what is under a node: `map:get():getTileProperties("ground", map:toTile(x, y))`.
 - `get()` gives STI's map, for all of STI's own functions: its layers by name with their objects, the properties that Tiled gives tiles, layers and objects, `setLayerTile`, and layers that a script draws.
 - The node view draws the map as the game does, loaded once and kept until a value changes (6.5).
+- Three more types sit beside `sti.map` on its node, and need it (6.6). Which tiles collide, Tiled says, by the property `collidable`, as STI's own plugins read it: every tile of a tile layer that has it, every tile whose tileset gives it, wherever it is placed, the rectangles that a tile holds in Tiled's collision editor that have it, and the rectangles of an object layer that has it, or that have it themselves. A module of the package, `sti.solid`, finds them for both.
+  - `sti.bump` makes each such rectangle a box of bump's world (11.3), at the node's place, which a `bump.body` stops at, as at another solid body, and whose contact names the map's node. Its `solid`, off, lets bodies pass and still tells them. `getBoxes()` gives the boxes, each with `tile`: its rectangle, layer and properties.
+  - `sti.physics` makes them fixtures of one static body of Box2D's world (11.4), at the node's place and angle and scaled as the node, so a `physics.body` falls onto them and rests, and a contact names the map's node. Its `friction`, `restitution` and `sensor` are a fixture's. `getBody()` gives the body, whose fixtures' user data hold `tile`.
+  - `sti.objects` makes Tiled's objects nodes: each object of the map whose property `node` names a node file of the project, such as `nodes/coin.lua`, becomes an instance of that file under the map's node (9), at the object's place, turned as the object, and named as it when it has a name. So the author places coins and enemies in Tiled, and makes each one in ONLR's editor. Its `layers` names the object layers to take, every one when empty. `getNodes()` gives the nodes.
+  - Each finds the tree's `bump.world` or `physics.world`, and adds one to the root when the tree has none, as a body does. The project must hold the bump or the physics package: the editor does not add it with `sti`.
 - The component draws each layer itself, where the node draws, and does not call STI's `map:draw`, which draws through a canvas of the window's size from the screen's corner, so a node's place and a camera would not reach it.
 - The limits, as they are now:
   - The map is loaded when the component loads. A script that changes `map` afterwards changes nothing; one that changes `layers` changes what draws.
   - Only maps that Tiled exports as Lua, with their tilesets embedded, as STI takes them: not `.tmx` files, nor tilesets in files of their own.
   - A layer's parallax, which STI's own `map:draw` applies, is not applied.
-  - An object layer that is visible draws its objects as STI's grey outlines, as a debugging aid. A game hides it in Tiled, or leaves it out of `layers`. Tiled's objects do not become nodes: a script reads them from the layer.
-  - Tiles do not collide. STI's plugins for bump and Box2D are not tied to `bump.world` and `physics.world` yet.
+  - An object layer that is visible draws its objects as STI's grey outlines, as a debugging aid. A game hides it in Tiled, or leaves it out of `layers`.
+  - The tiles' boxes and body are made where the node is when they start to run, and do not follow a node that moves afterwards; turning the node off and on makes them again. bump's boxes do not turn, so a turned map's boxes are the rectangles around its turned tiles.
+  - A tile that a script changes with `setLayerTile` does not change what collides.
+  - A contact names the map's node, not the tile: a script finds the tile with `toTile`, or reads `tile` from the box or the fixture.
+  - Only rectangles collide. Tiled's ellipses, polygons and points do not, as STI's plugins take only rectangles too.
+  - `sti.objects` takes an object's place and turn only. Its size and its other properties are not given to the instance; a script reads them from the layer. An object becomes a node in the game only: the node view shows the object layer as STI draws it, not the instances, since the preview runs no `load` (6.5).
   - `bounds` is right for orthogonal maps only.
   - The node view reloads the map only when it makes the component again, and STI keeps the images that it loaded. So a map or a tileset that Tiled saves again shows after the preview starts again.
   - STI makes a canvas of the window's size for each map, for its own `map:draw`, which the component does not use.
