@@ -476,6 +476,7 @@ The engine calls the functions that a type has. All are optional.
 - There the engine does not call `drawTree`: a group's nodes draw through the node view alone. So a camera does not move the view, and a group's shader shows only in the game.
 - A type without `drawEditor` shows nothing in the node view. Its `draw` is not called there, since it may need what `load` or `update` sets.
 - `loadEditor`, when a type has it, is called there once its node's components are made, in the order that they load (6.6), and again after each change of a value of the node's components. It sets up from the values what `drawEditor` or another component shows, as Unity's `OnValidate` does: anim8's sets its sprite's `quad` to the first frame (11.5). It is LÖVE code: the tree's functions change nothing there, as in `drawEditor`, one that fails marks its node, and one that never returns stops the preview only. It is not `load`, which may start what the editor must not run, such as a sound or a body of a world.
+- `updateEditor(dt)`, when a type has it, is called there on the components of the chosen nodes only, 30 times a second, with the seconds since the last call, and the view is drawn again after it: so an emitter emits and an animation plays while its node is chosen, as Unity plays a chosen particle system, and the rest of the file stands still. What it moves is the editor's own, such as the picture that `drawEditor` keeps, and goes at the next change. It is called only while the editor has taken the view's last frame, so a slow link gives fewer steps, each of more seconds, up to a tenth of a second. One that fails marks its node, and is not called again until its node is made again. Limits: each step sends a whole frame through the link (12.4), so a chosen moving node costs the editor about what dragging does (see TODO, the node view's speed); nodes that are not chosen do not move, as the view would cost that much all the time; a script's `update` is not called, so what a script moves stays still.
 - `drawEditor` may keep in `self` what it builds from the component's values, such as a map read from a file. When a value of the component changes, the preview makes the component anew from the node file's values, so what it kept is built again from the new ones.
 - A `drawEditor` that fails marks its node in the view, and the rest draws on.
 - `drawEditor` is code, so it can do anything. The node view is kept safe from it:
@@ -998,7 +999,7 @@ end
 - A range read backwards plays backwards: `"4-1"`. The frames are taken row by row, as anim8 takes them.
 - `get(name)` gives anim8's animation, the current one without a name, for all of anim8's own functions on it, such as `gotoFrame`.
 - The limits, as they are now:
-  - The node view shows the first frame of the animation that plays first, through `loadEditor` (6.5), and does not play it. A sprite without an image shows nothing, and a range that the grid lacks marks the node.
+  - The node view shows the first frame of the animation that plays first, through `loadEditor` (6.5), and plays it while its node is chosen, through `updateEditor`; one that does not loop starts again at its end there, and tells no node. A sprite without an image shows nothing, and a range that the grid lacks marks the node.
   - The grid is cut, and the animations made, when the component loads. A script that changes the sprite's image or a property afterwards changes nothing that plays.
   - Each frame of an animation shows for the same `duration`. anim8 takes a duration for each frame, and a script makes such an animation with anim8 itself.
   - An animation takes one range of columns and one of rows. anim8 takes several, such as the end of one row and the start of the next.
@@ -1013,12 +1014,12 @@ end
 - With `autoPlay` it emits from its start, as a sound plays with its own (11.12). A script calls `play()`, `stop()`, `emit(count)` and `reset()`; `emit` works also on a stopped emitter, as an explosion needs. The function is `play`, not LÖVE's `start`, which the engine calls at a component's start (6.4).
 - When it stops emitting, at the end of its `emitterLifetime` or at `stop`, and its last particle dies, its node is told `particlesEnd()` (11.3), once until it emits again. A node that plays an explosion destroys itself there.
 - `getCount()` gives the particles that live, and `get()` LÖVE's system, for all of LÖVE's own functions on it, such as `setQuads`.
-- The node view shows a still picture: the system after it has run for a particle's lifetime, at most 5 seconds, made once and kept until a value changes (6.5). It also draws a cross at the node and the emission area.
+- The node view shows the system after it has run for a particle's lifetime, at most 5 seconds, made once and kept until a value changes (6.5). While its node is chosen, the picture goes on emitting, through `updateEditor` (6.5). It also draws a cross at the node and the emission area.
 - The limits, as they are now:
   - The properties are read when the emitter loads. A script that changes one afterwards calls `apply()`, which sets them all again; the particles that live keep what they had.
   - In `world`, the node's scale does not size the particles, and its turn turns only the `direction`, not the emission area.
   - A node that is turned off draws nothing, and its particles stand still until it is on again.
-  - The node view's picture does not move, and is drawn at the node also for a `world` emitter.
+  - The node view's picture moves only while its node is chosen, and is drawn at the node also for a `world` emitter, so moving the node moves the particles that it emitted.
   - A system takes up to 8 sizes and 8 colours, as LÖVE does; more is an error.
   - Particles from a sprite sheet, LÖVE's `setQuads`, and the image's `offset` have no property: a script sets them on `get()`.
 
@@ -1289,7 +1290,7 @@ end
 
 - The preview only draws, and what it draws are views.
 - A node view shows a view of an open node file. Other files, such as an image or a sound, are shown by the asset viewer (13.1) as the files they are; how the game draws them shows in the node view.
-- The preview draws a view when the editor asks: after a change, or when the view moves. It runs no loop of frames, so it uses the processor only when something changed.
+- The preview draws a view when the editor asks: after a change, or when the view moves, and 30 times a second while a chosen node has `updateEditor` (6.5). It runs no loop of frames otherwise, so it uses the processor only when something changed or moves.
 - What is drawn is split by what it depends on:
 
   | Drawn by                    | What                                                                  | Because                                                       |

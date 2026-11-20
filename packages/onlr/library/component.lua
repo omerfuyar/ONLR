@@ -13,7 +13,7 @@ local component = {}
 ---A type that has drawTree(draw) draws its node and all under it as a group: the engine calls it
 ---in place of drawing them, and draw draws them, so it sets up before and ends after.
 ---For the editor: loadEditor(), which the node view calls once a node's components are made and after each change of
----their values, bounds() and drawEditor(chosen).
+---their values, updateEditor(dt), which it calls on the chosen nodes, so they move there, bounds() and drawEditor(chosen).
 ---A type names the types that it needs on its node: Type.needs = { "bump.body" }.
 ---Its properties are plain fields, which other components read and set too: other.components.coin.worth.
 ---A type does not inherit another: the colon in a type's annotation only tells a code editor
