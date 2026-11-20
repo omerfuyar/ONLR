@@ -141,6 +141,36 @@ local function animationView()
   runner.send({ type = "change", path = "nodes/start.lua", node = "r0ller", values = { ["anim8.animation"] = { frameWidth = 8 } } })
   bounds = assert(runner.expect("bounds"), "no bounds after a change")
   check.equal(assert(nodeOf(bounds, "r0ller")).rect, { -8, -8, 8, 16 }, "a changed value makes the frames again")
+
+  -- updateEditor: a chosen node moves, so frames come without a change, and stop when it is not chosen (DESIGN 6.5)
+  runner.expect("frame")
+  runner.send({ type = "shown", id = 1 })
+  runner.send({ type = "view", id = 1, chosen = { "r0ller" } })
+  local frames, pictures = 0, {}
+  local started = love.timer.getTime()
+  while love.timer.getTime() - started < 1 do
+    local _, block = runner.expect("frame", 0.5)
+    if block then
+      frames = frames + 1
+      pictures[block] = true
+      runner.send({ type = "shown", id = 1 })
+    end
+  end
+  local different = 0
+  for _ in pairs(pictures) do
+    different = different + 1
+  end
+  check.ok(frames >= 10, "a chosen animation moves: " .. frames .. " frames in a second")
+  check.ok(different >= 4, "through its frames: " .. different .. " pictures")
+  check.ok(frames <= 32, "at most 30 frames a second: " .. frames)
+  runner.send({ type = "view", id = 1, chosen = {} })
+  -- the frames on their way when the choice changed come still
+  local late = 0
+  while runner.expect("frame", 0.3) and late < 5 do
+    late = late + 1
+    runner.send({ type = "shown", id = 1 })
+  end
+  check.ok(late < 5, "and stops when it is not chosen")
   runner.send({ type = "stop" })
   runner.stopped()
 end
