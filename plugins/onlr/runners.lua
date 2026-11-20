@@ -71,12 +71,12 @@ runners.SIZES = {
   { label = "Tablet 768 × 1024", size = "768x1024" },
 }
 
--- While a game plays, the frames around the panels take the tint, for this run only: the user's colour comes back at its end. It needs
--- OpenECS's run layer of settings, ecs.setting.setForRun; an older OpenECS shows no tint.
+-- While a game plays, the frames around the panels take the tint, for this run only, through OpenECS's run layer of settings: the
+-- user's colour comes back at its end.
 local tinted = false
 ecs.event.subscribe("onlr.state", function()
   local playing = runners.running.playing == true
-  if playing ~= tinted and ecs.setting.setForRun then
+  if playing ~= tinted then
     tinted = playing
     ecs.setting.setForRun("ecs.colorFrame", playing and ecs.setting.get("onlr.playTint") or nil)
   end

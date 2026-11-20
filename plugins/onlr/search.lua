@@ -41,9 +41,7 @@ end
 -- Opens a file as a double click in the files panel does: a node file in a node view, a script in the code editor, any other in the
 -- asset viewer.
 local function openFile(path)
-  if files.reveal then
-    files.reveal(path)
-  end
+  files.reveal(path)
   if path:match("^nodes/.+%.lua$") then
     nodeview.openFile(path)
   elseif path:match("%.lua$") then
@@ -66,9 +64,7 @@ local function functionsOf(path, out)
     if name then
       local at = line
       out[#out + 1] = { kind = "Function", label = name, detail = path .. ":" .. at, open = function()
-        if files.reveal then
-          files.reveal(path)
-        end
+        files.reveal(path)
         console.open(path, at)
       end }
     end
@@ -107,9 +103,7 @@ local function build()
       local file = project.typeFile(name)
       items[#items + 1] = { kind = "Type", label = name, detail = file, open = function()
         if file ~= "" then
-          if files.reveal then
-            files.reveal(file)
-          end
+          files.reveal(file)
           console.open(file, 1)
         end
       end }

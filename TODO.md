@@ -135,7 +135,6 @@ What the owner wants worked on, in this order.
 
 ## Tasks
 
-- **The tint while playing waits for an OpenECS release.** It needs `ecs.setting.setForRun` (omerfuyar/OpenECS#273); until a release holds it, the editor shows no tint (DESIGN 12.1), and the editor's test checks it only with OpenECS's `dev`.
 - **A guide to using ONLR.** A user's guide, written for someone who knows LÖVE or is learning it: making a project, the editor's panels, nodes and components, writing a script, packages, playing and exporting. It shows what to do, step by step, and links to DESIGN for how it works. Where it lives, as a document of the repository or as pages of its own, is open.
 - **The preview's hidden window on Windows is not tested.** `plugins/onlr/runner/preview.lua` hides LÖVE's window with `SDL_HideWindow` through LuaJIT's FFI, as DESIGN 12.1 says. It was written on Linux, where the offscreen driver is used, and never run on Windows.
 - **The Windows experiment.** It tells whether the preview's window can open on Windows without showing for a moment (see [Runner and link](#runner-and-link)). The owner runs it in the command prompt:
@@ -163,10 +162,6 @@ What the owner wants worked on, in this order.
   - **`ui.graph`**: bars of numbers, which stack in colours. A panel of the running game's frame, its update and draw times and its count of nodes, which the engine sends through the link, as Unity's profiler of the game, for later.
   - **A slider's release is one change**: `onSubmit` gets the value that a drag ends on, and the slider shows its value while dragging. The inspector's slider already takes `onSubmit`, so a drag is one record of the history; `samples/editor` checks it once.
   - **`ui.show` draws only what changed**, `ecs.scale` scales the core's own interface, and frames draw while a window moves or resizes. The editor gets these without a change.
-- **Add Component's folders wait for an OpenECS release.** They need OpenECS-std's `folders` of `ui.dropdown`, in [OpenECS-std#122](https://github.com/omerfuyar/OpenECS-std/pull/122), which OpenECS's `dev` holds. Until it is in an OpenECS release, they work only with OpenECS built from `dev`, as the checks build it.
-- **The nodes panel's Hide and Lock wait for an OpenECS release.** They need OpenECS-std's marks of `ui.tree`. Until they are in an OpenECS release, they work only with OpenECS built from `dev`, as the checks build it; H, L and the menus work with any.
-- **The files panel's following and Lock wait for an OpenECS release.** They need OpenECS-std's `files.reveal` and the panel's lock (OpenECS-std DESIGN 29). Until they are in an OpenECS release, the files panel follows nothing with OpenECS built from a release, and `samples/editor` passes only with OpenECS built from `dev`, as the checks build it.
-- **Drops into the files panel wait for an OpenECS release.** OpenECS-std's files panel takes dropped files since [OpenECS-std#121](https://github.com/omerfuyar/OpenECS-std/pull/121), with its test in OpenECS-examples' `s5_files`, and OpenECS's `dev` holds it. Until it is in an OpenECS release, DESIGN 13.7's drops work only with OpenECS built from `dev`, as the checks build it.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. They are the owner's too, so they change when that is the better solution:
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
   - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the runner on Linux and `cmd /c` on Windows.
