@@ -31,9 +31,10 @@ end
 ---@return string
 function find.placeKey(node, top)
   local parts = {}
-  while node and node ~= top do
-    parts[#parts + 1] = ("%.17g %.17g %.17g %.17g %.17g"):format(node.posX, node.posY, node.rot, node.sclX, node.sclY)
-    node = node:getParent()
+  local at = node ---@type onlr.Node?
+  while at and at ~= top do
+    parts[#parts + 1] = ("%.17g %.17g %.17g %.17g %.17g"):format(at.posX, at.posY, at.rot, at.sclX, at.sclY)
+    at = at:getParent()
   end
   parts[#parts + 1] = ("%.17g %.17g"):format(top.sclX, top.sclY)
   return table.concat(parts, "|")
