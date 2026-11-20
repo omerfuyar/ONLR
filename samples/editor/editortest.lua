@@ -958,9 +958,11 @@ return {
     check(read("window.txt") == "360x800", "in the window's size that Play chose: " .. read("window.txt"))
     check(read(".onlr/editor.lua"):find('playSize = "360x800"', 1, true) ~= nil, "which the project's editor settings keep")
     test.match(test.setting("ecs.colorFrame"), test.setting("onlr.playTint"), "the frames take the tint while the game plays")
+    local background = test.setting("ecs.colorBackground")
     test.key("Shift+F5")
     test.wait(0.5)
     test.match(test.setting("ecs.colorFrame") ~= test.setting("onlr.playTint"), true, "and lose it at Stop")
+    test.match(test.setting("ecs.colorBackground") ~= background, true, "as does the space around the panels, which took some of it")
 
     -- Export: the folder that exports are written to is typed into the Export panel, which is a tab beside the inspector
     test.click(inspector.x + 210, inspector.y - 14)
