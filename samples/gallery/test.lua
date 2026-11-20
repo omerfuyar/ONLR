@@ -42,6 +42,7 @@ check.run(function()
     elseif root.name == "Physics" then
       local crate = assert(tree.find("Crate"))
       check.ok(crate.posY > 80, "a crate falls")
+      check.ok(assert(tree.find("Cart")).posX > 110, "the cart's wheels drive it: " .. tree.find("Cart").posX)
       local before = #root:getChildren()
       press(400, 100)
       check.equal(#root:getChildren(), before + 1, "a click drops another")
