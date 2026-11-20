@@ -38,7 +38,7 @@ local resolve = require("resolve")
 ---@field position integer how many records of the history are done
 ---@field chosen onlr.editor.Chosen
 ---@field joinable onlr.editor.Record? the change just made, which a choice that follows it in the same frame joins
----@field tool "move"|"turn"|"scale"|"shape"
+---@field tool "move"|"turn"|"scale"|"rect"|"shape"
 ---@field settings table what the editor keeps for the project in .onlr/
 ---@field space table the names that components can hold
 ---@field typeNames string[]

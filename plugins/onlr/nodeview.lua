@@ -395,6 +395,8 @@ end
 ---@field x number in the node's space
 ---@field y number
 ---@field values table the component's values, its defaults for those that it lacks
+---@field scales boolean? the Rectangle tool's on a node's bounds, which scales the node
+---@field rect number[]? the bounds that such a handle is on, in the node's space
 
 -- The handles of the one chosen node, and its lists of points, to which a double click adds one. Nothing while more are chosen.
 ---@return onlr.editor.Handle[] handles, table[] lists, table? placed, string? path
@@ -469,6 +471,54 @@ local function shapeHandleAt(view, sx, sy)
     if math.abs(sx - x) <= POINT + 3 and math.abs(sy - y) <= POINT + 3 then
       return h
     end
+  end
+end
+
+-- The Rectangle tool (DESIGN 13.3): handles at the corners and edges' middles of the one chosen node. A node whose onlr.shape is a
+-- rectangle gets the shape's, as the Shape tool's, which change its size; any other gets its bounds', which scale the node.
+---@return onlr.editor.Handle[] handles, table? placed, string? path
+local function rectHandles(view)
+  local all, _, placed, path = shapeHandles(view)
+  if not placed then
+    return {}
+  end
+  local handles = {}
+  for _, h in ipairs(all) do
+    if h.type == "onlr.shape" and h.edges then
+      handles[#handles + 1] = h
+    end
+  end
+  if #handles == 0 and placed.rect then
+    local r = placed.rect
+    local at = { l = r[1], r = r[1] + r[3], t = r[2], b = r[2] + r[4] }
+    for _, e in ipairs({ { "l", "t" }, { "r", "t" }, { "r", "b" }, { "l", "b" }, { "l" }, { "r" }, { nil, "t" }, { nil, "b" } }) do
+      handles[#handles + 1] = {
+        type = "", scales = true, edges = { x = e[1], y = e[2] }, values = {}, rect = r,
+        x = e[1] and at[e[1]] or (at.l + at.r) / 2, y = e[2] and at[e[2]] or (at.t + at.b) / 2,
+      }
+    end
+  end
+  return handles, placed, path
+end
+
+-- The handle of the Shape or Rectangle tool under a point of the panel.
+---@return onlr.editor.Handle?
+local function toolHandleAt(view, sx, sy)
+  local tool = project.tool()
+  if tool == "shape" then
+    return shapeHandleAt(view, sx, sy)
+  elseif tool == "rect" then
+    -- the nearest, since a small node's handles are near each other
+    local handles, placed = rectHandles(view)
+    local best, distance
+    for _, h in ipairs(handles) do
+      local x, y = toScreen(view, nodeToWorld(placed, h.x, h.y))
+      local far = math.max(math.abs(sx - x), math.abs(sy - y))
+      if far <= POINT + 3 and (not distance or far < distance) then
+        best, distance = h, far
+      end
+    end
+    return best
   end
 end
 
@@ -629,8 +679,14 @@ local function drawView(view, surface)
 
   -- The Shape tool's handles: squares, filled while dragged and for the point that Delete removes. A list's points are joined in their
   -- order, so a path shows; a polygon's outline is the shape's own.
-  if tool == "shape" then
-    local handles, lists, placed = shapeHandles(view)
+  if tool == "shape" or tool == "rect" then
+    local handles, lists, placed
+    if tool == "shape" then
+      handles, lists, placed = shapeHandles(view)
+    else
+      handles, placed = rectHandles(view)
+      lists = {}
+    end
     for _, list in ipairs(lists) do
       for i = 2, #list.points do
         local a, b = list.points[i - 1], list.points[i]
@@ -784,7 +840,7 @@ local function startToolDrag(view, sx, sy)
     ux, uy, vx, vy = ownAxes(lead)
   end
   view.drag = {
-    kind = "tool", tool = project.tool(), nodes = nodes, startX = wx, startY = wy, centerX = centerX, centerY = centerY, fields = {},
+    kind = "tool", tool = project.tool() == "rect" and "move" or project.tool(), nodes = nodes, startX = wx, startY = wy, centerX = centerX, centerY = centerY, fields = {},
     axes = { x = { ux, uy }, y = { vx, vy } },
   }
 end
@@ -880,6 +936,33 @@ local function handleValues(h, nx, ny, ctrl)
     return { [h.name] = list }
   end
   return { [h.name] = { x = nx, y = ny } }
+end
+
+-- The Rectangle tool's drag on a node's bounds: the scale and place that put the dragged edges at a point of the node's space, as it
+-- was at the press, while the edges across stay where they were. An edge stops just before the one across from it.
+local function boundsFields(d, nx, ny, ctrl)
+  local h, r = d.handle, d.handle.rect
+  local kx, ky, ax, ay = 1, 1, 0, 0
+  if h.edges.x and r[3] > 0 then
+    if h.edges.x == "r" then
+      kx, ax = math.max(snap(nx, ctrl) - r[1], r[3] / 100) / r[3], r[1]
+    else
+      kx, ax = math.max(r[1] + r[3] - snap(nx, ctrl), r[3] / 100) / r[3], r[1] + r[3]
+    end
+  end
+  if h.edges.y and r[4] > 0 then
+    if h.edges.y == "b" then
+      ky, ay = math.max(snap(ny, ctrl) - r[2], r[4] / 100) / r[4], r[2]
+    else
+      ky, ay = math.max(r[2] + r[4] - snap(ny, ctrl), r[4] / 100) / r[4], r[2] + r[4]
+    end
+  end
+  -- the edge across, at ax and ay, stays: the place moves by what the new scale would move it, turned by the node's angle
+  local lx, ly = d.sclX * ax * (1 - kx), d.sclY * ay * (1 - ky)
+  local cos, sin = math.cos(d.rot), math.sin(d.rot)
+  return {
+    posX = d.posX + lx * cos - ly * sin, posY = d.posY + lx * sin + ly * cos, sclX = d.sclX * kx, sclY = d.sclY * ky,
+  }
 end
 
 -- A double click with the Shape tool adds a point to a list: between the two neighbouring points whose line is under the pointer,
@@ -1067,9 +1150,9 @@ local function pointer(view, event)
   elseif event.type == "pointerDown" then
     if event.button == 2 or (event.button == 1 and event.alt) then
       view.drag = { kind = "pan", startX = x, startY = y, viewX = view.x, viewY = view.y }
-    elseif event.button == 1 and view.file and project.tool() == "shape" and shapeHandleAt(view, x, y) then
-      -- a handle of the Shape tool is above the nodes, and drags its point, edge or radius
-      local h = assert(shapeHandleAt(view, x, y))
+    elseif event.button == 1 and view.file and toolHandleAt(view, x, y) then
+      -- a handle of the Shape or the Rectangle tool is above the nodes, and drags its point, edge or radius
+      local h = assert(toolHandleAt(view, x, y))
       view.press = { x = x, y = y, found = {}, handle = h, wasChosen = true }
       view.point = h.index and h or nil
       view.panel:redraw()
@@ -1102,7 +1185,15 @@ local function pointer(view, event)
   elseif event.type == "pointerMove" then
     local d, press = view.drag, view.press
     if press and not d and (math.abs(x - press.x) > 3 or math.abs(y - press.y) > 3) then
-      if press.handle then
+      if press.handle and press.handle.scales then
+        -- the Rectangle tool on a node's bounds scales it from where the node was at the press
+        local path = view.chosen[1]
+        local node, placed = project.tree(view.file).index[path], view.byPath[path]
+        view.drag = {
+          kind = "bounds", handle = press.handle, path = path, fields = nil, place = { table.unpack(placed.place) },
+          posX = node.posX, posY = node.posY, rot = node.rot, sclX = node.sclX, sclY = node.sclY,
+        }
+      elseif press.handle then
         view.drag = { kind = "handle", handle = press.handle, path = view.chosen[1], changed = {} }
       elseif press.found[1] and not press.shift then
         startToolDrag(view, press.x, press.y)
@@ -1118,6 +1209,10 @@ local function pointer(view, event)
       sync(view)
     elseif d and d.kind == "tool" then
       toolDrag(view, x, y, event.ctrl)
+    elseif d and d.kind == "bounds" then
+      local nx, ny = worldToNode(d.place, toWorld(view, x, y))
+      d.fields = boundsFields(d, nx, ny, event.ctrl)
+      runners.change(view.file, d.path, d.fields)
     elseif d and d.kind == "handle" and view.byPath[d.path] then
       local nx, ny = worldToNode(view.byPath[d.path].place, toWorld(view, x, y))
       d.changed = handleValues(d.handle, nx, ny, event.ctrl)
@@ -1135,6 +1230,10 @@ local function pointer(view, event)
       if next(d.fields) then
         local label = d.tool == "move" and "Move" or d.tool == "turn" and "Turn" or "Scale"
         project.setFields(view.file, d.fields, label)
+      end
+    elseif d and d.kind == "bounds" then
+      if d.fields then
+        project.setFields(view.file, { [d.path] = d.fields }, "Size")
       end
     elseif d and d.kind == "handle" then
       if next(d.changed) then
@@ -1469,6 +1568,9 @@ functions = {
   toolScale = { sig = "void()", doc = "The scale tool", fn = function()
     project.setTool("scale")
   end },
+  toolRect = { sig = "void()", doc = "The Rectangle tool, which sizes a node by its corners and edges", fn = function()
+    project.setTool("rect")
+  end },
   toolShape = { sig = "void()", doc = "The Shape tool, which drags a shape's corners and edges and the points of a property", fn = function()
     project.setTool("shape")
   end },
@@ -1489,7 +1591,7 @@ for key, name in pairs({
   ["Ctrl+Shift+Z"] = "onlr.redo", ["Ctrl+S"] = "onlr.save", ["F5"] = "onlr.play",
   ["F6"] = "onlr.playFile", ["F7"] = "onlr.pause", ["F8"] = "onlr.step",
   ["Shift+F5"] = "onlr.stop", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
-  ["R"] = "onlr.toolScale", ["T"] = "onlr.toolShape", ["F"] = "onlr.frame", ["H"] = "onlr.hideChosen",
+  ["R"] = "onlr.toolScale", ["T"] = "onlr.toolRect", ["Y"] = "onlr.toolShape", ["F"] = "onlr.frame", ["H"] = "onlr.hideChosen",
   ["L"] = "onlr.lockChosen", ["Escape"] = "onlr.cancelPick",
 }) do
   ecs.key.bind("onlr.view", key, name)
