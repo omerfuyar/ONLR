@@ -281,6 +281,18 @@ function Emitter:drawEditor(chosen)
 end
 
 -- The emission area, or a small square at the node, for choosing it in the node view.
+-- In the node view: a changed value makes the picture again (DESIGN 6.5).
+function Emitter:loadEditor()
+  self.shown = nil
+end
+
+-- In the node view, while its node is chosen (DESIGN 6.5): the picture goes on emitting, as the game does.
+function Emitter:updateEditor(dt)
+  if self.shown then
+    self.shown:update(dt)
+  end
+end
+
 function Emitter:bounds()
   local area = self.emissionArea
   local w, h = math.max(area.dx, 8), math.max(area.dy, 8)

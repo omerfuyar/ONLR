@@ -10,6 +10,9 @@
 ---@field visible boolean
 ---@field opacity number
 ---@field properties table<string, any> the layer's custom properties from Tiled
+---@field offsetx number?
+---@field offsety number?
+---@field data table[] a tile layer's tiles, by row and then column, each with width, height, offset and properties
 ---@field objects? table[] an object layer's objects, each with its x, y, width, height, name, type and properties
 ---@field draw fun(self: sti.Layer) draws the layer; a script's layer sets its own
 ---@field update fun(self: sti.Layer, dt: number)
@@ -25,6 +28,10 @@ local Layer = {}
 ---@field properties table<string, any> the map's custom properties from Tiled
 ---@field layers table<integer|string, sti.Layer> by their order, and by their names
 ---@field objects table<integer, table> every object of the map, by its id
+---@field offsetx number? where the map is drawn from, in pixels
+---@field offsety number?
+---@field tilesets table[] its tilesets, each with firstgid and its tiles, which have id, properties and objectGroup
+---@field tileInstances table<integer, {x: number, y: number, layer: sti.Layer}[]> each placed tile, by its gid
 local Map = {}
 
 ---Moves the animated tiles on, and updates each layer.

@@ -27,6 +27,7 @@ local preview = {}
 ---@field root onlr.Node? its nodes, or nil when the file did not load
 ---@field scope onlr.Scope? its nodes by their ids
 ---@field dirty boolean it must be drawn again
+---@field moved number? when its chosen nodes moved last, or nil when none moves (DESIGN 6.5)
 ---@field boundsDue boolean? its nodes changed, so their bounds are sent again
 ---@field waiting boolean its last frame was sent, and the editor has not taken it yet
 ---@field canvas love.Canvas?
@@ -358,7 +359,38 @@ function handlers.stop()
   love.event.quit(0)
 end
 
--- The preview's loop, in place of the game's: it waits for the editor, and draws when asked.
+-- How often the chosen nodes move in the node view, a second (DESIGN 6.5): a frame goes through the link each time, so
+-- fewer than the game's.
+local MOVES = 30
+
+-- Calls updateEditor on the components of a view's chosen nodes, when the time of a step has passed, and gives whether one
+-- moved, so the view is drawn again. A component that fails marks its node, and moves no more until its node is made again.
+local function move(view, now)
+  local dt = now - (view.moved or now)
+  if view.moved and dt < 1 / MOVES then
+    return false
+  end
+  local moved = false
+  for path in pairs(view.chosen) do
+    local node = view.scope and view.scope.nodes[path]
+    for _, r in ipairs(node and node._active and node._records or {}) do
+      local c = r.component
+      if r.enabled and c.updateEditor and not c._stopped then
+        local ok, err = pcall(c.updateEditor, c, math.min(dt, 0.1))
+        if not ok then
+          c._stopped = true
+          mark(node, tostring(err))
+          view.boundsDue = true
+        end
+        moved = true
+      end
+    end
+  end
+  view.moved = moved and now or nil
+  return moved
+end
+
+-- The preview's loop, in place of the game's: it waits for the editor, and draws when asked, or when a chosen node moves.
 local function run()
   return function()
     love.event.pump()
@@ -378,7 +410,12 @@ local function run()
     if link.closed then
       return 0
     end
+    local moving = false
     for _, view in pairs(views) do
+      if not view.waiting and move(view, love.timer.getTime()) then
+        view.dirty = true
+      end
+      moving = moving or view.moved ~= nil
       if view.dirty and not view.waiting then
         draw(view)
         busy = true
@@ -387,7 +424,7 @@ local function run()
       end
     end
     if not busy then
-      link.wait(0.05)
+      link.wait(moving and 1 / MOVES / 2 or 0.05)
     end
   end
 end

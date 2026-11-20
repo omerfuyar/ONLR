@@ -35,7 +35,7 @@ static struct
 } CONFIG = {.FLAGS = {.openecs = "OpenECS/", .compiler = SHUM_HOST_WINDOWS || SHUM_HOST_MACOS ? "clang" : "gcc"}};
 
 /// @brief The packages that a sample holds beside the engine, by the sample's name.
-static const char *const SAMPLE_PACKAGES[][2] = {{"coinrun", "bump"}, {"physics", "physics"}, {"animation", "anim8"}, {"particles", "particles"}, {"tilemap", "sti"}, {"tweens", "flux"}, {"tweens", "tick"}, {"input", "baton"}, {"screen", "push"}, {"effects", "moonshine"}, {"audio", "audio"}, {"interface", "suit"}, {"interface", "push"}, {"lights", "shadows"}, {"gallery", "bump"}, {"gallery", "physics"}, {"gallery", "anim8"}, {"gallery", "particles"}, {"gallery", "sti"}, {"gallery", "flux"}, {"gallery", "tick"}, {"gallery", "baton"}, {"gallery", "push"}, {"gallery", "moonshine"}, {"gallery", "audio"}, {"gallery", "suit"}, {"gallery", "shadows"}};
+static const char *const SAMPLE_PACKAGES[][2] = {{"coinrun", "bump"}, {"physics", "physics"}, {"animation", "anim8"}, {"particles", "particles"}, {"tilemap", "sti"}, {"tilemap", "bump"}, {"tilemap", "physics"}, {"tweens", "flux"}, {"tweens", "tick"}, {"input", "baton"}, {"screen", "push"}, {"effects", "moonshine"}, {"audio", "audio"}, {"interface", "suit"}, {"interface", "push"}, {"lights", "shadows"}, {"gallery", "bump"}, {"gallery", "physics"}, {"gallery", "anim8"}, {"gallery", "particles"}, {"gallery", "sti"}, {"gallery", "flux"}, {"gallery", "tick"}, {"gallery", "baton"}, {"gallery", "push"}, {"gallery", "moonshine"}, {"gallery", "audio"}, {"gallery", "suit"}, {"gallery", "shadows"}};
 
 #pragma endregion Setup
 

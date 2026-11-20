@@ -7,6 +7,7 @@ local anim8 = require("anim8")
 ---@class anim8.animation : onlr.Component
 ---@field current string? the name of the animation that plays, or that stopped at its end
 ---@field private built table<string, anim8.Animation> anim8's animations, by their names
+---@field private _editor boolean? it is in the node view, which tells no node
 local Animation = {}
 
 Animation.needs = { "onlr.sprite" }
@@ -54,7 +55,10 @@ function Animation:load()
     if not a.loop then
       onLoop = function(animation)
         animation:pauseAtEnd()
-        self.node:send("animationEnd", name)
+        -- the node view tells no node: it runs no script (DESIGN 6.5)
+        if not self._editor then
+          self.node:send("animationEnd", name)
+        end
       end
     end
     self.built[name] = anim8.newAnimation(frames, a.duration, onLoop)
@@ -69,8 +73,21 @@ end
 -- In the node view (DESIGN 6.5): the sprite shows the first frame of the animation that plays first, as the game starts with it,
 -- and not the whole sheet. Without an image there is nothing to cut yet, and nothing is wrong.
 function Animation:loadEditor()
+  self._editor = true
   if (self.node.components.onlr.sprite --[[@as onlr.sprite]]).image then
     self:load()
+  end
+end
+
+-- In the node view, while its node is chosen (DESIGN 6.5): the animation plays, and one that does not loop starts again at its end.
+function Animation:updateEditor(dt)
+  local animation = self.built and self.built[self.current]
+  if animation then
+    if animation.status == "paused" then
+      animation:gotoFrame(1)
+      animation:resume()
+    end
+    self:update(dt)
   end
 end
 

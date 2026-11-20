@@ -476,6 +476,7 @@ The engine calls the functions that a type has. All are optional.
 - There the engine does not call `drawTree`: a group's nodes draw through the node view alone. So a camera does not move the view, and a group's shader shows only in the game.
 - A type without `drawEditor` shows nothing in the node view. Its `draw` is not called there, since it may need what `load` or `update` sets.
 - `loadEditor`, when a type has it, is called there once its node's components are made, in the order that they load (6.6), and again after each change of a value of the node's components. It sets up from the values what `drawEditor` or another component shows, as Unity's `OnValidate` does: anim8's sets its sprite's `quad` to the first frame (11.5). It is LÖVE code: the tree's functions change nothing there, as in `drawEditor`, one that fails marks its node, and one that never returns stops the preview only. It is not `load`, which may start what the editor must not run, such as a sound or a body of a world.
+- `updateEditor(dt)`, when a type has it, is called there on the components of the chosen nodes only, 30 times a second, with the seconds since the last call, and the view is drawn again after it: so an emitter emits and an animation plays while its node is chosen, as Unity plays a chosen particle system, and the rest of the file stands still. What it moves is the editor's own, such as the picture that `drawEditor` keeps, and goes at the next change. It is called only while the editor has taken the view's last frame, so a slow link gives fewer steps, each of more seconds, up to a tenth of a second. One that fails marks its node, and is not called again until its node is made again. Limits: each step sends a whole frame through the link (12.4), so a chosen moving node costs the editor about what dragging does (see TODO, the node view's speed); nodes that are not chosen do not move, as the view would cost that much all the time; a script's `update` is not called, so what a script moves stays still.
 - `drawEditor` may keep in `self` what it builds from the component's values, such as a map read from a file. When a value of the component changes, the preview makes the component anew from the node file's values, so what it kept is built again from the new ones.
 - A `drawEditor` that fails marks its node in the view, and the rest draws on.
 - `drawEditor` is code, so it can do anything. The node view is kept safe from it:
@@ -512,7 +513,7 @@ Every function that the engine calls in a component, and what makes it call it. 
 | It stops running, or starts again   | `disable`, or `enable`                                                            | `node:setActive`, `node:setParent` and `component:setEnabled`       |
 | It leaves the tree                  | `disable` if it runs, then `destroy`, when the frame ends                         | `node:destroy`, `node:removeComponent` and `onlr.tree.loadRoot`              |
 | Another component asks              | A function of the type's own                                                      | `node:send`, or a call such as `body:move(x, y)`                    |
-| The editor draws a view             | `drawEditor` and `bounds`, and nothing else                                       | The node view (6.5, 12.3)                                           |
+| The editor shows a view             | `loadEditor` once its node is made and after a change, `updateEditor` while its node is chosen, `drawEditor` and `bounds`, and nothing else | The node view (6.5, 12.3)                                           |
 
 ### 7.2 Functions for scripts
 
@@ -1013,7 +1014,7 @@ end
 - A range read backwards plays backwards: `"4-1"`. The frames are taken row by row, as anim8 takes them.
 - `get(name)` gives anim8's animation, the current one without a name, for all of anim8's own functions on it, such as `gotoFrame`.
 - The limits, as they are now:
-  - The node view shows the first frame of the animation that plays first, through `loadEditor` (6.5), and does not play it. A sprite without an image shows nothing, and a range that the grid lacks marks the node.
+  - The node view shows the first frame of the animation that plays first, through `loadEditor` (6.5), and plays it while its node is chosen, through `updateEditor`; one that does not loop starts again at its end there, and tells no node. A sprite without an image shows nothing, and a range that the grid lacks marks the node.
   - The grid is cut, and the animations made, when the component loads. A script that changes the sprite's image or a property afterwards changes nothing that plays.
   - Each frame of an animation shows for the same `duration`. anim8 takes a duration for each frame, and a script makes such an animation with anim8 itself.
   - An animation takes one range of columns and one of rows. anim8 takes several, such as the end of one row and the start of the next.
@@ -1028,12 +1029,12 @@ end
 - With `autoPlay` it emits from its start, as a sound plays with its own (11.12). A script calls `play()`, `stop()`, `emit(count)` and `reset()`; `emit` works also on a stopped emitter, as an explosion needs. The function is `play`, not LÖVE's `start`, which the engine calls at a component's start (6.4).
 - When it stops emitting, at the end of its `emitterLifetime` or at `stop`, and its last particle dies, its node is told `particlesEnd()` (11.3), once until it emits again. A node that plays an explosion destroys itself there.
 - `getCount()` gives the particles that live, and `get()` LÖVE's system, for all of LÖVE's own functions on it, such as `setQuads`.
-- The node view shows a still picture: the system after it has run for a particle's lifetime, at most 5 seconds, made once and kept until a value changes (6.5). It also draws a cross at the node and the emission area.
+- The node view shows the system after it has run for a particle's lifetime, at most 5 seconds, made once and kept until a value changes (6.5). While its node is chosen, the picture goes on emitting, through `updateEditor` (6.5). It also draws a cross at the node and the emission area.
 - The limits, as they are now:
   - The properties are read when the emitter loads. A script that changes one afterwards calls `apply()`, which sets them all again; the particles that live keep what they had.
   - In `world`, the node's scale does not size the particles, and its turn turns only the `direction`, not the emission area.
   - A node that is turned off draws nothing, and its particles stand still until it is on again.
-  - The node view's picture does not move, and is drawn at the node also for a `world` emitter.
+  - The node view's picture moves only while its node is chosen, and is drawn at the node also for a `world` emitter, so moving the node moves the particles that it emitted.
   - A system takes up to 8 sizes and 8 colours, as LÖVE does; more is an error.
   - Particles from a sprite sheet, LÖVE's `setQuads`, and the image's `offset` have no property: a script sets them on `get()`.
 
@@ -1046,13 +1047,22 @@ end
 - `toTile(x, y)` gives the column and the row, from 1, of the tile at a place in the world, and `toWorld(column, row)` the place of a tile's corner, so a script finds what is under a node: `map:get():getTileProperties("ground", map:toTile(x, y))`.
 - `get()` gives STI's map, for all of STI's own functions: its layers by name with their objects, the properties that Tiled gives tiles, layers and objects, `setLayerTile`, and layers that a script draws.
 - The node view draws the map as the game does, loaded once and kept until a value changes (6.5).
+- Three more types sit beside `sti.map` on its node, and need it (6.6). Which tiles collide, Tiled says, by the property `collidable`, as STI's own plugins read it: every tile of a tile layer that has it, every tile whose tileset gives it, wherever it is placed, the rectangles that a tile holds in Tiled's collision editor that have it, and the rectangles of an object layer that has it, or that have it themselves. A module of the package, `sti.solid`, finds them for both.
+  - `sti.bump` makes each such rectangle a box of bump's world (11.3), at the node's place, which a `bump.body` stops at, as at another solid body, and whose contact names the map's node. Its `solid`, off, lets bodies pass and still tells them. `getBoxes()` gives the boxes, each with `tile`: its rectangle, layer and properties.
+  - `sti.physics` makes them fixtures of one static body of Box2D's world (11.4), at the node's place and angle and scaled as the node, so a `physics.body` falls onto them and rests, and a contact names the map's node. Its `friction`, `restitution` and `sensor` are a fixture's. `getBody()` gives the body, whose fixtures' user data hold `tile`.
+  - `sti.objects` makes Tiled's objects nodes: each object of the map whose property `node` names a node file of the project, such as `nodes/coin.lua`, becomes an instance of that file under the map's node (9), at the object's place, turned as the object, and named as it when it has a name. So the author places coins and enemies in Tiled, and makes each one in ONLR's editor. Its `layers` names the object layers to take, every one when empty. `getNodes()` gives the nodes.
+  - Each finds the tree's `bump.world` or `physics.world`, and adds one to the root when the tree has none, as a body does. The project must hold the bump or the physics package: the editor does not add it with `sti`.
 - The component draws each layer itself, where the node draws, and does not call STI's `map:draw`, which draws through a canvas of the window's size from the screen's corner, so a node's place and a camera would not reach it.
 - The limits, as they are now:
   - The map is loaded when the component loads. A script that changes `map` afterwards changes nothing; one that changes `layers` changes what draws.
   - Only maps that Tiled exports as Lua, with their tilesets embedded, as STI takes them: not `.tmx` files, nor tilesets in files of their own.
   - A layer's parallax, which STI's own `map:draw` applies, is not applied.
-  - An object layer that is visible draws its objects as STI's grey outlines, as a debugging aid. A game hides it in Tiled, or leaves it out of `layers`. Tiled's objects do not become nodes: a script reads them from the layer.
-  - Tiles do not collide. STI's plugins for bump and Box2D are not tied to `bump.world` and `physics.world` yet.
+  - An object layer that is visible draws its objects as STI's grey outlines, as a debugging aid. A game hides it in Tiled, or leaves it out of `layers`.
+  - The tiles' boxes and body are made where the node is when they start to run, and do not follow a node that moves afterwards; turning the node off and on makes them again. bump's boxes do not turn, so a turned map's boxes are the rectangles around its turned tiles.
+  - A tile that a script changes with `setLayerTile` does not change what collides.
+  - A contact names the map's node, not the tile: a script finds the tile with `toTile`, or reads `tile` from the box or the fixture.
+  - Only rectangles collide. Tiled's ellipses, polygons and points do not, as STI's plugins take only rectangles too.
+  - `sti.objects` takes an object's place and turn only. Its size and its other properties are not given to the instance; a script reads them from the layer. An object becomes a node in the game only: the node view shows the object layer as STI draws it, not the instances, since the preview runs no `load` (6.5).
   - `bounds` is right for orthogonal maps only.
   - The node view reloads the map only when it makes the component again, and STI keeps the images that it loaded. So a map or a tileset that Tiled saves again shows after the preview starts again.
   - STI makes a canvas of the window's size for each map, for its own `map:draw`, which the component does not use.
@@ -1247,7 +1257,7 @@ end
 
 ### 12.1 The runner
 
-- The editor starts LÖVE itself, unchanged, as a program of its own on the project's folder. Arguments tell the engine that the editor started it, the mode, where the editor listens, and where the runner's files are: `--onlr-runner=FOLDER`, `--onlr-mode=preview` or `game`, `--onlr-port=PORT`, and for Play This File `--onlr-start=PATH`.
+- The editor starts LÖVE itself, unchanged, as a program of its own on the project's folder. Arguments tell the engine that the editor started it, the mode, where the editor listens, and where the runner's files are: `--onlr-runner=FOLDER`, `--onlr-mode=preview` or `game`, `--onlr-port=PORT`, for Play This File `--onlr-start=PATH`, and for a window size that Play chose `--onlr-size=WIDTHxHEIGHT`.
 - The runner's files are the Lua code that serves the editor: the link and the views. They belong to the editor, in its plugin's `runner/` folder (13.1), and no project or export holds them. The engine loads them with Lua's own `loadfile`, which reads any path, where LÖVE's file functions read only the game's folder (3.1). So a project and its exports hold nothing of the editor, and both ends of the link are of one version of ONLR.
 - A runner runs in one of two modes:
 
@@ -1260,6 +1270,8 @@ end
 - LÖVE starts every game by running its `conf.lua` and `main.lua`, so the preview runs them too, and the code of each script that is outside its functions when the editor asks about the script (12.5). It does not call `love.load`, nor a component's `load` or `update` (6.5). So what both the game and the node view need, such as the default filter, is in the manifest (3.2), and the engine sets it in both runners.
 - In the preview, the engine sets LÖVE's volume to 0, so a sound that the game's code plays there is not heard. On Linux the editor starts it with SDL's offscreen video driver, `SDL_VIDEODRIVER=offscreen`, so it opens no window and still draws with the graphics card. On Windows that driver cannot start LÖVE, whose runtime there has no EGL. So there LÖVE opens its window, and the runner's files hide it as soon as the engine loads them, with SDL's `SDL_HideWindow` through LuaJIT's FFI. The preview then draws into canvases, as on Linux.
 - Play saves the project (13.6), then starts a second runner with the manifest's start node as its first root, as an exported game starts. Play This File does the same with the node file of the node view that has the focus. The top node runs above it (5). When the file in focus is the top node's, Play This File plays as Play does. Stop ends it, and so does closing its window.
+- The tools panel's Window chooses the size of the game's window when it plays: the manifest's own, or another, such as a phone's (360 by 800, 390 by 844, and 800 by 360 on its side), a tablet's or a common screen's. So the author sees how the game lays itself out on a screen it was not made on, without changing the manifest, which an exported game keeps. The project's editor settings keep the choice (13.3). The runner sets the size after the manifest's settings, and turns off `fullscreen`. Limits: the window is that many pixels on the author's screen, not a phone, so its pixel density, touch and safe areas are the computer's; a game whose `conf.lua` sets the window after `onlr.conf` keeps its own size; a size taller than the author's screen is shrunk by the system, as 13.2 says of the manifest's.
+- While a game plays, the frames around the editor's panels take the colour of the setting `onlr.playTint`, a brown, so the author sees that what they change now is in the running game, and gone at Stop (12.6). It is set through OpenECS's settings for the run only, `ecs.setting.setForRun` (OpenECS DESIGN 12.2), so the user's own `ecs.colorFrame` is never written, and comes back at Stop, or when the editor ends while a game plays. An OpenECS without that function shows no tint.
 - Pause stops the game, and Step runs one frame of it. While it is paused, the engine's loop handles LÖVE's events for LÖVE alone, such as quit, and draws, but calls nothing of steps 2 and 3 of a frame (8.1). Step runs those steps once, with `dt` of one fixed step (3.2), so it runs one `fixedUpdate`. Resume goes on.
 - The game is LÖVE as an exported game runs it: the window, the keyboard, the pointer, the gamepads and the sound are LÖVE's own, and the engine stands in for nothing.
 - What a mode draws into is the one difference between the modes. Starting a runner, the link, the console and the errors are the same code for both, so the editor's other parts do not know where the game is drawn.
@@ -1304,7 +1316,7 @@ end
 
 - The preview only draws, and what it draws are views.
 - A node view shows a view of an open node file. Other files, such as an image or a sound, are shown by the asset viewer (13.1) as the files they are; how the game draws them shows in the node view.
-- The preview draws a view when the editor asks: after a change, or when the view moves. It runs no loop of frames, so it uses the processor only when something changed.
+- The preview draws a view when the editor asks: after a change, or when the view moves, and 30 times a second while a chosen node has `updateEditor` (6.5). It runs no loop of frames otherwise, so it uses the processor only when something changed or moves.
 - What is drawn is split by what it depends on:
 
   | Drawn by                    | What                                                                  | Because                                                       |

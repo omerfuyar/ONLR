@@ -6,6 +6,7 @@
 --   --onlr-mode=preview|game  the mode
 --   --onlr-port=PORT       where the editor listens, on 127.0.0.1
 --   --onlr-start=PATH      in the game, the node file to run as the first root in place of the manifest's start node
+--   --onlr-size=WxH       in the game, the window's size in place of the manifest's, such as a phone's
 
 local folder = ...
 
@@ -113,6 +114,11 @@ function runner.conf(t)
     t.window.vsync = 0
     t.window.fullscreen = false
     t.console = false
+  end
+  local width, height = (options.size or ""):match("^(%d+)x(%d+)$")
+  if options.mode == "game" and width then
+    t.window.width, t.window.height = tonumber(width), tonumber(height)
+    t.window.fullscreen = false
   end
 end
 
