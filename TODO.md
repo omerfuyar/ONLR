@@ -119,7 +119,6 @@ What the owner wants worked on, in this order.
   Libraries of entities and of classes, such as tiny-ecs, Concord, middleclass and classic, overlap ONLR's own nodes and components. A user may still use them in scripts, and no package is made for them.
 - **A bump package's details.** DESIGN 11.3 shows its outline as a sample, and `samples/coinrun` holds one that works: its body has `solid`, and other bodies pass through one that is not solid. Open if bump is chosen as a package of ONLR's own: a body on a node that is turned or scaled, since bump's boxes are not.
 
-- **A new project's default filter.** The engine keeps LÖVE's `linear` when the manifest names none (DESIGN 3.2). Open, for the owner: whether a new project writes `defaultFilter = "nearest"`, which keeps pixel art sharp and makes large images that are scaled down rough. It depends on whether most games made with ONLR are pixel art.
 - **Highdpi.** A window that the system scales, at a display scale above 100%, is stretched by the system and blurred, unless the manifest's `window` has `highdpi`. Not checked on the owner's computers: Windows and Linux at the owner's display scale.
 
 ## LÖVE
@@ -170,6 +169,7 @@ What the owner wants worked on, in this order.
   - The tool's menu: entries that a plugin gives while it runs, for the projects opened last (DESIGN 13.2).
   - The core: a panel hears where dragged data is over it, so the nodes panel shows a line where a dragged node will land. While data is dragged, the core gives no panel the pointer's moves (OpenECS DESIGN 7.9).
   - The test's `dropFiles` gives a node view a place 26 units above the pointer's, the height of a tab row. Checked in `samples/editor/editortest.lua`, which drops an image at y 150 and gets 124.
+- **New Project has no test.** A test of OpenECS runs only functions that take nothing (`test.call`) and cannot answer the system's file dialogs, so `samples/editor` cannot make a new project and read its manifest (DESIGN 13.2). A `test.call` that passes arguments, or a test's answer to a file dialog, in OpenECS, would let it.
 - **The gallery has no test of the editor.** `samples/gallery` is tested in LÖVE only. An editor test can click and read the files the editor writes, but cannot read the nodes that the preview draws, so it cannot check that each room opens and shows in a node view. A function of the test that returns the preview's nodes, or a screenshot compared with a saved one, would let it.
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the runners were written on Linux.
 - **What the editor does not do yet.** Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
