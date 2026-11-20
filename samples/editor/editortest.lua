@@ -922,14 +922,26 @@ return {
     test.text("marker:load")
     test.wait(0.2)
     found = test.panel(panelOf(test, "onlr.search")).state.shown
-    check(found[1] == "Function Marker:load components/marker.lua:5", "the search finds the function: " .. tostring(found[1]))
+    check(found[1] == "Function Marker:load components/marker.lua:6", "the search finds the function: " .. tostring(found[1]))
     test.call("ecs.layout.close")
     test.wait(0.2)
     test.click(view.x + 5, view.y + view.height - 5)
     test.wait(0.2)
 
-    -- Play saves the project and runs the game, whose marker writes a file
+
+    -- the tools panel's Window chooses the game's size for Play, such as a phone's; the manifest keeps its own
+    local tools = test.rect(panelOf(test, "onlr.tools"))
+    test.click(tools.x + 120, tools.y + 91)
+    test.wait(0.2)
+    local list = test.popup(1)
+    test.click(list.x + 40, list.y + 3.5 * list.height / 7)
+    test.wait(0.2)
+    test.click(view.x + 5, view.y + view.height - 5)
+    test.wait(0.2)
+
+    -- Play saves the project and runs the game, whose marker writes a file. While it plays, the panels' frames take onlr.playTint
     os.remove("played.txt")
+    os.remove("window.txt")
     test.key("F5")
     for _ = 1, 50 do
       test.wait(0.1)
@@ -938,8 +950,12 @@ return {
       end
     end
     check(read("played.txt") == "Start", "the game played")
+    check(read("window.txt") == "360x800", "in the window's size that Play chose: " .. read("window.txt"))
+    check(read(".onlr/editor.lua"):find('playSize = "360x800"', 1, true) ~= nil, "which the project's editor settings keep")
+    test.match(test.setting("ecs.colorFrame"), test.setting("onlr.playTint"), "the frames take the tint while the game plays")
     test.key("Shift+F5")
     test.wait(0.5)
+    test.match(test.setting("ecs.colorFrame") ~= test.setting("onlr.playTint"), true, "and lose it at Stop")
 
     -- Export: the folder that exports are written to is typed into the Export panel, which is a tab beside the inspector
     test.click(inspector.x + 210, inspector.y - 14)

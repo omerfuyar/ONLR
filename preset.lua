@@ -34,7 +34,7 @@ return {
               {
                 size = 370,
                 split = "vertical",
-                { size = 118, panels = { { type = "onlr.tools" } } },
+                { size = 150, panels = { { type = "onlr.tools" } } },
                 { share = 1, panels = { { type = "onlr.nodes" } } },
               },
               { share = 1, panels = { { type = "onlr.view" } } },

@@ -4,6 +4,7 @@ local ecs = require("ecs")
 local ui = require("ui")
 local project = require("project")
 local nodeview = require("nodeview")
+local runners = require("runners")
 local shared = require("shared")
 
 local STYLES = ui.styles()
@@ -19,6 +20,22 @@ local function stats(s)
     text = text .. ("   update %.2f ms   draw %.2f ms"):format(s.update, s.draw)
   end
   return text
+end
+
+local sizes = {}
+for i, size in ipairs(runners.SIZES) do
+  sizes[i] = size.label
+end
+
+-- the place of the project's Play size in runners.SIZES; a size that the list lacks shows as the manifest's
+local function sizeIndex()
+  local chosen = project.setting("playSize")
+  for i, size in ipairs(runners.SIZES) do
+    if size.size == chosen then
+      return i
+    end
+  end
+  return 1
 end
 
 local function draw(state, surface)
@@ -55,6 +72,12 @@ local function draw(state, surface)
       ui.button(running.paused and "Resume" or "Pause", { id = "pause", tooltip = "Pause or resume the game: F7", onClick = nodeview.pause }),
       ui.button("Step", { id = "step", tooltip = "Run one frame of the paused game: F8", onClick = nodeview.step }),
       ui.button("Stop", { id = "stop", tooltip = "Stop the game: Shift+F5", onClick = nodeview.stop }),
+    }),
+    ui.row({ gap = 8, align = "center" }, {
+      ui.text("Window", {}),
+      ui.dropdown(sizeIndex(), sizes, { id = "playSize", width = 170, tooltip = "The size of the game's window when it plays, such as a phone's, for the run only: the manifest keeps its own", onSelect = function(choice)
+        project.setSetting("playSize", runners.SIZES[choice].size)
+      end }),
       ui.text(running.playing and (running.halted and "Stopped at an error: its nodes show as it left them" or running.paused and "Paused" or "Playing") or "",
         { style = STYLES.note, color = running.halted and "#e06c75" or nil }),
     }),
