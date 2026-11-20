@@ -6,7 +6,7 @@ local ecs = require("ecs")
 
 -- The plugin's functions, onlr.*, are those of its parts, which each part returns.
 local functions = {}
-for _, part in ipairs({ "project", "nodeview", "export" }) do
+for _, part in ipairs({ "project", "nodeview", "export", "search" }) do
   for name, entry in pairs(require(part).functions) do
     assert(functions[name] == nil, "two parts have the function " .. name)
     functions[name] = entry

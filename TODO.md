@@ -41,7 +41,7 @@ What the owner wants worked on, in this order.
   - The inspector: a pipette for the colour picker; a list of an instance's changes, to keep or drop them all.
   - The files panel: favourite folders; Find what names this file.
   - Playing: a tint over the editor while the game plays, such as OpenECS's frame colour, `ecs.colorFrame`, which waits for a way to set a setting for the run only, as `ecs.setting.set` writes the user's file; sizes of the window to choose from, such as a phone's; values that were changed in the running game, with a way to keep them.
-  - The editor: a search over every function, node and file with one key. A window for keys is OpenECS-std's key list now (below).
+  - The editor: a window for keys is OpenECS-std's key list now (below). The search (DESIGN 13.8) could find functions written as `X.y = function(`, and text inside files.
   - Tools of their own, each a panel: a cutter of sprite sheets into quads, a timeline for animations, a palette for tile maps.
 - **The Rectangle tool's limits** (DESIGN 13.3): sizing many chosen nodes as one rectangle; Shift to keep a node's proportions; a circle that keeps round, by its `radius`, and a text that gets a `width` to wrap at, in place of a scale.
 - **Dragging components in the inspector.** Move Up and Move Down order them (DESIGN 13.4). Dragging a component's heading needs OpenECS-std's `ui.section` to start a drag and to tell where a drop lands among the sections, as its tree does.

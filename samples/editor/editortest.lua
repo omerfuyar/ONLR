@@ -905,6 +905,29 @@ return {
     end
     check(opened, "Open Base opens part.lua")
 
+    -- Ctrl+K opens the search over everything (DESIGN 13.8): "tip" finds part.lua's node Tip first, and Return opens its file and
+    -- chooses it; "marker:load" finds the function that the marker script defines, at its line
+    test.key("Ctrl+K")
+    test.wait(0.2)
+    test.text("tip")
+    test.wait(0.2)
+    local found = test.panel(panelOf(test, "onlr.search")).state.shown
+    check(found[1] == "Node Tip nodes/part.lua", "the search finds Tip: " .. tostring(found[1]))
+    test.key("Return")
+    test.wait(0.3)
+    test.match(chosen(), { "t1p000" }, "Return chooses Tip")
+    test.key("Ctrl+K")
+    test.wait(0.2)
+    test.key("Ctrl+A")
+    test.text("marker:load")
+    test.wait(0.2)
+    found = test.panel(panelOf(test, "onlr.search")).state.shown
+    check(found[1] == "Function Marker:load components/marker.lua:5", "the search finds the function: " .. tostring(found[1]))
+    test.call("ecs.layout.close")
+    test.wait(0.2)
+    test.click(view.x + 5, view.y + view.height - 5)
+    test.wait(0.2)
+
     -- Play saves the project and runs the game, whose marker writes a file
     os.remove("played.txt")
     test.key("F5")
