@@ -38,11 +38,13 @@ What the owner wants worked on, in this order.
 
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
   - The node view: a rectangle tool that sizes a node by its corners; marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
-  - The inspector: a lock that keeps its node while another is chosen; reordering components; a pipette for the colour picker; a list of an instance's changes, to keep or drop them all.
+  - The inspector: a pipette for the colour picker; a list of an instance's changes, to keep or drop them all.
   - The files panel: favourite folders; Find what names this file.
   - Playing: a tint over the editor while the game plays, such as OpenECS's frame colour, `ecs.colorFrame`, which waits for a way to set a setting for the run only, as `ecs.setting.set` writes the user's file; sizes of the window to choose from, such as a phone's; values that were changed in the running game, with a way to keep them.
   - The editor: a search over every function, node and file with one key. A window for keys is OpenECS-std's key list now (below).
   - Tools of their own, each a panel: a cutter of sprite sheets into quads, a timeline for animations, a palette for tile maps.
+- **Dragging components in the inspector.** Move Up and Move Down order them (DESIGN 13.4). Dragging a component's heading needs OpenECS-std's `ui.section` to start a drag and to tell where a drop lands among the sections, as its tree does.
+- **moonshine's order.** `moonshine.chain` applies its effects in its `order` list (DESIGN 11.11). The node's `componentOrder` (DESIGN 5) could replace it, so the user orders the effects as the inspector shows them; `order` stays while a script changes the order at run time.
 - **Panels for later.** Ideas, each a panel type of a plugin (DESIGN 13.1): a node editor, in which the user connects nodes to write logic without code, as Unreal's Blueprints do, and whose output is a script, so the engine needs nothing new; a tile editor, which waits for the choice of a library for tile maps (see [Libraries](#libraries)).
 - **Video in the asset viewer.** For later. LÖVE plays Ogg Theora video, and OpenECS-std's video reads MPEG-1 only, so the asset viewer shows no video (DESIGN 13.1).
 - **A project's own script template.** A new script starts from ONLR's template (DESIGN 13.4). An idea for later: a project that keeps a template of its own.

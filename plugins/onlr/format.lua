@@ -7,7 +7,7 @@ local format = {}
 format.FORMAT = 1
 
 -- The order of a node's fields, and of the fields of an instance's change (DESIGN 5).
-local NODE = { "format", "id", "instance", "name", "posX", "posY", "rot", "sclX", "sclY", "z", "active", "components", "children" }
+local NODE = { "format", "id", "instance", "name", "posX", "posY", "rot", "sclX", "sclY", "z", "active", "componentOrder", "components", "children" }
 -- The order of a manifest's fields (DESIGN 3.2). LÖVE's other settings come between window and defaultFilter.
 local MANIFEST_FIRST = { "format", "name", "id", "gameVersion", "loveVersion", "startNode", "topNode", "window" }
 local MANIFEST_LAST = { "defaultFilter", "fixedRate", "exclude" }

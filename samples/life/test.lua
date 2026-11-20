@@ -118,6 +118,13 @@ check.run(function()
   node:addComponent("needy")
   log.take()
 
+  -- a node's componentOrder sets the order that its components load in: log before later, though later's name comes first
+  local ordered = tree.spawn("nodes/ordered.lua")
+  check.equal(log.take(), { "Ordered.load", "Ordered.later load", "Ordered.enable" }, "componentOrder")
+  ordered:destroy()
+  check.frames(1)
+  log.take()
+
   -- destroy: the node is marked at once, and ends when the frame ends, children first.
   a:destroy()
   check.equal(a:isDestroyed() and find("A1"):isDestroyed(), true, "marked at once")

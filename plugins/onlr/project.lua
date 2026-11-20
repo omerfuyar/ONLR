@@ -1221,7 +1221,17 @@ local function removeComponent(file, paths, typeName)
       if c and c.base and not node.own then
         message = "A component of the base cannot be removed in the instance. It can be turned off."
       elseif c then
-        resolve.dropComponent(target(node, true), typeName)
+        local t = target(node, true)
+        resolve.dropComponent(t, typeName)
+        if type(t.componentOrder) == "table" then
+          local kept = {}
+          for _, name in ipairs(t.componentOrder) do
+            if name ~= typeName then
+              kept[#kept + 1] = name
+            end
+          end
+          t.componentOrder = #kept > 0 and kept or nil
+        end
         prune(node)
         -- The properties that name the component are cleared (DESIGN 13.6).
         resolve.values(t, source, function(values, name, decl)
@@ -1235,6 +1245,35 @@ local function removeComponent(file, paths, typeName)
     end
   end)
   return changed, message
+end
+
+-- Moves a component of the nodes up or down in their order, by steps, as one change (DESIGN 13.4). Each node writes its whole
+-- order, or none when it is the order that it would have without one: by the names, or its base's.
+local function moveComponent(file, paths, typeName, steps)
+  return edit("Move " .. typeName, function(touch)
+    touch(file)
+    for _, node in ipairs((nodesOf(file, paths))) do
+      local names = {}
+      for name in pairs(node.components) do
+        names[#names + 1] = name
+      end
+      local order = resolve.ordered(node.componentOrder, names)
+      local at
+      for i, name in ipairs(order) do
+        if name == typeName then
+          at = i
+        end
+      end
+      if at then
+        table.remove(order, at)
+        table.insert(order, math.max(1, math.min(#order + 1, at + steps)), typeName)
+        local default = resolve.ordered(not node.own and node.base.componentOrder or nil, names)
+        local t = target(node, true)
+        t.componentOrder = table.concat(order, ",") ~= table.concat(default, ",") and order or nil
+        prune(node)
+      end
+    end
+  end)
 end
 
 -- Gives a component's values to another type, or one value to another property, such as after a script was renamed
@@ -1676,6 +1715,12 @@ local function renameNames(from, to)
   local function entries(e)
     local any = false
     if oldType and newType and oldType ~= newType then
+      for i, name in ipairs(type(e.componentOrder) == "table" and e.componentOrder or {}) do
+        if name == oldType then
+          e.componentOrder[i] = newType
+          any = true
+        end
+      end
       local values = resolve.component(e, oldType)
       if values then
         resolve.dropComponent(e, oldType)
@@ -1975,6 +2020,8 @@ local functions = {
   setValues = { sig = "bool(string file, value paths, string type, value values, string label)",
     doc = "Set some values of the nodes' components of a type, as one change", fn = setValues },
   addComponent = { sig = "bool(string file, value paths, string type)", doc = "Add a component to nodes", fn = addComponent },
+  moveComponent = { sig = "bool(string file, value paths, string type, int steps)",
+    doc = "Move the nodes' component of a type up, with negative steps, or down in their order", fn = moveComponent },
   removeComponent = { sig = "bool(string file, value paths, string type)", doc = "Remove a component from nodes", fn = removeComponent },
   giveValues = { sig = "bool(string file, value paths, string type, string toType, string property, string toProperty)",
     doc = "Give a component's values to another type, or one value to another property", fn = giveValues },
