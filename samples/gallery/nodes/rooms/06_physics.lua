@@ -1,4 +1,5 @@
--- love.physics: crates that fall and bounce, a click drops another, and a pendulum on a hinge.
+-- love.physics: crates that fall and bounce, a click drops another, a pendulum on a hinge, and a cart whose wheels' joints
+-- spring and drive it.
 ---@type onlr.NodeFile
 return {
   format = 1,
@@ -9,7 +10,7 @@ return {
       world = {},
     },
     room = {
-      about = "physics.world, bodies, shapes and a hinge. A click drops a crate where the pointer is.",
+      about = "physics.world, bodies, shapes, a hinge, and a cart whose wheel joints spring and drive. A click drops a crate.",
       title = "Physics (love.physics)",
     },
     spawner = {
@@ -95,6 +96,113 @@ return {
             posX = 300,
             posY = 60,
             rot = 0.5,
+          },
+        },
+      },
+    },
+    {
+      id = "c4rt06",
+      name = "Cart",
+      posX = 100,
+      posY = 280,
+      components = {
+        onlr = {
+          paint = {
+            color = { 0.35, 0.7, 0.45, 1 },
+          },
+          shape = {
+            height = 14,
+            origin = { x = 30, y = 7 },
+            width = 60,
+          },
+        },
+        physics = {
+          body = {},
+          fixture = {},
+        },
+      },
+      -- each axle holds a wheel to the cart, on a spring along the cart's own down, and its motor turns the wheel
+      children = {
+        {
+          id = "4x1e06",
+          name = "Back axle",
+          posX = -22,
+          posY = 16,
+          components = {
+            physics = {
+              joint = {
+                axis = { x = 0, y = 1 },
+                kind = "wheel",
+                motor = true,
+                motorSpeed = 4,
+                motorTorque = 3000,
+                other = "wh1l06",
+              },
+            },
+          },
+        },
+        {
+          id = "4x2e06",
+          name = "Front axle",
+          posX = 22,
+          posY = 16,
+          components = {
+            physics = {
+              joint = {
+                axis = { x = 0, y = 1 },
+                kind = "wheel",
+                motor = true,
+                motorSpeed = 4,
+                motorTorque = 3000,
+                other = "wh2l06",
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      id = "wh1l06",
+      name = "Back wheel",
+      posX = 78,
+      posY = 296,
+      components = {
+        onlr = {
+          paint = {
+            color = { 0.85, 0.85, 0.9, 1 },
+          },
+          shape = {
+            kind = "circle",
+            radius = 10,
+          },
+        },
+        physics = {
+          body = {},
+          fixture = {
+            friction = 1,
+          },
+        },
+      },
+    },
+    {
+      id = "wh2l06",
+      name = "Front wheel",
+      posX = 122,
+      posY = 296,
+      components = {
+        onlr = {
+          paint = {
+            color = { 0.85, 0.85, 0.9, 1 },
+          },
+          shape = {
+            kind = "circle",
+            radius = 10,
+          },
+        },
+        physics = {
+          body = {},
+          fixture = {
+            friction = 1,
           },
         },
       },
