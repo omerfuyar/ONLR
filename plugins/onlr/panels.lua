@@ -91,6 +91,20 @@ files.setHandlers({
   end,
 })
 
+-- Unlocked, the files panel follows what is chosen, as Unity's Project window does: the node file of the node view that has the
+-- focus, or the base of a chosen instance (DESIGN 13.7). files.reveal is OpenECS-std's since OpenECS 0.8.
+ecs.event.subscribe("onlr.chosen", function(_, chosen)
+  if not files.reveal or not chosen.file then
+    return
+  end
+  local path = chosen.file
+  if #chosen.paths == 1 and project.file(chosen.file) then
+    local node = project.tree(chosen.file).index[chosen.paths[1]]
+    path = node and node.instanceOf or path
+  end
+  files.reveal(path)
+end)
+
 ecs.event.subscribe("onlr.opened", showFolder)
 ecs.event.subscribe("onlr.closed", showFolder)
 ecs.event.subscribe("onlr.disk", function(_, value)
