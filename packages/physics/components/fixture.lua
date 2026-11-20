@@ -1,13 +1,17 @@
 -- The component type physics.fixture: its node's onlr.shape, fixed to the nearest physics.body on its node or above it, as
 -- LÖVE fixes a shape to a body (DESIGN 11.4). The node's outline is the one that paints and collides, so the user sizes it once.
 -- A rectangle is a box, a circle a circle, a polygon a convex polygon of 3 to 8 corners, and a line an edge, or a chain of more
--- than two points. It turns and scales with its node, so a fixture on a node under the body may sit anywhere on it.
+-- than two points, open or a loop. It turns and scales with its node, so a fixture on a node under the body may sit anywhere on it.
+-- Before each step, a fixture whose node moved under its body, or whose shape changed, is made again, and a property that a
+-- script changed is set (DESIGN 11.4).
 local onlr = require("onlr")
 local find = require("physics.find")
 
 ---@class physics.fixture : onlr.Component
 ---@field owner physics.body? the body that it is fixed to
 ---@field fixture love.Fixture?
+---@field private key string? its shape and its place in the body, when it was made
+---@field private applied table<string, any> the properties as they were last set on the fixture
 local Fixture = {}
 
 Fixture.needs = { "onlr.shape" }
@@ -16,6 +20,7 @@ Fixture.friction = onlr.property.number(0.2, { min = 0, description = "How much 
 Fixture.restitution = onlr.property.number(0, { min = 0, description = "How much it bounces: 1 keeps all its speed" })
 Fixture.density = onlr.property.number(1, { min = 0, description = "How heavy it is for its size" })
 Fixture.sensor = onlr.property.bool(false, { description = "It stops nothing, and is still told of contacts" })
+Fixture.loop = onlr.property.bool(false, { description = "A line of more than two points closes into a loop, as Box2D's chain does, from its last point to its first" })
 
 -- Each time the fixture starts to run: it fixes itself to the nearest body above it.
 function Fixture:enable()
@@ -82,7 +87,43 @@ function Fixture:_shape(b)
     local p = inBody(self.node, b, o.points)
     return love.physics.newEdgeShape(p[1], p[2], p[3], p[4])
   end
-  return love.physics.newChainShape(false, inBody(self.node, b, o.points))
+  return love.physics.newChainShape(self.loop, inBody(self.node, b, o.points))
+end
+
+-- A text of the node's outline and its place in the body, which a change of either changes.
+function Fixture:_key()
+  local o = self.node.components.onlr.shape:outline()
+  local parts = { o.kind, o.x or 0, o.y or 0, o.width or 0, o.height or 0, o.radius or 0, self.loop and 1 or 0 }
+  for _, v in ipairs(o.points or {}) do
+    parts[#parts + 1] = v
+  end
+  return table.concat(parts, " ") .. "|" .. find.placeKey(self.node, self.owner.node)
+end
+
+-- Sets on the fixture the properties that differ from those set last.
+function Fixture:_apply()
+  local fixture = assert(self.fixture)
+  local b = assert(self.owner and self.owner.b)
+  find.apply(self.applied, self, {
+    friction = function(v) fixture:setFriction(v) end,
+    restitution = function(v) fixture:setRestitution(v) end,
+    sensor = function(v) fixture:setSensor(v) end,
+    density = function(v)
+      fixture:setDensity(v)
+      b:resetMassData()
+    end,
+  })
+end
+
+-- Not called by scripts: the body calls it before each step. A fixture whose shape or place changed is made again, which
+-- Box2D needs, as its shapes do not change; else what a script changed in its properties is set.
+function Fixture:_sync()
+  if self:_key() ~= self.key then
+    self:_unfix()
+    self:_fix()
+  elseif self.fixture then
+    self:_apply()
+  end
 end
 
 -- Not called by scripts: the body calls them when it starts and stops.
@@ -91,16 +132,16 @@ function Fixture:_fix()
   if not b then
     return
   end
+  self.key = self:_key()
   local made = self:_shape(b)
   if not made then
     return
   end
   local fixture = love.physics.newFixture(b, made, self.density)
-  fixture:setFriction(self.friction)
-  fixture:setRestitution(self.restitution)
-  fixture:setSensor(self.sensor)
   fixture:setUserData(self)
   self.fixture = fixture
+  self.applied = { density = self.density }
+  self:_apply()
 end
 
 function Fixture:_unfix()
