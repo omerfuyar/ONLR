@@ -825,8 +825,11 @@ return {
     test.click(console.x + 125, console.y - 14)
     test.wait(0.2)
     local files = test.rect(panelOf(test, "files.tree"))
-    test.click(files.x + 21, files.y + 97)
-    test.wait(0.2)
+    -- nodes/ is open when the panel followed the chosen nodes to their file; otherwise a click opens it
+    if not (test.panel(panelOf(test, "files.tree")).state.open or {}).nodes then
+      test.click(files.x + 21, files.y + 97)
+      test.wait(0.2)
+    end
     -- a click on a file shows it in the inspector, and a second click soon after opens it (DESIGN 13.7)
     test.click(files.x + 80, files.y + 139)
     test.match(test.panel(panelOf(test, "onlr.inspector")).state, { file = "nodes/part.lua" }, "the inspector shows the clicked file")
@@ -916,6 +919,8 @@ return {
     test.key("Return")
     test.wait(0.3)
     test.match(chosen(), { "t1p000" }, "Return chooses Tip")
+    -- the files panel follows: it chooses the node file of what is chosen (DESIGN 13.7)
+    test.match(test.panel(panelOf(test, "files.tree")).state, { selected = "nodes/part.lua", open = { nodes = true } }, "the files panel shows part.lua")
     test.key("Ctrl+K")
     test.wait(0.2)
     test.key("Ctrl+A")
