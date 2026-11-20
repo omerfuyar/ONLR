@@ -59,6 +59,8 @@ The plan is done, and the implementation has started. Build it in small mileston
 - People build and test with shuild: `./shuild --test`. `test.sh` runs the same, and prints only problems.
 - Before each push, run `.github/scripts/test.sh` for the samples that the change touches, such as `.github/scripts/test.sh coinrun`, and with no names before a pull request. It needs LÖVE 11.5 as `love`, or where `LOVE` names it, and EGL. The editor's tests need OpenECS too, built in Debug and laid out as a release in `OpenECS/`, with its `include/`, as the checks lay it out; without it they are skipped, and the Lua check does not know the `ecs` module.
 - The scripts print only problems. Read the logs in `build/tests/` only when a test fails.
+- When you run on the owner's computer, run the editor and look at what you changed: a test that passes does not show that a change can be seen or used. Copy a sample into `build/shots/`, write beside it an OpenECS test that acts as a user and calls `test.screenshot("name.png")` (as `samples/editor/editortest.lua` does, with `preset = "../../../preset.lua"`), run it as `cd build/shots/SAMPLE && LOVE=love SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null ../../../OpenECS/OpenECS --test shots.lua`, and read the pictures. Do the same for a game: `love samples/SAMPLE` with a script that calls `love.graphics.captureScreenshot`. Check the editor's look and anything a game's window shows this way before you report it as done.
+- ONLR runs on OpenECS's `dev`: lay out `OpenECS/` from `../OpenECS/build/Debug/bin` after building it, and use what `dev` holds. Nothing waits for an OpenECS release.
 - Check documents by reading them: links, section numbers and cross-references.
 
 **Git**

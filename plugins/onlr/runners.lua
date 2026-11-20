@@ -74,11 +74,37 @@ runners.SIZES = {
 -- While a game plays, the frames around the panels take the tint, for this run only, through OpenECS's run layer of settings: the
 -- user's colour comes back at its end.
 local tinted = false
+-- What takes the tint, and how much of it, over the theme's own colour: the frames whole, the rows of tabs half, and the space
+-- around the panels, which their backgrounds show, a little, so the whole editor looks other while the game plays and stays readable.
+local TINTED = { ["ecs.colorFrame"] = 1, ["ecs.colorTabRow"] = 0.5, ["ecs.colorBackground"] = 0.3 }
+
+-- A colour "#RRGGBB" or "#RRGGBBAA" mixed with another by an amount from 0 to 1; a colour of another form is taken whole.
+local function mix(base, tint, amount)
+  local function parts(color)
+    local r, g, b = tostring(color):match("^#(%x%x)(%x%x)(%x%x)")
+    return r and { tonumber(r, 16), tonumber(g, 16), tonumber(b, 16) }
+  end
+  local a, b = parts(base), parts(tint)
+  if not a or not b then
+    return tint
+  end
+  local out = {}
+  for i = 1, 3 do
+    out[i] = math.floor(a[i] + (b[i] - a[i]) * amount + 0.5)
+  end
+  return ("#%02X%02X%02X"):format(out[1], out[2], out[3])
+end
+
 ecs.event.subscribe("onlr.state", function()
   local playing = runners.running.playing == true
   if playing ~= tinted then
     tinted = playing
-    ecs.setting.setForRun("ecs.colorFrame", playing and ecs.setting.get("onlr.playTint") or nil)
+    local tint = ecs.setting.get("onlr.playTint")
+    for name, amount in pairs(TINTED) do
+      -- the theme's colour is read with the run's value taken away first, so a second game does not mix twice
+      ecs.setting.setForRun(name, nil)
+      ecs.setting.setForRun(name, playing and mix(ecs.setting.get(name), tint, amount) or nil)
+    end
   end
 end)
 
