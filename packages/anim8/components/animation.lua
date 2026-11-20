@@ -60,8 +60,17 @@ function Animation:load()
     self.built[name] = anim8.newAnimation(frames, a.duration, onLoop)
   end
   local first = self.first ~= "" and self.first or (self.animations[1] and self.animations[1].name)
+  self.current = nil
   if first then
     self:play(first)
+  end
+end
+
+-- In the node view (DESIGN 6.5): the sprite shows the first frame of the animation that plays first, as the game starts with it,
+-- and not the whole sheet. Without an image there is nothing to cut yet, and nothing is wrong.
+function Animation:loadEditor()
+  if (self.node.components.onlr.sprite --[[@as onlr.sprite]]).image then
+    self:load()
   end
 end
 
