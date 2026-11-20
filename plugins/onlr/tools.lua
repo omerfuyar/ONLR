@@ -7,7 +7,7 @@ local nodeview = require("nodeview")
 local shared = require("shared")
 
 local STYLES = ui.styles()
-local TOOLS = { "move", "turn", "scale", "shape" }
+local TOOLS = { "move", "turn", "scale", "rect", "shape" }
 -- The pivots, as the project keeps them (DESIGN 13.3).
 local PIVOTS = { "own", "bounds", "selection" }
 local PIVOT_INDEX = { own = 1, bounds = 2, selection = 3 }
@@ -32,7 +32,7 @@ local function draw(state, surface)
   local history = project.historyState()
   ui.show(state.panel, surface, ui.column({ padding = 8, gap = 8 }, {
     ui.row({ gap = 8, align = "center" }, {
-      ui.selector(selected, { "Move", "Turn", "Scale", "Shape" }, { id = "tool", tooltip = "What a drag on a node does: W, E, R and T. Shape drags a shape's corners and edges and the points of a property", onSelect = function(choice)
+      ui.selector(selected, { "Move", "Turn", "Scale", "Rect", "Shape" }, { id = "tool", tooltip = "What a drag on a node does: W, E, R, T and Y. Rect sizes a node by its corners and edges; Shape drags a shape's corners and edges and the points of a property", onSelect = function(choice)
         project.setTool(TOOLS[choice])
       end }),
       ui.selector(PIVOT_INDEX[project.setting("pivot")] or 1, { "Own place", "Own middle", "Selection" }, {
