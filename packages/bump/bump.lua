@@ -39,6 +39,20 @@ function World:hasItem(item) end
 ---@return number actualX, number actualY, table[] collisions, integer count
 function World:move(item, goalX, goalY, filter) end
 
+---An item's box.
+---@param item any
+---@return number x, number y, number w, number h
+function World:getRect(item) end
+
+---The items whose boxes touch a rectangle.
+---@param x number
+---@param y number
+---@param w number
+---@param h number
+---@param filter? fun(item: any): boolean
+---@return any[] items, integer count
+function World:queryRect(x, y, w, h, filter) end
+
 ---@class bump
 local bump = {}
 

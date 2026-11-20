@@ -69,6 +69,33 @@ check.run(function()
   check.frames(7)
   check.equal(pixel(component, 24, 24), "1 0 0 1", "an animated tile changes")
 
+  -- sti.bump: the ground's tiles are boxes of bump, at the node's place: 4 on the top row, the middle one, and 4 at the bottom.
+  -- A box that moves down stops on the top row, whose top is at 8, and the contact names the map's node.
+  local boxes = node.components.sti.bump:getBoxes()
+  check.equal(#boxes, 9, "a box for each tile of the layer that Tiled makes collidable")
+  local world = onlr.tree.findComponent("bump.world"):get() --[[@as bump.World]]
+  check.equal({ world:getRect(boxes[1]) }, { 16, 8, 16, 16 }, "at the map's node's place")
+  local box = assert(onlr.tree.find("Box"))
+  box.components.bump.body:move(66, 20)
+  check.equal(box.posY, 0, "a bump.body stops on the tiles")
+  local others = world:queryRect(66, 8, 8, 1)
+  check.equal(others[1] and others[1].node, node, "and the tile's box names the map's node")
+
+  -- sti.physics: one static body with a fixture for each tile, on which a ball of Box2D falls and rests.
+  local body = assert(node.components.sti.physics:getBody(), "the map's static body")
+  check.equal(#body:getFixtures(), 9, "a fixture for each tile")
+  check.equal(body:getFixtures()[1]:getUserData().owner.node, node, "whose contacts name the map's node")
+  local ball = assert(onlr.tree.find("Ball"))
+  check.frames(120)
+  check.ok(math.abs(ball.posY - 4) < 0.5, "a physics.body rests on the tiles: " .. ball.posY)
+
+  -- sti.objects: the object that names a node file is an instance under the map, at its place, turned and named as it.
+  local flag = assert(onlr.tree.find("Goal"), "the object Goal is a node")
+  check.equal(flag:getParent(), node, "under the map's node")
+  check.equal({ flag.posX, flag.posY }, { 40, 24 }, "at the object's place in the map")
+  check.ok(math.abs(flag.rot - math.pi / 2) < 1e-9, "turned as the object")
+  check.equal(#node.components.sti.objects:getNodes(), 1, "an object that names no node file stays an object")
+
   -- The node view loads its own map, once.
   love.graphics.push("all")
   component:drawEditor(true)
