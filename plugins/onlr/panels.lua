@@ -31,6 +31,7 @@ ecs.key.bind("onlr.nodes", "H", "onlr.hideChosen")
 ecs.key.bind("onlr.nodes", "Escape", "onlr.cancelPick")
 ecs.key.bind("onlr.inspector", "Escape", "onlr.cancelPick")
 ecs.key.bind("onlr.nodes", "L", "onlr.lockChosen")
+ecs.key.bind("onlr.nodes", "Shift+A", "onlr.selectWithChildren")
 
 -- The files panel shows the project's folder, and the editor says what its files are (DESIGN 13.7).
 local function showFolder()

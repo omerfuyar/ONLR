@@ -280,6 +280,9 @@ menu = function(state, file, id, x, y)
       say(project.deleteNodes(file, paths))
     end },
     { line = true },
+    { label = "Select with children", keys = "Shift+A", onClick = nodeview.selectWithChildren },
+    { label = "Select all", keys = "Ctrl+A", onClick = nodeview.selectAll },
+    { line = true },
     { label = "Hide in the view", keys = "H", onClick = nodeview.hideChosen },
     { label = "Lock in the view", keys = "L", onClick = nodeview.lockChosen },
     { line = true },
@@ -462,7 +465,10 @@ ecs.panel.registerType({
         return
       end
     end
-    ui.event(state.panel, event)
+    -- Ctrl+A chooses every node, unless a field being edited takes it to select its text: a binding would win over the field
+    if not ui.event(state.panel, event) and event.type == "keyDown" and event.key == "A" and event.ctrl and not event.shift then
+      nodeview.selectAll()
+    end
   end,
   saveState = function(state)
     -- What is chosen is the project's, and is not read back; a test reads it here.

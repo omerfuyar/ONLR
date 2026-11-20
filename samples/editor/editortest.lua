@@ -403,6 +403,21 @@ return {
     rx, ry = row(4)
     test.click(rx, ry, nil, "Shift")
     check(#chosen() == 2 and chosen()[1] == "bbbbbb", "Shift chooses B and Part: " .. table.concat(chosen(), ", "))
+    -- Shift+A adds every node under the chosen ones, Part's Tip too, and Ctrl+A chooses every node of the file (DESIGN 13.4)
+    test.key("Shift+A")
+    local function has(list, path)
+      for _, p in ipairs(list) do
+        if p == path then
+          return true
+        end
+      end
+    end
+    local with = chosen()
+    check(#with == 3 and has(with, "bbbbbb") and has(with, "p4rt01") and has(with, "p4rt01/t1p000"),
+      "Shift+A chooses B, Part and Tip: " .. table.concat(with, ", "))
+    test.key("Ctrl+A")
+    local all = chosen()
+    check(has(all, "aaaaaa") and has(all, "p4rt01/t1p000") and #all > #with, "Ctrl+A chooses every node: " .. table.concat(all, ", "))
 
     -- a double click on a node opens it, and another closes it: Part shows Tip under it
     rx, ry = row(4)
