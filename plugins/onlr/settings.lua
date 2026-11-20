@@ -86,6 +86,18 @@ local function draw(state, surface)
         end }),
       })
     end
+    -- LÖVE draws a game at its own pixels from the window's top left, so a window that grows shows empty space: a push.screen on the
+    -- top node scales the game to it (DESIGN 11.10), which one click sets up.
+    local top = type(manifest.topNode) == "string" and project.file(manifest.topNode) and project.tree(manifest.topNode).first
+    if top and top.components["push.screen"] then
+      out[#out + 1] = ui.text("The top node's screen scales the game to the window.", { style = STYLES.note, wrap = true })
+    else
+      out[#out + 1] = ui.text("The game draws at its own pixels from the top left, so a larger or full screen window shows empty space "
+        .. "around it. A screen on the top node scales the game to the window.", { style = STYLES.note, wrap = true })
+      out[#out + 1] = ui.button("Scale to the window", { id = "scaleToWindow",
+        tooltip = "Add a push.screen of the window's size to the top node, with the push package and a top node if the project lacks them",
+        onClick = project.scaleToWindow })
+    end
     local filter = manifest.defaultFilter == "nearest" and 2 or 1
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       label("Default filter"),

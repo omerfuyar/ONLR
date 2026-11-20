@@ -1072,6 +1072,20 @@ return {
     os.execute("cd out && unzip -q -o Editor-windows-x86_64.zip")
     check(list("unzip -l out/Editor/Editor.exe 2>&1"):find(" main.lua\n"), "the .love file is joined to the executable's end")
 
+    -- Scale to the window, in the project settings, copies the push package into the project, makes a top node and gives it a
+    -- push.screen of the window's size, 320 by 240; the node file and the manifest's change are one, which Ctrl+Z takes back
+    -- (DESIGN 11.10)
+    test.call("onlr.scaleToWindow")
+    test.wait(0.3)
+    save()
+    check(read("packages/push/components/screen.lua") ~= "", "the push package is copied into the project")
+    check(read("manifest.lua"):find('topNode = "nodes/top.lua"', 1, true), "the manifest names the top node:\n" .. read("manifest.lua"))
+    local top = read("nodes/top.lua")
+    check(top:find("push = {%s*screen = {%s*height = 240,%s*width = 320,"), "the top node has a screen of the window's size:\n" .. top)
+    test.key("Ctrl+Z")
+    save()
+    check(not read("manifest.lua"):find("topNode"), "Ctrl+Z takes the top node out of the manifest:\n" .. read("manifest.lua"))
+
     -- no panel failed
     for _, panel in ipairs(test.panels()) do
       check(not test.panel(panel.id).fault, panel.type .. " failed: " .. tostring(test.panel(panel.id).fault))

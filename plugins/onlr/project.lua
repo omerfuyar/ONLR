@@ -1665,6 +1665,51 @@ local function newNodeFile(path, base)
   return true
 end
 
+-- Scales the game to the window, as one click of the project settings does (DESIGN 11.10): the push package, copied from ONLR's
+-- own when the project lacks it, and a push.screen of the window's size on the top node, which is made when there is none.
+---@return boolean done
+---@return string? message why it is not
+local function scaleToWindow()
+  local p = assert(P)
+  local manifest = getFile("manifest.lua")
+  local data = manifest and manifest.data
+  if not data then
+    return false, "The manifest does not load."
+  end
+  if not fs.info(absolute("packages/push/components")) then
+    if not fs.info(home() .. "packages/push/components") then
+      return false, "ONLR's push package is not in " .. home() .. "packages/."
+    end
+    copyFolder(home() .. "packages/push", absolute("packages/push"))
+    watchFolder("packages/push")
+    scanTypes()
+    p.types = {}
+    ecs.event.emit("onlr.types")
+  end
+  local top = type(data.topNode) == "string" and data.topNode or nil
+  if not top or not getFile(top) then
+    top = "nodes/top.lua"
+    local number = 1
+    while fs.info(absolute(top)) do
+      number = number + 1
+      top = ("nodes/top_%d.lua"):format(number)
+    end
+    local ok, message = newNodeFile(top)
+    if not ok then
+      return false, message
+    end
+  end
+  local window = type(data.window) == "table" and data.window or {}
+  local changed = edit("Scale the game to the window", function(touch)
+    touch("manifest.lua").topNode = top
+    touch(top)
+    local first = tree(top).first
+    local screen = resolve.component(target(first, true), "push.screen", true)
+    screen.width, screen.height = window.width or 800, window.height or 600
+  end)
+  return changed
+end
+
 local function newScript(path)
   if fs.info(absolute(path)) then
     return false, path .. " is there already."
@@ -2036,6 +2081,12 @@ local functions = {
   moveNodes = { sig = "bool(string file, value paths, string parent, int index)", doc = "Move nodes under another node", fn = moveNodes },
   saveAsNodeFile = { sig = "bool(string file, string path, string newFile)",
     doc = "Write a node to a new node file, and put an instance of it in its place", fn = saveAsNodeFile },
+  scaleToWindow = { sig = "void()", doc = "Scale the game to the window: a push.screen of the window's size on the top node", fn = function()
+    local _, message = scaleToWindow()
+    if message then
+      say(message)
+    end
+  end },
   newNodeFile = { sig = "bool(string path, string base)", doc = "Make a node file; with a base, a variant of it", fn = newNodeFile },
   newScript = { sig = "bool(string path)", doc = "Make a script from the template", fn = newScript },
   renameFile = { sig = "bool(string from, string to)", doc = "Rename or move a file, and change what names it", fn = renameFile },
