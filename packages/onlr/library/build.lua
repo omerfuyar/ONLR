@@ -67,6 +67,9 @@ local function lay(node, entry, scope)
   if entry.active ~= nil then
     node._active = entry.active and true or false
   end
+  if entry.componentOrder ~= nil then
+    node._componentOrder = entry.componentOrder
+  end
   if entry.components ~= nil then
     node._layers[#node._layers + 1] = { components = entry.components, scope = scope }
   end

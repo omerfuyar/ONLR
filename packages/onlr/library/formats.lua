@@ -39,6 +39,7 @@
 ---@field sclY? number
 ---@field z? number
 ---@field active? boolean
+---@field componentOrder? string[] the order of the node's components, which replaces the base's
 ---@field components? onlr.ComponentsData laid over the node's components, name by name; one that the node lacks is added
 ---@field children? onlr.NodeData[] nodes of the instance's own, added under this node
 
@@ -59,6 +60,7 @@
 ---@field sclY? number
 ---@field z? number
 ---@field active? boolean
+---@field componentOrder? string[] the types of its components in the order they run and show in, the rest after by their names
 ---@field components? onlr.ComponentsData
 ---@field children? onlr.NodeData[]
 

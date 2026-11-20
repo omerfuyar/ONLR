@@ -486,6 +486,37 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the paste is one change, undone")
 
+    -- the menu's first entry, Move up, moves A's thing above its shape: the node file keeps the order, which the inspector shows,
+    -- and the move is one change (DESIGN 13.4)
+    rx, ry = row(2)
+    test.click(rx, ry)
+    test.wait(0.2)
+    hx, hy = inspected("aaaaaa:thing:heading", 0.2)
+    test.click(hx, hy, 3)
+    test.key("Return")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua"):find('componentOrder = {%s*"onlr.paint",%s*"thing",%s*"onlr.shape",%s*}'),
+      "Move up writes the order:\n" .. read("nodes/start.lua"))
+    local ordered = test.panel(panelOf(test, "onlr.inspector")).state.rects
+    check(ordered["aaaaaa:thing:heading"].y < ordered["aaaaaa:onlr.shape:heading"].y, "the inspector shows thing above the shape")
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the move is one change, undone")
+
+    -- the lock keeps A in the inspector while B is chosen, until it is turned off (DESIGN 13.4)
+    test.click(inspected("lock"))
+    test.wait(0.2)
+    rx, ry = row(3)
+    test.click(rx, ry)
+    test.wait(0.2)
+    local locked = test.panel(panelOf(test, "onlr.inspector")).state
+    check(locked.rects["aaaaaa:thing:heading"] and not locked.rects["bbbbbb:thing:heading"], "the locked inspector shows A")
+    test.match(locked.lock, { file = "nodes/start.lua", paths = { "aaaaaa" } }, "the lock is kept in the panel's state")
+    test.click(inspected("lock"))
+    test.wait(0.2)
+    check(test.panel(panelOf(test, "onlr.inspector")).state.rects["bbbbbb:thing:heading"], "unlocked, it shows B")
+
     -- a number with a range shows a slider under its heading, Movement: a drag to its end is one change, at the release (DESIGN 13.4)
     rx, ry = row(2)
     test.click(rx, ry)

@@ -30,6 +30,7 @@ local resolve = {}
 ---@field sclY number
 ---@field z number
 ---@field active boolean
+---@field componentOrder string[]? the types that its components show and run in the order of, the rest after by their names
 ---@field base table<string, any> the fields without the shown file's change, which a change that is taken out goes back to
 ---@field changed table<string, boolean> the fields that the shown file's change sets
 ---@field components table<string, onlr.editor.Component> by type name
@@ -44,7 +45,7 @@ local resolve = {}
 ---@field changed table<string, boolean> the values that the shown file's change sets
 ---@field prefix table<string, string> for each value, the path before the ids that it names
 
-local FIELDS = { "name", "posX", "posY", "rot", "sclX", "sclY", "z", "active" }
+local FIELDS = { "name", "posX", "posY", "rot", "sclX", "sclY", "z", "active", "componentOrder" }
 local FIRST = {}
 
 ---Splits a node file's components, tables in tables by the dots of their names, into tables by type name.
@@ -96,6 +97,30 @@ function resolve.component(entry, typeName, create)
     t = t[part]
   end
   return t
+end
+
+---Type names in the order that a node's components show and run in: those that its componentOrder names, in that order, then
+---the rest by their names (DESIGN 5).
+---@param order string[]? the node's componentOrder
+---@param names string[] the type names to order
+---@return string[]
+function resolve.ordered(order, names)
+  local rank = {}
+  for i, name in ipairs(order or {}) do
+    rank[name] = rank[name] or i
+  end
+  local out = {}
+  for i, name in ipairs(names) do
+    out[i] = name
+  end
+  table.sort(out, function(a, b)
+    local ra, rb = rank[a] or math.huge, rank[b] or math.huge
+    if ra ~= rb then
+      return ra < rb
+    end
+    return a < b
+  end)
+  return out
 end
 
 ---Takes a component's table out of a node's entry or a change, with the tables that it leaves empty.

@@ -32,6 +32,7 @@ local property = require("onlr.library.property")
 ---@field package _id string? its id in its node file
 ---@field package _path string? its path of ids from the node file that was loaded
 ---@field package _file string? the node file that wrote it
+---@field package _componentOrder string[]? the types that its components run in the order of, from its node file (DESIGN 5)
 ---@field package _layers table? its components' values, while its node file is made
 ---@field package _errors string[]? what was wrong with it, in the node view
 ---@field package _a number the place in the world, as a matrix

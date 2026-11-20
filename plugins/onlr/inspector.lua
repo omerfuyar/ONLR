@@ -9,6 +9,7 @@ local nodeview = require("nodeview")
 local console = require("console")
 local shared = require("shared")
 local format = require("format")
+local resolve = require("resolve")
 
 local STYLES = ui.styles()
 local STATE_VERSION = 1
@@ -342,23 +343,42 @@ local FIELDS = {
   { "posX", "Position X" }, { "posY", "Position Y" }, { "rot", "Rotation" }, { "sclX", "Scale X" }, { "sclY", "Scale Y" }, { "z", "Z" },
 }
 
+-- The inspector's lock (DESIGN 13.4): a toggle that keeps the nodes that it shows while others are chosen.
+local function lockToggle(state, file, paths)
+  return ui.toggle(state.lock ~= nil, { id = "lock", label = "Lock", tooltip = "Keep showing these nodes while others are chosen",
+    onChange = function(on)
+      state.lock = on and { file = file, paths = { table.unpack(paths) } } or nil
+      state.panel:redraw()
+    end })
+end
+
 local function fileSubject(state, out)
-  local file = shared.file()
-  local chosen = project.chosen()
-  if not file or #chosen.paths == 0 then
+  local lock = state.lock
+  local file = lock and lock.file or shared.file()
+  local chosenPaths = lock and lock.paths or project.chosen().paths
+  if lock and (project.folder() == "" or not fs.info(project.folder() .. lock.file)) then
+    out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
+      ui.text("The locked node file is gone.", { style = STYLES.note, grow = 1, wrap = true }), lockToggle(state, file, chosenPaths),
+    })
+    return
+  end
+  if not file or #chosenPaths == 0 then
     out[#out + 1] = ui.text(project.folder() == "" and "No project is open." or "No node is chosen.", { style = STYLES.note })
     return
   end
   local tree = project.tree(file)
   local nodes, paths = {}, {}
-  for _, path in ipairs(chosen.paths) do
+  for _, path in ipairs(chosenPaths) do
     if tree.index[path] then
       nodes[#nodes + 1] = tree.index[path]
       paths[#paths + 1] = path
     end
   end
   if #nodes == 0 then
-    out[#out + 1] = ui.text(tree.error or "No node is chosen.", { style = STYLES.note, wrap = true })
+    out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
+      ui.text(tree.error or (lock and "The locked nodes are gone." or "No node is chosen."), { style = STYLES.note, wrap = true, grow = 1 }),
+      lock and lockToggle(state, file, chosenPaths) or nil,
+    })
     return
   end
   ---@type onlr.editor.Subject
@@ -366,7 +386,13 @@ local function fileSubject(state, out)
   local key = table.concat(paths, ",")
   local first = nodes[1]
 
-  out[#out + 1] = ui.text(#nodes == 1 and (first.name or "(no name)") or (#nodes .. " nodes"), { style = STYLES.title })
+  out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
+    ui.text(#nodes == 1 and (first.name or "(no name)") or (#nodes .. " nodes"), { style = STYLES.title, grow = 1 }),
+    lockToggle(state, file, paths),
+  })
+  if lock and file ~= shared.file() then
+    out[#out + 1] = ui.text("Of " .. file, { style = STYLES.note })
+  end
   if #nodes == 1 and first.instanceOf then
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       ui.text("Instance of " .. first.instanceOf, { style = STYLES.note, grow = 1 }),
@@ -448,7 +474,7 @@ local function fileSubject(state, out)
       label(field[2]), number(key .. ":" .. field[1], value, set), fieldMark(field[1]),
     })
   end
-  -- The components that all of the chosen nodes have, in the order of their names.
+  -- The components that all of the chosen nodes have, in the first node's order (DESIGN 5).
   local types = {}
   for typeName in pairs(first.components) do
     local all = true
@@ -459,13 +485,17 @@ local function fileSubject(state, out)
       types[#types + 1] = typeName
     end
   end
-  table.sort(types)
+  types = resolve.ordered(first.componentOrder, types)
+  local orderChanged = false
+  for _, node in ipairs(nodes) do
+    orderChanged = orderChanged or node.changed.componentOrder == true
+  end
   local known = {}
   for _, name in ipairs(project.typeNames()) do
     known[name] = true
   end
 
-  for _, typeName in ipairs(types) do
+  for at, typeName in ipairs(types) do
     local info = project.typeInfo(typeName)
     local folded = state.folded[typeName]
     local cid = key .. ":" .. typeName
@@ -582,6 +612,23 @@ local function fileSubject(state, out)
       end,
       onMenu = function(x, y)
         ui.menu(state.panel, x, y, {
+          -- The order is the node file's, in which the components run too (DESIGN 5).
+          { label = "Move up", enabled = at > 1, onClick = function()
+            project.moveComponent(file, paths, typeName, -1)
+          end },
+          { label = "Move down", enabled = at < #types, onClick = function()
+            project.moveComponent(file, paths, typeName, 1)
+          end },
+          { label = "Put back the base's order", enabled = orderChanged, onClick = function()
+            local changes = {}
+            for _, node in ipairs(nodes) do
+              if not node.own then
+                changes[node.path] = { componentOrder = node.base.componentOrder }
+              end
+            end
+            project.setFields(file, changes, "Put back the order")
+          end },
+          { line = true },
           -- Copy keeps the first chosen node's values of the component, which Paste gives to a component of the same type.
           { label = "Copy values", enabled = #nodes == 1, onClick = function()
             copied = { type = typeName, values = format.copy(first.components[typeName].values) }
@@ -723,7 +770,9 @@ local function draw(state, surface)
   state.drops = {}
   state.scale = surface.scale
   local out = {}
-  if shared.running and nodeview.running().playing then
+  if state.lock then
+    fileSubject(state, out)
+  elseif shared.running and nodeview.running().playing then
     runningSubject(state, out)
   elseif shared.chosenFile then
     chosenFileSubject(out)
@@ -802,6 +851,7 @@ ecs.panel.registerType({
     local state = { panel = panel, folded = {}, drops = {}, scale = 1 }
     if version == STATE_VERSION and type(saved) == "table" then
       state.folded = saved.folded or {}
+      state.lock = type(saved.lock) == "table" and type(saved.lock.file) == "string" and type(saved.lock.paths) == "table" and saved.lock or nil
     end
     panel:acceptDrops({ "file-list", "onlr.node" })
     shared.follow(panel)
@@ -817,7 +867,7 @@ ecs.panel.registerType({
   end,
   saveState = function(state)
     -- The file that it shows is not read back; a test reads it here.
-    return { folded = state.folded, file = shared.chosenFile, rects = rects(state) }
+    return { folded = state.folded, lock = state.lock, file = shared.chosenFile, rects = rects(state) }
   end,
   destroy = function(state)
     shared.forget(state.panel)

@@ -359,10 +359,19 @@ function component.take(node, name)
   node._byType[name] = nil
 end
 
--- Orders a node's records: by their types' names, and each after those that it needs (DESIGN 5).
+-- Orders a node's records: those that the node's componentOrder names in its order, the rest after them by their types'
+-- names, and each after those that it needs (DESIGN 5).
 local function order(node)
   local records = node._records
+  local rank = {}
+  for i, name in ipairs(node._componentOrder or {}) do
+    rank[name] = rank[name] or i
+  end
   table.sort(records, function(a, b)
+    local ra, rb = rank[a.type.name] or math.huge, rank[b.type.name] or math.huge
+    if ra ~= rb then
+      return ra < rb
+    end
     return a.type.name < b.type.name
   end)
   local byName = {}
