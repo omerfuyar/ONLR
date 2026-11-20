@@ -41,8 +41,10 @@ Joint.motor = onlr.property.bool(false, { when = { kind = { "hinge", "prismatic"
 Joint.motorSpeed = onlr.property.number(0, { when = { kind = { "hinge", "prismatic", "wheel" } }, description = "Radians a second, or pixels a second for a prismatic joint" })
 Joint.motorTorque = onlr.property.number(1000, { min = 0, when = { kind = { "hinge", "wheel" } }, description = "How hard the motor turns" })
 Joint.motorForce = onlr.property.number(1000, { min = 0, when = { kind = "prismatic" }, description = "How hard the motor slides" })
-Joint.frequency = onlr.property.number(0, { min = 0, when = { kind = { "distance", "wheel" } }, description = "How fast it springs, in times a second: 0 is a stick, and a wheel's spring is stiff" })
-Joint.damping = onlr.property.number(0, { min = 0, when = { kind = { "distance", "wheel" } }, description = "How fast the spring calms down: 1 does not swing past" })
+Joint.frequency = onlr.property.number(0, { min = 0, when = { kind = "distance" }, description = "How fast it springs, in times a second: 0 is a stick" })
+Joint.damping = onlr.property.number(0, { min = 0, when = { kind = "distance" }, description = "How fast the spring calms down: 1 does not swing past" })
+Joint.springFrequency = onlr.property.number(2, { min = 0.01, when = { kind = "wheel" }, description = "How fast the wheel's spring springs, in times a second: more is stiffer" })
+Joint.springDamping = onlr.property.number(0.7, { min = 0, when = { kind = "wheel" }, description = "How fast the wheel's spring calms down: 1 does not swing past" })
 Joint.length = onlr.property.number(0, { min = 0, when = { kind = "rope" }, description = "The longest it gets, in pixels: 0 is as far as they were when joined" })
 Joint.maxForce = onlr.property.number(100, { min = 0, when = { kind = { "friction", "motor" } }, description = "The most force with which it slows or pushes" })
 Joint.maxTorque = onlr.property.number(100, { min = 0, when = { kind = { "friction", "motor" } }, description = "The most torque with which it slows or turns" })
@@ -136,8 +138,8 @@ local TUNING = {
     motorForce = function(j, v) j:setMaxMotorForce(v) end,
   },
   wheel = {
-    frequency = function(j, v) j:setSpringFrequency(v) end,
-    damping = function(j, v) j:setSpringDampingRatio(v) end,
+    springFrequency = function(j, v) j:setSpringFrequency(math.max(v, 0.01)) end,
+    springDamping = function(j, v) j:setSpringDampingRatio(v) end,
     motor = function(j, v) j:setMotorEnabled(v) end,
     motorSpeed = function(j, v) j:setMotorSpeed(v) end,
     motorTorque = function(j, v) j:setMaxMotorTorque(v) end,

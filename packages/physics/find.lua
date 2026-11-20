@@ -46,7 +46,14 @@ end
 ---@return boolean changed whether one was set
 function find.apply(applied, component, setters)
   local changed = false
-  for name, set in pairs(setters) do
+  -- in the order of the names, so a step does the same in every run
+  local names = {}
+  for name in pairs(setters) do
+    names[#names + 1] = name
+  end
+  table.sort(names)
+  for _, name in ipairs(names) do
+    local set = setters[name]
     local value = component[name]
     if applied[name] ~= value then
       applied[name] = value

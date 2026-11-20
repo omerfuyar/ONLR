@@ -967,7 +967,7 @@ A package of LÖVE's own system follows 11.3 too. The first is `physics`, which 
   - a distance keeps its node's place and the other body's `otherAnchor` as far apart as they were, or springs towards it with a `frequency` and `damping`;
   - a rope lets them come no further apart than its `length`;
   - a prismatic joint lets them slide along its `axis`, in its node's space, and not turn, as a lift or a piston, with a limit of the slide in pixels and a motor, whose force is `motorForce`;
-  - a wheel lets the other body turn freely on its node's place, which slides along its `axis` on a spring of `frequency` and `damping`, as a car's wheel, with a motor;
+  - a wheel lets the other body turn freely on its node's place, which slides along its `axis` on a spring of `springFrequency` and `springDamping`, as a car's wheel, with a motor; the spring's least is 0.01 times a second, since Box2D's wheel without a spring fails into numbers that are not numbers, NaN, which then spread to every body that it touches, and LÖVE's own default, 2, is the property's;
   - a friction joint slows the bodies' sliding and turning against each other, up to `maxForce` and `maxTorque`, as a top-down game's floor slows what is on it;
   - a motor joint pushes the other body towards where it was when joined, by `maxForce`, `maxTorque` and `correction`, as a platform that a script moves with LÖVE's `setLinearOffset`;
   - a pulley hangs its node's place and the other body's `otherAnchor` from `groundAnchor` and `otherGroundAnchor`, points of the world given in their nodes' spaces, by one rope, with a `ratio`.

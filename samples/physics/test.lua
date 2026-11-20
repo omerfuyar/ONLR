@@ -154,7 +154,7 @@ check.run(function()
   slider.motorSpeed = 40
   check.frames(30)
   check.equal(slider:get(), made, "a tuned joint is not made again")
-  near(assert(slider:get()):getMotorSpeed(), 40, "its motor's new speed is set")
+  near(assert(slider:get() --[[@as love.PrismaticJoint]]):getMotorSpeed(), 40, "its motor's new speed is set")
   check.ok(slider.other.node.posY > 55, "and slides the other body along the axis: " .. slider.other.node.posY)
 
   -- A joint's node that moves under its body makes the joint again, at its new place.
