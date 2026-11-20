@@ -475,6 +475,7 @@ The engine calls the functions that a type has. All are optional.
 - `drawEditor` also draws what only the editor shows, such as the outline of a body or the frame of a camera. It is LÖVE code, written with the component by its author.
 - There the engine does not call `drawTree`: a group's nodes draw through the node view alone. So a camera does not move the view, and a group's shader shows only in the game.
 - A type without `drawEditor` shows nothing in the node view. Its `draw` is not called there, since it may need what `load` or `update` sets.
+- `loadEditor`, when a type has it, is called there once its node's components are made, in the order that they load (6.6), and again after each change of a value of the node's components. It sets up from the values what `drawEditor` or another component shows, as Unity's `OnValidate` does: anim8's sets its sprite's `quad` to the first frame (11.5). It is LÖVE code: the tree's functions change nothing there, as in `drawEditor`, one that fails marks its node, and one that never returns stops the preview only. It is not `load`, which may start what the editor must not run, such as a sound or a body of a world.
 - `drawEditor` may keep in `self` what it builds from the component's values, such as a map read from a file. When a value of the component changes, the preview makes the component anew from the node file's values, so what it kept is built again from the new ones.
 - A `drawEditor` that fails marks its node in the view, and the rest draws on.
 - `drawEditor` is code, so it can do anything. The node view is kept safe from it:
@@ -997,7 +998,7 @@ end
 - A range read backwards plays backwards: `"4-1"`. The frames are taken row by row, as anim8 takes them.
 - `get(name)` gives anim8's animation, the current one without a name, for all of anim8's own functions on it, such as `gotoFrame`.
 - The limits, as they are now:
-  - The node view shows the sprite as its own `quad` says, not the animation's first frame: the preview runs no `load` or `update`, and the sprite draws before the animation that needs it (6.5, 6.6). With a `quad` of 0, it shows the whole sheet. The author sets the sprite's `quad` to a frame to see one.
+  - The node view shows the first frame of the animation that plays first, through `loadEditor` (6.5), and does not play it. A sprite without an image shows nothing, and a range that the grid lacks marks the node.
   - The grid is cut, and the animations made, when the component loads. A script that changes the sprite's image or a property afterwards changes nothing that plays.
   - Each frame of an animation shows for the same `duration`. anim8 takes a duration for each frame, and a script makes such an animation with anim8 itself.
   - An animation takes one range of columns and one of rows. anim8 takes several, such as the end of one row and the start of the next.
