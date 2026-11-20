@@ -86,4 +86,86 @@ check.run(function()
   check.ok(#ball.components.probe.ends > ends, "the ball is told that the contact ended")
   check.ok(ball.posY > 220 and crate.posY > 220, "nothing stands on a ground that is turned off")
   check.equal(ground.components.physics.body:get(), nil, "the ground's body is gone")
+
+  -- What a script changes after the start reaches Box2D before the next step (DESIGN 11.4). Far beside the level, without
+  -- gravity's help: a static body with a fixture on a node under it.
+  local holder = tree.newNode("Holder")
+  holder.posX = 3000
+  holder:addComponent("physics.body", { type = "static" })
+  local part = tree.newNode("Part", holder)
+  part:addComponent("onlr.shape", { width = 10, height = 10 })
+  local fixture = part:addComponent("physics.fixture")
+  check.frames(1)
+  local x1 = assert(fixture:get()):getBoundingBox()
+  part.posX = 50
+  check.frames(1)
+  near(assert(fixture:get()):getBoundingBox() - x1, 50, "a fixture's node that moves under its body moves the fixture")
+  local function width()
+    local left, _, right = assert(fixture:get()):getBoundingBox()
+    return right - left
+  end
+  local before = width()
+  part.components.onlr.shape.width = 30
+  check.frames(1)
+  near(width() - before, 20, "a shape that a script resizes collides at its new size")
+  fixture.friction = 0.9
+  check.frames(1)
+  near(assert(fixture:get()):getFriction(), 0.9, "a fixture's property that a script changes is set")
+  local body = holder.components.physics.body
+  body.gravityScale = 0
+  body.type = "kinematic"
+  check.frames(1)
+  check.equal({ body:get():getGravityScale(), body:get():getType() }, { 0, "kinematic" }, "and a body's")
+
+  -- A chain may close into a loop: a line of three points is two edges open, and three as a loop.
+  local function chainOf(loop)
+    local node = tree.newNode("Chain", holder)
+    node:addComponent("onlr.shape", { kind = "line", points = { { x = 0, y = 0 }, { x = 40, y = 0 }, { x = 20, y = 30 } } })
+    local f = node:addComponent("physics.fixture", { loop = loop })
+    return assert(f:get()):getShape():getChildCount()
+  end
+  check.equal({ chainOf(false), chainOf(true) }, { 2, 3 }, "a chain's loop joins its last point to its first")
+
+  -- Box2D's other joints, each between two bodies; a value that tunes one is set without making it again.
+  local placed = 0
+  local function jointOf(kind, values)
+    -- each pair apart from the others, so they do not collide
+    placed = placed + 1
+    local a = tree.newNode("A" .. kind)
+    a.posX, a.posY = 5000 + placed * 200, 0
+    a:addComponent("physics.body", { type = "static" })
+    local b = tree.newNode("B" .. kind)
+    b.posX, b.posY = a.posX, 50
+    b:addComponent("onlr.shape", { kind = "circle", radius = 5 })
+    local other = b:addComponent("physics.body", { gravityScale = 0 })
+    b:addComponent("physics.fixture")
+    values = values or {}
+    values.kind, values.other = kind, other
+    return a:addComponent("physics.joint", values)
+  end
+  for _, kind in ipairs({ "prismatic", "wheel", "friction", "motor", "pulley" }) do
+    local joint = jointOf(kind)
+    check.frames(1)
+    check.equal(joint:get() and joint:get():getType(), kind, "a joint of kind " .. kind)
+  end
+  local slider = jointOf("prismatic", { motor = true, motorSpeed = 0, axis = { x = 0, y = 1 } })
+  check.frames(1)
+  local made = slider:get()
+  slider.motorSpeed = 40
+  check.frames(30)
+  check.equal(slider:get(), made, "a tuned joint is not made again")
+  near(assert(slider:get()):getMotorSpeed(), 40, "its motor's new speed is set")
+  check.ok(slider.other.node.posY > 55, "and slides the other body along the axis: " .. slider.other.node.posY)
+
+  -- A joint's node that moves under its body makes the joint again, at its new place.
+  local pin = tree.newNode("Pin", holder)
+  local swing = tree.newNode("Swinging")
+  swing.posX, swing.posY = 3000, 40
+  local swingBody = swing:addComponent("physics.body", { gravityScale = 0 })
+  local hinge = pin:addComponent("physics.joint", { kind = "hinge", other = swingBody })
+  check.frames(1)
+  pin.posY = 20
+  check.frames(1)
+  local _, ay = assert(hinge:get()):getAnchors()
+  near(ay, 20, "a joint's node that moves under its body moves the joint")
 end)

@@ -3,6 +3,7 @@
 -- fixes to it the fixtures of its node and of the nodes under it, keeps it and the node in step, and ends it.
 -- Its fixtures are components of their own, physics.fixture, which take their nodes' onlr.shape. So are its joints, physics.joint.
 local onlr = require("onlr")
+local find = require("physics.find")
 
 ---@class physics.body : onlr.Component
 ---@field world physics.world
@@ -12,6 +13,7 @@ local onlr = require("onlr")
 ---@field private x number where the node was when the body and it were last in step
 ---@field private y number
 ---@field private angle number
+---@field private applied table<string, any> the properties as they were last set on the body
 local Body = {}
 
 Body.type = onlr.property.choice("dynamic", {
@@ -43,12 +45,9 @@ function Body:enable()
   local x, y, angle = place(self.node)
   local b = love.physics.newBody(self.world:get(), x, y, self.type)
   b:setAngle(angle)
-  b:setFixedRotation(self.fixedRotation)
-  b:setBullet(self.bullet)
-  b:setGravityScale(self.gravityScale)
-  b:setLinearDamping(self.linearDamping)
-  b:setAngularDamping(self.angularDamping)
   self.b, self.x, self.y, self.angle = b, x, y, angle
+  self.applied = {}
+  self:_apply()
   for _, fixture in ipairs(self.fixtures) do
     fixture:_fix()
   end
@@ -117,7 +116,21 @@ function Body:_release(joint)
   end
 end
 
--- Before each step: when a script moved or turned the node, the body goes there.
+-- Sets the properties that differ from those set last: at the start, and before each step, so a script changes them as fields.
+function Body:_apply()
+  local b = assert(self.b)
+  find.apply(self.applied, self, {
+    type = function(v) b:setType(v) end,
+    fixedRotation = function(v) b:setFixedRotation(v) end,
+    bullet = function(v) b:setBullet(v) end,
+    gravityScale = function(v) b:setGravityScale(v) end,
+    linearDamping = function(v) b:setLinearDamping(v) end,
+    angularDamping = function(v) b:setAngularDamping(v) end,
+  })
+end
+
+-- Before each step: when a script moved or turned the node, the body goes there; what a script changed in the body's
+-- properties, in its fixtures and in its joints is set (DESIGN 11.4).
 function Body:_push()
   local x, y, angle = place(self.node)
   if x ~= self.x or y ~= self.y or angle ~= self.angle then
@@ -125,6 +138,15 @@ function Body:_push()
     self.b:setAngle(angle)
     self.b:setAwake(true)
     self.x, self.y, self.angle = x, y, angle
+  end
+  self:_apply()
+  for _, fixture in ipairs(self.fixtures) do
+    fixture:_sync()
+  end
+  for _, joint in ipairs(self.joints) do
+    if joint.owner == self then
+      joint:_sync()
+    end
   end
 end
 

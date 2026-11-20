@@ -951,9 +951,9 @@ A package of LÖVE's own system follows 11.3 too. The first is `physics`, which 
 | `physics.world`   | The root                             | The root's one world, with its gravity, as `bump.world` is (11.3). Each root has its own.    |
 | `physics.body`    | A node                               | A body: static, dynamic or kinematic. While the game runs, a dynamic body moves its node.   |
 | `physics.fixture` | The body's node, or a node under it | Its node's `onlr.shape` (10), fixed to the nearest body above it, with its `friction`, `restitution`, `density` and whether it is a `sensor`, as LÖVE's fixture has them. |
-| `physics.joint`   | The body's node, or a node under it | A joint of its `kind`, hinge, weld, distance or rope, that holds the nearest body above it to the body that its `other` names, at its node's place. |
+| `physics.joint`   | The body's node, or a node under it | A joint of its `kind`, hinge, weld, distance, rope, prismatic, wheel, friction, motor or pulley, that holds the nearest body above it to the body that its `other` names, at its node's place. |
 
-- A fixture collides with the node's own outline, which `onlr.paint` draws and a shadow caster casts (10), so the user sizes it once. A rectangle is Box2D's box, a circle its circle, a polygon its polygon, and a line its edge, or its chain of more than two points. A body turns around its node's place, so a box centred on it has the shape's `origin` at its middle.
+- A fixture collides with the node's own outline, which `onlr.paint` draws and a shadow caster casts (10), so the user sizes it once. A rectangle is Box2D's box, a circle its circle, a polygon its polygon, and a line its edge, or its chain of more than two points, which the fixture's `loop` closes from its last point to its first. A body turns around its node's place, so a box centred on it has the shape's `origin` at its middle.
 - A node has one component of each type (5), so a body of many fixtures holds them on nodes under its own, each with its shape. The user builds a body's outline by placing nodes in the editor. A fixture takes its node's place, angle and scale in the body when the body starts.
 - The world steps in its `fixedUpdate` (6.3). Before each step, each body whose node a script moved or turned goes there; after it, each body that is not static sets its node's place and `rot`. `meter` is how many pixels are a meter, which love.physics is told when the world is made, and `gravity` is in pixels a second, each second.
 - `body:get()` and a fixture's `get()` give the body and the fixture of love.physics, for all of LÖVE's own functions on them, such as `applyLinearImpulse`: the package wraps LÖVE and hides nothing of it.
@@ -961,13 +961,28 @@ A package of LÖVE's own system follows 11.3 too. The first is `physics`, which 
 - Contacts reach scripts as messages to the two bodies' nodes, `contact(other, nx, ny)` and `contactEnd(other)`, as bump's do, and never as Box2D's callbacks: Box2D tells of them during its step, when nothing may change the world, so the world tells the nodes after it. The normal points away from the other node, so a body that lands on the ground gets 0, -1.
 - A node that is turned off takes its body out of the world, and turning it on puts it back (6.4).
 - A polygon takes 3 to 8 corners that make a convex polygon, as Box2D does. A new one has none, and collides with nothing until it has 3; more than 8, or a polygon that is not convex, is an error that names its node. A line collides with nothing until it has 2 points.
-- A joint is one type with a `kind`, whose inspector shows only the properties of the chosen kind (6.2): `other` and `collide` for all, `limit`, `lower`, `upper`, `motor`, `motorSpeed` and `motorTorque` for a hinge, `otherAnchor` for a distance and a rope, `frequency` and `damping` for a distance, and `length` for a rope. It is Box2D's joint of its kind: a hinge is the revolute joint, with a limit of its angle and a motor; a weld holds the bodies as one; a distance keeps its node's place and the other body's `otherAnchor` as far apart as they were, or springs towards it with a `frequency`; a rope lets them come no further apart than its `length`. A joint is made when both bodies run, and ends when either stops, as Box2D ends a joint whose body is destroyed; it is made again when that body starts again. `get()` gives the joint of love.physics.
+- A joint is one type with a `kind`, whose inspector shows only the properties of the chosen kind (6.2). It is Box2D's joint of its kind, named as LÖVE names it, but for the hinge:
+  - a hinge is the revolute joint: the bodies turn around its node's place, with a limit of the angle, `limit`, `lower` and `upper`, and a motor, `motor`, `motorSpeed` and `motorTorque`;
+  - a weld holds the bodies as one;
+  - a distance keeps its node's place and the other body's `otherAnchor` as far apart as they were, or springs towards it with a `frequency` and `damping`;
+  - a rope lets them come no further apart than its `length`;
+  - a prismatic joint lets them slide along its `axis`, in its node's space, and not turn, as a lift or a piston, with a limit of the slide in pixels and a motor, whose force is `motorForce`;
+  - a wheel lets the other body turn freely on its node's place, which slides along its `axis` on a spring of `frequency` and `damping`, as a car's wheel, with a motor;
+  - a friction joint slows the bodies' sliding and turning against each other, up to `maxForce` and `maxTorque`, as a top-down game's floor slows what is on it;
+  - a motor joint pushes the other body towards where it was when joined, by `maxForce`, `maxTorque` and `correction`, as a platform that a script moves with LÖVE's `setLinearOffset`;
+  - a pulley hangs its node's place and the other body's `otherAnchor` from `groundAnchor` and `otherGroundAnchor`, points of the world given in their nodes' spaces, by one rope, with a `ratio`.
+  `other` and `collide` are for all. A joint is made when both bodies run, and ends when either stops, as Box2D ends a joint whose body is destroyed; it is made again when that body starts again. `get()` gives the joint of love.physics.
 - The limits, as they are now:
-  - A fixture and a joint take their node's place when they are made. A node of a fixture or of a joint that moves under its body afterwards, as an animation might move it, does not move the fixture or the joint.
-  - The properties, and the shape's, are read when the body, the fixture or the joint is made. A script that changes one afterwards, such as a fixture's `friction`, changes it with LÖVE's own function on what `get()` gives, such as `fixture:setFriction`; a shape that a script resizes collides at its new size when its body starts again.
-  - A chain is open: its first and last points are not joined. A closed chain, a loop, has no option yet.
+- Before each step, each body sets what a script changed since the last one, so a script changes physics as it changes any other field:
+  - a body's properties, such as `type` or `gravityScale`, and a fixture's, such as `friction`, with LÖVE's setters;
+  - a fixture whose node moved, turned or scaled under its body, as an animation might move it, or whose shape changed, such as a resized box, is made again, since Box2D's shapes do not change;
+  - a joint whose node moved under its body, or whose `kind`, bodies, `collide`, anchors, `axis` or `ratio` changed, is made again, since Box2D takes them only when it makes a joint; the values that tune it, such as a motor's speed, a limit or a spring, are set on it without making it again.
+  A fixture or a joint made again starts afresh: Box2D's contacts with it begin again, and a distance or a rope that was as far as they were when joined takes the distance that they are now.
+- The limits, as they are now:
+  - A body checks each fixture and joint before each step, which costs a little for each, also when nothing changed.
+  - A joint's `otherAnchor` and `otherGroundAnchor` are taken in the other body's node's space when the joint is made. A node under the other body that moves does not move them.
   - `meter` is LÖVE's one setting for every world, set when a world is made.
-  - Box2D's other joints, the prismatic, wheel, pulley, motor, friction, mouse and gear joints, have no component yet.
+  - Box2D's mouse and gear joints have no component: a mouse joint holds one body to a point, which a script makes with LÖVE's `newMouseJoint`, and a gear joint joins two other joints.
 
 ### 11.5 Animations of a sprite sheet
 
