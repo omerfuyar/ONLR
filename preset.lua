@@ -10,6 +10,8 @@ return {
   pluginsDir = "plugins",
   -- a project's folder, or a file in it, named on the command line opens the project (DESIGN 13.2)
   open = "onlr.openPath",
+  -- the search over everything, from any panel, on Unity's key for it (DESIGN 13.8)
+  keys = { ["Ctrl+K"] = "onlr.search" },
   settings = {
     -- the tool's menu: a right click on the title bar opens it. It holds what concerns the whole tool; the history,
     -- pausing and export are in their panels and on keys (DESIGN 13.2)

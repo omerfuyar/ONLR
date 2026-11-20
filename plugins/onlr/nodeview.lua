@@ -172,24 +172,31 @@ local function viewOf(file)
   end
 end
 
----Opens a node file in a node view, or shows the view that has it.
+---Opens a node file in a node view, or shows the view that has it. With paths, the view chooses those nodes, which it keeps when it
+---gets the focus.
 ---@param file string
-local function openFile(file)
+---@param paths string[]?
+local function openFile(file, paths)
   local view = viewOf(file)
+  if not view then
+    -- A node view that shows no file takes it.
+    for _, other in pairs(views) do
+      if not other.file and not view then
+        show(other, file)
+        view = other
+      end
+    end
+  end
   if view then
+    if paths then
+      view.chosen = paths
+      project.choose(file, paths)
+    end
     ecs.layout.focus(view.panel)
     return
   end
-  -- A node view that shows no file takes it.
-  for _, other in pairs(views) do
-    if not other.file then
-      show(other, file)
-      ecs.layout.focus(other.panel)
-      return
-    end
-  end
   local target = focused and views[focused.panel] and focused.panel or next(views)
-  ecs.layout.open("onlr.view", { file = file }, target, "center")
+  ecs.layout.open("onlr.view", { file = file, chosen = paths }, target, "center")
 end
 
 -- Places
@@ -1320,6 +1327,7 @@ ecs.panel.registerType({
     if version == STATE_VERSION and type(saved) == "table" then
       view.file = saved.file
       view.x, view.y, view.zoom = saved.x or view.x, saved.y or view.y, saved.zoom or 1
+      view.chosen = type(saved.chosen) == "table" and saved.chosen or view.chosen
     end
     if view.file and not project.file(view.file) then
       view.file = nil
@@ -1494,7 +1502,10 @@ local function say(_, message)
 end
 
 functions = {
-  openFile = { sig = "void(string file)", doc = "Open a node file in a node view", fn = openFile },
+  openFile = { sig = "void(string file)", doc = "Open a node file in a node view", fn = function(file)
+    openFile(file)
+  end },
+  showNodes = { sig = "void(string file, value paths)", doc = "Open a node file in a node view, and choose nodes of it", fn = openFile },
   focusedFile = { sig = "string()", doc = "The node file of the node view that has the focus, or an empty text", fn = function()
     local view = current()
     return view and view.file or ""

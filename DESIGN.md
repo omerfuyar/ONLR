@@ -1344,7 +1344,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 | `init.lua`                              | Loads the parts, and registers the functions that they give as the plugin's.                  |
 | `project.lua`, `format.lua`, `resolve.lua` | The open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. |
 | `nodeview.lua`, `runners.lua`, `link.lua`, `hints.lua` | The node view, the runners and the link, and the functions Play, Play This File, Pause, Step and Stop. |
-| `panels.lua`, `nodes.lua`, `inspector.lua`, `tools.lua`, `settings.lua`, `shared.lua` | The other panels of ONLR's own: the nodes panel, the inspector, the tools and the project settings. |
+| `panels.lua`, `nodes.lua`, `inspector.lua`, `tools.lua`, `settings.lua`, `history.lua`, `search.lua`, `shared.lua` | The other panels of ONLR's own: the nodes panel, the inspector, the tools, the project settings, the history and the search. |
 | `export.lua`, `runtimes.lua`           | Export (14), and LÖVE's runtimes (15).                                                        |
 | `runner/`                               | The runner's files (12.1), which the editor names to LÖVE and never loads itself.              |
 
@@ -1455,6 +1455,22 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - The files panel shows the project's folder, apart from what starts with a dot, as a tree or as a grid of icons, in which an image shows as a small picture, and a node file and a component's script have badges of their own. Its right click's menu makes folders, scripts and node files, renames and moves them, and deletes them after asking (OpenECS-std DESIGN 29). Files dropped on it go into the folder under the pointer: a file of the project moves there, as a rename does, and a file from another application is copied there, without asking, since the user chose the folder. The question names the node files that name the file. A deleted file goes to the system's trash, or to `.onlr/trash/` when the system has none.
 - A click on a file chooses it and shows it without opening it: in the asset viewer, when one is open, and in the inspector, which shows its name, its kind, its size and a node file's count of nodes, until nodes are chosen. A double click, a second click within 0.4 seconds, opens it: a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
 - Renaming, moving and deleting files are not in the history. Before a rename or a move, the editor saves every file with changes. Then it renames the file, changes every path and type name that names it, in every node file and in the manifest, and saves them. The user undoes it by renaming or moving the file back, and gets a deleted file back from the system's trash.
+
+### 13.8 Search
+
+- Ctrl+K, Unity's key for its search, opens the Search panel from any panel, or gives the open one the focus, with the keys in its field. The preset binds it for the whole tool, to `onlr.search`.
+- It finds, by `ui.matches` of each item's name, place and kind:
+
+  | Kind     | What                                                                 | Return                                                       |
+  | -------- | -------------------------------------------------------------------- | ------------------------------------------------------------ |
+  | Node     | Each node that a node file writes itself, by its name, with its file. A node of an instance is found in its base's file. | Opens the file in a node view, and chooses the node. |
+  | Function | Each function that the project's own scripts define, `function Player:jump(` and `local function step(`, with its file and line. | Opens the file at the line in the code editor. |
+  | File     | Each file of the project, apart from what starts with a dot.          | Opens it as a double click in the files panel does (13.7).   |
+  | Type     | Each component type of the project, of the engine and of the packages. | Opens its script in the code editor.                         |
+  | Command  | Each function of the editor that a key can run, by its description, as Unity's search finds its menus' items. | Runs it, on the panel that had the focus before the search. |
+
+- Up and Down choose a result, and Return or a double click opens it. It shows the first 200 results. It reads the project again when the project changes, opens or closes.
+- The limits, as they are now: a function written another way, such as `Player.jump = function(`, is not found; the engine's and the packages' functions are not searched, as the project holds copies of them; and nothing is found inside a file's text, as a code editor finds it.
 
 ## 14. Export
 
