@@ -52,7 +52,7 @@ The plan is done, and the implementation has started. Build it in small mileston
 
 **Checks**
 
-- The samples are the tests (DESIGN 16). Run the tests of what a change touches before each push, and all of them before a pull request.
+- The samples are the tests (DESIGN 16). A significant feature that a game shows also goes into `samples/gallery`, in the same piece of work (DESIGN 16). Run the tests of what a change touches before each push, and all of them before a pull request.
 - Run an experiment only when a decision depends on its result, and never the same one twice.
 - The owner runs experiments on their own computer when asked. Give exact steps: the files, the commands, and what to report back.
 - Before each commit, run `.github/scripts/check.sh`: it checks the changed Lua files with the Lua language server when it is installed.
