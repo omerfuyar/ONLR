@@ -24,28 +24,29 @@ return {
       name = "Edit",
       windows = {
         {
-          split = "horizontal",
+          split = "vertical",
+          -- the tools are a bar across the top, so their row has the editor's width (DESIGN 13.1)
+          { size = 84, panels = { { type = "onlr.tools" } } },
           {
             share = 1,
-            split = "vertical",
+            split = "horizontal",
             {
-              share = 3,
-              split = "horizontal",
+              share = 1,
+              split = "vertical",
               {
-                size = 370,
-                split = "vertical",
-                { size = 150, panels = { { type = "onlr.tools" } } },
-                { share = 1, panels = { { type = "onlr.nodes" } } },
+                share = 3,
+                split = "horizontal",
+                { size = 300, panels = { { type = "onlr.nodes" } } },
+                { share = 1, panels = { { type = "onlr.view" } } },
               },
-              { share = 1, panels = { { type = "onlr.view" } } },
+              { share = 2, panels = { { type = "console.log" }, { type = "files.tree" }, { type = "onlr.history" } } },
             },
-            { share = 2, panels = { { type = "console.log" }, { type = "files.tree" }, { type = "onlr.history" } } },
-          },
-          {
-            size = 340,
-            split = "vertical",
-            { share = 2, panels = { { type = "onlr.inspector" }, { type = "onlr.settings" }, { type = "onlr.export" } } },
-            { share = 1, panels = { { type = "viewer.file" } } },
+            {
+              size = 340,
+              split = "vertical",
+              { share = 3, panels = { { type = "onlr.inspector" }, { type = "onlr.settings" }, { type = "onlr.export" } } },
+              { share = 1, panels = { { type = "viewer.file" } } },
+            },
           },
         },
       },

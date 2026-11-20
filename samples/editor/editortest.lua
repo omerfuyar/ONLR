@@ -469,15 +469,24 @@ return {
     test.wait(0.2)
 
     -- The inspector's rows are found by their ids, whose rectangles the inspector saves (DESIGN 16), as A's "aaaaaa:thing:speed".
-    -- The inspector does not scroll here: a row below its end is brought up by folding the sections above it.
+    -- A row outside the inspector's view is brought into it with the wheel, as a user scrolls.
     local function inspected(id, across, down)
       local panel = panelOf(test, "onlr.inspector")
       local box = test.rect(panel)
-      local r = test.panel(panel).state.rects[id]
-      check(r ~= nil, "the inspector shows " .. id)
-      local y = box.y + r.y + r.height * (down or 0.5)
-      check(y < box.y + box.height, id .. " is in the inspector's view")
-      return box.x + r.x + r.width * (across or 0.5), y
+      for _ = 1, 40 do
+        local r = test.panel(panel).state.rects[id]
+        check(r ~= nil, "the inspector shows " .. id)
+        local y = box.y + r.y + r.height * (down or 0.5)
+        if y >= box.y + box.height - 4 then
+          test.wheel(box.x + box.width / 2, box.y + box.height / 2, -1)
+        elseif y <= box.y + 4 then
+          test.wheel(box.x + box.width / 2, box.y + box.height / 2, 1)
+        else
+          return box.x + r.x + r.width * (across or 0.5), y
+        end
+        test.wait(0.05)
+      end
+      error(id .. " is not brought into the inspector's view")
     end
     -- a click on a component's heading folds it, and another opens it, for every node with one
     local function fold(id)
@@ -936,7 +945,8 @@ return {
 
     -- the tools panel's Window chooses the game's size for Play, such as a phone's; the manifest keeps its own
     local tools = test.rect(panelOf(test, "onlr.tools"))
-    test.click(tools.x + 120, tools.y + 91)
+    -- the bar's second line: Play's group, then Window and its dropdown
+    test.click(tools.x + 490, tools.y + 64)
     test.wait(0.2)
     local list = test.popup(1)
     test.click(list.x + 40, list.y + 3.5 * list.height / 7)
