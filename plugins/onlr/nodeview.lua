@@ -1133,6 +1133,9 @@ local function menu(view, event, x, y)
     { label = "Copy", keys = "Ctrl+C", onClick = functions.copyChosen.fn },
     { label = "Paste", keys = "Ctrl+V", onClick = functions.pasteChosen.fn },
     { line = true },
+    { label = "Select with children", keys = "Shift+A", onClick = functions.selectWithChildren.fn },
+    { label = "Select all", keys = "Ctrl+A", onClick = functions.selectAll.fn },
+    { line = true },
     { label = "Frame chosen", keys = "F", onClick = function()
       frame(view)
     end },
@@ -1501,6 +1504,27 @@ local function say(_, message)
   end
 end
 
+-- The node file that the selections act on: the focused node view's, or the chosen nodes'.
+local function shownFile()
+  local view = current()
+  local file = view and view.file or project.chosen().file
+  if file and project.file(file) then
+    return file
+  end
+end
+
+-- A node and every node under it, in the tree's order, once each, after what `out` holds.
+local function withChildren(node, out, seen)
+  if not seen[node.path] then
+    seen[node.path] = true
+    out[#out + 1] = node.path
+  end
+  for _, child in ipairs(node.children or {}) do
+    withChildren(child, out, seen)
+  end
+  return out
+end
+
 functions = {
   openFile = { sig = "void(string file)", doc = "Open a node file in a node view", fn = function(file)
     openFile(file)
@@ -1564,6 +1588,23 @@ functions = {
   cancelPick = { sig = "void()", doc = "End a pick of a node for a reference, setting nothing", fn = function()
     startPick(nil)
   end },
+  selectAll = { sig = "void()", doc = "Choose every node of the node file", fn = function()
+    local file = shownFile()
+    if file then
+      local tree = project.tree(file)
+      project.choose(file, withChildren(tree.first, {}, {}))
+    end
+  end },
+  selectWithChildren = { sig = "void()", doc = "Choose the chosen nodes and every node under them", fn = onChosen(function(file, paths)
+    local tree, out, seen = project.tree(file), {}, {}
+    for _, path in ipairs(paths) do
+      local node = tree.index[path]
+      if node then
+        withChildren(node, out, seen)
+      end
+    end
+    project.choose(file, out)
+  end) },
   hideChosen = { sig = "void()", doc = "Hide the chosen nodes in the node view, or show them again", fn = onChosen(function(file, paths)
     toggleMarks("hidden", file, paths)
   end) },
@@ -1603,7 +1644,7 @@ for key, name in pairs({
   ["F6"] = "onlr.playFile", ["F7"] = "onlr.pause", ["F8"] = "onlr.step",
   ["Shift+F5"] = "onlr.stop", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
   ["R"] = "onlr.toolScale", ["T"] = "onlr.toolRect", ["Y"] = "onlr.toolShape", ["F"] = "onlr.frame", ["H"] = "onlr.hideChosen",
-  ["L"] = "onlr.lockChosen", ["Escape"] = "onlr.cancelPick",
+  ["L"] = "onlr.lockChosen", ["Escape"] = "onlr.cancelPick", ["Ctrl+A"] = "onlr.selectAll", ["Shift+A"] = "onlr.selectWithChildren",
 }) do
   ecs.key.bind("onlr.view", key, name)
 end
