@@ -129,6 +129,22 @@ local function brokenView()
   runner.stopped()
 end
 
+-- loadEditor: the preview calls it once a node's components are made, and after each change of their values (DESIGN 6.5).
+-- anim8's sets the sprite's quad to the first frame of the animation that plays first, so the view shows that frame.
+local function animationView()
+  local runner = editor.start("animation", "preview")
+  runner.send({ type = "view", id = 1, path = "nodes/start.lua", x = 0, y = 0, zoom = 1, width = 160, height = 120 })
+  local bounds = assert(runner.expect("bounds"), "no bounds")
+  check.equal(assert(nodeOf(bounds, "r0ller")).rect, { -8, -8, 16, 16 }, "the roller shows one frame, not the whole sheet")
+  runner.expect("frame")
+  runner.send({ type = "shown", id = 1 })
+  runner.send({ type = "change", path = "nodes/start.lua", node = "r0ller", values = { ["anim8.animation"] = { frameWidth = 8 } } })
+  bounds = assert(runner.expect("bounds"), "no bounds after a change")
+  check.equal(assert(nodeOf(bounds, "r0ller")).rect, { -8, -8, 8, 16 }, "a changed value makes the frames again")
+  runner.send({ type = "stop" })
+  runner.stopped()
+end
+
 local function game()
   -- Play This File: the node file runs as the root, under the top node.
   local runner = editor.start("coinrun", "game", "--onlr-start=nodes/win.lua")
@@ -232,6 +248,7 @@ end
 check.run(function()
   preview()
   brokenView()
+  animationView()
   game()
   errors()
 end)

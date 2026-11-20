@@ -44,26 +44,6 @@ local function send(message, block)
   link.send(message, block)
 end
 
--- Makes a view's nodes from its node file, as the editor holds it. A file that does not load leaves the view empty.
-local function load(view)
-  local ok, root, scope = pcall(build.file, view.path, true)
-  if ok then
-    view.root, view.scope = root, scope
-  else
-    view.root, view.scope = nil, nil
-    local file, line, rest = tostring(root):match("^([^:\n]+):(%d+): (.*)$")
-    send({ type = "error", view = view.id, message = rest or tostring(root), file = file or view.path, line = tonumber(line) })
-  end
-  view.dirty = true
-  view.boundsDue = true
-end
-
-local function loadAll()
-  for _, view in pairs(views) do
-    load(view)
-  end
-end
-
 -- The nodes of a view in the order of drawing: by z, and in the tree's order within one z (DESIGN 5).
 local function ordered(root)
   local list, seq = {}, 0
@@ -96,6 +76,43 @@ local function mark(node, message)
   end
   node._errors[#node._errors + 1] = message
   return true
+end
+
+-- Calls loadEditor on a node's components, in the order that they load, so one finds those that it needs ready (DESIGN 6.5).
+-- A loadEditor that fails marks its node, as a drawEditor does, and the others go on.
+local function loadEditor(node)
+  for _, r in ipairs(node._records) do
+    local c = r.component
+    if c.loadEditor then
+      local ok, err = pcall(c.loadEditor, c)
+      if not ok then
+        mark(node, tostring(err))
+      end
+    end
+  end
+end
+
+-- Makes a view's nodes from its node file, as the editor holds it. A file that does not load leaves the view empty.
+local function load(view)
+  local ok, root, scope = pcall(build.file, view.path, true)
+  if ok then
+    view.root, view.scope = root, scope
+    for _, entry in ipairs(ordered(root)) do
+      loadEditor(entry.node)
+    end
+  else
+    view.root, view.scope = nil, nil
+    local file, line, rest = tostring(root):match("^([^:\n]+):(%d+): (.*)$")
+    send({ type = "error", view = view.id, message = rest or tostring(root), file = file or view.path, line = tonumber(line) })
+  end
+  view.dirty = true
+  view.boundsDue = true
+end
+
+local function loadAll()
+  for _, view in pairs(views) do
+    load(view)
+  end
 end
 
 -- Sends the nodes' bounds, in each node's own space, with its place in the world (DESIGN 12.3).
@@ -277,6 +294,9 @@ function handlers.change(message)
             c[name] = value
           end
         end
+      end
+      if message.values then
+        loadEditor(node)
       end
       view.dirty = true
       view.boundsDue = true
