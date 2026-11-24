@@ -59,7 +59,7 @@ A game made with ONLR is built in layers. Each uses only the layers above it in 
 | 1. LÖVE            | The runtime: the window, drawing, sound, input, physics and files.                              | LÖVE's authors                  |                                |
 | 2. Libraries       | Lua code for LÖVE games, such as a library for collision (11).                                  | Their authors                   | LÖVE, or nothing               |
 | 3. The engine      | Nodes, components, properties and the loop (5 to 9).                                            | ONLR                            | LÖVE                           |
-| 4. Components      | What nodes show and do: the engine's own (10), a package's (11.2) and the user's scripts (6).      | ONLR, a package's author, the user | The engine, LÖVE and libraries |
+| 4. Components      | What nodes show and do: the engine's own (10), a package's (11.2), and the user's scripts (6) and graphs (6.8). | ONLR, a package's author, the user | The engine, LÖVE and libraries |
 | 5. The game's data | The project's manifest and node files, which name component types and hold their values (3, 4). | The user, through the editor    | Component types, by name       |
 
 - The engine and the libraries do not know each other. A component is where they meet: it is called by the engine, and it calls a library.
@@ -90,6 +90,11 @@ mygame/
     player/                   the type player, with modules of its own
       init.lua
       states.lua
+  graphs/                   the graphs that are component types (6.8)
+    door.lua                  the type door
+  shaders/                  the shader graphs, and GLSL files (6.7)
+    water.lua
+    flash.glsl
   shared/                   the user's Lua code that components share
     score.lua
   packages/                 the engine, packages and libraries
@@ -130,11 +135,12 @@ mygame/
   - A folder without an `init.lua` only groups what is in it: `components/enemies/bat.lua` is `enemies.bat`.
   - A file and a folder of one name cannot be side by side, such as `enemies.lua` and `enemies/`, since the name would be a type and a group at once (6.1). The editor says so, and the engine refuses both.
 - `nodes/` holds the node files (5). Every Lua file in it, in any folder of it, is one: `nodes/level.lua`.
+- `graphs/` holds the script graphs, each a component type named by its path, as a script is in `components/`: `graphs/door.lua` is `door` (6.8). `shaders/` holds the shader graphs, each a Lua file. A GLSL file may be there too, or in any other folder, as an image may (6.7).
 - `shared/` holds the user's Lua code that is not a component and that components share: what keeps a value when the root changes, such as a score, and functions that many scripts use. The engine does not read it: scripts load it with `require`, as in any LÖVE game. Its name is not taken; a new project has it.
 - `packages/` holds what the game uses and was not made for this game alone, each in a folder of its own: the engine in `packages/onlr/`, packages, and libraries. The user adds to it, by hand or in the editor.
 - `packages/onlr/` is the engine's. The editor replaces it when it updates the engine (3.3), so the user does not edit it. Each project holds its own copy, so `love mygame` runs it and an export holds it.
 - `.onlr/` holds what the editor keeps for this project on this computer, such as LÖVE's definitions (4.3). It is not exported, and not in git: when the editor makes the project, it writes a `.gitignore` that names it.
-- The names `main.lua`, `conf.lua`, `manifest.lua`, `components/`, `nodes/`, `packages/` and `.onlr/` are taken. Every other name is the user's.
+- The names `main.lua`, `conf.lua`, `manifest.lua`, `components/`, `graphs/`, `nodes/`, `packages/`, `shaders/` and `.onlr/` are taken. Every other name is the user's.
 
 ### 3.2 The project's manifest
 
@@ -185,12 +191,12 @@ return {
 
 ### 4.1 Rules
 
-- Every data file that ONLR writes is a Lua file that returns one table: the manifests and the node files.
+- Every data file that ONLR writes is a Lua file that returns one table: the manifests, the node files and the graphs (6.8).
 - The table is plain data: numbers, texts, booleans and tables, and no function.
 - The engine and the editor each read a file by running it, with LuaJIT: LÖVE's in the game, and OpenECS's in the editor. The file runs with Lua's basic functions and its `string`, `table` and `math` libraries, and nothing else. It cannot reach LÖVE, the engine, the editor or another file.
 - The basic functions are those that compute: `assert`, `error`, `getmetatable`, `ipairs`, `next`, `pairs`, `pcall`, `rawequal`, `rawget`, `rawset`, `select`, `setmetatable`, `tonumber`, `tostring`, `type`, `unpack` and `xpcall`. Those that load code or reach outside are left out, such as `require`, `load`, `dofile` and `print`. Each file gets its own copies of the three libraries, so it changes nothing for another file.
 - So a file that a person writes may compute its table, such as a manifest that works out the window's size. Its code must be LuaJIT 2.1's Lua without the syntax that OpenECS's LuaJIT takes from LuaJIT 3.0, such as `+=`, which LÖVE 11.5's lacks.
-- A file's kind is known by its folder, without reading it: a node file is in `nodes/`, as a script is in `components/` (3.1). No file's name has a second ending.
+- A file's kind is known by its folder, without reading it: a node file is in `nodes/`, a script in `components/`, a graph in `graphs/` and a shader graph in `shaders/` (3.1). No file's name has a second ending.
 - Each file has a `format` number. The engine and the editor read only the one that they know, and say so of another (17).
 
 ### 4.2 How the editor writes them
@@ -356,13 +362,14 @@ return Player
   | Type                | Its name                                   | Its file                    |
   | ------------------- | ------------------------------------------ | --------------------------- |
   | A script            | Its path in `components/`: `player`, `enemies.bat`. | `components/player.lua` (3.1) |
+  | A script graph      | Its path in `graphs/`: `door`.             | `graphs/door.lua` (6.8)     |
   | A package's         | The package's name, then its path in the package's `components/`: `bump.body`. | `packages/bump/components/body.lua` (11.2) |
   | The engine's own    | `onlr.`, then its path in the engine's `components/`: `onlr.sprite`. | `packages/onlr/components/sprite.lua` (10) |
 
-- The engine looks for a type in the project's `components/` first, then in the packages'. So a script cannot have the name of the engine or of a package, and the editor says so.
+- The engine looks for a type in the project's `components/` and `graphs/` first, then in the packages'. So a script or a graph cannot have the name of the engine or of a package, and a script and a graph cannot have one name: the editor says so, and the engine refuses both.
 - Each part of a type's name is a name in Lua, since a script reads it so: `components.enemies.bat`. The editor makes no file or folder in `components/` whose name is not one, and the engine refuses such a type.
 - A node has at most one component of a type. Giving it a second is an error.
-- The engine loads a type's file with `require`, under the name that its path gives: `components.player`, or `packages.bump.components.body`. So a script that loads a type's file the same way gets the same table.
+- The engine loads a type's file with `require`, under the name that its path gives: `components.player`, or `packages.bump.components.body`. So a script that loads a type's file the same way gets the same table. A graph's type is built from its file instead (6.8).
 - A node keeps its components in `components`, by their types' names. A dot in a name is a table in a table: `bump.body` is `components.bump.body`. A node file writes them so (5), and a script reads them so: `self.node.components.bump.body`.
 - In the game, `components` holds a table for the engine's name, for each package's and for each folder of `components/`, also on a node that has none of their types. Such a table is empty and cannot be changed. Reading any other name from `components`, or from one of its tables, is an error. So `self.node.components.bump.body` is `nil` on a node without a body, and a misspelt name, such as `components.plyer` or `components.bmup.body`, is an error.
 - Each component of a node is a table of its own, which finds its functions in its type. So `self` is the component, and what a function keeps in `self` belongs to that one node.
@@ -390,6 +397,7 @@ return Player
 | `image`                     | An image file of the project.                     | A LÖVE image.                                |
 | `sound`                     | A sound file of the project, and whether LÖVE streams it. | A LÖVE source of its own.            |
 | `font`                      | A font file of the project and a size.            | A LÖVE font. Without a file, LÖVE's default font at that size. |
+| `shader`                    | A shader of the project: a GLSL file or a shader graph (6.7). | A LÖVE shader.                   |
 | `file`                      | A file of the project, of the endings in `extensions` if given. | Its path.                      |
 | `nodeFile`                  | A node file of the project.                       | Its path.                                    |
 | `node`                      | A node of the same file.                          | The node.                                    |
@@ -398,7 +406,7 @@ return Player
 | `group`                     | The properties it holds, under one heading.       | A table with a field for each.               |
 | `list`                      | Rows of one kind, which the user adds and removes. | A list of what that kind gives.             |
 
-- A kind is a value or a reference. A value is held in the node file as it is: `bool`, `integer`, `number`, `string`, `choice`, `color`, `vector`, `group` and `list`. A reference names something else of the project: `image`, `sound`, `font`, `file`, `nodeFile`, `node` and `component`.
+- A kind is a value or a reference. A value is held in the node file as it is: `bool`, `integer`, `number`, `string`, `choice`, `color`, `vector`, `group` and `list`. A reference names something else of the project: `image`, `sound`, `font`, `shader`, `file`, `nodeFile`, `node` and `component`.
 - `group` and `list` take other properties: `onlr.property.group({ width = onlr.property.number(32), height = onlr.property.number(32) })` is read as `self.box.width`, and `onlr.property.list(onlr.property.image())` as `self.frames[1]`.
 - The options:
 
@@ -444,10 +452,11 @@ The engine calls the functions that a type has. All are optional.
 | `destroy()`          | Once, when its node is destroyed, or the root that it is in is replaced.                              |
 | `bounds()`           | When the editor asks for the rectangle that the component covers, in the node's own space. The node view uses it to choose nodes (12.3). |
 | `drawEditor(chosen)` | In the node view, in place of `draw`, with whether the component's node is chosen (6.5).              |
+| `drawTreeEditor(draw)` | In the node view, in place of `drawTree` (6.5).                                                     |
 
 - The engine passes on every event that LÖVE has, by its name, so it needs no list of them, and an event of a newer LÖVE reaches scripts too. So a type's function with the name of one of LÖVE's callbacks, such as `focus` or `resize`, is called for that event.
 - A type may have more functions of its own, which other components call: `self.node.components.bump.body:move(x, y)`.
-- Around each component's `draw`, the engine applies the node's place and takes it off again, and changes nothing else of LÖVE's drawing state, as plain LÖVE code expects to set its own colours. The engine's own components set back what they change, such as the colour. In the node view, all of the state is kept (6.5).
+- Around each component's `draw`, the engine applies the node's place and takes it off again. It also sets back the shader that was set before the `draw`, when the `draw` changed it, so a script that sets a shader and forgets `love.graphics.setShader()` shades nothing drawn after it. It compares LÖVE's shader before and after, and sets it only when it differs, since setting a shader ends a batch of LÖVE's draws. It changes nothing else of LÖVE's drawing state, as plain LÖVE code expects to set its own colours. The engine's own components set back what they change, such as the colour. In the node view, all of the state is kept (6.5).
 
 ### 6.4 When functions are called
 
@@ -473,7 +482,7 @@ The engine calls the functions that a type has. All are optional.
 - The node view shows nodes that do not run: no `load`, `update` or event reaches a component.
 - There the engine calls `drawEditor` in place of `draw`. A type that looks the same in the editor as in the game says so: `Sprite.drawEditor = Sprite.draw`. The engine's own components do.
 - `drawEditor` also draws what only the editor shows, such as the outline of a body or the frame of a camera. It is LÖVE code, written with the component by its author.
-- There the engine does not call `drawTree`: a group's nodes draw through the node view alone. So a camera does not move the view, and a group's shader shows only in the game.
+- There the engine does not call `drawTree`. It calls `drawTreeEditor(draw)` in its place, when the type has it, and otherwise draws the group's nodes as if there were no group. So a camera, which has none, does not move the view, and `onlr.shader`, which has one, shows its shader there (10).
 - A type without `drawEditor` shows nothing in the node view. Its `draw` is not called there, since it may need what `load` or `update` sets.
 - `loadEditor`, when a type has it, is called there once its node's components are made, in the order that they load (6.6), and again after each change of a value of the node's components. It sets up from the values what `drawEditor` or another component shows, as Unity's `OnValidate` does: anim8's sets its sprite's `quad` to the first frame (11.5). It is LÖVE code: the tree's functions change nothing there, as in `drawEditor`, one that fails marks its node, and one that never returns stops the preview only. It is not `load`, which may start what the editor must not run, such as a sound or a body of a world.
 - `updateEditor(dt)`, when a type has it, is called there on the components of the chosen nodes only, 30 times a second, with the seconds since the last call, and the view is drawn again after it: so an emitter emits and an animation plays while its node is chosen, as Unity plays a chosen particle system, and the rest of the file stands still. What it moves is the editor's own, such as the picture that `drawEditor` keeps, and goes at the next change. It is called only while the editor has taken the view's last frame, so a slow link gives fewer steps, each of more seconds, up to a tenth of a second. One that fails marks its node, and is not called again until its node is made again. Limits: each step sends a whole frame through the link (12.4), so a chosen moving node costs the editor about what dragging does: on the owner's computer, Linux with an NVIDIA card, a chosen animation of the animation sample cost the editor's plugin about 34 ms a second, 3.4% of it, and the node view drew 26 frames a second, measured with OpenECS-std's profiler on 2026-11-20; nodes that are not chosen do not move, as the view would cost that much all the time; a script's `update` is not called, so what a script moves stays still.
@@ -498,6 +507,180 @@ Player.needs = { "bump.body" }
 - A component loads, updates and draws after those that it needs (5). So its `load` finds them loaded, and `self.node.components.bump.body` is there without a check.
 - Types cannot need each other in a circle. The engine refuses such a type, and says so.
 
+### 6.7 Shaders
+
+``` glsl
+// shaders/flash.glsl
+extern number amount;
+extern vec4 tint;
+
+vec4 effect(vec4 color, Image tex, vec2 uv, vec2 screen) {
+  vec4 c = Texel(tex, uv) * color;
+  c.rgb = mix(c.rgb, tint.rgb, amount);
+  return c;
+}
+```
+
+- A shader is a file of the project, of one of two kinds:
+
+  | Kind           | Its file                                                                                     | Written by                            |
+  | -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------- |
+  | A GLSL file    | A `.glsl` file in LÖVE's own form, as `love.graphics.newShader` takes it, in any folder.     | The user, in their code editor.       |
+  | A shader graph | A Lua file in `shaders/`: a graph whose blocks make a colour (6.8).                          | The editor, in the graph panel (13.9). |
+
+- The `shader` property takes either, and gives a LÖVE shader (6.2). The engine loads each file once, and the components that name it share it, as they share an image. So `onlr.shader` (10) and a script's own property use the same files.
+- A shader's values are its `extern`s, LÖVE's word for GLSL's `uniform`, which it takes too. A shader graph's are its properties, with their defaults and options (6.8). A GLSL file's are read from its text: each `extern` or `uniform` outside its functions, of a type of this table. They start at 0, false or white, since GLSL ES gives a value no default:
+
+  | Its type in GLSL           | The inspector shows                                                   |
+  | -------------------------- | --------------------------------------------------------------------- |
+  | `float`, LÖVE's `number`   | A number field.                                                       |
+  | `int`                      | A number field of whole numbers.                                      |
+  | `bool`                     | A toggle.                                                             |
+  | `vec2`                     | Two number fields in one row, as a `vector`.                          |
+  | `vec3`, `vec4`             | Three or four number fields in one row; a shader graph's colour, a colour. |
+  | `Image`, `sampler2D`       | An image of the project. Without one, a white pixel.                  |
+
+  A value of another type, such as a matrix or a list, is not shown, and a script sends it itself.
+- `time` is the engine's: a shader's `extern number time` gets the seconds that the game has run, the sum of its frames' `dt`, before each frame draws. The inspector does not show it, and a value of the user's own cannot have its name. So a game that the editor pauses stands still, and Step moves it by one step (12.1). In the node view it is 0, and moves while the node of the shader's component is chosen (6.5). LÖVE's own values, such as `love_ScreenSize`, work as in LÖVE.
+- A shader that does not compile is an error in the game, which names its file, its line, and the node and the property that name it, as a path that names no file is (6.2). In the node view, the node is marked and draws without the shader, and the inspector marks the shader's row with LÖVE's message.
+- LÖVE compiles a shader as GLSL on a computer and as GLSL ES on a phone, which is stricter: a number such as `1` must be `1.0` where a decimal is meant. The preview checks every shader as GLSL ES too, with `love.graphics.validateShader` (12.5). A shader that fails there still works on the computer: the console warns, with its file and its line, and the inspector marks the row. An export for Android or iOS refuses it, and names it.
+- A shader that starts with LÖVE's `#pragma language glsl3` asks for newer GLSL, which the check takes as GLSL ES 3.00; its warning says that a phone without OpenGL ES 3 cannot run it. The GLSL that a shader graph builds is LÖVE's default, GLSL ES 1.00 on a phone, which every phone that LÖVE runs on takes.
+- A script may draw through a shader itself, as in LÖVE: it declares `onlr.property.shader()`, and calls `love.graphics.setShader` and `shader:send` in its `draw`. The engine sets the shader back after the `draw` (6.3).
+- The limits:
+  - A GLSL file's value cannot say its range, its default, or that it is a colour: a `vec4` shows as four numbers, and starts at 0. A shader graph's properties say all three.
+  - On a phone whose pixel shaders lack high precision, `time` holds fewer digits as it grows, so a shader that moves with it gets coarse after some minutes of play.
+
+### 6.8 Graphs
+
+A graph is made of blocks, joined by wires between their pins. The user makes it in the graph panel (13.9), and the engine builds code from it when the game loads it.
+
+| Kind           | Its folder | Is                                         | The engine builds |
+| -------------- | ---------- | ------------------------------------------ | ----------------- |
+| A script graph | `graphs/`  | A component type, as a script is (6.1).    | Lua               |
+| A shader graph | `shaders/` | A shader, as a GLSL file is (6.7).         | GLSL              |
+
+``` lua
+-- graphs/door.lua: a door that opens half a second after E is pressed
+---@type onlr.Graph
+return {
+  format = 1,
+  properties = {
+    {
+      kind = "bool",
+      name = "open",
+    },
+  },
+  blocks = {
+    {
+      id = "b3x9mz",
+      type = "flow.branch",
+      x = 240,
+      y = 0,
+      inputs = {
+        condition = "c4k8wd.result",
+      },
+      flow = {
+        ifTrue = "d2l5qa",
+      },
+    },
+    {
+      id = "c4k8wd",
+      type = "math.equal",
+      x = 0,
+      y = 140,
+      inputs = {
+        a = "k7p1fe.key",
+      },
+      values = {
+        b = "e",
+      },
+    },
+    {
+      id = "d2l5qa",
+      type = "flow.delay",
+      x = 480,
+      y = 0,
+      flow = {
+        done = "s8d1nf",
+      },
+      values = {
+        seconds = 0.5,
+      },
+    },
+    {
+      id = "k7p1fe",
+      type = "event.keypressed",
+      x = 0,
+      y = 0,
+      flow = {
+        out = "b3x9mz",
+      },
+    },
+    {
+      id = "s8d1nf",
+      type = "property.set",
+      x = 720,
+      y = 0,
+      values = {
+        name = "open",
+        value = true,
+      },
+    },
+  },
+}
+```
+
+- A graph's file is a data file (4), the editor's to read and to write, as a node file is, and written as section 4.2 says. A person does not write it.
+
+  | Field        | Holds                                                                                                     |
+  | ------------ | --------------------------------------------------------------------------------------------------------- |
+  | `format`     | The version of the file's format (4.1).                                                                   |
+  | `properties` | Its properties, in the order that the inspector shows them: each a `name`, a `kind` of section 6.2, a `default` and its `options`. A script graph's are its type's properties; a shader graph's are the shader's values (6.7), of the kinds `bool`, `integer`, `number`, `vector`, `color` and `image`. |
+  | `needs`      | A script graph's: the types that its components need on their node (6.6).                                 |
+  | `blocks`     | Its blocks, in the order of their ids.                                                                    |
+
+  | Field of a block | Holds                                                                                                 |
+  | ---------------- | ----------------------------------------------------------------------------------------------------- |
+  | `id`             | Its id, unique in its file, as a node's (4.2).                                                        |
+  | `type`           | Its type: what it does, and its pins.                                                                 |
+  | `x`, `y`         | Its place in the panel.                                                                               |
+  | `inputs`         | Its inputs that a wire feeds: by the input's name, the block and the output that feeds it, `"c4k8wd.result"`. |
+  | `flow`           | Its flow outputs that a wire leads on: by the output's name, the block that runs next, `"s8d1nf"`.     |
+  | `values`         | The values of its inputs that no wire feeds, which the panel shows as fields in the block.            |
+
+- A pin is an input or an output of a block. A value pin carries a value, which a script graph's blocks give as Lua values and a shader graph's as GLSL's `float`, `vec2`, `vec3` and `vec4`. A flow pin carries no value: it says what runs next. Only a script graph has flow pins.
+- A value input takes one wire, and a flow output leads on to one block; a value output may feed many inputs, and many outputs may lead on to one block. So each wire is written once, at its end that takes one, and a graph has no list of wires for two changes to conflict in.
+- The engine knows the types of blocks, each a file of its own family in the engine (8.3), with its pins and the code that it builds. The editor asks the preview for them (12.5), as it asks for a component type's properties, so the two never disagree.
+- A script graph's blocks:
+
+  | Family     | Blocks                                                                                                   |
+  | ---------- | -------------------------------------------------------------------------------------------------------- |
+  | `event`    | The functions that the engine calls (6.3), each a block that starts a flow, with what it is given as outputs: `load`, `start`, `enable`, `disable`, `destroy`, `update`, `fixedUpdate`, `lateUpdate`, `keypressed`, `keyreleased`, `mousepressed`, `mousereleased`, `touchpressed`, `touchmoved` and `touchreleased`. `message` is one that `node:send` names (7.2), such as a package's, with its arguments as outputs. `every` starts a flow each so many seconds. |
+  | `flow`     | `branch`, which goes on by a condition; `sequence`, which runs its outputs one after another; `forEach`, which runs its output for each item of a list; and `delay`, which goes on after so many seconds. |
+  | `property` | `get` and `set` the graph's own properties.                                                              |
+  | `node`     | `get` and `set` its node's place, `posX` to `sclY`; `getComponent` and `setComponent`, a property of another component of its node, or of one that a property names; and `send`, which calls `node:send` (7.2). |
+  | `math`     | Numbers, texts and toggles, and what joins them: `add`, `subtract`, `multiply`, `divide`, `equal`, `less`, `and`, `or`, `not`, `min`, `max`, `clamp` and `random`. |
+  | `debug`    | `print`, which the console shows.                                                                        |
+
+- `delay` and `every` count the seconds of their component's `update`, so they wait while its node is paused or it is off. A `delay` that is started again while it waits does not start over, as Unreal's Delay.
+- A shader graph's blocks:
+
+  | Family     | Blocks                                                                                                   |
+  | ---------- | -------------------------------------------------------------------------------------------------------- |
+  | `input`    | What LÖVE gives a shader: the colour of the drawn image at the place being drawn, `image`; that place, `uv`; the drawn thing's own colour, `color`; the place on the screen, `screen`; and `time` (6.7). |
+  | `property` | `get` a property: a value that the inspector shows on the component that uses the shader.               |
+  | `math`     | Numbers and vectors, and what joins them: `add`, `subtract`, `multiply`, `divide`, `mix`, `step`, `smoothstep`, `sin`, `cos`, `fract`, `length`, `split`, which takes a vector apart into its numbers, and `combine`, which puts them together. |
+  | `output`   | The colour that the shader gives. A shader graph has one.                                                |
+
+  A wire between two sizes of vector takes the first numbers of the longer, or repeats a single number into each, or gives a missing alpha 1, as Shader Graph does.
+- When the engine loads a graph, it builds its code once, as text in memory, and compiles it: a script graph's Lua with Lua's `load`, into a component type as a script's (6.1), and a shader graph's GLSL with `love.graphics.newShader`. So a frame runs compiled code, as fast as a script or a GLSL file that does the same, and never reads a block. Nothing is written into the project, so a graph has one file (OVERVIEW 11).
+- The built code is plain to read, a line for each block, named after the blocks. Copy as Lua Script and Copy as GLSL write it into a file of the user's (13.9).
+- The engine keeps, for each line of the built code, the block that it came from. An error in a graph's code names the graph's file and the block, and the error that the game sends names the block's id (12.2). So the console's link opens the graph in a graph panel with the block chosen. A shader graph's error when it compiles names its block in the same way, and so does a graph that cannot be built, such as one whose wire joins pins that cannot meet.
+- A script graph and a script are both component types, so a node holds both, and they reach each other as any two components do: a script reads `self.node.components.door.open`, and a graph's `node.getComponent` reads a script's property.
+- The limits:
+  - A script graph has no blocks yet for LÖVE's own functions, such as `love.audio.play`, nor for the engine's, such as `onlr.tree.spawn` (7.2); a script does that.
+  - A graph's properties are all shown in the inspector: a graph keeps no value of its own that the inspector does not show.
+
 ## 7. The engine's functions
 
 ### 7.1 A map
@@ -513,7 +696,7 @@ Every function that the engine calls in a component, and what makes it call it. 
 | It stops running, or starts again   | `disable`, or `enable`                                                            | `node:setActive`, `node:setParent` and `component:setEnabled`       |
 | It leaves the tree                  | `disable` if it runs, then `destroy`, when the frame ends                         | `node:destroy`, `node:removeComponent` and `onlr.tree.loadRoot`              |
 | Another component asks              | A function of the type's own                                                      | `node:send`, or a call such as `body:move(x, y)`                    |
-| The editor shows a view             | `loadEditor` once its node is made and after a change, `updateEditor` while its node is chosen, `drawEditor` and `bounds`, and nothing else | The node view (6.5, 12.3)                                           |
+| The editor shows a view             | `loadEditor` once its node is made and after a change, `updateEditor` while its node is chosen, `drawEditor`, `drawTreeEditor` and `bounds`, and nothing else | The node view (6.5, 12.3)                                           |
 
 ### 7.2 Functions for scripts
 
@@ -604,9 +787,12 @@ Each file of the engine holds one thing. The engine is laid out as a package is 
 | `library/build.lua`                                 | Making nodes from node files: instances, their changes and ids (9).                                                                                        |
 | `library/property.lua`                              | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
 | `library/font.lua`                                  | `onlr.font`: fonts at the size that the drawing shows them (10).                                                                                           |
+| `library/shader.lua`                                | Shaders (6.7): loading a GLSL file or a shader graph, reading its values, checking it as GLSL ES, and `time`.                                              |
+| `library/graph.lua`                                 | Graphs (6.8): reading a graph, building its code, and naming the block of a line of it.                                                                    |
+| `library/blocks/`                                   | The types of blocks (6.8), a file for each family, such as `flow.lua` and `math.lua`: each type's pins and the code that it builds.                        |
 | `library/data.lua`                                  | Reading data files (4), and loading the files that properties name.                                                                                        |
 | `library/formats.lua`                               | The definitions of the data files' formats (4.3). Only a code editor reads it.                                                                             |
-| `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua`, and the camera's in `camera/`: `view.lua`, `follow.lua`, `limits.lua` and `shake.lua`.                                                   |
+| `components/`                                       | The engine's components (10), one in each file: `sprite.lua`, `text.lua`, `shape.lua`, `paint.lua`, `shader.lua`, and the camera's in `camera/`: `view.lua`, `follow.lua`, `limits.lua` and `shake.lua`.                                                   |
 | `license.txt`                                       | The engine's licence, which an export holds (14.1).                                                                                                        |
 
 - The engine is in `packages/` as a package is, with its components in `components/`. So the editor finds the engine's components and a package's in one way. ONLR's repository keeps it so too: its `packages/` holds the engine and the packages that ONLR ships, with the same files that a project holds. Its source carries its own definitions (4.3), so it needs no definitions file.
@@ -708,7 +894,7 @@ return {
 
 ## 10. The engine's components
 
-The engine has eight component types: `onlr.shape`, a node's outline, three that draw, and the camera's four in the folder `camera/`: the view, and three that help it. A folder of types (6.1) keeps a family together, so `onlr.camera.follow` is found beside `onlr.camera.view`. They are written as scripts are, with the functions of section 7 and LÖVE alone.
+The engine has nine component types: `onlr.shape`, a node's outline, three that draw, one that draws through a shader, and the camera's four in the folder `camera/`: the view, and three that help it. A folder of types (6.1) keeps a family together, so `onlr.camera.follow` is found beside `onlr.camera.view`. They are written as scripts are, with the functions of section 7 and LÖVE alone.
 
 | Type          | Is                                                                                                  |
 | ------------- | --------------------------------------------------------------------------------------------------- |
@@ -716,6 +902,7 @@ The engine has eight component types: `onlr.shape`, a node's outline, three that
 | `onlr.text`   | A text in a font.                                                                                   |
 | `onlr.shape`  | A node's outline: a rectangle, a circle, a polygon or a line. It draws nothing in the game.          |
 | `onlr.paint`  | Draws its node's `onlr.shape`, filled or as an outline, in a colour.                                 |
+| `onlr.shader` | Draws its node and all under it through a shader (6.7): each draw alone, or all of them as one picture. |
 | `onlr.camera.view` | A view: it draws its node and all under it as a group (5), moved, turned and zoomed so that the middle of its screen shows its point. |
 | `onlr.camera.follow` | Moves its node's camera to follow a node, smoothly, with a deadzone.                          |
 | `onlr.camera.limits` | Keeps what its node's camera shows inside a rectangle, such as a level's edges.               |
@@ -749,6 +936,8 @@ Their properties use LÖVE's names wherever LÖVE has one:
 | `onlr.paint`  | `mode`            | `choice` of fill and line                     | fill       | Filled, or as an outline. A line shape is a line in either.                                      |
 |               | `lineWidth`       | `number`                                      | 1          | The width of a line and of an outline, as `love.graphics.setLineWidth`.                          |
 |               | `color`           | `color`                                       | white      | The shape's colour.                                                                              |
+| `onlr.shader` | `shader`          | `shader`                                      |            | The shader: a GLSL file or a shader graph.                                                       |
+|               | `covers`          | `choice` of draws and picture                 | draws      | `draws`: each draw of its nodes goes through the shader alone, as a hit's flash or an outline needs. `picture`: its nodes draw into one picture, which then draws through the shader, as a blur or a ripple over a whole level needs. |
 | `onlr.camera.view` | `posX`, `posY`    | `number`                                      | 0          | The point, in its node's space, that the middle of its screen shows.                             |
 |               | `rot`             | `number`                                      | 0          | Its angle, clockwise. What it shows turns the other way.                                         |
 |               | `zoom`            | `number`                                      | 1          | How large the camera shows its nodes: 2 is twice as large.                                       |
@@ -772,6 +961,13 @@ Their properties use LÖVE's names wherever LÖVE has one:
 - One value has one owner (OVERVIEW 11): `onlr.shape` holds a node's outline, and what uses an outline reads it there, each time it uses it. `onlr.paint` draws it, `physics.fixture` collides with it (11.4), a shadow caster casts a shadow of it (11.14), and `bump.body` takes its rectangle (11.3). So the user sizes a wall once, and its look, its collision and its shadow follow. Each needs `onlr.shape` (6.6).
 - `shape:outline()` gives the shape in its node's space, the origin taken off a rectangle and a circle, as LÖVE's functions take it: a rectangle's `x`, `y`, `width` and `height`, a circle's `x`, `y` and `radius`, or the `points` as one list, x, y, x, y. `shape:drawShape(mode)` draws it with LÖVE in the colour that is set; a polygon of fewer than 3 corners, or a line of fewer than 2 points, draws nothing.
 - In the node view, an outline that no `onlr.paint` draws shows as a thin green line of one pixel at any zoom, as a collider's does in Unity, so a node of a shape alone is seen and chosen; on a node that paints it, the line shows when the node is chosen.
+- `onlr.shader` holds the shader's values (6.7) in `values`, a table with a field for each. The inspector shows them under its properties, one row each, and a node file keeps those that the user set, as `values = { amount = 0.5 }`. A script sets one as a field, `shader.values.amount = 1`, and the shader gets it before the next draw. Components that name one file share its shader, so each sends its values before it draws.
+- `onlr.shader` is a group (5). With `draws`, it sets its shader, sends its values, draws its nodes, and sets back the shader that was set before it. LÖVE has one shader at a time, so a shader under it replaces it for the nodes under that one: a player's flash and its level's tint do not add up. With `picture`, it draws its nodes into a canvas of the size of what it draws into, the window or push's canvas (11.10), at the screen's pixel density, so it stays sharp on a phone. It clears the canvas to transparent, draws its nodes with the drawing's place, then draws the canvas through the shader with none, as `moonshine.chain` does (11.11). So what drew before its node shows where its nodes draw nothing, and a `picture` above other shaders takes in what they drew.
+- In the node view, `onlr.shader` draws as in the game, through `drawTreeEditor` (6.5), with `time` at 0. While its node is chosen, its `updateEditor` moves `time`, so a shader that moves with it plays, as an animation does.
+- The limits of `onlr.shader`, as they are now:
+  - Each `draws` sets its shader twice, and each set ends a batch of LÖVE's draws. So many nodes with a shader each cost many draws; one shader on their parent shades them all at the cost of one.
+  - Shaders under a `draws` do not add up, as above.
+  - A `picture` costs a canvas of the screen's size.
 - Each has `bounds` and `drawEditor` (6.3). A camera's `drawEditor` draws the frame of what it shows, in blue and 3 pixels wide, named "Camera" inside its top left, at the same size at any zoom.
 - The camera's helpers are components beside `onlr.camera.view` on its node, which need it (6.6), and a game takes those that it wants. They change the camera's own properties, so a script can do all that they do, and they leave it to one when it sets the camera itself.
   - `onlr.camera.follow` moves the camera's `posX` and `posY` in `lateUpdate` (6.4), after the scripts and the physics moved its target. Its smoothing is the same at any frame rate. `snap()` puts the camera on its target at once, as when the follow starts, a level begins, or the player is put elsewhere.
@@ -1162,7 +1358,7 @@ end
 - An effect whose component is turned off is skipped. A property that a script or a tween changes, such as a vignette's `opacity` that flux moves when the player is hurt (11.8), reaches the effect in the next frame: the chain sends each parameter that changed, before it draws.
 - An effect that joins or leaves the node makes the chain anew.
 - The chain draws into canvases of the size of what it draws into: the window, or push's canvas under a `push.screen` that has one (11.10). It draws its nodes with the drawing's place, as a camera above it set it, and its result with none, so they are not moved twice.
-- The chain's effects show only in the game: the node view does not call `drawTree` (6.5).
+- The chain's effects show only in the game: it has no `drawTreeEditor` (6.5).
 - `get()` gives moonshine's chain, made when it first draws.
 - moonshine's `fog` effect is not shipped: its file names no licence, and it was translated from another's code. The rest are MIT, or in the public domain, as each file says.
 - The limits, as they are now:
@@ -1244,7 +1440,7 @@ end
 - A node that is turned off takes its light or its caster out of the world, and turning it on puts it back (6.4).
 - `get()` gives Shädows' own object, for what the components do not do: the world's `LightWorld`, with its rooms and stars, a light's `Light`, with `SetImage`, and a caster's shadow shape, which is made again when the shape's kind changes.
 - Shädows sets a global, `shadows`, through Lua's `module`. So the package ships ONLR's copy of it, changed so that it sets none, and the `lights` sample checks so (11.2). `library/ONLR.md` lists the changes.
-- The node view shows a light's reach, or its beam, and the shape's outline (10). The light itself shows only in the game, as the node view does not call `drawTree` (6.5).
+- The node view shows a light's reach, or its beam, and the shape's outline (10). The light itself shows only in the game, as the world has no `drawTreeEditor` (6.5).
 - The limits, as they are now:
   - Shädows takes a camera's place and zoom, not its angle: under a camera that turns, the light does not turn with the world.
   - The light's canvas is multiplied over all that is in what the world draws into, also what drew before the world's node. So the world belongs on a node that draws first, such as the level's root, and what draws after it, such as a score, is not darkened.
@@ -1288,11 +1484,12 @@ end
 
 | The editor sends | Type                      | To              | For                                                                                                        |
 | ---------------- | ------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
-| A file           | `file`                    | The preview | A node file as the editor holds it, saved or not. The preview reads it in place of the project's file. |
+| A file           | `file`                    | The preview | A node file or a graph as the editor holds it, saved or not. The preview reads it in place of the project's file. |
 | A change         | `change`                  | The preview | One edit of a node's own fields in such a file, such as a moved node, or of its components' values, such as a dragged point. |
 | A view           | `view`                    | The preview | Which node file to draw, from where, at what size, and which nodes are chosen (12.3).                      |
+| A shader's view  | `shaderView`              | The preview | Which shader to draw, on which picture, at what size, for a graph panel's preview (13.9).                 |
 | Shown            | `shown`                   | The preview | The editor has taken the last frame (12.4).                                                                |
-| A question       | `question`                | The preview | What a component type declares (12.5).                                                                     |
+| A question       | `question`                | The preview | What a component type declares, what a shader's values are, which types of blocks there are, or a graph's built code (12.5). |
 | Reload           | `reload`                  | The preview | A file of the project that is not Lua changed, such as an image.                                           |
 | Stop             | `stop`                    | Both runners    | The runner ends.                                                                                           |
 | Pause, Step, Resume | `pause`, `step`, `resume` | The game | The game stops, runs one frame, or goes on (12.1).                                                      |
@@ -1301,13 +1498,13 @@ end
 
 | The engine sends | Type     | From            | For                                                            |
 | ---------------- | -------- | --------------- | -------------------------------------------------------------- |
-| A frame          | `frame`  | The preview | The picture of a view (12.4).                                  |
+| A frame          | `frame`  | The preview | The picture of a view, or of a shader's view (12.4).           |
 | Bounds           | `bounds` | The preview | The nodes' bounds and places, when they change (12.3).         |
-| An answer        | `answer` | The preview | A type's properties, or why its file does not load (12.5).     |
+| An answer        | `answer` | The preview | What a question asked, or why its file does not load (12.5).   |
 | The tree         | `tree`   | The game | The running tree's nodes, when it changes (12.6).              |
 | Values           | `values` | The game | The watched nodes' places and values (12.6).                   |
 | Stats            | `stats`  | The game | The frames a second, and the time of update and draw (12.6).   |
-| An error         | `error`  | Both runners    | Its message, file, line and stack, and what raised it (13.1).  |
+| An error         | `error`  | Both runners    | Its message, file, line and stack, and what raised it, with a graph's block (13.1, 6.8). |
 
 - A change carries a node's own fields, its name, its place, its `z` and whether it is active, and values of its components that a node file holds as they are, such as a shape's `width` or its `points` that the Shape tool drags (13.3). The preview sets them on the view's nodes, so a drag draws at once; a component reads them where it uses them, as `onlr.shape`'s users do (10). For any other edit, and at a drag's release, the editor sends the file again, and the preview makes the views' nodes anew.
 - A node file that does not load leaves its view empty, and its error names the view.
@@ -1340,6 +1537,7 @@ end
 
 - The editor never loads a script. To show a type's properties, it asks the preview, which loads the file as the game would and answers with the type's properties (6.2): their names, kinds, defaults and options, in their order. It answers with the types that the type needs too (6.6).
 - When a Lua file of the project other than a node file changes on disk, such as a script or the manifest, the editor starts the preview again, which takes about a tenth of a second, and asks again. So nothing of the old code stays in it.
+- The editor does not read a shader or build a graph either. It asks the preview for a shader's values (6.7), which the preview reads from a GLSL file's text or a shader graph's properties, with the result of checking the shader as GLSL ES: so the inspector shows `onlr.shader`'s rows, and the console warns of a shader that a phone cannot run. It asks again when the file changes, or when the editor's copy of a graph does. It asks once for the types of blocks (6.8), which the graph panel's list offers, and asks for a graph's built code when the user copies it (13.9).
 - While the preview is down, such as after an error in `main.lua`, the node view shows the error, and the inspector shows the values that the node file holds, without their kinds.
 
 ### 12.6 The running game
@@ -1373,6 +1571,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 | `project.lua`, `format.lua`, `resolve.lua` | The open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. |
 | `nodeview.lua`, `runners.lua`, `link.lua`, `hints.lua` | The node view, the runners and the link, and the functions Play, Play This File, Pause, Step and Stop. |
 | `panels.lua`, `nodes.lua`, `inspector.lua`, `tools.lua`, `settings.lua`, `history.lua`, `search.lua`, `shared.lua` | The other panels of ONLR's own: the nodes panel, the inspector, the tools, the project settings, the history and the search. |
+| `graph.lua`                             | The graph panel (13.9).                                                                       |
 | `export.lua`, `runtimes.lua`           | Export (14), and LÖVE's runtimes (15).                                                        |
 | `runner/`                               | The runner's files (12.1), which the editor names to LÖVE and never loads itself.              |
 
@@ -1451,7 +1650,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - A node's or a component's row also has Pick, as Unity's round button: after it, the next click on a node, in a node view or in the nodes panel, sets the reference, and does not choose the node, so the inspector keeps showing what it showed. The node view says that it waits, in a line at its bottom, and the row says so in place of its value; the row's Cancel, Escape, or a click beside the nodes in the view ends the pick, setting nothing. A node of another node file, or for a component's reference a node without the type, sets nothing, and the console says why.
 - A file's row is also a field of its path, from the project's folder, with a button that chooses the file in the system's dialog, which shows the endings that LÖVE reads for its kind, or the property's `extensions`. A game reads only its own folder (3.1), so a file from outside the project, chosen in the dialog, typed, or dropped on a row, the node view or the nodes panel, is copied into it first. The editor asks, naming where it goes: into a folder by its kind, `images/` for an image, `sounds/` for a sound and `fonts/` for a font, made when it is missing, and the project's top folder for any other. When a file of that name is there with the same bytes, it is used and nothing is copied; with other bytes, the copy gets a number before its ending, `gem 2.png`. A user who declines keeps the value as it was. The copy is not in the history: the user deletes it in the files panel.
 - A type or a property that the editor does not find, such as after a script was renamed outside the editor, shows in the inspector as the node file writes it. The user can give its values to another type or property. Until then they are kept (4.2).
-- The types that adding a component offers are the files of the project's `components/` (3.1), and of the `components/` of the engine and of each package (11.2).
+- The types that adding a component offers are the files of the project's `components/` and `graphs/` (3.1), and of the `components/` of the engine and of each package (11.2). A script and a graph show alike.
 - Duplicating or pasting nodes gives the copies new ids. A property of a copy that names another node of the copies names that node's copy; one that names a node outside them is kept.
 - A new script starts from ONLR's template: the type's table, empty functions for `load`, `update` and `draw`, and `return`.
 
@@ -1482,7 +1681,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 13.7 Files
 
 - The files panel shows the project's folder, apart from what starts with a dot, as a tree or as a grid of icons, in which an image shows as a small picture, and a node file and a component's script have badges of their own. Its right click's menu makes folders, scripts and node files, renames and moves them, and deletes them after asking (OpenECS-std DESIGN 29). Files dropped on it go into the folder under the pointer: a file of the project moves there, as a rename does, and a file from another application is copied there, without asking, since the user chose the folder. The question names the node files that name the file. A deleted file goes to the system's trash, or to `.onlr/trash/` when the system has none.
-- A click on a file chooses it and shows it without opening it: in the asset viewer, when one is open, and in the inspector, which shows its name, its kind, its size and a node file's count of nodes, until nodes are chosen. A double click, a second click within 0.4 seconds, opens it: a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
+- A click on a file chooses it and shows it without opening it: in the asset viewer, when one is open, and in the inspector, which shows its name, its kind, its size and a node file's count of nodes, until nodes are chosen. A double click, a second click within 0.4 seconds, opens it: a node file in a node view, a graph or a shader graph in a graph panel (13.9), a script or a GLSL file in the user's code editor, and any other file in the asset viewer. The right click's menu makes a graph in `graphs/` and a shader graph in `shaders/` too.
 - The files panel follows what is chosen, as Unity's Project window does: when nodes are chosen, it chooses their node file, or the base of a chosen instance, and opens the folders above it; and what the search opens (13.8) it chooses too. It does so with OpenECS-std's `files.reveal`, which does not run the editor's `choose`, so the inspector keeps the nodes. Its Lock keeps it where it is, so the user can keep a folder open while choosing nodes, and drag its files onto them. Each files panel has its own lock, kept in the session.
 - Renaming, moving and deleting files are not in the history. Before a rename or a move, the editor saves every file with changes. Then it renames the file, changes every path and type name that names it, in every node file and in the manifest, and saves them. The user undoes it by renaming or moving the file back, and gets a deleted file back from the system's trash.
 
@@ -1501,6 +1700,30 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 
 - Up and Down choose a result, and Return or a double click opens it. It shows the first 200 results. It reads the project again when the project changes, opens or closes.
 - The limits, as they are now: a function written another way, such as `Player.jump = function(`, is not found; the engine's and the packages' functions are not searched, as the project holds copies of them; and nothing is found inside a file's text, as a code editor finds it.
+
+### 13.9 The graph panel
+
+``` text
+┌ Graph: shaders/water.lua ──────────────────────────────────────────┐
+│ [Copy as GLSL]                                                     │
+│ Properties     ┌ uv ────┐   ┌ sin ───┐   ┌ output ─┐  ┌ Preview ─┐ │
+│  speed  2.0    │      ● │───│ ●    ● │───│ ● color │  │ ░▒▓▒░▒▓▒ │ │
+│  [+]           └────────┘   └────────┘   └─────────┘  │ [Image ▾]│ │
+│                                                       └──────────┘ │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+- A graph panel shows one graph (6.8), as a node view shows one node file. Many can be open, each a panel of its own. The graph's folder says its kind, so one panel type serves both: a script graph's blocks in `graphs/`, and a shader graph's, with a preview, in `shaders/`.
+- It draws on a GPU surface, with ui's element of blocks and wires (OpenECS-std DESIGN 5), so moving the view and zooming stay smooth. A block is ui's elements: its title, its pins, and a field of ui for each input that no wire feeds, such as a number field, a toggle or a colour.
+- A pin shows its kind: a flow pin is a triangle, and a value pin a dot, in a colour for each kind of value. A wire has its output's colour.
+- A right click on empty space opens the list of blocks, in folders by their families, with a search, as Add Component's list does (13.4), and adds the chosen one at the pointer. A wire dragged from a pin and dropped on empty space opens the same list with only the blocks that it can join, and joins the new one.
+- A drag from a pin to a pin joins them, when their kinds can meet. A wire to an input that has one replaces it, as a flow output's does. A right click on a pin, or Alt with a click on it, takes its wires off.
+- Choosing and moving are the node view's (13.3): a click chooses a block, Shift adds to the choice, a drag from empty space chooses every block in its rectangle, and a drag on a block moves the chosen ones. The wheel zooms around the pointer, a drag with the middle button, or with Alt, moves the view, and F fits it to the chosen blocks. Delete, Copy, Paste and Duplicate are the node view's too, on their keys; copies get new ids, and wires between copies join the copies.
+- A list at the panel's left holds the graph's properties (6.8): each one's name, kind and default, and its options in a row that opens below it. Its button adds one. A property dragged into the panel makes a block that gets it, and with Alt one that sets it, as Unreal's variables do. A script graph's list holds its `needs` below them.
+- Every change is a record of the project's history (13.6). A graph with changes marks its panel as unsaved, and Play saves it with the node files. The editor sends the graph as it holds it to the preview (12.2), so the node views show a shader graph's changes before it is saved.
+- Copy as Lua Script, on a script graph, and Copy as GLSL, on a shader graph, ask for a new file's name: a script in `components/`, or a `.glsl` file beside the graph. They write the graph's built code there (6.8), which the user then owns. The graph stays as it was, and the two are not kept in step.
+- A shader graph shows a preview at the panel's right: the shader on a picture, which is a checker until the user chooses an image of the project in its dropdown. The preview draws it, as the game would (12.2), and the panel shows its frames as a node view does (12.4). While the panel shows and the shader uses `time`, the preview draws it 30 times a second, as it does for `updateEditor` (6.5).
+- A block that an error names (6.8), when the graph is built or while the game runs, shows red, with the error as its tooltip, until the graph changes or the game plays again.
 
 ## 14. Export
 
@@ -1587,6 +1810,8 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 **AppImage.** A way to ship a Linux program as one file. LÖVE's Linux release is one.
 
+**Block.** A step of a graph, such as an event, a branch or an addition, with pins.
+
 **Canvas.** A picture in the graphics card's memory that LÖVE draws into instead of the window.
 
 **Component type.** A Lua file that returns a table with a component's properties and functions.
@@ -1598,6 +1823,12 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 **Frame.** One picture that LÖVE draws: of the game, or of a view.
 
 **Game.** The runner that runs the game when the user plays it: LÖVE's own window, as an exported game.
+
+**GLSL.** The language of shaders that LÖVE compiles on a computer.
+
+**GLSL ES.** GLSL's stricter form, which LÖVE compiles on a phone.
+
+**Graph.** Blocks joined by wires, from which the engine builds code: a script graph, which is a component type, or a shader graph, which is a shader.
 
 **Group.** A node that draws with all under it as one, through a component's `drawTree`.
 
@@ -1617,6 +1848,8 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 **Package.** A library made ready for ONLR: a folder of `packages/` with the library, its components and its node files.
 
+**Pin.** An input or an output of a block, which a wire joins to another's.
+
 **Plugin.** A module that gives OpenECS panels and functions.
 
 **Preset.** The file that tells OpenECS which plugins and panels a tool starts with.
@@ -1633,6 +1866,8 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 **SDL.** The library through which LÖVE and OpenECS use windows, input and graphics.
 
+**Shader.** A small program that the graphics card runs for each pixel that LÖVE draws, to change its colour.
+
 **Transform.** LÖVE's object for a position, a rotation and a scale together.
 
 **Top node.** The node that the game loads once and keeps, above every root.
@@ -1642,3 +1877,5 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 **Variant.** A node file whose first node is an instance of another node file.
 
 **View.** A node file as the preview draws it: seen from a point, at a zoom and a size.
+
+**Wire.** A line in a graph from one block's output to another's input.
