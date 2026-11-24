@@ -169,6 +169,12 @@ What the owner wants worked on, in this order.
     - **The tests' checks.** `test.errors()` at the test's end checks that no plugin reported an error; `test.titleBar()` checks the title bar's menus once they are ONLR's (OpenECS DESIGN 17.5). Size: S.
     - **The profiler's functions.** `ecs.profile` now names the Lua functions that take the most time, in the profiler's Functions tab (OpenECS DESIGN 3.5): a check of the editor on a large node file needs no code. Size: S.
   - Still open from OpenECS's updates of 2026-11-15 to 18: the console's double click goes to a file and line, so the game's errors and `print`s name the project's file from the project's folder, `components/player.lua:12:` (DESIGN 12.2), to check with a stack's lines; the key list shows ONLR's functions by their names, so each name says what it does to a user; `ui.graph` could show the running game's frame times, sent through the link, for later.
+- **Skills for ONLR's agents.** ONLR has none; OpenECS's are review, measure, verify, pull-requests, plugin, interface-change, submodule-bump and release. A repository's own skills load in every session, cloud sessions too, while a plugin from a marketplace that `.claude/settings.json` names does not install in a cloud session, and an enabled plugin's skills are listed in every session of every repository. OpenECS's skills also speak of C, clang-tidy and OpenECS's examples, which ONLR has not. So ONLR gets small skills of its own, each naming DESIGN's sections and linking OpenECS's skill for the shared method rather than repeating it, so DESIGN stays the one source:
+  - `verify`: the screenshot of the editor or a game, from a copy of a sample in `build/shots/`, as CLAUDE.md's Checks say now, which moves there.
+  - `measure`: a game's frame on `samples/speed` with `jit.p`, and the editor on the same sample with OpenECS's Release build, three runs, the middle one, as this review measured.
+  - `review`: ONLR's areas and their DESIGN sections, in OpenECS's review skill's form.
+  - `openecs-change`: a change in OpenECS, OpenECS-std and OpenECS-examples, and the order their pull requests land in.
+  CLAUDE.md then points to them. The owner decides (see the review's questions).
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. ONLR's work makes them there, as CLAUDE.md says, when that is better than working around them:
   - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
   - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the runner on Linux and `cmd /c` on Windows.
@@ -234,6 +240,24 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 - **P2 · Each sample's packages are listed in three places, already apart.** `shuild.c:38`, DESIGN 16, `.luarc.json:3`. DESIGN gives `tilemap` only sti. Glob `packages/*/library` in `.luarc.json` and let DESIGN name shuild's list. Size: S.
 - **P2 · The editor's test depends on the computer.** `samples/editor/editortest.lua:1053-1068` The Linux build passes only when `LOVE` is an unpacked AppImage, as CI has it, and the Windows build downloads 10 MB into the user's own `~/.local/share/onlr`. Set `XDG_DATA_HOME` in shuild's tests, and say what the test needs in DESIGN 16. Size: S.
 - **P3 · CI and releases.** `checks.yml:101` downloads LÖVE without checking its hash; `checks.yml:91` takes OpenECS's default branch, not the built commit; `release.yml` does not need the checks to have passed; `check.sh:49-57` ignores the Lua check's exit status. Size: S.
+
+**Guide and keys**
+
+- **P1 · The guide describes `dev`, while its link gives 0.1.0.** `GUIDE.md` 1.2 and `README.md:9` send readers to the releases, where 0.1.0 has no search, history, Rect tool, Scale to the window, window sizes or Shift+A (`git show v0.1.0:plugins/onlr/search.lua` finds nothing), which GUIDE 2, 2.1, 6.2 and 10 describe. Say which version the guide describes, or release. Size: S.
+- **P1 · Ctrl+Z, Ctrl+Y and Ctrl+S work only in ONLR's panels.** `plugins/onlr/panels.lua:23-27` binds them in the nodes panel, the inspector, the tools, the project settings, the history and the search, and `nodeview.lua:1664-1675` in the node view; in the files panel, the console, the viewer and export they do nothing. GUIDE 2 and 10 say everywhere. Bind them for the whole tool in `preset.lua`'s `keys`, as Ctrl+K is. Size: S.
+- **P2 · The project opened last is forgotten.** `project.lua:2163-2172` keeps the open project and the projects opened last in the plugin's state, which OpenECS restores only with `ecs.keepSession`, off by default (OpenECS DESIGN 13.4); the preset does not set it. So DESIGN 13.2's "the editor starts with the project it was closed with" and the project settings' list of projects opened last do not hold, nor do the locks kept in the session (13.4, 13.7). Keep them in ONLR's own file in the user's data folder, or set the setting in the preset. Size: S.
+- **P2 · GUIDE 1.4 misses Id and Game version** (`settings.lua:165-166`), and GUIDE 9 does not say that a Linux build needs LÖVE's unpacked AppImage until the Linux runtime has an address (`runtimes.lua:29`). Size: S.
+
+**Runner and link, documents**
+
+- **P2 · DESIGN 12.2's table of messages misses `halted` and `hello`**, which `plugins/onlr/runner/init.lua:76` and `runners.lua:430` send, and the fields `hidden` and `closed` of `view` and `tree` of `watch` (`runners.lua:222-223`, `:305`, `:489`). Size: S.
+- **P2 · DESIGN 12 says what the code does not do yet.** The editor listens on every address, not `127.0.0.1` alone (`runners.lua:131-137`, std's `net`, see [Tasks](#tasks)); Start the Preview Again has no button or menu, only the search and the key list (`nodeview.lua:1574`); the preview's printed lines reach the console only when it stops (`runners.lua:518-519`); the Linux runtime has no address, and would be unpacked as a zip (DESIGN 15.2); the offer to move a project to another LÖVE is not written (DESIGN 15.1). Write each as a limit where it is described. Size: S.
+- **P2 · Colours are written out.** `#e06c75` and `#98c379` in the nodes panel, the tools, the settings, the inspector and the node view, and the node view's grid in `#ffffff10` and `#ffffff60`, stay the same in OpenECS's light theme (OpenECS DESIGN 12.4). Use the theme's names where they exist, and check the light theme by a screenshot. Size: S.
+
+**Releases and this file**
+
+- **P2 · A release from `dev` would hold an OpenECS that lacks what the editor calls.** `.github/workflows/release.yml:16` names OpenECS 0.7.0, whose std has no `files.reveal`, which `panels.lua:106` and `search.lua:46` call; `README.md:24` tells readers to unpack that release. The next ONLR release needs OpenECS's next. Size: M.
+- **P3 · Items of this file that are done or out of date.** The release of 0.1.0, in Tasks, is published; the files panel's handlers exist (`files.setHandlers`); the tool's menu takes plugins' entries now (`ecs.app.addMenuEntry`), though not ones that change while the tool runs; `cmd /c` on Windows, in "What OpenECS-std needs", is not how `runners.lua:144-148` starts LÖVE; Libraries names `shadows.shape.box` and physics' folders, which are `shadows.caster` and flat now. Size: S.
 
 **Engine and documents**
 

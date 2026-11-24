@@ -7,7 +7,7 @@ Notes for agents and the owner that belong in no other document: why the tools a
 - In a cloud session, `.claude/hooks/session-start.sh` installs at its start what `check.sh` and `test.sh` need: EGL with Mesa, LÖVE 11.5 from its AppImage, the Lua language server, and the submodules, LÖVE's definitions among them. Elsewhere it does nothing.
 - LÖVE's AppImage is unpacked with `--appimage-extract`, which needs no FUSE, and its `AppRun` is run as `love`.
 - `shuild.c`'s `--test`, which `test.sh` calls, runs LÖVE with SDL's offscreen driver, which needs EGL, and with OpenAL Soft's null driver, which needs no sound device. On a computer without a graphics card, Mesa draws in software.
-- `.luarc.json` names LuaJIT for every Lua file, the plugins too: they run in OpenECS's Lua 5.5, so they keep to what both have. It turns off `duplicate-set-field`, since every sample defines `love.conf` and some define `love.draw`.
+- `.luarc.json` names LuaJIT for every Lua file, the plugins too: they run in OpenECS's LuaJIT 2.1, as the games run in LÖVE's, and keep to LuaJIT 2.1's syntax without its 3.0 extensions, which LÖVE 11.5's LuaJIT lacks. It turns off `duplicate-set-field`, since every sample defines `love.conf` and some define `love.draw`.
 - `.luarc.json` names `dependencies/love2d/library`, LÖVE's definitions from LuaCATS, a submodule, and `OpenECS/include`, where the editor's plugins find the `ecs` module.
 - `check.sh` checks Lua files with LuaLS over the whole folder and prints only the named files' problems, because LuaLS 3.15 finds nothing in a file that it checks alone.
 - `.luarc.json` leaves every folder named `library` out of the check: a package's `library/` holds its library unchanged.
