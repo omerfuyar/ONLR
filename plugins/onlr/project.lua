@@ -53,9 +53,18 @@ local P
 
 local recent = {} ---@type string[] the folders of the projects opened last
 
-for _, name in ipairs({ "opened", "closed", "changed", "chosen", "tool", "types", "saved", "disk", "said", "settings", "renamed", "picking" }) do
-  ecs.event.declare(name)
-end
+ecs.event.declare("opened", "A project opened")
+ecs.event.declare("closed", "The project closed")
+ecs.event.declare("changed", "Node files changed, by an edit, an undo or a redo")
+ecs.event.declare("chosen", "The chosen nodes changed")
+ecs.event.declare("tool", "The node view's tool changed")
+ecs.event.declare("types", "The project's component types changed")
+ecs.event.declare("saved", "Node files were saved")
+ecs.event.declare("disk", "A file of the project changed on disk")
+ecs.event.declare("said", "The project has a line for the console")
+ecs.event.declare("settings", "A setting of the project changed")
+ecs.event.declare("renamed", "A file of the project was renamed")
+ecs.event.declare("picking", "A row of the inspector started or ended picking a node")
 
 local function say(text)
   ecs.log.info(text)
@@ -676,10 +685,10 @@ local function removeFolder(path)
     if entry.type == "folder" then
       removeFolder(path .. "/" .. entry.name)
     else
-      os.remove(path .. "/" .. entry.name)
+      fs.remove(path .. "/" .. entry.name)
     end
   end
-  os.remove(path)
+  fs.remove(path)
 end
 
 -- The folder that the editor was started in. fs reads a relative path from the executable's folder, so the editor
@@ -1930,7 +1939,7 @@ end
 local function choose(file, paths, unrecorded)
   local p = assert(P)
   -- A copy, so that the caller's list does not change a record.
-  local chosen = { file = file, paths = { table.unpack(paths or {}) } }
+  local chosen = { file = file, paths = format.copy(paths or {}) }
   if not unrecorded and not sameChoice(p.chosen, chosen) then
     local last = p.history[p.position]
     if p.joinable and p.joinable == last then

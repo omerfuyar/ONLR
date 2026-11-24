@@ -47,7 +47,7 @@ To work on ONLR itself, or to run it from its repository, see [README.md](README
 
 ### 1.3 A new project
 
-1. Right click the editor's title bar and choose **New Project**, or press **New project** in the **Project** panel, a tab beside the inspector.
+1. Choose **File**, then **New Project**, in the title bar, or press **New project** in the **Project** panel, a tab beside the inspector.
 2. Choose an empty folder. The editor makes the project in it and opens it.
 
 The project is a folder that LÖVE runs as it is (DESIGN 3.1):
@@ -80,7 +80,7 @@ LÖVE draws a game at its own pixels from the window's top left. So a larger win
 
 ## 2. The editor
 
-The editor is made of panels. Each can be moved, put beside another, or put in tabs, by dragging its tab. The **panels** list in the title bar's right-click menu opens a panel that was closed.
+The editor is made of panels. Each can be moved, put beside another, or put in tabs, by dragging its tab. The title bar's menus, **File**, **Edit**, **Game** and **Window**, hold what acts on the whole project, and its buttons ▶, || and ▶| play, pause and step the game. A panel that was closed opens again from the list of panels, under **Tools**.
 
 | Panel             | Where it starts         | What it does                                                                                     |
 | ----------------- | ----------------------- | ------------------------------------------------------------------------------------------------ |
@@ -89,7 +89,7 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 | Node view         | Middle                  | The node file drawn as the game draws it: choose nodes, and move, turn and scale them.           |
 | Inspector         | Right                   | The chosen nodes' place and components, and their values.                                      |
 | Project, Export   | Tabs beside the inspector | The project's settings (1.4), and export (9).                                                  |
-| Asset viewer      | Under the inspector     | The picture, sound or text of the file chosen in the files panel.                                |
+| Viewer            | Under the inspector     | The picture, sound or text of the file chosen in the files panel.                                |
 | Console           | Bottom                  | What the game prints, and its errors. A click on an error's file opens it in your code editor.   |
 | Files             | A tab beside the console | The project's files: open, rename, move and delete them, and make folders, scripts and node files. |
 | History           | A tab beside the console | Everything that you did, which a click undoes or redoes to.                                     |
@@ -130,7 +130,7 @@ This makes a small game: a square that the arrow keys move, coins that it takes,
 ### 3.1 The player
 
 1. Open `nodes/start.lua`: double click it in the files panel, or it is open already in a new project.
-2. Right click empty space in the node view and choose **Add Node Here**. Rename it `Player`: press F2 in the nodes panel, type the name and press Return.
+2. Right click empty space in the node view and choose **Add node here**. Rename it `Player`: press F2 in the nodes panel, type the name and press Return.
 3. In the inspector, choose `onlr.shape` in **Add component**, at the inspector's end; the types are in folders by their names, so it is under `onlr`. Its kind is a rectangle of 32 by 32. Set **Width** and **Height** to 24, and its **Origin** to 12 and 12, so the node's place is the square's middle.
 4. Add `onlr.paint`. It draws the node's shape. Choose a colour.
 
@@ -311,9 +311,9 @@ Nodes have no tags: a type is one. An empty script `enemy` on every enemy, and `
 
 ## 5. Node files and instances
 
-- **Save as Node File**, in a node's right-click menu, moves the node and all under it into a node file of its own, and leaves an instance of it in its place. So a thing that you built in a level becomes one that every level can use.
-- **New Variant**, in the menu of empty space in the nodes panel, makes a node file that is an instance of the open one, such as a big coin made from the coin: it changes what it needs, and follows the coin in the rest.
-- **Open Base**, on an instance, opens the node file that it is an instance of.
+- **Save as node file**, in a node's right-click menu, moves the node and all under it into a node file of its own, and leaves an instance of it in its place. So a thing that you built in a level becomes one that every level can use.
+- **New variant**, in the menu of empty space in the nodes panel, makes a node file that is an instance of the open one, such as a big coin made from the coin: it changes what it needs, and follows the coin in the rest.
+- **Open base**, on an instance, opens the node file that it is an instance of.
 - An instance changes values and adds components and children. It removes nothing: turn off what it does not want, with the node's **Active** or the component's **Enabled**.
 - A script makes an instance with `onlr.tree.spawn`, as a gun makes a bullet. A `nodeFile` property with `preload = true` loads the node file with the level, so the first spawn does not wait for the disk.
 

@@ -347,7 +347,7 @@ local FIELDS = {
 local function lockToggle(state, file, paths)
   return ui.toggle(state.lock ~= nil, { id = "lock", label = "Lock", tooltip = "Keep showing these nodes while others are chosen",
     onChange = function(on)
-      state.lock = on and { file = file, paths = { table.unpack(paths) } } or nil
+      state.lock = on and { file = file, paths = format.copy(paths) } or nil
       state.panel:redraw()
     end })
 end
