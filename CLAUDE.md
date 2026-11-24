@@ -41,8 +41,13 @@ The plan is done, and the implementation has started. Build it in small mileston
 - Think from the editor's side too. A node file is read, written and tracked by the editor, not by a person: choose its format for that.
 - Composition over inheritance, everywhere: in the engine, in the editor and in what users are given (OVERVIEW 11).
 - Never be afraid of removing code and breaking things. ONLR has no users yet: delete a concept, a format or a whole design when a better one is found, and keep nothing for compatibility. Give versions little thought.
-- OpenECS changes often. Know what it and its standard plugins can do, and read them again before you rely on them: [OVERVIEW.md](https://github.com/omerfuyar/OpenECS/blob/dev/OVERVIEW.md), [DESIGN.md](https://github.com/omerfuyar/OpenECS/blob/dev/DESIGN.md) and [OpenECS-std's DESIGN.md](https://github.com/omerfuyar/OpenECS-std/blob/dev/DESIGN.md). Do not bind ONLR's design to it: only DESIGN.md's section on the editor depends on OpenECS, and it links to OpenECS's documents and repeats nothing of theirs.
-- OpenECS-std is the owner's too, and may change. When changing a standard plugin is the better solution, propose the change instead of working around the plugin, and note it in TODO.md, Tasks.
+- OpenECS changes often. Know what it and its standard plugins can do, and read them again before you rely on them: [DESIGN.md](https://github.com/omerfuyar/OpenECS/blob/dev/DESIGN.md), [GUIDE.md](https://github.com/omerfuyar/OpenECS/blob/dev/GUIDE.md) and [OpenECS-std's DESIGN.md](https://github.com/omerfuyar/OpenECS-std/blob/dev/DESIGN.md). Do not bind ONLR's design to it: only DESIGN.md's section on the editor depends on OpenECS, and it links to OpenECS's documents and repeats nothing of theirs.
+- OpenECS, OpenECS-std and OpenECS-examples are the owner's too. When a fix or a feature belongs in one of them, make it there instead of working around it in ONLR:
+  - Work in `../OpenECS`, with its `std/` and `examples/`, on a branch of that repository named as OpenECS's file says. OpenECS's CLAUDE.md and its skills apply there: pull-requests, interface-change for a change to the plugin interface, submodule-bump for moving `std/` and `examples/`, and a feature that works from C and from Lua alike.
+  - A change to the core or a standard plugin gets a test in OpenECS-examples, in the same piece of work.
+  - Merge it into OpenECS's `dev`, then build OpenECS again and lay out `OpenECS/` from it (Checks), before ONLR relies on it.
+  - Write nothing of ONLR's into OpenECS's documents.
+  - Ask first when the change is a matter of taste for other tools, such as a new look or a default; note it in TODO.md, Tasks, until the owner answers.
 - The user of ONLR knows LÖVE, or learns it. Keep LÖVE's names and ways, so what they know stays true. They never see OpenECS's internals.
 - Before recommending a library for the engine, check LÖVE first, as OpenECS's file says of SDL. Dependencies stay few (OVERVIEW 9).
 
