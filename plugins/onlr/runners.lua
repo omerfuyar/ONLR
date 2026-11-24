@@ -105,8 +105,15 @@ local function mix(base, tint, amount)
   return ("#%02X%02X%02X"):format(out[1], out[2], out[3])
 end
 
+-- Whether a game plays, and whether it is paused: settings that the editor sets for the run only, so the title bar shows its Play
+-- and Pause buttons on while they are true (DESIGN 13.2, OpenECS DESIGN 6.11). Their values in the user's files mean nothing.
+ecs.setting.declare({ name = "playing", type = "bool", default = false, description = "Whether a game plays; the editor sets it, for the title bar's Play button" })
+ecs.setting.declare({ name = "paused", type = "bool", default = false, description = "Whether the game is paused; the editor sets it, for the title bar's Pause button" })
+
 ecs.event.subscribe("onlr.state", function()
   local playing = runners.running.playing == true
+  ecs.setting.setForRun("onlr.playing", playing or nil)
+  ecs.setting.setForRun("onlr.paused", (playing and runners.running.paused == true) or nil)
   if playing ~= tinted then
     tinted = playing
     local tint = ecs.setting.get("onlr.playTint")

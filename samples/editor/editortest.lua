@@ -54,9 +54,20 @@ return {
     end
     test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
-    -- the tool's menu is short: what concerns the whole tool, and no export
-    test.match(test.setting("ecs.toolMenu"), {
-      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop",
+    -- the title bar holds the editor's menus, then Play, Pause and Step, which are off while nothing plays (DESIGN 13.2)
+    local function titleParts()
+      local parts = {}
+      for _, part in ipairs(test.titleBar()) do
+        if part.kind == "menu" or part.kind == "button" then
+          parts[#parts + 1] = { kind = part.kind, label = part.label, on = part.on }
+        end
+      end
+      return parts
+    end
+    test.match(titleParts(), {
+      { kind = "menu", label = "File" }, { kind = "menu", label = "Edit" }, { kind = "menu", label = "Game" },
+      { kind = "menu", label = "Window" },
+      { kind = "button", label = "▶", on = false }, { kind = "button", label = "||", on = false }, { kind = "button", label = "▶|" },
     })
     -- the preset puts the asset viewer under the inspector, in the same column
     local inspector, viewer = test.rect(panelOf(test, "onlr.inspector")), test.rect(panelOf(test, "viewer.file"))
@@ -1020,6 +1031,8 @@ return {
     check(read("played.txt") == "Start", "the game played")
     check(read("window.txt") == "360x800", "in the window's size that Play chose: " .. read("window.txt"))
     check(read(".onlr/editor.lua"):find('playSize = "360x800"', 1, true) ~= nil, "which the project's editor settings keep")
+    -- the title bar's Play button is on while the game plays
+    test.match(titleParts()[5], { label = "▶", on = true }, "Play is on while the game plays")
     -- the panels, the tabs and the space around them take some of the tint while the game plays, and lose it at Stop
     local tinted = {}
     for _, name in ipairs({ "ecs.colorPanel", "ecs.colorTabRow", "ecs.colorBackground" }) do
