@@ -20,7 +20,7 @@ SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null love . --test
 
 ## 2. The editor
 
-Build OpenECS in Release (`../OpenECS`, `./shuild.ignore -b release`). Copy `samples/speed` to the scratchpad and write a test beside it whose `preset` is ONLR's `preset.lua` by its path from there, and `files = { "manifest.lua" }`. After `test.wait(6)`, so the preview has loaded, time what the change is about with `os.clock()`: clicks in the node view or the nodes panel, a drag of a node. Run it with `LOVE=love SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null ../OpenECS/build/Release/bin/OpenECS --test bench.lua`.
+Build OpenECS in Release (`../OpenECS`, `./shuild.ignore -b release`). Copy `samples/speed` to the scratchpad and write a test beside it whose `preset` is ONLR's `preset.lua` by its path from there, and `files = { "manifest.lua" }`. After `test.wait(6)`, so the preview has loaded, time what the change is about with `os.clock()`: clicks in the node view or the node hierarchy, a drag of a node. Run it with `LOVE=love SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null ../OpenECS/build/Release/bin/OpenECS --test bench.lua`.
 
 ## 3. Report
 

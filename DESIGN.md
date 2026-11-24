@@ -90,11 +90,10 @@ mygame/
     player/                   the type player, with modules of its own
       init.lua
       states.lua
-  graphs/                   the graphs that are component types (6.8)
+  ira-scripts/              the ira-scripts: graphs that are component types (6.8)
     door.lua                  the type door
-  shaders/                  the shader graphs, and GLSL files (6.7)
+  ira-shaders/              the ira-shaders: graphs that are shaders (6.8)
     water.lua
-    flash.glsl
   shared/                   the user's Lua code that components share
     score.lua
   packages/                 the engine, packages and libraries
@@ -135,12 +134,12 @@ mygame/
   - A folder without an `init.lua` only groups what is in it: `components/enemies/bat.lua` is `enemies.bat`.
   - A file and a folder of one name cannot be side by side, such as `enemies.lua` and `enemies/`, since the name would be a type and a group at once (6.1). The editor says so, and the engine refuses both.
 - `nodes/` holds the node files (5). Every Lua file in it, in any folder of it, is one: `nodes/level.lua`.
-- `graphs/` holds the script graphs, each a component type named by its path, as a script is in `components/`: `graphs/door.lua` is `door` (6.8). `shaders/` holds the shader graphs, each a Lua file. A GLSL file may be there too, or in any other folder, as an image may (6.7).
+- `ira-scripts/` holds the ira-scripts, each a component type named by its path, as a script is in `components/`: `ira-scripts/door.lua` is `door` (6.8). `ira-shaders/` holds the ira-shaders, each a Lua file. A GLSL file is in any folder, as an image is (6.7).
 - `shared/` holds the user's Lua code that is not a component and that components share: what keeps a value when the root changes, such as a score, and functions that many scripts use. The engine does not read it: scripts load it with `require`, as in any LÖVE game. Its name is not taken; a new project has it.
 - `packages/` holds what the game uses and was not made for this game alone, each in a folder of its own: the engine in `packages/onlr/`, packages, and libraries. The user adds to it, by hand or in the editor.
 - `packages/onlr/` is the engine's. The editor replaces it when it updates the engine (3.3), so the user does not edit it. Each project holds its own copy, so `love mygame` runs it and an export holds it.
 - `.onlr/` holds what the editor keeps for this project on this computer, such as LÖVE's definitions (4.3). It is not exported, and not in git: when the editor makes the project, it writes a `.gitignore` that names it.
-- The names `main.lua`, `conf.lua`, `manifest.lua`, `components/`, `graphs/`, `nodes/`, `packages/`, `shaders/` and `.onlr/` are taken. Every other name is the user's.
+- The names `main.lua`, `conf.lua`, `manifest.lua`, `components/`, `ira-scripts/`, `nodes/`, `packages/`, `ira-shaders/` and `.onlr/` are taken. Every other name is the user's.
 
 ### 3.2 The project's manifest
 
@@ -196,7 +195,7 @@ return {
 - The engine and the editor each read a file by running it, with LuaJIT: LÖVE's in the game, and OpenECS's in the editor. The file runs with Lua's basic functions and its `string`, `table` and `math` libraries, and nothing else. It cannot reach LÖVE, the engine, the editor or another file.
 - The basic functions are those that compute: `assert`, `error`, `getmetatable`, `ipairs`, `next`, `pairs`, `pcall`, `rawequal`, `rawget`, `rawset`, `select`, `setmetatable`, `tonumber`, `tostring`, `type`, `unpack` and `xpcall`. Those that load code or reach outside are left out, such as `require`, `load`, `dofile` and `print`. Each file gets its own copies of the three libraries, so it changes nothing for another file.
 - So a file that a person writes may compute its table, such as a manifest that works out the window's size. Its code must be LuaJIT 2.1's Lua without the syntax that OpenECS's LuaJIT takes from LuaJIT 3.0, such as `+=`, which LÖVE 11.5's lacks.
-- A file's kind is known by its folder, without reading it: a node file is in `nodes/`, a script in `components/`, a graph in `graphs/` and a shader graph in `shaders/` (3.1). No file's name has a second ending.
+- A file's kind is known by its folder, without reading it: a node file is in `nodes/`, a script in `components/`, an ira-script in `ira-scripts/` and an ira-shader in `ira-shaders/` (3.1). No file's name has a second ending.
 - Each file has a `format` number. The engine and the editor read only the one that they know, and say so of another (17).
 
 ### 4.2 How the editor writes them
@@ -362,11 +361,11 @@ return Player
   | Type                | Its name                                   | Its file                    |
   | ------------------- | ------------------------------------------ | --------------------------- |
   | A script            | Its path in `components/`: `player`, `enemies.bat`. | `components/player.lua` (3.1) |
-  | A script graph      | Its path in `graphs/`: `door`.             | `graphs/door.lua` (6.8)     |
+  | An ira-script      | Its path in `ira-scripts/`: `door`.             | `ira-scripts/door.lua` (6.8)     |
   | A package's         | The package's name, then its path in the package's `components/`: `bump.body`. | `packages/bump/components/body.lua` (11.2) |
   | The engine's own    | `onlr.`, then its path in the engine's `components/`: `onlr.sprite`. | `packages/onlr/components/sprite.lua` (10) |
 
-- The engine looks for a type in the project's `components/` and `graphs/` first, then in the packages'. So a script or a graph cannot have the name of the engine or of a package, and a script and a graph cannot have one name: the editor says so, and the engine refuses both.
+- The engine looks for a type in the project's `components/` and `ira-scripts/` first, then in the packages'. So a script or a graph cannot have the name of the engine or of a package, and a script and a graph cannot have one name: the editor says so, and the engine refuses both.
 - Each part of a type's name is a name in Lua, since a script reads it so: `components.enemies.bat`. The editor makes no file or folder in `components/` whose name is not one, and the engine refuses such a type.
 - A node has at most one component of a type. Giving it a second is an error.
 - The engine loads a type's file with `require`, under the name that its path gives: `components.player`, or `packages.bump.components.body`. So a script that loads a type's file the same way gets the same table. A graph's type is built from its file instead (6.8).
@@ -397,7 +396,7 @@ return Player
 | `image`                     | An image file of the project.                     | A LÖVE image.                                |
 | `sound`                     | A sound file of the project, and whether LÖVE streams it. | A LÖVE source of its own.            |
 | `font`                      | A font file of the project and a size.            | A LÖVE font. Without a file, LÖVE's default font at that size. |
-| `shader`                    | A shader of the project: a GLSL file or a shader graph (6.7). | A LÖVE shader.                   |
+| `shader`                    | A shader of the project: a GLSL file or an ira-shader (6.7). | A LÖVE shader.                   |
 | `file`                      | A file of the project, of the endings in `extensions` if given. | Its path.                      |
 | `nodeFile`                  | A node file of the project.                       | Its path.                                    |
 | `node`                      | A node of the same file.                          | The node.                                    |
@@ -510,7 +509,7 @@ Player.needs = { "bump.body" }
 ### 6.7 Shaders
 
 ``` glsl
-// shaders/flash.glsl
+// effects/flash.glsl
 extern number amount;
 extern vec4 tint;
 
@@ -526,10 +525,10 @@ vec4 effect(vec4 color, Image tex, vec2 uv, vec2 screen) {
   | Kind           | Its file                                                                                     | Written by                            |
   | -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------- |
   | A GLSL file    | A `.glsl` file in LÖVE's own form, as `love.graphics.newShader` takes it, in any folder.     | The user, in their code editor.       |
-  | A shader graph | A Lua file in `shaders/`: a graph whose blocks make a colour (6.8).                          | The editor, in the graph panel (13.9). |
+  | An ira-shader | A Lua file in `ira-shaders/`: a graph whose blocks make a colour (6.8).                          | The editor, in the graph panel (13.9). |
 
 - The `shader` property takes either, and gives a LÖVE shader (6.2). The engine loads each file once, and the components that name it share it, as they share an image. So `onlr.shader` (10) and a script's own property use the same files.
-- A shader's values are its `extern`s, LÖVE's word for GLSL's `uniform`, which it takes too. A shader graph's are its properties, with their defaults and options (6.8). A GLSL file's are read from its text: each `extern` or `uniform` outside its functions, of a type of this table. They start at 0, false or white, since GLSL ES gives a value no default:
+- A shader's values are its `extern`s, LÖVE's word for GLSL's `uniform`, which it takes too. An ira-shader's are its properties, with their defaults and options (6.8). A GLSL file's are read from its text: each `extern` or `uniform` outside its functions, of a type of this table. They start at 0, false or white, since GLSL ES gives a value no default:
 
   | Its type in GLSL           | The inspector shows                                                   |
   | -------------------------- | --------------------------------------------------------------------- |
@@ -537,17 +536,17 @@ vec4 effect(vec4 color, Image tex, vec2 uv, vec2 screen) {
   | `int`                      | A number field of whole numbers.                                      |
   | `bool`                     | A toggle.                                                             |
   | `vec2`                     | Two number fields in one row, as a `vector`.                          |
-  | `vec3`, `vec4`             | Three or four number fields in one row; a shader graph's colour, a colour. |
+  | `vec3`, `vec4`             | Three or four number fields in one row; an ira-shader's colour, a colour. |
   | `Image`, `sampler2D`       | An image of the project. Without one, a white pixel.                  |
 
   A value of another type, such as a matrix or a list, is not shown, and a script sends it itself.
 - `time` is the engine's: a shader's `extern number time` gets the seconds that the game has run, the sum of its frames' `dt`, before each frame draws. The inspector does not show it, and a value of the user's own cannot have its name. So a game that the editor pauses stands still, and Step moves it by one step (12.1). In the node view it is 0, and moves while the node of the shader's component is chosen (6.5). LÖVE's own values, such as `love_ScreenSize`, work as in LÖVE.
 - A shader that does not compile is an error in the game, which names its file, its line, and the node and the property that name it, as a path that names no file is (6.2). In the node view, the node is marked and draws without the shader, and the inspector marks the shader's row with LÖVE's message.
 - LÖVE compiles a shader as GLSL on a computer and as GLSL ES on a phone, which is stricter: a number such as `1` must be `1.0` where a decimal is meant. The preview checks every shader as GLSL ES too, with `love.graphics.validateShader` (12.5). A shader that fails there still works on the computer: the console warns, with its file and its line, and the inspector marks the row. An export for Android or iOS refuses it, and names it.
-- A shader that starts with LÖVE's `#pragma language glsl3` asks for newer GLSL, which the check takes as GLSL ES 3.00; its warning says that a phone without OpenGL ES 3 cannot run it. The GLSL that a shader graph builds is LÖVE's default, GLSL ES 1.00 on a phone, which every phone that LÖVE runs on takes.
+- A shader that starts with LÖVE's `#pragma language glsl3` asks for newer GLSL, which the check takes as GLSL ES 3.00; its warning says that a phone without OpenGL ES 3 cannot run it. The GLSL that an ira-shader builds is LÖVE's default, GLSL ES 1.00 on a phone, which every phone that LÖVE runs on takes.
 - A script may draw through a shader itself, as in LÖVE: it declares `onlr.property.shader()`, and calls `love.graphics.setShader` and `shader:send` in its `draw`. The engine sets the shader back after the `draw` (6.3).
 - The limits:
-  - A GLSL file's value cannot say its range, its default, or that it is a colour: a `vec4` shows as four numbers, and starts at 0. A shader graph's properties say all three.
+  - A GLSL file's value cannot say its range, its default, or that it is a colour: a `vec4` shows as four numbers, and starts at 0. An ira-shader's properties say all three.
   - On a phone whose pixel shaders lack high precision, `time` holds fewer digits as it grows, so a shader that moves with it gets coarse after some minutes of play.
 
 ### 6.8 Graphs
@@ -556,11 +555,11 @@ A graph is made of blocks, joined by wires between their pins. The user makes it
 
 | Kind           | Its folder | Is                                         | The engine builds |
 | -------------- | ---------- | ------------------------------------------ | ----------------- |
-| A script graph | `graphs/`  | A component type, as a script is (6.1).    | Lua               |
-| A shader graph | `shaders/` | A shader, as a GLSL file is (6.7).         | GLSL              |
+| An ira-script | `ira-scripts/`  | A component type, as a script is (6.1).    | Lua               |
+| An ira-shader | `ira-shaders/` | A shader, as a GLSL file is (6.7).         | GLSL              |
 
 ``` lua
--- graphs/door.lua: a door that opens half a second after E is pressed
+-- ira-scripts/door.lua: a door that opens half a second after E is pressed
 ---@type onlr.Graph
 return {
   format = 1,
@@ -635,8 +634,8 @@ return {
   | Field        | Holds                                                                                                     |
   | ------------ | --------------------------------------------------------------------------------------------------------- |
   | `format`     | The version of the file's format (4.1).                                                                   |
-  | `properties` | Its properties, in the order that the inspector shows them: each a `name`, a `kind` of section 6.2, a `default` and its `options`. A script graph's are its type's properties; a shader graph's are the shader's values (6.7), of the kinds `bool`, `integer`, `number`, `vector`, `color` and `image`. |
-  | `needs`      | A script graph's: the types that its components need on their node (6.6).                                 |
+  | `properties` | Its properties, in the order that the inspector shows them: each a `name`, a `kind` of section 6.2, a `default` and its `options`. An ira-script's are its type's properties; an ira-shader's are the shader's values (6.7), of the kinds `bool`, `integer`, `number`, `vector`, `color` and `image`. |
+  | `needs`      | An ira-script's: the types that its components need on their node (6.6).                                 |
   | `blocks`     | Its blocks, in the order of their ids.                                                                    |
 
   | Field of a block | Holds                                                                                                 |
@@ -648,10 +647,10 @@ return {
   | `flow`           | Its flow outputs that a wire leads on: by the output's name, the block that runs next, `"s8d1nf"`.     |
   | `values`         | The values of its inputs that no wire feeds, which the panel shows as fields in the block.            |
 
-- A pin is an input or an output of a block. A value pin carries a value, which a script graph's blocks give as Lua values and a shader graph's as GLSL's `float`, `vec2`, `vec3` and `vec4`. A flow pin carries no value: it says what runs next. Only a script graph has flow pins.
+- A pin is an input or an output of a block. A value pin carries a value, which an ira-script's blocks give as Lua values and an ira-shader's as GLSL's `float`, `vec2`, `vec3` and `vec4`. A flow pin carries no value: it says what runs next. Only an ira-script has flow pins.
 - A value input takes one wire, and a flow output leads on to one block; a value output may feed many inputs, and many outputs may lead on to one block. So each wire is written once, at its end that takes one, and a graph has no list of wires for two changes to conflict in.
 - The engine knows the types of blocks, each a file of its own family in the engine (8.3), with its pins and the code that it builds. The editor asks the preview for them (12.5), as it asks for a component type's properties, so the two never disagree.
-- A script graph's blocks:
+- An ira-script's blocks:
 
   | Family     | Blocks                                                                                                   |
   | ---------- | -------------------------------------------------------------------------------------------------------- |
@@ -663,22 +662,22 @@ return {
   | `debug`    | `print`, which the console shows.                                                                        |
 
 - `delay` and `every` count the seconds of their component's `update`, so they wait while its node is paused or it is off. A `delay` that is started again while it waits does not start over, as Unreal's Delay.
-- A shader graph's blocks:
+- An ira-shader's blocks:
 
   | Family     | Blocks                                                                                                   |
   | ---------- | -------------------------------------------------------------------------------------------------------- |
   | `input`    | What LÖVE gives a shader: the colour of the drawn image at the place being drawn, `image`; that place, `uv`; the drawn thing's own colour, `color`; the place on the screen, `screen`; and `time` (6.7). |
   | `property` | `get` a property: a value that the inspector shows on the component that uses the shader.               |
   | `math`     | Numbers and vectors, and what joins them: `add`, `subtract`, `multiply`, `divide`, `mix`, `step`, `smoothstep`, `sin`, `cos`, `fract`, `length`, `split`, which takes a vector apart into its numbers, and `combine`, which puts them together. |
-  | `output`   | The colour that the shader gives. A shader graph has one.                                                |
+  | `output`   | The colour that the shader gives. An ira-shader has one.                                                |
 
   A wire between two sizes of vector takes the first numbers of the longer, or repeats a single number into each, or gives a missing alpha 1, as Shader Graph does.
-- When the engine loads a graph, it builds its code once, as text in memory, and compiles it: a script graph's Lua with Lua's `load`, into a component type as a script's (6.1), and a shader graph's GLSL with `love.graphics.newShader`. So a frame runs compiled code, as fast as a script or a GLSL file that does the same, and never reads a block. Nothing is written into the project, so a graph has one file (OVERVIEW 11).
+- When the engine loads a graph, it builds its code once, as text in memory, and compiles it: an ira-script's Lua with Lua's `load`, into a component type as a script's (6.1), and an ira-shader's GLSL with `love.graphics.newShader`. So a frame runs compiled code, as fast as a script or a GLSL file that does the same, and never reads a block. Nothing is written into the project, so a graph has one file (OVERVIEW 11).
 - The built code is plain to read, a line for each block, named after the blocks. Copy as Lua Script and Copy as GLSL write it into a file of the user's (13.9).
-- The engine keeps, for each line of the built code, the block that it came from. An error in a graph's code names the graph's file and the block, and the error that the game sends names the block's id (12.2). So the console's link opens the graph in a graph panel with the block chosen. A shader graph's error when it compiles names its block in the same way, and so does a graph that cannot be built, such as one whose wire joins pins that cannot meet.
-- A script graph and a script are both component types, so a node holds both, and they reach each other as any two components do: a script reads `self.node.components.door.open`, and a graph's `node.getComponent` reads a script's property.
+- The engine keeps, for each line of the built code, the block that it came from. An error in a graph's code names the graph's file and the block, and the error that the game sends names the block's id (12.2). So the console's link opens the graph in a graph panel with the block chosen. An ira-shader's error when it compiles names its block in the same way, and so does a graph that cannot be built, such as one whose wire joins pins that cannot meet.
+- An ira-script and a script are both component types, so a node holds both, and they reach each other as any two components do: a script reads `self.node.components.door.open`, and a graph's `node.getComponent` reads a script's property.
 - The limits:
-  - A script graph has no blocks yet for LÖVE's own functions, such as `love.audio.play`, nor for the engine's, such as `onlr.tree.spawn` (7.2); a script does that.
+  - An ira-script has no blocks yet for LÖVE's own functions, such as `love.audio.play`, nor for the engine's, such as `onlr.tree.spawn` (7.2); a script does that.
   - A graph's properties are all shown in the inspector: a graph keeps no value of its own that the inspector does not show.
 
 ## 7. The engine's functions
@@ -787,7 +786,7 @@ Each file of the engine holds one thing. The engine is laid out as a package is 
 | `library/build.lua`                                 | Making nodes from node files: instances, their changes and ids (9).                                                                                        |
 | `library/property.lua`                              | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
 | `library/font.lua`                                  | `onlr.font`: fonts at the size that the drawing shows them (10).                                                                                           |
-| `library/shader.lua`                                | Shaders (6.7): loading a GLSL file or a shader graph, reading its values, checking it as GLSL ES, and `time`.                                              |
+| `library/shader.lua`                                | Shaders (6.7): loading a GLSL file or an ira-shader, reading its values, checking it as GLSL ES, and `time`.                                              |
 | `library/graph.lua`                                 | Graphs (6.8): reading a graph, building its code, and naming the block of a line of it.                                                                    |
 | `library/blocks/`                                   | The types of blocks (6.8), a file for each family, such as `flow.lua` and `math.lua`: each type's pins and the code that it builds.                        |
 | `library/data.lua`                                  | Reading data files (4), and loading the files that properties name.                                                                                        |
@@ -936,7 +935,7 @@ Their properties use LÖVE's names wherever LÖVE has one:
 | `onlr.paint`  | `mode`            | `choice` of fill and line                     | fill       | Filled, or as an outline. A line shape is a line in either.                                      |
 |               | `lineWidth`       | `number`                                      | 1          | The width of a line and of an outline, as `love.graphics.setLineWidth`.                          |
 |               | `color`           | `color`                                       | white      | The shape's colour.                                                                              |
-| `onlr.shader` | `shader`          | `shader`                                      |            | The shader: a GLSL file or a shader graph.                                                       |
+| `onlr.shader` | `shader`          | `shader`                                      |            | The shader: a GLSL file or an ira-shader.                                                       |
 |               | `covers`          | `choice` of draws and picture                 | draws      | `draws`: each draw of its nodes goes through the shader alone, as a hit's flash or an outline needs. `picture`: its nodes draw into one picture, which then draws through the shader, as a blur or a ripple over a whole level needs. |
 | `onlr.camera.view` | `posX`, `posY`    | `number`                                      | 0          | The point, in its node's space, that the middle of its screen shows.                             |
 |               | `rot`             | `number`                                      | 0          | Its angle, clockwise. What it shows turns the other way.                                         |
@@ -1537,16 +1536,16 @@ end
 
 - The editor never loads a script. To show a type's properties, it asks the preview, which loads the file as the game would and answers with the type's properties (6.2): their names, kinds, defaults and options, in their order. It answers with the types that the type needs too (6.6).
 - When a Lua file of the project other than a node file changes on disk, such as a script or the manifest, the editor starts the preview again, which takes about a tenth of a second, and asks again. So nothing of the old code stays in it.
-- The editor does not read a shader or build a graph either. It asks the preview for a shader's values (6.7), which the preview reads from a GLSL file's text or a shader graph's properties, with the result of checking the shader as GLSL ES: so the inspector shows `onlr.shader`'s rows, and the console warns of a shader that a phone cannot run. It asks again when the file changes, or when the editor's copy of a graph does. It asks once for the types of blocks (6.8), which the graph panel's list offers, and asks for a graph's built code when the user copies it (13.9).
+- The editor does not read a shader or build a graph either. It asks the preview for a shader's values (6.7), which the preview reads from a GLSL file's text or an ira-shader's properties, with the result of checking the shader as GLSL ES: so the inspector shows `onlr.shader`'s rows, and the console warns of a shader that a phone cannot run. It asks again when the file changes, or when the editor's copy of a graph does. It asks once for the types of blocks (6.8), which the graph panel's list offers, and asks for a graph's built code when the user copies it (13.9).
 - While the preview is down, such as after an error in `main.lua`, the node view shows the error, and the inspector shows the values that the node file holds, without their kinds.
 
 ### 12.6 The running game
 
-- While the game plays, the nodes panel and the inspector can show the running tree in place of a node file. A change made there changes the running game only, and is gone at Stop. The panels mark that they show the running game.
+- While the game plays, the node hierarchy and the inspector can show the running tree in place of a node file. A change made there changes the running game only, and is gone at Stop. The panels mark that they show the running game.
 - The editor asks the game for the tree. The engine sends each node's name, its children and its components' types, and sends the tree again when it changes, at most four times a second. A running node has no id of a file (9), so the engine gives each a number for the link.
 - For the chosen nodes, the engine sends their places and their components' values ten times a second. A reference is sent as what it names: a file as its path, and a node or a component as the node's number.
 - A value that the user changes is sent to the game, which sets it between two frames, as a script sets a field. A node's active and a component's enabled are set through their functions (7).
-- The game stops at an error, as a LÖVE game does (8.1), and in place of Unity's Pause on Error, which a game's error cannot have, it keeps answering the link while LÖVE's handler shows the error: the nodes panel's running tree and the inspector's values show the nodes as the error left them, and a value can still be read, until Stop. The tools panel says that the game stopped at an error. Nothing runs any more, so no frame updates or draws, and Pause, Step and a changed value do nothing a game would show. LÖVE 11.5's own handler is `love.errhand`, which the runner calls; a game that sets its own `love.errorhandler` in `main.lua` replaces the runner's, and the editor gets the error from its print alone.
+- The game stops at an error, as a LÖVE game does (8.1), and in place of Unity's Pause on Error, which a game's error cannot have, it keeps answering the link while LÖVE's handler shows the error: the node hierarchy's running tree and the inspector's values show the nodes as the error left them, and a value can still be read, until Stop. The tools panel says that the game stopped at an error. Nothing runs any more, so no frame updates or draws, and Pause, Step and a changed value do nothing a game would show. LÖVE 11.5's own handler is `love.errhand`, which the runner calls; a game that sets its own `love.errorhandler` in `main.lua` replaces the runner's, and the editor gets the error from its print alone.
 - Twice a second, the game sends its frames a second, and the mean time that a frame spent in update and in draw, in milliseconds. The tools panel shows them while the game plays, so the user sees what makes a game slow. The engine's loop measures the times only when a runner runs it; the time of draw leaves out `love.graphics.present`, which waits for the screen. A game with its own `love.run` sends its frames a second alone.
 - The engine sends none of the tree and the values unless the editor asks, and an exported game holds none of it (8.1).
 - A game that sets its own `love.run` does not run the engine's loop (8.1). The game then reads the link when the game's frame ends, and Pause and Step do nothing.
@@ -1561,7 +1560,7 @@ end
 - The preset places the asset viewer under the inspector, in the same column, so a file that a click chooses shows beside its details (13.7).
 - A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a standard plugin that knows nothing of ONLR and serves any OpenECS tool: OpenECS-std's `files`, `viewer` and `console` (OpenECS-std DESIGN 29, 30 and 31).
 - Such a plugin is told what ONLR needs through its functions. The files panel takes handlers: what a click shows, how a file opens, which files it makes, what a rename and a delete do, and what the question before a delete adds. It drags a file as a list of paths, as another application's files come. The console takes lines, and the folder that their files are in.
-- A panel of ONLR's own, such as the inspector or the nodes panel, is built from generic parts, such as ui's elements. A part that it needs and that knows nothing of ONLR is added to the standard plugin that it belongs to, not written inside ONLR, and not worked around.
+- A panel of ONLR's own, such as the inspector or the node hierarchy, is built from generic parts, such as ui's elements. A part that it needs and that knows nothing of ONLR is added to the standard plugin that it belongs to, not written inside ONLR, and not worked around.
 
 ONLR's own panels and functions are one plugin, `onlr`, whose names all start with `onlr.`, such as `onlr.play` and the panel type `onlr.view`. It has a file for each part:
 
@@ -1570,7 +1569,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 | `init.lua`                              | Loads the parts, and registers the functions that they give as the plugin's.                  |
 | `project.lua`, `format.lua`, `resolve.lua` | The open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. |
 | `nodeview.lua`, `runners.lua`, `link.lua`, `hints.lua` | The node view, the runners and the link, and the functions Play, Play This File, Pause, Step and Stop. |
-| `panels.lua`, `nodes.lua`, `inspector.lua`, `tools.lua`, `settings.lua`, `history.lua`, `search.lua`, `shared.lua` | The other panels of ONLR's own: the nodes panel, the inspector, the tools, the project settings, the history and the search. |
+| `panels.lua`, `nodes.lua`, `inspector.lua`, `tools.lua`, `settings.lua`, `history.lua`, `search.lua`, `shared.lua` | The other panels of ONLR's own: the node hierarchy, the inspector, the tools, the project settings, the history and the search. |
 | `graph.lua`                             | The graph panel (13.9).                                                                       |
 | `export.lua`, `runtimes.lua`           | Export (14), and LÖVE's runtimes (15).                                                        |
 | `runner/`                               | The runner's files (12.1), which the editor names to LÖVE and never loads itself.              |
@@ -1580,7 +1579,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - The project's data lives in `project.lua`, not in a panel (OpenECS DESIGN 10). Panels show it, change it through its functions, and hear of changes through its events.
 - Every panel can be open many times. What belongs to the project is one, in `project.lua`: its files, the chosen nodes, the chosen tool, snapping and the history. So two node views of one file show the same nodes, two inspectors show the same chosen nodes, and a change made in one panel shows in every other at once.
 - The preset puts the tools panel as a bar across the top of the editor: the tool, the pivot, snapping and the grid; Undo, Redo and Save with the history's count; Play, Play This File, Pause, Step and Stop; the Window of Play; and while a game plays, its state and its frames a second. They are groups in one row that wraps, so a narrow window takes the next group to a second line, and every control stays visible.
-- What belongs to one panel is its own state (OpenECS DESIGN 4): where a node view looks from and its zoom, which nodes a nodes panel has open, and which components an inspector has folded.
+- What belongs to one panel is its own state (OpenECS DESIGN 4): where a node view looks from and its zoom, which nodes a node hierarchy has open, and which components an inspector has folded.
 - The asset viewer shows a file of the project as what it is, with the standard loaders: an image with image, a sound with audio and mixer, and a text with syntax. It shows no video, since OpenECS-std's video does not read LÖVE's Ogg Theora.
 - The console is a log whose lines may name a file and a line, which a click opens in the user's code editor. Opening a file at a line in the user's code editor runs a command that is a setting, `console.editor`. The console first checks that the command's program is there, as a path or in the folders of `PATH`. When it is not, or does not start, the system opens the file with the program that it has for such files, and the console warns once.
 - An error of the game shows as one entry, with its stack. It names the component that raised it and the component's node, which the engine knows, as it notes the component whose function it calls. When a node file wrote the node, the name is a link, and a click opens the file and chooses the node. A hint follows, when the error is one that the editor knows: what such an error often means in a game, in plain words, and what to try. The hints are a list of patterns in `hints.lua`, matched against the error's text, and know Lua's errors, LÖVE's and the engine's.
@@ -1626,40 +1625,40 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
   - A handle is placed in its node's space, so it follows the node's place, angle and scale. A point and an edge snap to the grid in that space, and a radius in the grid's steps. The preview draws each step (12.2), and the release is one change of the history.
   - With more than one node chosen, the tool shows no handles. A click on a node chooses it as the other tools do, but a click on empty space keeps the choice, so a double click beside the shape adds a point there.
 - The wheel zooms around the pointer. A drag with the middle button, or with Alt, moves the view. F fits the view to the chosen nodes, or to every node when none is chosen, as Unity's F does.
-- The eye and the lock, as Unity's: each row of the nodes panel ends with Hide and Lock, which a click turns for that node alone, and chooses nothing (OpenECS-std's tree marks); H hides the chosen nodes in the node view, and L locks them there, and the keys again take the marks off; with many chosen, a key marks them all unless each has the mark already. A hidden node draws nothing in the view, nor its outline, and the nodes under it are hidden too; a locked node, and those under it, draw as always. Neither is chosen by a click or a rectangle in the view, so a background can be left alone while the user works on what is in front of it; the nodes panel still chooses them. The marks are the editor's, not the game's: they are settings of the project, kept in `.onlr/editor.lua` by the node file and the node's path, so a node file stays as it was, and the game runs and exports every node. The limits, as they are now:
+- The eye and the lock, as Unity's: each row of the node hierarchy ends with Hide and Lock, which a click turns for that node alone, and chooses nothing (OpenECS-std's tree marks); H hides the chosen nodes in the node view, and L locks them there, and the keys again take the marks off; with many chosen, a key marks them all unless each has the mark already. A hidden node draws nothing in the view, nor its outline, and the nodes under it are hidden too; a locked node, and those under it, draw as always. Neither is chosen by a click or a rectangle in the view, so a background can be left alone while the user works on what is in front of it; the node hierarchy still chooses them. The marks are the editor's, not the game's: they are settings of the project, kept in `.onlr/editor.lua` by the node file and the node's path, so a node file stays as it was, and the game runs and exports every node. The limits, as they are now:
   - A node file renamed in the editor, or a node moved to another parent, loses its marks, which name the old path. A deleted node's mark stays in the settings, and names nothing.
-- A right click opens a menu, as in the nodes panel: on a node, which it chooses when it is not chosen, Duplicate, Delete, Copy, Paste, Frame Chosen, Hide in the View and Lock in the View; in empty space, Add Node Here, at the pointer, Paste and Frame All.
+- A right click opens a menu, as in the node hierarchy: on a node, which it chooses when it is not chosen, Duplicate, Delete, Copy, Paste, Frame Chosen, Hide in the View and Lock in the View; in empty space, Add Node Here, at the pointer, Paste and Frame All.
 - Snapping to a grid is a toggle. It and the grid's size are settings of the project, kept in `.onlr/editor.lua`, a data file. Ctrl held in a drag flips it, as in Unity, and makes a turn go in steps of 15 degrees.
 - The node view draws with OpenECS-std's gpu, on a panel's GPU surface (OpenECS-std DESIGN 15). The frame is a texture on the graphics card, which each new frame replaces, and the grid, the outlines, the handles and the messages are gpu's rectangles, lines and text. So drawing the panel copies no pixels, and costs the same at any size. Without a graphics card that gpu can use, the view shows why in place of the nodes.
 - The node view draws the window's frame: a rectangle from 0, 0, of the size of the manifest's `window`. So the user sees where the nodes that no camera holds show, such as a score. It is grey, and named above its top left with its size, such as "Window 1920 × 1080", so it is told from a camera's frame. A camera's frame shows what the camera shows of the world under its node when the game runs; the window's frame shows where nodes outside any camera draw on the screen.
 - Dragging an image from the files panel into the node view makes a node with a sprite of it, and dragging a node file makes an instance of it (9). An image from another application is copied into the project first, as a file's row does (13.4).
 - The editor does not tell a level from a coin. Any node file can be the start node and can be held in another (5, 9), so the manifest's start node is chosen from every node file.
 
-### 13.4 The nodes panel and the inspector
+### 13.4 The node hierarchy and the inspector
 
-- The nodes panel shows the tree of the node file whose view has the focus, from its first node. An instance's node shows its base's name after its own, and it and every node of its base are in the accent colour; a node turned off is dimmed, and one with an error is red. A node hidden in the node view is dimmed too, and the row's Hide and Lock at its end show its marks in the accent colour while on (13.3). A search above the tree, OpenECS-std's `ui.search`, shows only the nodes whose name holds each word of its text, as every search of the tool matches (`ui.matches`), and those above them, opened; `t:` and words shows those with a component whose type's name holds them, as Unity's search does. Ctrl+F gives it the keys.
+- The node hierarchy shows the tree of the node file whose view has the focus, from its first node. An instance's node shows its base's name after its own, and it and every node of its base are in the accent colour; a node turned off is dimmed, and one with an error is red. A node hidden in the node view is dimmed too, and the row's Hide and Lock at its end show its marks in the accent colour while on (13.3). A search above the tree, OpenECS-std's `ui.search`, shows only the nodes whose name holds each word of its text, as every search of the tool matches (`ui.matches`), and those above them, opened; `t:` and words shows those with a component whose type's name holds them, as Unity's search does. Ctrl+F gives it the keys.
 - A right click on a node opens its menu, about the chosen nodes, and chooses the node first when it is not chosen, as a file manager does: Add Child, Rename, Duplicate, Delete, Hide in the View and Lock in the View (13.3), the moves up, down, out of its parent and into the node above, Save as Node File, and on an instance Open Base, as the inspector's button does. Beside the nodes, the menu adds a node, and makes a new variant of the file. A new node file is named after the node or the file, in `nodes/`, with a number when the name is taken; the user renames it in the files panel. The menu takes the place of the panel's rows of buttons. Rename, and F2 as in Unity, asks for the chosen node's new name in a field above the tree.
 - The inspector shows the chosen node's own fields (5): its name, its place, its `z` and whether it is active. Then it shows each of its components as a section under its type's name, which a click on the heading folds. A right click on a component opens its menu: Copy Values keeps the chosen node's values of it, Paste Values gives them to the chosen nodes' component of the same type as one change, and Remove Component removes it, as Unity's menu does. Move Up and Move Down, at the menu's top, move it in the nodes' order (5), each as one change that writes each node's whole `componentOrder`, or none when the order is what it would be without one; on an instance, Put Back the Base's Order drops the change of it. The sections show in the first chosen node's order. Components are not dragged yet. Below the components, Add Component offers the project's types that the chosen nodes lack, in a dropdown whose folders are the parts of their names, as Unity's groups are: `onlr`, then `camera`, then `view`, one folder for each package, and a project's own script, such as `player`, at the top. A folder opens in place, below a row that goes back; typing searches every folder (OpenECS-std's `ui.dropdown` with `folders`). Its first row turns it on and off, and it has one row for each property after that: its `label`, or else its name in words, `cellSize` as "Cell size", and the control of its kind (6.2). A number with both `min` and `max` shows a slider beside its field, as Unity's Range does, and a drag of it is one change, at the release. A colour shows its four numbers and a swatch, whose click opens a picker.
-- The inspector's Lock, beside the node's name, keeps the nodes that it shows while other nodes are chosen, as Unity's lock does: so a node's reference is set by dragging another node from the nodes panel, which would otherwise choose it. A locked inspector shows its nodes also while a file is chosen in the files panel and while the game plays, and names their node file when another node view has the focus. Each inspector panel has its own lock, kept in the session, so a second inspector, opened from the panels list, can stay on one node beside one that follows the choice. The limits, as they are now: a locked node file that is renamed in the editor, or a deleted node, shows that it is gone, and the user turns the lock off.
+- The inspector's Lock, beside the node's name, keeps the nodes that it shows while other nodes are chosen, as Unity's lock does: so a node's reference is set by dragging another node from the node hierarchy, which would otherwise choose it. A locked inspector shows its nodes also while a file is chosen in the files panel and while the game plays, and names their node file when another node view has the focus. Each inspector panel has its own lock, kept in the session, so a second inspector, opened from the panels list, can stay on one node beside one that follows the choice. The limits, as they are now: a locked node file that is renamed in the editor, or a deleted node, shows that it is gone, and the user turns the lock off.
 - A typed value is taken at Return. The inspector shows a node's angle in degrees; the file keeps radians, as LÖVE does.
-- A node dragged in the nodes panel moves before, into or after the node that it lands on, by where on that node's row: its upper quarter, its middle or its lower quarter, as ui's tree tells (OpenECS-std DESIGN 5). The chosen nodes move together when the dragged node is one of them, and the move is one change of the history. A node file or an image dropped from the files panel on a node becomes its child, as a drop in the node view makes it (13.3).
-- In the nodes panel, a double click on a node, a second click within 0.4 seconds, opens or closes it, as the files panel's does (13.7).
-- In the nodes panel, a click chooses a node alone. A click with Ctrl adds a node to the chosen ones, or takes it out, and a click with Shift chooses every shown node from the last node clicked alone or with Ctrl to the clicked one, as a system's file manager does. The node view and the inspector follow the same choice. Ctrl+A chooses every node of the file, and Shift+A adds every node under the chosen ones, so a group moves, hides or is deleted as one; both are in the right-click menus of the nodes panel and the node view, and work in both. In the nodes panel, a field being edited, the search or a rename, takes Ctrl+A to select its text first, so the panel handles the key itself after its fields rather than with a binding, which would win over them. Shift+A does not open the tree's nodes that it chooses: a chosen node under a closed one shows in the node view and the inspector, not in the tree.
+- A node dragged in the node hierarchy moves before, into or after the node that it lands on, by where on that node's row: its upper quarter, its middle or its lower quarter, as ui's tree tells (OpenECS-std DESIGN 5). The chosen nodes move together when the dragged node is one of them, and the move is one change of the history. A node file or an image dropped from the files panel on a node becomes its child, as a drop in the node view makes it (13.3).
+- In the node hierarchy, a double click on a node, a second click within 0.4 seconds, opens or closes it, as the files panel's does (13.7).
+- In the node hierarchy, a click chooses a node alone. A click with Ctrl adds a node to the chosen ones, or takes it out, and a click with Shift chooses every shown node from the last node clicked alone or with Ctrl to the clicked one, as a system's file manager does. The node view and the inspector follow the same choice. Ctrl+A chooses every node of the file, and Shift+A adds every node under the chosen ones, so a group moves, hides or is deleted as one; both are in the right-click menus of the node hierarchy and the node view, and work in both. In the node hierarchy, a field being edited, the search or a rename, takes Ctrl+A to select its text first, so the panel handles the key itself after its fields rather than with a binding, which would win over them. Shift+A does not open the tree's nodes that it chooses: a chosen node under a closed one shows in the node view and the inspector, not in the tree.
 - With many nodes chosen, the inspector shows the fields and the components that all of them have. A value that differs among them shows empty, and a change sets it on all of them, as one change of the history.
-- A reference (6.2) is set by dragging onto its row what it names: a file from the files panel, or a node from the nodes panel or the node view. A value is typed or chosen with its control, and is not dragged in the node view.
-- A node's or a component's row also has Pick, as Unity's round button: after it, the next click on a node, in a node view or in the nodes panel, sets the reference, and does not choose the node, so the inspector keeps showing what it showed. The node view says that it waits, in a line at its bottom, and the row says so in place of its value; the row's Cancel, Escape, or a click beside the nodes in the view ends the pick, setting nothing. A node of another node file, or for a component's reference a node without the type, sets nothing, and the console says why.
-- A file's row is also a field of its path, from the project's folder, with a button that chooses the file in the system's dialog, which shows the endings that LÖVE reads for its kind, or the property's `extensions`. A game reads only its own folder (3.1), so a file from outside the project, chosen in the dialog, typed, or dropped on a row, the node view or the nodes panel, is copied into it first. The editor asks, naming where it goes: into a folder by its kind, `images/` for an image, `sounds/` for a sound and `fonts/` for a font, made when it is missing, and the project's top folder for any other. When a file of that name is there with the same bytes, it is used and nothing is copied; with other bytes, the copy gets a number before its ending, `gem 2.png`. A user who declines keeps the value as it was. The copy is not in the history: the user deletes it in the files panel.
+- A reference (6.2) is set by dragging onto its row what it names: a file from the files panel, or a node from the node hierarchy or the node view. A value is typed or chosen with its control, and is not dragged in the node view.
+- A node's or a component's row also has Pick, as Unity's round button: after it, the next click on a node, in a node view or in the node hierarchy, sets the reference, and does not choose the node, so the inspector keeps showing what it showed. The node view says that it waits, in a line at its bottom, and the row says so in place of its value; the row's Cancel, Escape, or a click beside the nodes in the view ends the pick, setting nothing. A node of another node file, or for a component's reference a node without the type, sets nothing, and the console says why.
+- A file's row is also a field of its path, from the project's folder, with a button that chooses the file in the system's dialog, which shows the endings that LÖVE reads for its kind, or the property's `extensions`. A game reads only its own folder (3.1), so a file from outside the project, chosen in the dialog, typed, or dropped on a row, the node view or the node hierarchy, is copied into it first. The editor asks, naming where it goes: into a folder by its kind, `images/` for an image, `sounds/` for a sound and `fonts/` for a font, made when it is missing, and the project's top folder for any other. When a file of that name is there with the same bytes, it is used and nothing is copied; with other bytes, the copy gets a number before its ending, `gem 2.png`. A user who declines keeps the value as it was. The copy is not in the history: the user deletes it in the files panel.
 - A type or a property that the editor does not find, such as after a script was renamed outside the editor, shows in the inspector as the node file writes it. The user can give its values to another type or property. Until then they are kept (4.2).
-- The types that adding a component offers are the files of the project's `components/` and `graphs/` (3.1), and of the `components/` of the engine and of each package (11.2). A script and a graph show alike.
+- The types that adding a component offers are the files of the project's `components/` and `ira-scripts/` (3.1), and of the `components/` of the engine and of each package (11.2). A script and a graph show alike.
 - Duplicating or pasting nodes gives the copies new ids. A property of a copy that names another node of the copies names that node's copy; one that names a node outside them is kept.
 - A new script starts from ONLR's template: the type's table, empty functions for `load`, `update` and `draw`, and `return`.
 
 ### 13.5 Instances
 
-- The nodes panel shows an instance's nodes, from its base, marked as an instance's. A change to one of them, from any panel, is written as a change of the instance (9).
+- The node hierarchy shows an instance's nodes, from its base, marked as an instance's. A change to one of them, from any panel, is written as a change of the instance (9).
 - The inspector marks every value that an instance's change sets. A click on the mark puts back the base's value, and takes it out of the change.
 - Open Base opens the base's node file in a node view.
-- An instance whose base does not load, such as after its node file was deleted, is a node with an error, red in the nodes panel, without children; the rest of the file still works. Its own values cannot be changed, since its changes are keyed by the base's ids. The user deletes it, or gives its base back, which gives the instance back.
+- An instance whose base does not load, such as after its node file was deleted, is a node with an error, red in the node hierarchy, without children; the rest of the file still works. Its own values cannot be changed, since its changes are keyed by the base's ids. The user deletes it, or gives its base back, which gives the instance back.
 - A node that comes from the base cannot be deleted or moved in the instance, since an instance removes nothing (9). The editor offers to turn it off instead.
 - Save as Node File writes the chosen node, with all under it, to a new node file, and puts an instance of it in its place, as one change of the history. A property of the old file that named one of those nodes names it through the instance (9). A property among them that named a node outside them is left out of the new file, and set by a change of the instance, which names the old file's node. Undoing it puts the nodes back, and leaves the new file.
 - New Variant makes a node file whose first node is an instance of the chosen node file (9).
@@ -1681,7 +1680,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 13.7 Files
 
 - The files panel shows the project's folder, apart from what starts with a dot, as a tree or as a grid of icons, in which an image shows as a small picture, and a node file and a component's script have badges of their own. Its right click's menu makes folders, scripts and node files, renames and moves them, and deletes them after asking (OpenECS-std DESIGN 29). Files dropped on it go into the folder under the pointer: a file of the project moves there, as a rename does, and a file from another application is copied there, without asking, since the user chose the folder. The question names the node files that name the file. A deleted file goes to the system's trash, or to `.onlr/trash/` when the system has none.
-- A click on a file chooses it and shows it without opening it: in the asset viewer, when one is open, and in the inspector, which shows its name, its kind, its size and a node file's count of nodes, until nodes are chosen. A double click, a second click within 0.4 seconds, opens it: a node file in a node view, a graph or a shader graph in a graph panel (13.9), a script or a GLSL file in the user's code editor, and any other file in the asset viewer. The right click's menu makes a graph in `graphs/` and a shader graph in `shaders/` too.
+- A click on a file chooses it and shows it without opening it: in the asset viewer, when one is open, and in the inspector, which shows its name, its kind, its size and a node file's count of nodes, until nodes are chosen. A double click, a second click within 0.4 seconds, opens it: a node file in a node view, an ira-script or an ira-shader in a graph panel (13.9), a script or a GLSL file in the user's code editor, and any other file in the asset viewer. The right click's menu makes an ira-script in `ira-scripts/` and an ira-shader in `ira-shaders/` too.
 - The files panel follows what is chosen, as Unity's Project window does: when nodes are chosen, it chooses their node file, or the base of a chosen instance, and opens the folders above it; and what the search opens (13.8) it chooses too. It does so with OpenECS-std's `files.reveal`, which does not run the editor's `choose`, so the inspector keeps the nodes. Its Lock keeps it where it is, so the user can keep a folder open while choosing nodes, and drag its files onto them. Each files panel has its own lock, kept in the session.
 - Renaming, moving and deleting files are not in the history. Before a rename or a move, the editor saves every file with changes. Then it renames the file, changes every path and type name that names it, in every node file and in the manifest, and saves them. The user undoes it by renaming or moving the file back, and gets a deleted file back from the system's trash.
 
@@ -1704,7 +1703,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 13.9 The graph panel
 
 ``` text
-┌ Graph: shaders/water.lua ──────────────────────────────────────────┐
+┌ Graph: ira-shaders/water.lua ──────────────────────────────────────┐
 │ [Copy as GLSL]                                                     │
 │ Properties     ┌ uv ────┐   ┌ sin ───┐   ┌ output ─┐  ┌ Preview ─┐ │
 │  speed  2.0    │      ● │───│ ●    ● │───│ ● color │  │ ░▒▓▒░▒▓▒ │ │
@@ -1713,16 +1712,16 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-- A graph panel shows one graph (6.8), as a node view shows one node file. Many can be open, each a panel of its own. The graph's folder says its kind, so one panel type serves both: a script graph's blocks in `graphs/`, and a shader graph's, with a preview, in `shaders/`.
+- A graph panel shows one graph (6.8), as a node view shows one node file. Many can be open, each a panel of its own. The graph's folder says its kind, so one panel type serves both: an ira-script's blocks in `ira-scripts/`, and an ira-shader's, with a preview, in `ira-shaders/`.
 - It draws on a GPU surface, with ui's element of blocks and wires (OpenECS-std DESIGN 5), so moving the view and zooming stay smooth. A block is ui's elements: its title, its pins, and a field of ui for each input that no wire feeds, such as a number field, a toggle or a colour.
 - A pin shows its kind: a flow pin is a triangle, and a value pin a dot, in a colour for each kind of value. A wire has its output's colour.
 - A right click on empty space opens the list of blocks, in folders by their families, with a search, as Add Component's list does (13.4), and adds the chosen one at the pointer. A wire dragged from a pin and dropped on empty space opens the same list with only the blocks that it can join, and joins the new one.
 - A drag from a pin to a pin joins them, when their kinds can meet. A wire to an input that has one replaces it, as a flow output's does. A right click on a pin, or Alt with a click on it, takes its wires off.
 - Choosing and moving are the node view's (13.3): a click chooses a block, Shift adds to the choice, a drag from empty space chooses every block in its rectangle, and a drag on a block moves the chosen ones. The wheel zooms around the pointer, a drag with the middle button, or with Alt, moves the view, and F fits it to the chosen blocks. Delete, Copy, Paste and Duplicate are the node view's too, on their keys; copies get new ids, and wires between copies join the copies.
-- A list at the panel's left holds the graph's properties (6.8): each one's name, kind and default, and its options in a row that opens below it. Its button adds one. A property dragged into the panel makes a block that gets it, and with Alt one that sets it, as Unreal's variables do. A script graph's list holds its `needs` below them.
-- Every change is a record of the project's history (13.6). A graph with changes marks its panel as unsaved, and Play saves it with the node files. The editor sends the graph as it holds it to the preview (12.2), so the node views show a shader graph's changes before it is saved.
-- Copy as Lua Script, on a script graph, and Copy as GLSL, on a shader graph, ask for a new file's name: a script in `components/`, or a `.glsl` file beside the graph. They write the graph's built code there (6.8), which the user then owns. The graph stays as it was, and the two are not kept in step.
-- A shader graph shows a preview at the panel's right: the shader on a picture, which is a checker until the user chooses an image of the project in its dropdown. The preview draws it, as the game would (12.2), and the panel shows its frames as a node view does (12.4). While the panel shows and the shader uses `time`, the preview draws it 30 times a second, as it does for `updateEditor` (6.5).
+- A list at the panel's left holds the graph's properties (6.8): each one's name, kind and default, and its options in a row that opens below it. Its button adds one. A property dragged into the panel makes a block that gets it, and with Alt one that sets it, as Unreal's variables do. An ira-script's list holds its `needs` below them.
+- Every change is a record of the project's history (13.6). A graph with changes marks its panel as unsaved, and Play saves it with the node files. The editor sends the graph as it holds it to the preview (12.2), so the node views show an ira-shader's changes before it is saved.
+- Copy as Lua Script, on an ira-script, and Copy as GLSL, on an ira-shader, ask for a new file's name: a script in `components/`, or a `.glsl` file beside the graph. They write the graph's built code there (6.8), which the user then owns. The graph stays as it was, and the two are not kept in step.
+- An ira-shader shows a preview at the panel's right: the shader on a picture, which is a checker until the user chooses an image of the project in its dropdown. The preview draws it, as the game would (12.2), and the panel shows its frames as a node view does (12.4). While the panel shows and the shader uses `time`, the preview draws it 30 times a second, as it does for `updateEditor` (6.5).
 - A block that an error names (6.8), when the graph is built or while the game runs, shows red, with the error as its tooltip, until the graph changes or the game plays again.
 
 ## 14. Export
@@ -1794,7 +1793,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - A sample's test of the editor is its `editortest.lua`, an OpenECS test (OpenECS DESIGN 17.5): it opens the sample, acts as a user would, and checks the files that the editor writes. It runs on a copy of the sample, since it writes the sample's files. The copy leaves out the sample's `.onlr/`, which the editor kept for it on this computer, such as snapping.
 - `samples/editor` is a project as the editor writes one, so its test checks that a change and its undo give the first text again.
 - The inspector saves the rectangles of its elements that have ids in its state, as `rects`, such as `aaaaaa:thing:speed` for A's speed, so the editor's test finds a row by its id, not by a place that changes with every new row. ui does not tell how far a panel is scrolled, so the test brings a row up by folding the sections above it.
-- `samples/gallery` is the demonstration, not a test of one part: a project of rooms, one node file each in `nodes/rooms/`, that shows what the engine, its packages and the editor do. A bar in its top node goes from room to room, by its buttons or Page Up and Page Down; each room's root has a `room` component with the room's title and what it shows. A significant feature that a game shows goes into the gallery in the same piece of work as the feature: into the room of its part, as the tile map room shows sti's collisions and objects, or a room of its own, a node file whose name orders it among the others, with nothing else to change. A feature of the editor alone, such as a key of the nodes panel, has no room, since the gallery is a game. Its test only keeps it working: it visits every room, runs it, and checks a few things in each. It has no test of the editor, since an editor test cannot read the preview's nodes.
+- `samples/gallery` is the demonstration, not a test of one part: a project of rooms, one node file each in `nodes/rooms/`, that shows what the engine, its packages and the editor do. A bar in its top node goes from room to room, by its buttons or Page Up and Page Down; each room's root has a `room` component with the room's title and what it shows. A significant feature that a game shows goes into the gallery in the same piece of work as the feature: into the room of its part, as the tile map room shows sti's collisions and objects, or a room of its own, a node file whose name orders it among the others, with nothing else to change. A feature of the editor alone, such as a key of the node hierarchy, has no room, since the gallery is a game. Its test only keeps it working: it visits every room, runs it, and checks a few things in each. It has no test of the editor, since an editor test cannot read the preview's nodes.
 - One sample has thousands of nodes. It is the measure of speed: its test reports the time of a frame.
 - A change that breaks a sample changes the sample in the same piece of work.
 
@@ -1828,7 +1827,11 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 **GLSL ES.** GLSL's stricter form, which LÖVE compiles on a phone.
 
-**Graph.** Blocks joined by wires, from which the engine builds code: a script graph, which is a component type, or a shader graph, which is a shader.
+**Graph.** Blocks joined by wires, from which the engine builds code: an ira-script or an ira-shader.
+
+**Ira-script.** A graph that is a component type, in `ira-scripts/`, from which the engine builds Lua.
+
+**Ira-shader.** A graph that is a shader, in `ira-shaders/`, from which the engine builds GLSL.
 
 **Group.** A node that draws with all under it as one, through a component's `drawTree`.
 
