@@ -13,6 +13,7 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | [README.md](README.md)     | Short introduction.                                                                            |
 | [OVERVIEW.md](OVERVIEW.md) | What ONLR is: its users, scope, principles and product decisions.                              |
 | [DESIGN.md](DESIGN.md)     | How ONLR is built: the project's files, the engine, the runner and the link, the editor, export. |
+| [GUIDE.md](GUIDE.md)       | The user's guide: how to make a game with ONLR, step by step.                                  |
 | [TODO.md](TODO.md)         | Open questions and pending tasks.                                                              |
 | `packages/`                | The engine, in `packages/onlr/`, which every project holds as its `packages/onlr/` (DESIGN.md, section 8.3), and the packages that ONLR ships, such as `packages/bump/` (DESIGN.md, section 11.2). |
 | `plugins/`                 | The editor's plugin, `onlr`, with a file for each part and the runner's files in `onlr/runner/` (DESIGN.md, sections 12.1 and 13.1). The panels that know nothing of ONLR, `files`, `viewer` and `console`, are OpenECS-std's. |
@@ -52,7 +53,9 @@ The plan is done, and the implementation has started. Build it in small mileston
 
 **Checks**
 
-- The samples are the tests (DESIGN 16). A significant feature that a game shows also goes into `samples/gallery`, in the same piece of work (DESIGN 16). Run the tests of what a change touches before each push, and all of them before a pull request.
+- The samples are the tests (DESIGN 16). Run the tests of what a change touches before each push, and all of them before a pull request.
+- A significant feature that a game shows also goes into `samples/gallery`, in the same piece of work (DESIGN 16).
+- A change that a user sees, such as a panel, a key or a component, goes into GUIDE.md in the same piece of work, as DESIGN does. Check the guide's steps by doing them, in the editor or in a game, with screenshots as below.
 - Run an experiment only when a decision depends on its result, and never the same one twice.
 - The owner runs experiments on their own computer when asked. Give exact steps: the files, the commands, and what to report back.
 - Before each commit, run `.github/scripts/check.sh`: it checks the changed Lua files with the Lua language server when it is installed.
