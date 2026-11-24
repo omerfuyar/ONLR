@@ -1,5 +1,5 @@
--- The panels of ONLR's own, apart from the node view (DESIGN 13.1): the nodes panel, the inspector, the tools
--- and the project settings. Each shows the project that project.lua holds, and changes it through its functions.
+-- The panels of ONLR's own, apart from the node view (DESIGN 13.1): the node hierarchy, the inspector, the tools' bars,
+-- the project settings, the history and the search. Each shows the project that project.lua holds, and changes it through its functions.
 
 local ecs = require("ecs")
 local project = require("project")
@@ -9,7 +9,7 @@ local files = require("files")
 local viewer = require("viewer")
 local shared = require("shared")
 
-require("nodes")
+require("hierarchy")
 require("inspector")
 require("tools")
 require("settings")
@@ -20,18 +20,24 @@ ecs.event.subscribe("onlr.said", function(_, text)
   console.add(text, "info")
 end)
 
-for _, panel in ipairs({ "onlr.nodes", "onlr.inspector", "onlr.tools", "onlr.settings", "onlr.history", "onlr.search" }) do
+for _, panel in ipairs({
+  "onlr.hierarchy", "onlr.inspector", "onlr.transform", "onlr.game", "onlr.action", "onlr.settings", "onlr.history", "onlr.search",
+}) do
   for key, name in pairs({ ["Ctrl+Z"] = "onlr.undo", ["Ctrl+Y"] = "onlr.redo", ["Ctrl+S"] = "onlr.save" }) do
     ecs.key.bind(panel, key, name)
   end
 end
-ecs.key.bind("onlr.nodes", "Delete", "onlr.deleteChosen")
-ecs.key.bind("onlr.nodes", "Ctrl+D", "onlr.duplicateChosen")
-ecs.key.bind("onlr.nodes", "H", "onlr.hideChosen")
-ecs.key.bind("onlr.nodes", "Escape", "onlr.cancelPick")
+ecs.key.bind("onlr.hierarchy", "Delete", "onlr.deleteChosen")
+ecs.key.bind("onlr.hierarchy", "Ctrl+D", "onlr.duplicateChosen")
+ecs.key.bind("onlr.hierarchy", "H", "onlr.hideChosen")
+ecs.key.bind("onlr.hierarchy", "Escape", "onlr.cancelPick")
 ecs.key.bind("onlr.inspector", "Escape", "onlr.cancelPick")
-ecs.key.bind("onlr.nodes", "L", "onlr.lockChosen")
-ecs.key.bind("onlr.nodes", "Shift+A", "onlr.selectWithChildren")
+ecs.key.bind("onlr.hierarchy", "L", "onlr.lockChosen")
+ecs.key.bind("onlr.hierarchy", "Shift+A", "onlr.selectWithChildren")
+-- the tools' keys work in the Transform bar that shows them, as in the node view
+for key, name in pairs({ W = "onlr.toolMove", E = "onlr.toolTurn", R = "onlr.toolScale", T = "onlr.toolRect", Y = "onlr.toolShape" }) do
+  ecs.key.bind("onlr.transform", key, name)
+end
 
 -- The files panel shows the project's folder, and the editor says what its files are (DESIGN 13.7).
 local function showFolder()

@@ -237,7 +237,7 @@ local function control(state, subject, id, decl, value, set)
       end),
     })
   elseif kind == "node" or kind == "component" then
-    -- A node is set by dragging it from the nodes panel onto the row, or by Pick and a click on it in a node view or the nodes
+    -- A node is set by dragging it from the node hierarchy onto the row, or by Pick and a click on it in a node view or the nodes
     -- panel, as Unity's round button does (DESIGN 13.4).
     local named = type(value) == "string" and subject.tree.index[value]
     local shown = value == MIXED and "" or named and (named.name or value) or value and (tostring(value) .. " (no such node)") or "(none)"
@@ -249,7 +249,7 @@ local function control(state, subject, id, decl, value, set)
       ui.text(mine and "Click a node..." or shown, { grow = 1, color = mine and "accent" or value and value ~= MIXED and not named and RED or nil }),
       ui.button(mine and "Cancel" or "Pick", {
         id = id .. ":pick",
-        tooltip = mine and "End the pick, setting nothing: Escape" or "Then click the node, in a node view or in the nodes panel",
+        tooltip = mine and "End the pick, setting nothing" or "Then click the node, in a node view or in the node hierarchy", keys = mine and "Escape" or nil,
         onClick = function()
           if mine then
             nodeview.startPick(nil)
@@ -854,7 +854,10 @@ ecs.panel.registerType({
       state.lock = type(saved.lock) == "table" and type(saved.lock.file) == "string" and type(saved.lock.paths) == "table" and saved.lock or nil
     end
     panel:acceptDrops({ "file-list", "onlr.node" })
-    shared.follow(panel)
+    shared.follow(panel, {
+      "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.tool", "onlr.types", "onlr.saved", "onlr.settings", "onlr.state",
+      "onlr.running:tree", "onlr.running:values",
+    })
     return state
   end,
   draw = draw,

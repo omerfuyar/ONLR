@@ -20,7 +20,7 @@ local LIMIT = 200 -- the most results that show, so a short query in a big proje
 ---@field detail string where it is, which the search matches too
 ---@field open fun() what Return does
 
-local searches = {} -- every open search's state, by its panel
+local searches = {} ---@type table<ecs.Panel, onlr.editor.Search> every open search, by its panel
 local index -- every item, made again when the project changes
 local target -- the panel that had the focus when the search was opened, for a command that acts on a panel
 
@@ -124,68 +124,88 @@ local function build()
   return items
 end
 
-local function refresh(search)
+---A panel of the search.
+---@class onlr.editor.Search
+---@field panel ecs.Panel
+---@field query string
+---@field items onlr.editor.Found[] what matches the query
+---@field selected integer the chosen result
+local Search = {}
+Search.__index = Search
+
+-- Finds what matches the query again.
+function Search:refresh()
   index = index or build()
-  search.items = {}
-  if search.query ~= "" then
+  self.items = {}
+  if self.query ~= "" then
     for _, item in ipairs(index) do
-      if ui.matches(search.query, item.label .. "\n" .. item.detail .. "\n" .. item.kind) then
-        search.items[#search.items + 1] = item
-        if #search.items == LIMIT then
+      if ui.matches(self.query, item.label .. "\n" .. item.detail .. "\n" .. item.kind) then
+        self.items[#self.items + 1] = item
+        if #self.items == LIMIT then
           break
         end
       end
     end
   end
-  search.selected = math.min(math.max(search.selected, 1), math.max(#search.items, 1))
-  search.panel:redraw()
+  self.selected = math.min(math.max(self.selected, 1), math.max(#self.items, 1))
+  self.panel:redraw()
 end
 
-local function choose(search, i)
-  local item = search.items[i]
+function Search:choose(i)
+  local item = self.items[i]
   if item then
     item.open()
   end
 end
 
-local function view(search)
+-- The results' rows, only those in view.
+function Search:rows()
+  local first, last = ui.range(self.panel, "results", #self.items)
   local rows = {}
-  for _, item in ipairs(search.items) do
+  for i = first, last do
+    local item = self.items[i]
     rows[#rows + 1] = ui.row({ style = STYLES.item, gap = 8 }, {
       ui.text(item.kind, { style = STYLES.note, width = 70 }),
       ui.text(item.label),
       ui.text(item.detail, { style = STYLES.note, grow = 1 }),
     })
   end
-  if #rows == 0 then
-    rows[1] = ui.text(search.query == "" and "Type to find nodes, files, types, functions and commands." or "Nothing matches the search.",
-      { color = "textDim", selectable = false })
+  return rows, first
+end
+
+function Search:draw(surface)
+  local rows, first = self:rows()
+  local list
+  if #self.items == 0 then
+    list = ui.list({ id = "results", grow = 1 }, {
+      ui.text(self.query == "" and "Type to find nodes, files, types, functions and commands." or "Nothing matches the search.",
+        { color = "textDim", selectable = false }),
+    })
+  else
+    list = ui.list({
+      id = "results", grow = 1, selected = self.selected, count = #self.items, first = first,
+      onSelect = function(i)
+        self.selected = i
+      end,
+      onActivate = function(i)
+        self:choose(i)
+      end,
+    }, rows)
   end
-  return ui.column({ padding = 8, gap = 6 }, {
-    ui.search(search.query, {
+  ui.show(self.panel, surface, ui.column({ padding = 8, gap = 6 }, {
+    ui.search(self.query, {
       placeholder = "Search everything",
       results = "results",
       onChange = function(query)
-        search.query = query
-        refresh(search)
+        self.query = query
+        self:refresh()
       end,
       onSubmit = function()
-        choose(search, search.selected)
+        self:choose(self.selected)
       end,
     }),
-    ui.list({
-      id = "results",
-      grow = 1,
-      selected = search.selected,
-      onSelect = function(i)
-        search.selected = i
-        search.panel:redraw()
-      end,
-      onActivate = function(i)
-        choose(search, i)
-      end,
-    }, rows),
-  })
+    list,
+  }))
 end
 
 -- What the project holds changed: the index is made again at the next search.
@@ -193,42 +213,44 @@ for _, name in ipairs({ "onlr.opened", "onlr.closed", "onlr.changed", "onlr.type
   ecs.event.subscribe(name, function()
     index = nil
     for _, search in pairs(searches) do
-      refresh(search)
+      search:refresh()
     end
   end)
+end
+
+function Search.create(panel)
+  local self = setmetatable({ panel = panel, query = "", items = {}, selected = 1 }, Search)
+  searches[panel] = self
+  ui.edit(panel, "search")
+  return self
+end
+
+function Search:event(event)
+  ui.event(self.panel, event)
+end
+
+function Search:saveState()
+  -- not read back; a test reads what shows
+  local shown = {}
+  for i, item in ipairs(self.items) do
+    shown[i] = item.kind .. " " .. item.label .. " " .. item.detail
+  end
+  return { query = self.query, selected = self.selected, shown = shown }
+end
+
+function Search:destroy()
+  searches[self.panel] = nil
+  ui.forget(self.panel)
 end
 
 ecs.panel.registerType({
   name = "search",
   title = "Search",
-  create = function(panel)
-    local search = { panel = panel, query = "", items = {}, selected = 1 }
-    searches[panel] = search
-    ui.edit(panel, "search")
-    search.functions = {
-  search = { sig = "void()", doc = "Search everything: nodes, files, types, functions and commands", fn = search.open },
-}
-
-return search
-  end,
-  draw = function(state, surface)
-    ui.show(state.panel, surface, view(state))
-  end,
-  event = function(state, event)
-    ui.event(state.panel, event)
-  end,
-  saveState = function(state)
-    -- not read back; a test reads what shows
-    local shown = {}
-    for i, item in ipairs(state.items) do
-      shown[i] = item.kind .. " " .. item.label .. " " .. item.detail
-    end
-    return { query = state.query, selected = state.selected, shown = shown }
-  end,
-  destroy = function(state)
-    searches[state.panel] = nil
-    ui.forget(state.panel)
-  end,
+  create = Search.create,
+  draw = Search.draw,
+  event = Search.event,
+  saveState = Search.saveState,
+  destroy = Search.destroy,
 })
 
 local search = {}

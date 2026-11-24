@@ -84,7 +84,9 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 
 | Panel             | Where it starts         | What it does                                                                                     |
 | ----------------- | ----------------------- | ------------------------------------------------------------------------------------------------ |
-| Tools             | The bar across the top  | The tool and its pivot, snapping and the grid; Undo, Redo and Save; Play, Pause, Step and Stop; the window size to play in. |
+| Action            | The bar across the top, left | Undo, Redo and Save, and how many changes there are.                                        |
+| Game              | The bar across the top, right | Play, Play this file, Pause, Step and Stop; the window size to play in; while the game plays, its frames a second. |
+| Transform         | The bar over the node view | The tool and its pivot, snapping and the grid (2.1).                                           |
 | Node hierarchy    | Left                    | The tree of the node file that is open: choose nodes, rename them, drag them into other nodes.   |
 | Node view         | Middle                  | The node file drawn as the game draws it: choose nodes, and move, turn and scale them.           |
 | Inspector         | Right                   | The chosen nodes' place and components, and their values.                                      |
@@ -94,6 +96,8 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 | Files             | A tab beside the console | The project's files: open, rename, move and delete them, and make folders, scripts and node files. |
 | History           | A tab beside the console | Everything that you did, which a click undoes or redoes to.                                     |
 | Search            | Ctrl+K, from anywhere   | Finds nodes, files, component types, your scripts' functions and the editor's commands.         |
+
+A tooltip names the keys of what it shows, dimmed after its text.
 
 A few things to know:
 
@@ -105,7 +109,7 @@ A few things to know:
 
 ### 2.1 The node view's tools
 
-The tools bar chooses what a drag in the node view does. Each has a key, as in Unity:
+The **Transform** bar, over the node view, chooses what a drag in the node view does. Each tool has a key, as in Unity, which works in the node view and in the bar:
 
 | Tool  | Key | A drag                                                                                                |
 | ----- | --- | ----------------------------------------------------------------------------------------------------- |
@@ -337,7 +341,7 @@ A game made for 640 by 360 shows at 640 by 360 pixels, whatever the window's siz
 
 Then turn on **Resizable** or **Fullscreen**. In `push.screen`, **Pixel perfect** scales by whole numbers only and **Canvas** draws the game into a picture of its own size first, as pixel art needs (DESIGN 11.10). A camera under the screen names the game's size in its **Width** and **Height**.
 
-**Window**, in the tools bar, plays the game in another size, such as a phone's, without changing the project, so you see how the game looks on a screen that it was not made on.
+**Window**, in the **Game** bar, plays the game in another size, such as a phone's, without changing the project, so you see how the game looks on a screen that it was not made on.
 
 ## 7. Packages
 
@@ -369,7 +373,7 @@ A package is a library of LÖVE's world with components for ONLR (DESIGN 11.2). 
 - **Play**, F5, saves the project and runs the game from its start node. **Play this file**, F6, runs the node file that is open instead, so a level is tried without playing up to it.
 - **Pause**, F7, stops the game where it is, and **Step**, F8, runs one frame of it. **Stop** is Shift+F5.
 - While the game plays, the editor turns brown, and the node hierarchy and the inspector show the running game: choose a node there to see its values as they change, and change one to try it. What you change there is gone at Stop, so a value that you like is set again in the node file.
-- The tools bar shows the game's frames a second, and how long a frame spends in `update` and in `draw`.
+- The **Game** bar shows the game's frames a second, and how long a frame spends in `update` and in `draw`.
 - The console shows what the game prints with `print`. An error names its file and line, which a click opens in your code editor, the node and the component that raised it, and often a hint of what it means. The game stops at the error, and the panels show the nodes as the error left them, until Stop.
 - The node view runs your scripts' `drawEditor` and `bounds` if they have them, so a script can draw in the editor what it does not draw in the game, such as a path (DESIGN 6.5).
 - The console's code editor is a setting, `console.editor`, in the editor's settings.
@@ -390,9 +394,9 @@ Files whose names start with a dot, such as `.onlr/`, stay out, and so do the pa
 | Ctrl+Z, Ctrl+Y | Everywhere        | Undo, redo                                              |
 | Ctrl+S         | Everywhere        | Save                                                    |
 | Ctrl+K         | Everywhere        | Search                                                  |
-| F5, F6         | Node view         | Play, Play this file                                     |
-| F7, F8, Shift+F5 | Node view       | Pause, Step, Stop                                        |
-| W, E, R, T, Y  | Node view         | Move, Turn, Scale, Rect and Shape tools                  |
+| F5, F6         | Everywhere        | Play, Play this file                                     |
+| F7, F8, Shift+F5 | Everywhere      | Pause, Step, Stop                                        |
+| W, E, R, T, Y  | Node view, Transform | Move, Turn, Scale, Rect and Shape tools               |
 | F              | Node view         | Fit the view to the chosen nodes                         |
 | H, L           | Node view, node hierarchy | Hide, lock the chosen nodes in the node view             |
 | Ctrl+D         | Node view, node hierarchy | Duplicate                                               |

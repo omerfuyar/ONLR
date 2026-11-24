@@ -80,7 +80,7 @@ local function toggleMarks(kind, file, paths)
 end
 
 -- Picking a node for a reference (DESIGN 13.4): the inspector's Pick button waits for the next click on a node, in a node view or in
--- the nodes panel, which sets the reference in place of choosing the node.
+-- the node hierarchy, which sets the reference in place of choosing the node.
 ---@class onlr.editor.Picking
 ---@field id string the inspector's row
 ---@field file string the node file whose nodes it takes
@@ -746,7 +746,7 @@ local function drawView(view, surface)
   view.x, view.y, view.zoom = wantX, wantY, wantZoom
 
   if picking and view.file == picking.file then
-    gpu.text(surface, draw.font("ui"), ("Click the node for %s, here or in the nodes panel. Escape ends it."):format(picking.label), 12, h - 22, 13, "accent")
+    gpu.text(surface, draw.font("ui"), ("Click the node for %s, here or in the node hierarchy. Escape ends it."):format(picking.label), 12, h - 22, 13, "accent")
   end
 
   local message = view.error or runners.down

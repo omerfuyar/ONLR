@@ -6,7 +6,7 @@ local nodeview = require("nodeview")
 
 local shared = {}
 
----Whether the nodes panel and the inspector show the running game in place of a node file.
+---Whether the node hierarchy and the inspector show the running game in place of a node file.
 shared.running = false
 ---The chosen running node's number.
 ---@type integer?
@@ -16,21 +16,44 @@ shared.runningNode = nil
 shared.chosenFile = nil
 
 local panels = {} ---@type table<ecs.Panel, boolean>
+local listeners = {} ---@type table<string, table<ecs.Panel, boolean>> the panels that each event draws again
 
----Notes a panel that is drawn again whenever the project or the running game changes.
+---Notes a panel that is drawn again at the events it shows: an event's name, such as "onlr.chosen", or a name and the first value that
+---the event gives, such as "onlr.settings:grid" for a setting and "onlr.running:stats" for what the running game sent.
 ---@param panel ecs.Panel
-function shared.follow(panel)
+---@param events string[]
+function shared.follow(panel, events)
   panels[panel] = true
+  for _, name in ipairs(events) do
+    listeners[name] = listeners[name] or {}
+    listeners[name][panel] = true
+  end
 end
 
 ---@param panel ecs.Panel
 function shared.forget(panel)
   panels[panel] = nil
+  for _, set in pairs(listeners) do
+    set[panel] = nil
+  end
 end
 
+---Draws every panel that follows the project again.
 function shared.redraw()
   for panel in pairs(panels) do
     panel:redraw()
+  end
+end
+
+-- Draws again the panels that show an event, and those that show its first value.
+local function heard(name, value)
+  for panel in pairs(listeners[name] or {}) do
+    panel:redraw()
+  end
+  if type(value) == "string" then
+    for panel in pairs(listeners[name .. ":" .. value] or {}) do
+      panel:redraw()
+    end
   end
 end
 
@@ -76,14 +99,17 @@ for _, name in ipairs({
   "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.tool",
   "onlr.types", "onlr.saved", "onlr.settings", "onlr.running",
 }) do
-  ecs.event.subscribe(name, shared.redraw)
+  ecs.event.subscribe(name, function(_, value)
+    heard(name, value)
+  end)
 end
 
 ecs.event.subscribe("onlr.state", function()
   if shared.running and not nodeview.running().playing then
     shared.running, shared.runningNode = false, nil
+    shared.redraw()
   end
-  shared.redraw()
+  heard("onlr.state")
 end)
 
 ---A name in words, as the inspector shows a property: cellSize as "Cell size".

@@ -114,7 +114,7 @@ ecs.panel.registerType({
   name = "settings",
   title = "Project",
   create = function(panel)
-    shared.follow(panel)
+    shared.follow(panel, { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.saved", "onlr.settings" })
     return { panel = panel }
   end,
   draw = draw,
