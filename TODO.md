@@ -129,7 +129,7 @@ What the owner wants worked on, in this order.
 
 ## Tasks
 
-- **A guide to using ONLR.** A user's guide, written for someone who knows LÖVE or is learning it: making a project, the editor's panels, nodes and components, writing a script, packages, playing and exporting. It shows what to do, step by step, and links to DESIGN for how it works. Where it lives, as a document of the repository or as pages of its own, is open.
+- **Adding packages in the editor.** DESIGN 11.2 says that the editor copies a package into a project when the user adds it, offers a newer version, and deletes it when the user removes it. Only Scale to the window copies one, `push` (DESIGN 11.10); the user's guide, [GUIDE.md](GUIDE.md) 7, tells the user to copy a package's folder by hand. Open: where the list of packages shows, such as a panel of its own or a section of the project settings.
 - **The preview's hidden window on Windows is not tested.** `plugins/onlr/runner/preview.lua` hides LÖVE's window with `SDL_HideWindow` through LuaJIT's FFI, as DESIGN 12.1 says. It was written on Linux, where the offscreen driver is used, and never run on Windows.
 - **The Windows experiment.** It tells whether the preview's window can open on Windows without showing for a moment (see [Runner and link](#runner-and-link)). The owner runs it in the command prompt:
   1. Keep `C:\t\main.lua` as it is, and make `C:\t\conf.lua` with these lines. They open LÖVE's window outside the screen, without a border, one pixel wide:

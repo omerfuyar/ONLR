@@ -8,7 +8,7 @@ ONLR is being built. The engine, the editor and export work on Linux. Windows is
 
 ## Using it
 
-Download the archive for your platform from the [releases](https://github.com/omerfuyar/ONLR/releases), unpack it anywhere, and run `ONLR`, or `ONLR.cmd` on Windows. It holds the editor, the engine and LÖVE 11.5: nothing else is installed. `ONLR gallery` opens a project that shows what ONLR does.
+Download the archive for your platform from the [releases](https://github.com/omerfuyar/ONLR/releases), unpack it anywhere, and run `ONLR`, or `ONLR.cmd` on Windows. It holds the editor, the engine and LÖVE 11.5: nothing else is installed. `ONLR gallery` opens a project that shows what ONLR does, and [GUIDE.md](GUIDE.md) shows how to make a game.
 
 ## Cloning
 
@@ -29,6 +29,7 @@ cc shuild.c -o shuild
 - `./shuild --test` runs the tests. The samples are the tests. The editor's tests need a Debug build of OpenECS in `OpenECS/`, and are skipped without it.
 - `./shuild --help` lists every flag.
 
+- [GUIDE.md](GUIDE.md): how to make a game with ONLR, step by step.
 - [OVERVIEW.md](OVERVIEW.md): what ONLR is.
 - [DESIGN.md](DESIGN.md): how it is built.
 - [TODO.md](TODO.md): what is open.
