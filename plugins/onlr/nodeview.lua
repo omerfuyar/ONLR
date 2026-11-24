@@ -880,9 +880,7 @@ local function toolDrag(view, sx, sy, ctrl)
   local d = view.drag
   local wx, wy = toWorld(view, sx, sy)
   local cx, cy = d.centerX, d.centerY
-  -- Lua 5.5's math.atan takes both, as LuaJIT's math.atan2 does.
-  ---@diagnostic disable-next-line: redundant-parameter
-  local angle = math.atan(wy - cy, wx - cx) - math.atan(d.startY - cy, d.startX - cx)
+  local angle = math.atan2(wy - cy, wx - cx) - math.atan2(d.startY - cy, d.startX - cx)
   -- With Ctrl, a turn goes in steps of 15 degrees.
   if ctrl then
     angle = math.floor(angle / TURN_STEP + 0.5) * TURN_STEP
@@ -1278,7 +1276,7 @@ local function pointer(view, event)
       -- Every node whose place or bounds' middle is in the rectangle.
       local x1, y1 = math.min(d.startX, d.x), math.min(d.startY, d.y)
       local x2, y2 = math.max(d.startX, d.x), math.max(d.startY, d.y)
-      local paths = d.shift and { table.unpack(view.chosen) } or {}
+      local paths = d.shift and format.copy(view.chosen) or {}
       for _, node in ipairs(view.nodes) do
         local cx, cy = 0, 0
         if node.rect then

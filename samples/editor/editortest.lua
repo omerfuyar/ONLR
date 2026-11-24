@@ -56,7 +56,7 @@ return {
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
     -- the tool's menu is short: what concerns the whole tool, and no export
     test.match(test.setting("ecs.toolMenu"), {
-      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop", "settings.open", "panels.open",
+      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop",
     })
     -- the preset puts the asset viewer under the inspector, in the same column
     local inspector, viewer = test.rect(panelOf(test, "onlr.inspector")), test.rect(panelOf(test, "viewer.file"))
@@ -1020,12 +1020,16 @@ return {
     check(read("played.txt") == "Start", "the game played")
     check(read("window.txt") == "360x800", "in the window's size that Play chose: " .. read("window.txt"))
     check(read(".onlr/editor.lua"):find('playSize = "360x800"', 1, true) ~= nil, "which the project's editor settings keep")
-    test.match(test.setting("ecs.colorFrame"), test.setting("onlr.playTint"), "the frames take the tint while the game plays")
-    local background = test.setting("ecs.colorBackground")
+    -- the panels, the tabs and the space around them take some of the tint while the game plays, and lose it at Stop
+    local tinted = {}
+    for _, name in ipairs({ "ecs.colorPanel", "ecs.colorTabRow", "ecs.colorBackground" }) do
+      tinted[name] = test.setting(name)
+    end
     test.key("Shift+F5")
     test.wait(0.5)
-    test.match(test.setting("ecs.colorFrame") ~= test.setting("onlr.playTint"), true, "and lose it at Stop")
-    test.match(test.setting("ecs.colorBackground") ~= background, true, "as does the space around the panels, which took some of it")
+    for name, color in pairs(tinted) do
+      test.match(test.setting(name) ~= color, true, name .. " takes the tint while the game plays, and loses it at Stop")
+    end
 
     -- Export: the folder that exports are written to is typed into the Export panel, which is a tab beside the inspector
     test.click(inspector.x + 210, inspector.y - 14)

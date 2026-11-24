@@ -47,7 +47,7 @@ To work on ONLR itself, or to run it from its repository, see [README.md](README
 
 ### 1.3 A new project
 
-1. Right click the editor's title bar and choose **New Project**, or press **New project** in the **Project** panel, a tab beside the inspector.
+1. Click **ONLR**, at the title bar's left, and choose **New Project**, or press **New project** in the **Project** panel, a tab beside the inspector.
 2. Choose an empty folder. The editor makes the project in it and opens it.
 
 The project is a folder that LÖVE runs as it is (DESIGN 3.1):
@@ -80,7 +80,7 @@ LÖVE draws a game at its own pixels from the window's top left. So a larger win
 
 ## 2. The editor
 
-The editor is made of panels. Each can be moved, put beside another, or put in tabs, by dragging its tab. The **panels** list in the title bar's right-click menu opens a panel that was closed.
+The editor is made of panels. Each can be moved, put beside another, or put in tabs, by dragging its tab. A panel that was closed opens again from the list of panels: click **ONLR**, at the title bar's left, then **Tools**.
 
 | Panel             | Where it starts         | What it does                                                                                     |
 | ----------------- | ----------------------- | ------------------------------------------------------------------------------------------------ |

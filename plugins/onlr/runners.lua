@@ -55,7 +55,7 @@ ecs.event.declare("running", "The game sent the running tree, or the watched nod
 ecs.setting.declare({
   name = "playTint",
   type = "color",
-  description = "The colour of the frames around the panels while a game plays, so the user sees that changes to the running game are not kept; the frames' own colour shows none",
+  description = "The colour that the editor takes while a game plays, mixed into its panels, tabs and space around them, so the user sees that changes to the running game are not kept",
   default = "#9C6B3C",
 })
 
@@ -74,9 +74,19 @@ runners.SIZES = {
 -- While a game plays, the frames around the panels take the tint, for this run only, through OpenECS's run layer of settings: the
 -- user's colour comes back at its end.
 local tinted = false
--- What takes the tint, and how much of it, over the theme's own colour: the frames whole, the rows of tabs half, and the space
--- around the panels, which their backgrounds show, a little, so the whole editor looks other while the game plays and stays readable.
-local TINTED = { ["ecs.colorFrame"] = 1, ["ecs.colorTabRow"] = 0.5, ["ecs.colorBackground"] = 0.3 }
+-- What takes the tint, and how much of it, over the theme's own colour (OpenECS DESIGN 12.4): the space around the panels, the
+-- title bar, the rows of tabs, the tabs, the panels and their buttons, and the lines around them, each a part, so the whole editor
+-- looks other while the game plays, as Unity's does. Fields and text keep their colours, so what is typed stays readable.
+local TINTED = {
+  ["ecs.colorBackground"] = 0.35,
+  ["ecs.colorTabRow"] = 0.35,
+  ["ecs.colorTab"] = 0.3,
+  ["ecs.colorTabShown"] = 0.25,
+  ["ecs.colorPanel"] = 0.25,
+  ["ecs.colorButton"] = 0.2,
+  ["ecs.colorButtonHover"] = 0.2,
+  ["ecs.colorFrame"] = 0.4,
+}
 
 -- A colour "#RRGGBB" or "#RRGGBBAA" mixed with another by an amount from 0 to 1; a colour of another form is taken whole.
 local function mix(base, tint, amount)

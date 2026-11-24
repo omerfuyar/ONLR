@@ -13,10 +13,11 @@ return {
   -- the search over everything, from any panel, on Unity's key for it (DESIGN 13.8)
   keys = { ["Ctrl+K"] = "onlr.search" },
   settings = {
-    -- the tool's menu: a right click on the title bar opens it. It holds what concerns the whole tool; the history,
-    -- pausing and export are in their panels and on keys (DESIGN 13.2)
+    -- the tool's menu: a click on the tool's name, or a right click on the title bar, opens it. It holds what concerns the
+    -- whole tool; the settings and the panels add themselves under its Tools; the history, pausing and export are in their
+    -- panels and on keys (DESIGN 13.2)
     ["ecs.toolMenu"] = {
-      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop", "settings.open", "panels.open",
+      "onlr.newProject", "onlr.openProject", "onlr.save", "onlr.play", "onlr.playFile", "onlr.stop",
     },
   },
   workspaces = {
