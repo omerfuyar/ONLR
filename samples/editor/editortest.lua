@@ -431,11 +431,11 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the delete is undone")
 
-    -- in the nodes panel, a click chooses a node alone, Ctrl adds a node or takes it out, and Shift chooses the shown nodes from
+    -- in the node hierarchy, a click chooses a node alone, Ctrl adds a node or takes it out, and Shift chooses the shown nodes from
     -- the last one clicked; the rows are Start, A, B and Part (DESIGN 13.4)
-    local tree = test.rect(panelOf(test, "onlr.nodes"))
+    local tree = test.rect(panelOf(test, "onlr.hierarchy"))
     local function chosen()
-      return test.panel(panelOf(test, "onlr.nodes")).state.chosen
+      return test.panel(panelOf(test, "onlr.hierarchy")).state.chosen
     end
     local function row(i)
       return tree.x + 60, tree.y + 71 + 21 * (i - 1)
@@ -472,11 +472,11 @@ return {
     rx, ry = row(4)
     test.click(rx, ry)
     test.click(rx, ry)
-    test.match(test.panel(panelOf(test, "onlr.nodes")).state.open, { p4rt01 = true }, "a double click opens Part")
+    test.match(test.panel(panelOf(test, "onlr.hierarchy")).state.open, { p4rt01 = true }, "a double click opens Part")
     test.wait(0.5)
     test.click(rx, ry)
     test.click(rx, ry)
-    check(not test.panel(panelOf(test, "onlr.nodes")).state.open.p4rt01, "another double click closes it")
+    check(not test.panel(panelOf(test, "onlr.hierarchy")).state.open.p4rt01, "another double click closes it")
 
     -- H hides the chosen node in the node view, and L locks it there: a click in the view chooses neither. The marks are the
     -- project's settings, not the node file's, and H and L again take them off (DESIGN 13.3, 13.4)
@@ -506,7 +506,7 @@ return {
     test.match(chosen(), { "aaaaaa" }, "an unlocked node is chosen again")
     -- each row has Hide and Lock at its end, which a click turns as H and L do, and which choose nothing
     local function markAt(id)
-      local r = assert(test.panel(panelOf(test, "onlr.nodes")).state.marks[id], "the nodes panel shows " .. id)
+      local r = assert(test.panel(panelOf(test, "onlr.hierarchy")).state.marks[id], "the node hierarchy shows " .. id)
       return tree.x + r.x + r.width / 2, tree.y + r.y + r.height / 2
     end
     test.click(markAt("bbbbbb:hidden"))
@@ -673,7 +673,7 @@ return {
     check(read("nodes/start.lua") == start, "Stream is undone")
 
     -- a node's row has Pick, which waits for a click on a node: in the node view, A picks itself for its target, and the choice stays;
-    -- in the nodes panel, B is picked back (DESIGN 13.4)
+    -- in the node hierarchy, B is picked back (DESIGN 13.4)
     test.click(inspected("aaaaaa:thing:target:pick", 0.5))
     local px, py = at(70, 70)
     test.click(px, py)
@@ -686,7 +686,7 @@ return {
     test.click(rx, ry)
     test.wait(0.2)
     save()
-    check(read("nodes/start.lua") == start, "Pick and a click in the nodes panel set it back:\n" .. read("nodes/start.lua"))
+    check(read("nodes/start.lua") == start, "Pick and a click in the node hierarchy set it back:\n" .. read("nodes/start.lua"))
     test.match(chosen(), { "aaaaaa" }, "and A is still chosen")
 
     -- Add component, at the inspector's end, shows the types in folders by their names' dots, a folder at a time: onlr's folder
@@ -787,7 +787,7 @@ return {
     test.key("Ctrl+Z")
     save()
 
-    -- a node dragged in the nodes panel moves in the tree: onto the upper quarter of a row before that node, and onto its middle into it
+    -- a node dragged in the node hierarchy moves in the tree: onto the upper quarter of a row before that node, and onto its middle into it
     -- (DESIGN 13.4); each move is one change
     local fromX, fromY = row(3)
     local toX, toY = row(2)
@@ -810,7 +810,7 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the move into B is undone")
 
-    -- a deleted base breaks only its instance: the rest of the file still shows in the nodes panel, and A is chosen there; the base back
+    -- a deleted base breaks only its instance: the rest of the file still shows in the node hierarchy, and A is chosen there; the base back
     -- gives the instance back (DESIGN 9)
     local partText = read("nodes/part.lua")
     rx, ry = row(3)
@@ -819,13 +819,13 @@ return {
     test.wait(1.5)
     rx, ry = row(2)
     test.click(rx, ry)
-    test.match(chosen(), { "aaaaaa" }, "the nodes panel works without the instance's base")
+    test.match(chosen(), { "aaaaaa" }, "the node hierarchy works without the instance's base")
     local back = assert(io.open("nodes/part.lua", "wb"))
     back:write(partText)
     back:close()
     test.wait(0.5)
 
-    -- Save as Node File, the last entry of a node's menu in the nodes panel that A can use, writes the node to a new node file named after it, and
+    -- Save as Node File, the last entry of a node's menu in the node hierarchy that A can use, writes the node to a new node file named after it, and
     -- puts an instance of it in its place; Up goes round from the menu's first entry to its last
     test.click(x, y)
     test.wait(0.2)
@@ -969,7 +969,7 @@ return {
     check(fitted.zoom > 2, "F zooms in on the chosen node: " .. tostring(fitted.zoom))
     check(test.pixel(view.x + view.width / 2, view.y + view.height / 2) == "#FF0000", "and centres it")
 
-    -- Open Base, the last entry of an instance's menu in the nodes panel, opens its base in a node view
+    -- Open Base, the last entry of an instance's menu in the node hierarchy, opens its base in a node view
     rx, ry = row(4)
     test.click(rx, ry, 3)
     test.key("Up")
@@ -1007,10 +1007,10 @@ return {
     test.wait(0.2)
 
 
-    -- the tools panel's Window chooses the game's size for Play, such as a phone's; the manifest keeps its own
-    local tools = test.rect(panelOf(test, "onlr.tools"))
-    -- the bar's second line: Play's group, then Window and its dropdown
-    test.click(tools.x + 490, tools.y + 64)
+    -- the Game bar's Window chooses the game's size for Play, such as a phone's; the manifest keeps its own
+    local game = test.rect(panelOf(test, "onlr.game"))
+    local dropdown = test.panel(panelOf(test, "onlr.game")).state.playSize
+    test.click(game.x + dropdown.x + dropdown.width / 2, game.y + dropdown.y + dropdown.height / 2)
     test.wait(0.2)
     local list = test.popup(1)
     test.click(list.x + 40, list.y + 3.5 * list.height / 7)

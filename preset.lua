@@ -10,8 +10,12 @@ return {
   pluginsDir = "plugins",
   -- a project's folder, or a file in it, named on the command line opens the project (DESIGN 13.2)
   open = "onlr.openPath",
-  -- the search over everything, from any panel, on Unity's key for it (DESIGN 13.8)
-  keys = { ["Ctrl+K"] = "onlr.search" },
+  -- the search over everything, from any panel, on Unity's key for it (DESIGN 13.8), and the game's functions, which the Game bar and
+  -- the title bar show (DESIGN 13.1)
+  keys = {
+    ["Ctrl+K"] = "onlr.search",
+    F5 = "onlr.play", F6 = "onlr.playFile", F7 = "onlr.pause", F8 = "onlr.step", ["Shift+F5"] = "onlr.stop",
+  },
   settings = {
     -- the title bar's menus, which are the tool's menu (DESIGN 13.2, OpenECS DESIGN 6.11): what acts on the whole project, as
     -- Unity's File, Edit and a menu of the game; the settings and the panels put themselves under Tools
@@ -32,7 +36,7 @@ return {
       },
       { label = "Window", "ecs.layout.reopen", "ecs.layout.maximize", "ecs.layout.popOut", "ecs.layout.lock", "ecs.layout.moveToNewWorkspace", "ecs.layout.reset" },
     },
-    -- Play, Pause and Step on the title bar too, as Unity's above its view; the tools bar keeps its own
+    -- Play, Pause and Step on the title bar too, as Unity's above its view; the Game bar keeps its own
     ["ecs.titleButtons"] = {
       { "onlr.play", label = "▶", setting = "onlr.playing" },
       { "onlr.pause", label = "||", setting = "onlr.paused" },
@@ -45,8 +49,14 @@ return {
       windows = {
         {
           split = "vertical",
-          -- the tools are a bar across the top, so their row has the editor's width (DESIGN 13.1)
-          { size = 84, panels = { { type = "onlr.tools" } } },
+          -- Action and Game are bars across the top, so their row has the editor's width; Transform is a bar over the node view, where its
+          -- tools act (DESIGN 13.1)
+          {
+            size = 40,
+            split = "horizontal",
+            { share = 1, panels = { { type = "onlr.action" } } },
+            { share = 2, panels = { { type = "onlr.game" } } },
+          },
           {
             share = 1,
             split = "horizontal",
@@ -56,8 +66,13 @@ return {
               {
                 share = 3,
                 split = "horizontal",
-                { size = 300, panels = { { type = "onlr.nodes" } } },
-                { share = 1, panels = { { type = "onlr.view" } } },
+                { size = 300, panels = { { type = "onlr.hierarchy" } } },
+                {
+                  share = 1,
+                  split = "vertical",
+                  { size = 40, panels = { { type = "onlr.transform" } } },
+                  { share = 1, panels = { { type = "onlr.view" } } },
+                },
               },
               { share = 2, panels = { { type = "console.log" }, { type = "files.tree" }, { type = "onlr.history" } } },
             },
