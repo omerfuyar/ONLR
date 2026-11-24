@@ -23,7 +23,7 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | `dependencies/`            | Submodules: shuild and shu, which `shuild.c` builds with, and love2d, LÖVE's definitions from LuaCATS (DESIGN.md, section 4.3). |
 | `.clang-format`            | How clang-format formats `shuild.c`, as OpenECS's does.                                        |
 | `.github/`                 | Checks, the release workflow, rulesets, the releases' descriptions in `release-notes/`, and the scripts that agents and CI run: `check.sh`, `test.sh` and `package.sh`, which makes ONLR's archive (DESIGN.md, section 15.3). `scripts/assets/` makes the samples' images and sounds. |
-| `.claude/`                 | Claude Code's settings, its hook for cloud sessions, and `notes.md`: why the tools are set up as they are. |
+| `.claude/`                 | Claude Code's settings, its hook for cloud sessions, `skills/` with the procedures for verifying, measuring, reviewing and changing OpenECS, and `notes.md`: why the tools are set up as they are. |
 | `.luarc.json`              | How the Lua language server checks the repository's Lua files.                                 |
 | `LICENSE.md`               | The license, zlib.                                                                             |
 
@@ -60,14 +60,14 @@ The plan is done, and the implementation has started. Build it in small mileston
 
 - The samples are the tests (DESIGN 16). Run the tests of what a change touches before each push, and all of them before a pull request.
 - A significant feature that a game shows also goes into `samples/gallery`, in the same piece of work (DESIGN 16).
-- A change that a user sees, such as a panel, a key or a component, goes into GUIDE.md in the same piece of work, as DESIGN does. Check the guide's steps by doing them, in the editor or in a game, with screenshots as below.
+- A change that a user sees, such as a panel, a key or a component, goes into GUIDE.md in the same piece of work, as DESIGN does. Check the guide's steps by doing them, in the editor or in a game, with screenshots, as the verify skill says.
 - Run an experiment only when a decision depends on its result, and never the same one twice.
 - The owner runs experiments on their own computer when asked. Give exact steps: the files, the commands, and what to report back.
 - Before each commit, run `.github/scripts/check.sh`: it checks the changed Lua files with the Lua language server when it is installed.
 - People build and test with shuild: `./shuild --test`. `test.sh` runs the same, and prints only problems.
 - Before each push, run `.github/scripts/test.sh` for the samples that the change touches, such as `.github/scripts/test.sh coinrun`, and with no names before a pull request. It needs LÖVE 11.5 as `love`, or where `LOVE` names it, and EGL. The editor's tests need OpenECS too, built in Debug and laid out as a release in `OpenECS/`, with its `include/`, as the checks lay it out; without it they are skipped, and the Lua check does not know the `ecs` module.
 - The scripts print only problems. Read the logs in `build/tests/` only when a test fails.
-- When you run on the owner's computer, run the editor and look at what you changed: a test that passes does not show that a change can be seen or used. Copy a sample into `build/shots/`, write beside it an OpenECS test that acts as a user and calls `test.screenshot("name.png")` (as `samples/editor/editortest.lua` does, with `preset = "../../../preset.lua"`), run it as `cd build/shots/SAMPLE && LOVE=love SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null ../../../OpenECS/OpenECS --test shots.lua`, and read the pictures. Do the same for a game: `love samples/SAMPLE` with a script that calls `love.graphics.captureScreenshot`. Check the editor's look and anything a game's window shows this way before you report it as done.
+- Look at what you changed, in the editor or in a game, offscreen, before you report it as done: a test that passes does not show that a change can be seen or used. The verify skill says how.
 - ONLR runs on OpenECS's `dev`: lay out `OpenECS/` from `../OpenECS/build/Debug/bin` after building it, and use what `dev` holds. Nothing waits for an OpenECS release.
 - Check documents by reading them: links, section numbers and cross-references.
 
