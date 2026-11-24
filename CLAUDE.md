@@ -55,6 +55,9 @@ The plan is done, and the implementation has started. Build it in small mileston
 
 - Ask whenever instructions clash, in the same batch as the other questions.
 - The owner is new to LÖVE and to engine design. Explain what a decision means for a game's author, not only what it is.
+- Weigh every choice by three things, for the game's author: consistency, so one thing works as its neighbours do; simplicity, so it is easy to understand; and practicality, so it is easy to use.
+- Plan a new feature with the owner interactively, in place of OpenECS's one batch of questions at the end: before designing, ask a few questions at a time, until the owner's wish is clear. For each, explain what each answer means for someone making a game, with a short example, and show the options as the user would see them: a sketch of the inspector or the panel, or a sample file, not only code.
+- Say plainly when you disagree with the owner, or when something is unclear. Do not guess.
 
 **Checks**
 

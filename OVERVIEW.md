@@ -56,11 +56,12 @@ The window, drawing, sound, input, physics, files and the game's loop. ONLR repl
 - Nodes and components, read from the project's files (5).
 - The life of a component: when it loads, starts, updates, draws and is destroyed (6).
 - Node files inside node files, and making nodes from a file while the game runs.
-- A few components of its own, for what almost every game shows: a sprite, a text, a shape and a camera.
+- A few components of its own, for what almost every game shows: a sprite, a text, a shape, a camera, and drawing through a shader.
+- Graphs: logic and shaders made of blocks in the editor, from which the engine builds code when the game loads them (6).
 
 ### 3.3 What the editor provides
 
-- Panels to arrange nodes, to change properties and to manage the project's files (7).
+- Panels to arrange nodes, to change properties and to manage the project's files, and one to make graphs (7).
 - Play: the game runs in its own window, and the editor shows what it prints and its errors (7).
 - Export (8).
 
@@ -108,6 +109,7 @@ What LÖVE or a library already does stays there too, with no part of the engine
 - A property can be a toggle, a number, a text, a choice, a colour or a pair of numbers, and also a file of the project, such as an image or a sound, or another node of the same file, or a component of one. Properties can be put in groups and in lists.
 - A script reaches the other components of its node by their names, and reads and sets their properties as its own. It says which ones it needs, and the editor then adds them with it.
 - LÖVE's own callbacks keep working. A game may still define `love.update` or `love.draw` in its `main.lua`, and the engine calls them too.
+- An **ira-script** is a script made in the editor as a graph, of blocks joined by wires, for logic without code: an event such as a key's press, a branch, a delay, a property set. It is a component as a script is, so a node may hold ira-scripts and scripts side by side. An **ira-shader** is a shader made the same way, which colours what a node draws. Both are data: the engine builds their code when the game loads them, as fast as written code, and the editor can copy that code into a script or a shader file that the user then owns.
 - A library for LÖVE works as in any game: the user copies it into the project's `packages` folder and loads it with `require`, under the name its author gives.
 
 ## 7. The editor
@@ -117,11 +119,12 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 | Panel            | Shows                                                                         |
 | ---------------- | ----------------------------------------------------------------------------- |
 | Node view        | An open node file. The user chooses nodes, and moves, turns and scales them.  |
-| Nodes            | The tree of nodes of the node view in focus.                                  |
+| Node hierarchy   | The tree of nodes of the node view in focus.                                  |
 | Inspector        | The chosen node's components and their properties.                            |
 | Tools            | The node view's tools: move, turn and scale.                                  |
 | Files            | The project's folders and files.                                              |
 | Asset viewer     | A file of the project as it is: an image, a sound or a text.                  |
+| Graph            | A graph: its blocks and wires, and for a shader, a preview.                   |
 | Console          | What the game prints, and its errors.                                         |
 | Project settings | What the project's manifest holds.                                            |
 | Export           | The targets, and the export's progress.                                       |
@@ -132,7 +135,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 - The editor never runs the game's code. LÖVE does, and tells the editor what it needs, such as the properties a script declares.
 - In the node view nothing moves: the engine draws the nodes and does not update them.
 - Play saves the project, then runs the game from its start node, in LÖVE's own window, and Play This File runs the node file in focus as the root. Pause stops the game, and Step runs one frame of it. Stop ends it, and so does closing the window. The console, the errors and their links to files work while it runs.
-- While the game plays, the nodes panel and the inspector show its running nodes. A value changed there changes the game until it stops, and never a file.
+- While the game plays, the node hierarchy and the inspector show its running nodes. A value changed there changes the game until it stops, and never a file.
 - Each panel comes from a plugin, and none is built into the editor. Panels that need nothing of ONLR, such as the files panel, the asset viewer and the console, are made for any OpenECS tool, and are part of OpenECS's standard plugins. ONLR's own panels are built from the same generic parts.
 - A game that fails, or never returns, does not stop the editor.
 - Any panel can be open many times, and all show the same project: a change made in one shows in every other at once.
@@ -171,7 +174,7 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 1. **LÖVE is unchanged.** ONLR uses LÖVE's own executables, and a game needs nothing else to run.
 2. **A project is a LÖVE game.** LÖVE runs the folder without the editor.
 3. **LÖVE stays in reach.** A script uses LÖVE's names and may call all of LÖVE.
-4. **Data, not generated code.** The editor writes data, and a fixed engine reads it. The only code in a project is the user's, the engine's and that of its libraries.
+4. **Data, not generated code.** The editor writes data, and a fixed engine reads it. The only code in a project is the user's, the engine's and that of its libraries. A graph is data too: the engine builds its code in memory, and no file of it is written.
 5. **One renderer.** LÖVE draws everything the user sees of a game, in the editor too.
 6. **The engine's components are written as the user's are.** They use only what a script can use.
 7. **Parts stand alone.** The engine knows no library and nothing of the editor, and a library does not know the engine. The editor knows a game by its files and by what LÖVE tells it.
@@ -203,6 +206,12 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 **Group.** A node that draws with all under it as one, through one of its components, such as a camera.
 
+**Graph.** Blocks joined by wires, made in the editor, from which the engine builds a script or a shader.
+
+**Ira-script.** A script made as a graph.
+
+**Ira-shader.** A shader made as a graph.
+
 **Inspector.** The panel that shows and changes the properties of the chosen node's components.
 
 **Instance.** A node that was made from another node file.
@@ -230,6 +239,8 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 **Root.** The node that the game runs under the top node, with all that is under it, until a script loads another.
 
 **Script.** A Lua file, written by the user, that returns a component.
+
+**Shader.** A small program that the graphics card runs for each pixel that LÖVE draws, to change its colour.
 
 **Target.** What an export makes: a `.love` file, or a build for one platform.
 

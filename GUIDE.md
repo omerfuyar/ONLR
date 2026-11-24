@@ -85,7 +85,7 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 | Panel             | Where it starts         | What it does                                                                                     |
 | ----------------- | ----------------------- | ------------------------------------------------------------------------------------------------ |
 | Tools             | The bar across the top  | The tool and its pivot, snapping and the grid; Undo, Redo and Save; Play, Pause, Step and Stop; the window size to play in. |
-| Nodes             | Left                    | The tree of the node file that is open: choose nodes, rename them, drag them into other nodes.   |
+| Node hierarchy    | Left                    | The tree of the node file that is open: choose nodes, rename them, drag them into other nodes.   |
 | Node view         | Middle                  | The node file drawn as the game draws it: choose nodes, and move, turn and scale them.           |
 | Inspector         | Right                   | The chosen nodes' place and components, and their values.                                      |
 | Project, Export   | Tabs beside the inspector | The project's settings (1.4), and export (9).                                                  |
@@ -97,7 +97,7 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 
 A few things to know:
 
-- **Choosing** is shared. A node chosen in the nodes panel is chosen in the node view and shown in the inspector, and the other way round.
+- **Choosing** is shared. A node chosen in the node hierarchy is chosen in the node view and shown in the inspector, and the other way round.
 - **A double click** on a node file, in the files panel, opens it in the node view. A double click on a script opens it in your code editor.
 - **Every change can be undone** with Ctrl+Z, and choosing nodes is in the history too, so Ctrl+Z walks back through everything that you did. Renaming, moving and deleting files are not in the history: a deleted file goes to the system's trash.
 - **Save** with Ctrl+S. Play saves first.
@@ -119,7 +119,7 @@ The tools bar chooses what a drag in the node view does. Each has a key, as in U
 - **Snap** moves and sizes in steps of **Grid** pixels. Holding Ctrl while dragging turns snapping on or off for that drag.
 - The wheel zooms. A drag with the middle button, or with Alt held, moves the view. **F** fits the view to the chosen nodes.
 - A click chooses the node under the pointer, and Shift adds to the choice. A drag from empty space chooses every node in the rectangle.
-- **H** hides the chosen nodes in the node view, and **L** locks them, so a click there does not choose them, as a background that you do not want to move by mistake. Each row of the nodes panel has Hide and Lock too. The game still shows them.
+- **H** hides the chosen nodes in the node view, and **L** locks them, so a click there does not choose them, as a background that you do not want to move by mistake. Each row of the node hierarchy has Hide and Lock too. The game still shows them.
 
 The grey rectangle, named "Window", is the game's window: what is outside any camera shows on the screen where it is drawn there.
 
@@ -130,7 +130,7 @@ This makes a small game: a square that the arrow keys move, coins that it takes,
 ### 3.1 The player
 
 1. Open `nodes/start.lua`: double click it in the files panel, or it is open already in a new project.
-2. Right click empty space in the node view and choose **Add node here**. Rename it `Player`: press F2 in the nodes panel, type the name and press Return.
+2. Right click empty space in the node view and choose **Add node here**. Rename it `Player`: press F2 in the node hierarchy, type the name and press Return.
 3. In the inspector, choose `onlr.shape` in **Add component**, at the inspector's end; the types are in folders by their names, so it is under `onlr`. Its kind is a rectangle of 32 by 32. Set **Width** and **Height** to 24, and its **Origin** to 12 and 12, so the node's place is the square's middle.
 4. Add `onlr.paint`. It draws the node's shape. Choose a colour.
 
@@ -218,7 +218,7 @@ return score
 4. Choose its first node, `Coin`, and give it `onlr.shape` with the kind **circle** and a radius of 8, `onlr.paint` in yellow, and `coin`.
 5. Go back to `start.lua`'s node view, and drag `nodes/coin.lua` from the files panel into it, twice, at two places. Each is an **instance** of the coin: the coin's nodes, at its own place.
 
-An instance shows in the accent colour in the nodes panel. Its values are the coin's, unless you change them on the instance: set one instance's **Worth** to 5, and only that coin is worth 5. The inspector marks the value, and a click on the mark puts the coin's value back.
+An instance shows in the accent colour in the node hierarchy. Its values are the coin's, unless you change them on the instance: set one instance's **Worth** to 5, and only that coin is worth 5. The inspector marks the value, and a click on the mark puts the coin's value back.
 
 ### 3.4 The score
 
@@ -287,7 +287,7 @@ A property is a value that the inspector shows and that each node sets (DESIGN 6
 | `group`, `list` | Properties together, or rows of one kind | A table, or a list          |
 
 - A file is set by dragging it from the files panel onto the property, or with the property's button. A file from outside the project is copied into it first, since a LÖVE game reads only its own folder.
-- A node is set by dragging it from the nodes panel or the node view onto the property, or with **Pick** and a click on the node.
+- A node is set by dragging it from the node hierarchy or the node view onto the property, or with **Pick** and a click on the node.
 - `description` is shown as the property's tooltip, `heading` puts a title above it, and `when` shows it only while another property has a value, as `{ kind = "circle" }`.
 - `handles = true` on a `vector`, or a list of them, lets the Shape tool drag the points in the node view, as a patrol path's.
 
@@ -312,7 +312,7 @@ Nodes have no tags: a type is one. An empty script `enemy` on every enemy, and `
 ## 5. Node files and instances
 
 - **Save as node file**, in a node's right-click menu, moves the node and all under it into a node file of its own, and leaves an instance of it in its place. So a thing that you built in a level becomes one that every level can use.
-- **New variant**, in the menu of empty space in the nodes panel, makes a node file that is an instance of the open one, such as a big coin made from the coin: it changes what it needs, and follows the coin in the rest.
+- **New variant**, in the menu of empty space in the node hierarchy, makes a node file that is an instance of the open one, such as a big coin made from the coin: it changes what it needs, and follows the coin in the rest.
 - **Open base**, on an instance, opens the node file that it is an instance of.
 - An instance changes values and adds components and children. It removes nothing: turn off what it does not want, with the node's **Active** or the component's **Enabled**.
 - A script makes an instance with `onlr.tree.spawn`, as a gun makes a bullet. A `nodeFile` property with `preload = true` loads the node file with the level, so the first spawn does not wait for the disk.
@@ -321,7 +321,7 @@ Nodes have no tags: a type is one. An empty script `enemy` on every enemy, and `
 
 ### 6.1 A camera
 
-1. Put the level's nodes under one node, such as `World`, by dragging them onto it in the nodes panel.
+1. Put the level's nodes under one node, such as `World`, by dragging them onto it in the node hierarchy.
 2. Give `World` the component `onlr.camera.view`. It shows the nodes under it, moved so that the middle of the window shows its point.
 3. Give it `onlr.camera.follow` too, and drag the Player onto its **Target**. The camera follows the player, smoothly.
 
@@ -368,7 +368,7 @@ A package is a library of LÖVE's world with components for ONLR (DESIGN 11.2). 
 
 - **Play**, F5, saves the project and runs the game from its start node. **Play this file**, F6, runs the node file that is open instead, so a level is tried without playing up to it.
 - **Pause**, F7, stops the game where it is, and **Step**, F8, runs one frame of it. **Stop** is Shift+F5.
-- While the game plays, the editor turns brown, and the nodes panel and the inspector show the running game: choose a node there to see its values as they change, and change one to try it. What you change there is gone at Stop, so a value that you like is set again in the node file.
+- While the game plays, the editor turns brown, and the node hierarchy and the inspector show the running game: choose a node there to see its values as they change, and change one to try it. What you change there is gone at Stop, so a value that you like is set again in the node file.
 - The tools bar shows the game's frames a second, and how long a frame spends in `update` and in `draw`.
 - The console shows what the game prints with `print`. An error names its file and line, which a click opens in your code editor, the node and the component that raised it, and often a hint of what it means. The game stops at the error, and the panels show the nodes as the error left them, until Stop.
 - The node view runs your scripts' `drawEditor` and `bounds` if they have them, so a script can draw in the editor what it does not draw in the game, such as a path (DESIGN 6.5).
@@ -394,12 +394,12 @@ Files whose names start with a dot, such as `.onlr/`, stay out, and so do the pa
 | F7, F8, Shift+F5 | Node view       | Pause, Step, Stop                                        |
 | W, E, R, T, Y  | Node view         | Move, Turn, Scale, Rect and Shape tools                  |
 | F              | Node view         | Fit the view to the chosen nodes                         |
-| H, L           | Node view, nodes  | Hide, lock the chosen nodes in the node view             |
-| Ctrl+D         | Node view, nodes  | Duplicate                                               |
-| Delete         | Node view, nodes  | Delete                                                  |
+| H, L           | Node view, node hierarchy | Hide, lock the chosen nodes in the node view             |
+| Ctrl+D         | Node view, node hierarchy | Duplicate                                               |
+| Delete         | Node view, node hierarchy | Delete                                                  |
 | Ctrl+C, Ctrl+V | Node view         | Copy, paste nodes                                        |
-| Ctrl+A         | Node view, nodes  | Choose every node                                        |
-| Shift+A        | Node view, nodes  | Choose the chosen nodes' children too                    |
-| F2             | Nodes             | Rename                                                  |
-| Ctrl+F         | Nodes, console    | Search                                                  |
+| Ctrl+A         | Node view, node hierarchy | Choose every node                                        |
+| Shift+A        | Node view, node hierarchy | Choose the chosen nodes' children too                    |
+| F2             | Node hierarchy    | Rename                                                  |
+| Ctrl+F         | Node hierarchy, console | Search                                                  |
 | Ctrl, in a drag | Node view        | Snap or not; turn in steps of 15 degrees                 |
