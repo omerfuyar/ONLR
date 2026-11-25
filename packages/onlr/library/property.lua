@@ -20,6 +20,9 @@ local data = require("onlr.library.data")
 ---@class onlr.NumberOptions : onlr.PropertyOptions
 ---@field min? number the least value; the inspector keeps the value between min and max, and with both shows a slider
 ---@field max? number the most value
+---@field angle? boolean|table<string, any> a number only: the value is an angle in radians, or radians a second, which the
+---inspector shows and takes in degrees (DESIGN 6.2). A table in when's form, { kind = "hinge" }, makes it an angle only while
+---the properties that it names have one of their values
 
 ---@class onlr.PointOptions : onlr.PropertyOptions
 ---@field handles? boolean the node view's Shape tool drags the point, or each point of a list, in the node's space
@@ -67,6 +70,7 @@ local TAKEN = {
   when = true,
   min = { integer = true, number = true },
   max = { integer = true, number = true },
+  angle = { number = true },
   choices = { choice = true },
   stream = { sound = true },
   size = { font = true },
@@ -94,14 +98,15 @@ local function declare(kind, default, options, extra)
       fail(("a %s takes no option %s"):format(kind, tostring(name)))
     end
   end
-  if options.when ~= nil then
-    if type(options.when) ~= "table" or next(options.when) == nil then
-      fail(("the option when of a %s is a table of properties' names and their values"):format(kind))
+  for _, option in ipairs({ "when", "angle" }) do
+    local value = options[option]
+    local named = type(value) == "table" and next(value) ~= nil
+    for name in pairs(type(value) == "table" and value or {}) do
+      named = named and type(name) == "string"
     end
-    for name in pairs(options.when) do
-      if type(name) ~= "string" then
-        fail(("the option when of a %s is a table of properties' names and their values"):format(kind))
-      end
+    if value ~= nil and not named and not (option == "angle" and value == true) then
+      fail(("the option %s of a %s is %sa table of properties' names and their values"):format(option, kind,
+        option == "angle" and "true, or " or ""))
     end
   end
   count = count + 1

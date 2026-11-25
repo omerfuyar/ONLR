@@ -4,6 +4,6 @@ local onlr = require("onlr")
 ---@class spin : onlr.Component
 local Spin = {}
 
-Spin.speed = onlr.property.number(1)
+Spin.speed = onlr.property.number(1, { angle = true })
 
 return Spin

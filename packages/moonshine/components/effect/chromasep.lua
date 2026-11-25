@@ -7,7 +7,7 @@ local effect = require("moonshine.effect")
 ---@class moonshine.effect.chromasep : onlr.Component
 local Effect = {}
 
-Effect.angle = onlr.property.number(0, { description = "The direction, in radians" })
+Effect.angle = onlr.property.number(0, { angle = true, description = "The direction" })
 Effect.radius = onlr.property.number(0, { min = 0, description = "How far apart, in pixels" })
 
 effect.declare(Effect, "chromasep", function(self)

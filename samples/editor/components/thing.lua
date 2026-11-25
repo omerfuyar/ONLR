@@ -16,6 +16,9 @@ Thing.sound = onlr.property.sound()
 Thing.target = onlr.property.node()
 Thing.friend = onlr.property.component("thing")
 Thing.tags = onlr.property.list(onlr.property.string())
+-- an angle, which the inspector shows in degrees, and one only while mode is fly
+Thing.turn = onlr.property.number(math.pi / 2, { angle = true })
+Thing.lean = onlr.property.number(0, { angle = { mode = "fly" } })
 Thing.box = onlr.property.group({
   width = onlr.property.number(32),
   height = onlr.property.number(32),

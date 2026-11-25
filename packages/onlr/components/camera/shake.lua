@@ -11,7 +11,7 @@ local Shake = {}
 Shake.needs = { "onlr.camera.view" }
 
 Shake.amplitude = onlr.property.vector(8, 8, { description = "The farthest it moves, across and down, in its node's units" })
-Shake.angle = onlr.property.number(0.05, { min = 0, description = "The farthest it turns, in radians" })
+Shake.angle = onlr.property.number(0.05, { min = 0, angle = true, description = "The farthest it turns" })
 Shake.frequency = onlr.property.number(15, { min = 0, description = "How fast it shakes" })
 Shake.decay = onlr.property.number(1.5, { min = 0, description = "How much of a shake of 1 fades in a second" })
 

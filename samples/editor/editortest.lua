@@ -675,6 +675,27 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the added tag is one change, undone")
 
+    -- an angle's field takes degrees, and the file keeps radians, as scripts read them: 45 in Turn is a quarter of pi; Lean is an
+    -- angle only while mode is fly, so in walk a typed 2 stays 2 (DESIGN 6.2)
+    local function typeInto(id, typed)
+      test.click(inspected(id, 0.3))
+      test.key("Ctrl+A")
+      test.text(typed)
+      test.key("Return")
+      test.wait(0.2)
+      save()
+    end
+    typeInto("aaaaaa:thing:turn", "45")
+    local turned = tonumber(read("nodes/start.lua"):match("turn = ([-%d%.e]+)"))
+    check(turned and math.abs(turned - math.pi / 4) < 1e-9, "45 degrees are written as radians:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    typeInto("aaaaaa:thing:lean", "2")
+    check(read("nodes/start.lua"):find("lean = 2,"), "a number that is not an angle now stays as typed:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "both are undone")
+
     -- a file's row is a path with a button for the system's dialog: a whole path in the project is kept from the project's
     -- folder, and one outside it is refused (DESIGN 13.4)
     test.click(inspected("aaaaaa:thing:picture:path", 0.3))

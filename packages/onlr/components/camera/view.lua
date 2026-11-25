@@ -13,7 +13,7 @@ local Camera = {}
 -- A script follows the player by setting these in lateUpdate.
 Camera.posX = onlr.property.number(0, { description = "The point, in its node's space, that the middle of its screen shows" })
 Camera.posY = onlr.property.number(0)
-Camera.rot = onlr.property.number(0, { description = "Its angle, clockwise" })
+Camera.rot = onlr.property.number(0, { angle = true, description = "Its angle, clockwise" })
 Camera.zoom = onlr.property.number(1, { min = 0.01, description = "2 shows its nodes twice as large" })
 -- The size of its screen. 0 is the window's; a game that a library scales names its own size, such as 320 by 180.
 Camera.width = onlr.property.number(0, { min = 0 })

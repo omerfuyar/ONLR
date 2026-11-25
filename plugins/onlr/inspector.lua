@@ -78,8 +78,57 @@ local function number(id, value, set, decl, width)
   end
   return ui.number(value, {
     id = id, grow = width and 0 or 1, width = width, min = options.min, max = options.max, step = decl and decl.kind == "integer" and 1 or nil,
-    tooltip = "Return takes the number; Up and Down change it", onSubmit = set,
+    tooltip = (options.degrees and "In degrees; a script reads radians. " or "") .. "Return takes the number; Up and Down change it",
+    onSubmit = set,
   })
+end
+
+local function round(n)
+  return n and math.floor(n * 1000 + 0.5) / 1000
+end
+
+-- An angle's field: the inspector shows and takes degrees, and the file and scripts keep LÖVE's radians (DESIGN 6.2). Gives the
+-- declaration, the value and the setter in degrees.
+local function inDegrees(decl, value, set)
+  local options = {}
+  for k, v in pairs(decl.options or {}) do
+    options[k] = v
+  end
+  options.angle, options.degrees = nil, true
+  options.min, options.max = round(options.min and math.deg(options.min)), round(options.max and math.deg(options.max))
+  if type(value) == "number" then
+    value = round(math.deg(value))
+  end
+  return { kind = decl.kind, name = decl.name, default = decl.default, options = options }, value, function(degrees)
+    set(math.rad(degrees))
+  end
+end
+
+-- A declaration whose angle option in when's form is made true or false by the component's values (DESIGN 6.2), with its
+-- group's fields and its list's item; holds tells whether the component's values have the ones that a table names.
+local function settleAngles(decl, holds)
+  if not decl then
+    return nil
+  end
+  local settled = {}
+  for k, v in pairs(decl) do
+    settled[k] = v
+  end
+  if decl.options and type(decl.options.angle) == "table" then
+    settled.options = {}
+    for k, v in pairs(decl.options) do
+      settled.options[k] = v
+    end
+    settled.options.angle = holds(decl.options.angle)
+  end
+  if decl.fields then
+    settled.fields = {}
+    for i, field in ipairs(decl.fields) do
+      settled.fields[i] = settleAngles(field, holds)
+    end
+  end
+  settled.item = settleAngles(decl.item, holds)
+  return settled
 end
 
 local function text(id, value, set, valid)
@@ -125,6 +174,10 @@ end
 local function control(state, subject, id, decl, value, set)
   local kind = decl.kind
   local options = decl.options or {}
+  if kind == "number" and options.angle == true then
+    decl, value, set = inDegrees(decl, value, set)
+    options = decl.options
+  end
   if kind == "bool" then
     return ui.toggle(value == true, { id = id, tooltip = "On or off", onChange = set })
   elseif (kind == "integer" or kind == "number") and type(options.min) == "number" and type(options.max) == "number" and type(value) == "number" then
@@ -459,19 +512,12 @@ local function fileSubject(state, out)
     local value = common(nodes, function(n)
       return n[field[1]]
     end)
-    local set = setField(field[1])
+    local set, decl = setField(field[1]), nil
     if field[1] == "rot" then
-      -- The inspector shows the angle in degrees; the file keeps LÖVE's radians.
-      if value ~= MIXED then
-        value = math.floor(math.deg(value) * 1000 + 0.5) / 1000
-      end
-      local inner = set
-      set = function(degrees)
-        inner(math.rad(degrees))
-      end
+      decl, value, set = inDegrees({ kind = "number" }, value, set)
     end
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-      label(field[2]), number(key .. ":" .. field[1], value, set), fieldMark(field[1]),
+      label(field[2]), number(key .. ":" .. field[1], value, set, decl), fieldMark(field[1]),
     })
   end
   -- The components that all of the chosen nodes have, in the first node's order (DESIGN 5).
@@ -553,8 +599,9 @@ local function fileSubject(state, out)
     for _, decl in ipairs(info and info.properties or {}) do
       defaults[decl.name] = decl.default
     end
-    local function shown(decl)
-      for other, wanted in pairs(decl.options and decl.options.when or {}) do
+    -- Whether the component's values have the ones that a table in when's form names.
+    local function holds(conditions)
+      for other, wanted in pairs(conditions) do
         local value = valueOf(other, defaults[other])
         if value ~= MIXED then
           local list = type(wanted) == "table" and wanted or { wanted }
@@ -571,9 +618,9 @@ local function fileSubject(state, out)
     end
     for _, decl in ipairs(info and info.properties or {}) do
       declared[decl.name] = true
-      if shown(decl) then
-        rows(state, subject, body, cid .. ":" .. decl.name, decl, valueOf(decl.name, decl.default), setProperty(decl.name), nil,
-          propertyMark(decl.name))
+      if holds(decl.options and decl.options.when or {}) then
+        rows(state, subject, body, cid .. ":" .. decl.name, settleAngles(decl, holds), valueOf(decl.name, decl.default),
+          setProperty(decl.name), nil, propertyMark(decl.name))
       end
     end
     -- Values of properties that the type does not declare, as the node file writes them.
