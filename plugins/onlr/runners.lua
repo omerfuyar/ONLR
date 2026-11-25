@@ -143,23 +143,17 @@ local function start(mode, startPath)
   if folder == "" then
     return nil
   end
-  -- net tells no port that it chose, so the editor chooses one, and tries another when it is taken.
-  local server, port
-  for _ = 1, 20 do
-    port = math.random(20000, 59999)
-    server = net.listen(port)
-    if server then
-      break
-    end
-  end
+  -- The link listens on this computer's own address only, so no other computer reaches it, on a free port that net picks (DESIGN 12.2).
+  local server, err = net.listen("127.0.0.1", 0)
   if not server then
-    console.add("The link could not listen on a port of this computer.", "error")
+    console.add(("The link could not listen on this computer: %s"):format(tostring(err)), "error")
     return nil
   end
-  local command = {}
+  local port = server:port()
+  local command, environment = {}, {}
   -- The preview opens no window: on Linux, SDL's offscreen driver draws with the graphics card all the same.
   if mode == "preview" and not isWindows then
-    command = { "env", "SDL_VIDEODRIVER=offscreen" }
+    environment = { "SDL_VIDEODRIVER=offscreen" }
   end
   command[#command + 1] = runtimes.love()
   command[#command + 1] = folder:gsub("/$", "")
@@ -174,7 +168,8 @@ local function start(mode, startPath)
   if mode == "game" and type(size) == "string" then
     command[#command + 1] = "--onlr-size=" .. size
   end
-  local started, err = process.start(command, folder)
+  local started
+  started, err = process.start(command, folder, environment)
   if not started then
     console.add(("LÖVE did not start: %s. The setting onlr.love names its executable."):format(tostring(err)), "error")
     return nil

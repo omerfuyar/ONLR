@@ -167,8 +167,6 @@ What the owner wants worked on, in this order.
     - **The profiler's functions.** `ecs.profile` now names the Lua functions that take the most time, in the profiler's Functions tab (OpenECS DESIGN 3.5): a check of the editor on a large node file needs no code. Size: S.
   - Still open from OpenECS's updates of 2026-11-15 to 18: the console's double click goes to a file and line, so the game's errors and `print`s name the project's file from the project's folder, `components/player.lua:12:` (DESIGN 12.2), to check with a stack's lines; the key list shows ONLR's functions by their names, so each name says what it does to a user; `ui.graph` could show the running game's frame times, sent through the link, for later.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. ONLR's work makes them there, as CLAUDE.md says, when that is better than working around them:
-  - net: listening on one address, `127.0.0.1`, and telling the port that was chosen (DESIGN 12.2). It listens on every address today, and does not tell the port. Until it does, the engine could listen and print its port.
-  - process: environment variables for the program it starts, for `SDL_VIDEODRIVER` (DESIGN 12.1). Until it has them, `env` starts the runner on Linux and `cmd /c` on Windows.
   - fs: a file's permissions. Until it tells them, the Linux build marks as programs LÖVE's launcher, the files of `bin/` and the libraries.
   - fs: watching the folders inside a folder, for the project's folder, which also follows a folder that is removed and made again, as a checkout of git does, and reads a folder again after an overflow. The editor's own watching misses both (see [Review](#review), Editor), and the files panel watches the same folders.
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
@@ -258,12 +256,12 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 **Runner and link, documents**
 
 - **P2 · DESIGN 12.2's table of messages misses `halted` and `hello`**, which `plugins/onlr/runner/init.lua:76` and `runners.lua:430` send, and the fields `hidden` and `closed` of `view` and `tree` of `watch` (`runners.lua:222-223`, `:305`, `:489`). Size: S.
-- **P2 · DESIGN 12 says what the code does not do yet.** The editor listens on every address, not `127.0.0.1` alone (`runners.lua:131-137`, std's `net`, see [Tasks](#tasks)); Start the Preview Again has no button or menu, only the search and the key list (`nodeview.lua:1574`); the preview's printed lines reach the console only when it stops (`runners.lua:518-519`); the Linux runtime has no address, and would be unpacked as a zip (DESIGN 15.2); the offer to move a project to another LÖVE is not written (DESIGN 15.1). Write each as a limit where it is described. Size: S.
+- **P2 · DESIGN 12 says what the code does not do yet.** Start the Preview Again has no button or menu, only the search and the key list (`nodeview.lua:1574`); the preview's printed lines reach the console only when it stops (`runners.lua:518-519`); the Linux runtime has no address, and would be unpacked as a zip (DESIGN 15.2); the offer to move a project to another LÖVE is not written (DESIGN 15.1). Write each as a limit where it is described. Size: S.
 - **P2 · Colours are written out.** `#e06c75` and `#98c379` in the node hierarchy, the tools, the settings, the inspector and the node view, and the node view's grid in `#ffffff10` and `#ffffff60`, stay the same in OpenECS's light theme (OpenECS DESIGN 12.4). Use the theme's names where they exist, and check the light theme by a screenshot. Size: S.
 
 **Releases and this file**
 
-- **P3 · Items of this file that are done or out of date.** the files panel's handlers exist (`files.setHandlers`); the tool's menu takes plugins' entries now (`ecs.app.addMenuEntry`), though not ones that change while the tool runs; `cmd /c` on Windows, in "What OpenECS-std needs", is not how `runners.lua:144-148` starts LÖVE; Libraries names `shadows.shape.box` and physics' folders, which are `shadows.caster` and flat now. Size: S.
+- **P3 · Items of this file that are done or out of date.** the files panel's handlers exist (`files.setHandlers`); the tool's menu takes plugins' entries now (`ecs.app.addMenuEntry`), though not ones that change while the tool runs; Libraries names `shadows.shape.box` and physics' folders, which are `shadows.caster` and flat now. Size: S.
 
 **Engine, documents**
 

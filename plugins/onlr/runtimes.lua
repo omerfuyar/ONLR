@@ -97,7 +97,7 @@ local function runnersRuntime()
     local folder = love:gsub("\\", "/"):match("^(.*/)[^/]*$")
     return folder and isRuntime(folder, "windows-x86_64") and folder or nil
   end
-  local out = process.run({ "sh", "-c", 'readlink -f "$(command -v "$0")"', love }, "", "")
+  local out = process.run({ "sh", "-c", 'readlink -f "$(command -v "$0")"', love }, "", {}, "")
   local folder = out and out:match("^(.*/)[^/\n]*\n?$")
   if folder and isRuntime(folder, "linux-x86_64") then
     return folder
