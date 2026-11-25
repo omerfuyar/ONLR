@@ -35,6 +35,9 @@ local watchTree = false
 ---@type integer[]
 local watched = {}
 local lastTree, treeTime, valuesTime = nil, 0, 0
+-- life's version and each node's name when the tree was sent last, so the tree is made only when it changed
+local sentVersion
+local sentNames = setmetatable({}, { __mode = "k" })
 local statsTime, statsFrames = 0, 0
 
 -- The running tree: each node's number, name, parent and components' types.
@@ -55,6 +58,29 @@ local function tree()
     walk(onlr.tree.top, nil)
   end
   return list
+end
+
+-- Whether a node's name changed since the tree was sent, which life's version does not tell, as a name is a field.
+-- It walks the tree and makes nothing, so it costs little against making and writing the tree.
+local function renamed(node)
+  if sentNames[node] ~= node.name then
+    return true
+  end
+  local children = node._children
+  for i = 1, #children do
+    if renamed(children[i]) then
+      return true
+    end
+  end
+  return false
+end
+
+local function noteNames(node)
+  sentNames[node] = node.name
+  local children = node._children
+  for i = 1, #children do
+    noteNames(children[i])
+  end
 end
 
 -- A property's value as the link carries it: a reference as what it names (DESIGN 12.6).
@@ -130,7 +156,7 @@ end
 function handlers.watch(message)
   watchTree = message.tree and true or false
   watched = message.nodes or {}
-  lastTree = nil
+  lastTree, sentVersion = nil, nil
   treeTime, valuesTime = 0, 0
 end
 
@@ -180,8 +206,17 @@ local function frame()
     game.linked = false
   end
   local now = love.timer.getTime()
-  if watchTree and now - treeTime >= 0.25 then
+  -- four times a second, the tree, when it changed
+  local top = onlr.tree.top
+  local due = watchTree and now - treeTime >= 0.25
+  if due then
     treeTime = now
+  end
+  if due and (life.version ~= sentVersion or (top and renamed(top))) then
+    sentVersion = life.version
+    if top then
+      noteNames(top)
+    end
     local list = tree()
     local text = link.write(list)
     if text ~= lastTree then
