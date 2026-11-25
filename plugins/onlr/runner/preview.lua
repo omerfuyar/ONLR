@@ -266,9 +266,9 @@ local FIELDS = { name = true, posX = true, posY = true, rot = true, sclX = true,
 
 local handlers = {}
 
--- A node file as the editor holds it, saved or not: it is read in place of the project's file.
-function handlers.file(message)
-  data.texts[message.path] = message.text
+-- A node file as the editor holds it, saved or not, its text in the block: it is read in place of the project's file.
+function handlers.file(message, block)
+  data.texts[message.path] = block
   data.forget(message.path)
   loadAll()
 end

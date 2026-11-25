@@ -18,13 +18,14 @@ local resolve = require("resolve")
 ---@field saved string? what the editor writes for the table on disk
 ---@field dirty boolean it has changes that are not saved
 ---@field handwritten boolean a person wrote its text, so a save asks first (DESIGN 4.2)
+---@field text string? its table as the editor writes it now, made again at each change; nil when it does not load
 ---@field missing boolean? the project has no such file
 
----A change that can be undone: the tables of the files that it changed, before and after, and the chosen nodes,
----before and after, when it chose nodes (DESIGN 13.6).
+---A change that can be undone: the texts of the files that it changed, before and after, as the editor writes them, and the
+---chosen nodes, before and after, when it chose nodes (DESIGN 13.6). Lua keeps one copy of each text, however many hold it.
 ---@class onlr.editor.Record
 ---@field label string
----@field files table<string, {before: table?, after: table?}>
+---@field files table<string, {before: string?, after: string?}>
 ---@field chosen {before: onlr.editor.Chosen, after: onlr.editor.Chosen}?
 
 ---@class onlr.editor.Chosen
@@ -44,7 +45,8 @@ local resolve = require("resolve")
 ---@field typeNames string[]
 ---@field typeFiles table<string, string>
 ---@field types table<string, table> what the preview answered of each type
----@field trees table<string, onlr.editor.Tree>
+---@field trees table<string, onlr.editor.Tree> the trees made since their files last changed
+---@field nodeFiles string[]? the paths of the node files, in order, until a file under nodes/ comes or goes
 ---@field watches table<string, any>
 ---@field touch (fun(path: string))?
 
@@ -178,12 +180,10 @@ end
 
 -- Files
 
+-- Writes a file's table again, after a change: its text, kept for the history and the preview, and whether it is saved.
 local function refresh(file)
-  if file.data then
-    file.dirty = format.write(file.data, file.kind) ~= file.saved
-  else
-    file.dirty = false
-  end
+  file.text = file.data and format.write(file.data, file.kind) or nil
+  file.dirty = file.text ~= nil and file.text ~= file.saved
 end
 
 -- Gives one of two nodes that share an id a new one (DESIGN 4.2).
@@ -240,8 +240,8 @@ local function readFile(path)
   file.handwritten = text:gsub("\r\n", "\n") ~= file.saved
   if kind == "node" then
     fixIds(file)
-    refresh(file)
   end
+  refresh(file)
   return file
 end
 
@@ -273,6 +273,19 @@ local source = {
     return info and info.properties
   end,
 }
+
+-- Forgets the trees that are made of any of the files, so they are made again when next asked.
+local function dropTrees(paths)
+  local p = assert(P)
+  for key, t in pairs(p.trees) do
+    for _, path in ipairs(paths) do
+      if key == path or t.files[path] then
+        p.trees[key] = nil
+        break
+      end
+    end
+  end
+end
 
 local function tree(path)
   local p = assert(P)
@@ -359,15 +372,17 @@ end
 
 -- The history
 
-local function emitChanged(paths, history)
+-- Tells that files changed: their texts are written again, unless fresh says an edit did it, and only the trees made of them
+-- are made again.
+local function emitChanged(paths, history, fresh)
   local p = assert(P)
-  p.trees = {}
   for _, path in ipairs(paths) do
     local file = p.files[path]
-    if file then
+    if file and not fresh then
       refresh(file)
     end
   end
+  dropTrees(paths)
   ecs.event.emit("onlr.changed", { files = paths, history = history or false })
 end
 
@@ -402,22 +417,30 @@ end
 ---@return boolean changed whether anything changed
 local function edit(label, fn)
   local p = assert(P)
-  local before = {}
+  local before = {} ---@type table<string, string|false> each touched file's text before the change
   local function touch(path)
     local file = getFile(path)
     if before[path] == nil then
-      before[path] = file and file.data and format.copy(file.data) or false
+      before[path] = file and file.text or false
     end
     return file and file.data
   end
+  -- A change reads the trees of the files that it touches before it changes them, so they are forgotten at its end; one that
+  -- reads a tree after changing its file forgets it first, as Delete does.
   local ok, err = pcall(fn, touch)
+  local touched = {}
+  for path in pairs(before) do
+    touched[#touched + 1] = path
+  end
+  dropTrees(touched)
   if not ok then
     for path, old in pairs(before) do
-      if old and p.files[path] then
-        p.files[path].data = old
+      local file = p.files[path]
+      if old and file then
+        file.data = format.read(old, path)
+        refresh(file)
       end
     end
-    p.trees = {}
     error(err, 0)
   end
   ---@type onlr.editor.Record
@@ -425,14 +448,17 @@ local function edit(label, fn)
   local paths = {}
   for path, old in pairs(before) do
     local file = p.files[path]
-    local after = file and file.data
-    if not format.same(old or nil, after) then
-      record.files[path] = { before = old or nil, after = format.copy(after) }
+    if file then
+      refresh(file)
+    end
+    -- comparing two texts is one check, and the new text is the snapshot (DESIGN 13.6)
+    local after = file and file.text
+    if (old or nil) ~= after then
+      record.files[path] = { before = old or nil, after = after }
       paths[#paths + 1] = path
     end
   end
   if #paths == 0 then
-    p.trees = {}
     return false
   end
   table.sort(paths)
@@ -445,7 +471,7 @@ local function edit(label, fn)
       P.joinable = nil
     end
   end)
-  emitChanged(paths)
+  emitChanged(paths, false, true)
   return true
 end
 
@@ -457,7 +483,7 @@ local function step(record, field)
     if change[field] then
       local file = getFile(path)
       if file then
-        file.data = format.copy(change[field])
+        file.data = format.read(change[field], path)
         file.error = nil
         paths[#paths + 1] = path
       end
@@ -511,7 +537,7 @@ local function saveFile(file)
     say(("%s is not saved: %s"):format(file.path, tostring(err)))
     return false
   end
-  file.disk, file.saved, file.dirty, file.handwritten = text, text, false, false
+  file.disk, file.saved, file.dirty, file.handwritten, file.text = text, text, false, false, text
   return true
 end
 
@@ -594,6 +620,9 @@ local function diskChanged()
   end
   local code, reread = false, {}
   for path, change in pairs(changes) do
+    if path == "nodes" or path:match("^nodes/") then
+      p.nodeFiles = nil
+    end
     local info = fs.info(absolute(path))
     if info and info.type == "folder" then
       watchFolder(path)
@@ -641,7 +670,6 @@ local function diskChanged()
     -- A script changed: what the preview answered of the types is old (DESIGN 12.5).
     scanTypes()
     p.types = {}
-    p.trees = {}
     ecs.event.emit("onlr.disk", { kind = "code" })
     ecs.event.emit("onlr.types")
   end
@@ -942,8 +970,9 @@ local function prune(node)
   end
 end
 
+-- The nodes at paths of a node file's tree, which is made again only after the file changed: an edit's touch forgets it.
 local function nodesOf(file, paths)
-  local t = resolve.tree(file, source)
+  local t = tree(file)
   if t.error then
     error(t.error, 0)
   end
@@ -1434,7 +1463,7 @@ local function deleteNodes(file, paths)
         end
       end
     end
-    assert(P).trees = {}
+    dropTrees({ file })
     clearNames(before, touch)
   end)
   local p = assert(P)
@@ -1658,7 +1687,8 @@ local function saveAsNodeFile(file, path, newFile)
     p.files[newFile] = new
     saveFile(new)
     children[at] = { id = instanceId, instance = { base = newFile, changes = next(changes) and changes or nil } }
-    p.trees = {}
+    p.nodeFiles = nil
+    dropTrees({ file, newFile })
     -- What named one of the nodes names it through the instance.
     clearNames(before, touch, function(name)
       local parts = {}
@@ -1697,6 +1727,7 @@ local function newNodeFile(path, base)
   fs.makeFolder(absolute(folder))
   format.writeFile(absolute(path), format.write(data, "node"))
   getFile(path)
+  assert(P).nodeFiles = nil
   emitChanged({ path }, true)
   return true
 end
@@ -1869,6 +1900,7 @@ local function renameFile(from, to)
     p.files[path] = nil
     getFile(to .. path:sub(#from + 1))
   end
+  p.nodeFiles = nil
   local changed = renameNames(from, to)
   saveAll()
   scanTypes()
@@ -1938,7 +1970,9 @@ local function deleteFile(path)
     dropHistory(other)
     p.files[other] = nil
   end
-  emitChanged({ path }, true)
+  p.nodeFiles = nil
+  gone[#gone + 1] = path
+  emitChanged(gone, true)
   return true
 end
 
@@ -2015,7 +2049,7 @@ local functions = {
   file = { sig = "value(string path)", doc = "A data file of the project, as the editor holds it", fn = getFile },
   text = { sig = "string(string path)", doc = "A data file's text, as the editor would write it now", fn = function(path)
     local file = getFile(path)
-    return file and file.data and format.write(file.data, file.kind) or ""
+    return file and file.text or ""
   end },
   manifest = { sig = "value()", doc = "The manifest's table", fn = function()
     local file = getFile("manifest.lua")
@@ -2039,15 +2073,21 @@ local functions = {
     end)
   end },
   nodeFiles = { sig = "value()", doc = "The paths of the project's node files, in order", fn = function()
-    local list = {}
-    if P then
-      walk("nodes", function(path)
-        if isNodeFile(path) then
-          list[#list + 1] = path
-        end
-      end)
+    if not P then
+      return {}
     end
+    -- kept until the watcher sees a file under nodes/ come or go, or the editor makes or renames one
+    if P.nodeFiles then
+      return P.nodeFiles
+    end
+    local list = {}
+    walk("nodes", function(path)
+      if isNodeFile(path) then
+        list[#list + 1] = path
+      end
+    end)
     table.sort(list)
+    P.nodeFiles = list
     return list
   end },
   tree = { sig = "value(string path)", doc = "The nodes of a node file, with its instances' nodes", fn = function(path)

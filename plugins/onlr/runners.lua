@@ -258,19 +258,25 @@ local function oweFrames(path)
   preview.since = os.time()
 end
 
--- Sends the node files that the editor holds otherwise than the preview does (DESIGN 12.2).
-local function sendFiles()
+-- Sends the node files that the editor holds otherwise than the preview does (DESIGN 12.2): those of paths, or every node file.
+-- A file's text is the one that its last change wrote.
+local function sendFiles(paths)
   if not (preview and preview.ready) then
     return
   end
-  for _, path in ipairs(project.nodeFiles()) do
+  local sent = false
+  for _, path in ipairs(paths or project.nodeFiles()) do
     local file = project.file(path)
-    local text = project.text(path)
-    if file and file.data and (preview.sent[path] and preview.sent[path] ~= text or not preview.sent[path] and file.dirty) then
+    local text = file and file.kind == "node" and file.text
+    if text and (preview.sent[path] and preview.sent[path] ~= text or not preview.sent[path] and file.dirty) then
       preview.sent[path] = text
-      send(preview, { type = "file", path = path, text = text })
-      oweFrames()
+      -- the text goes as the message's block, which is sent as it is, not written as a Lua text with its lines escaped
+      send(preview, { type = "file", path = path }, text)
+      sent = true
     end
+  end
+  if sent then
+    oweFrames()
   end
 end
 
@@ -335,10 +341,11 @@ function runners.change(path, node, fields, values)
   end
 end
 
----The project's files changed in the editor: the preview gets them.
-function runners.filesChanged()
+---Files of the project changed in the editor: the preview gets those that are node files.
+---@param paths string[]
+function runners.filesChanged(paths)
   runners.ensurePreview()
-  sendFiles()
+  sendFiles(paths)
 end
 
 ---A file that is not Lua changed on disk, such as an image.

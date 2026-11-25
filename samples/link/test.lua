@@ -60,14 +60,14 @@ local function preview()
   check.equal(assert(nodeOf(bounds, "p7c2sh")).place[5], 200, "a child moves with its parent")
 
   -- A file: a node file as the editor holds it, saved or not, read in place of the project's file.
-  runner.send({ type = "file", path = "nodes/unsaved.lua", text = [[
+  runner.send({ type = "file", path = "nodes/unsaved.lua" }, [[
     return {
       format = 1,
       id = "uns4v3",
       name = "Unsaved",
       components = { onlr = { paint = { color = { 1, 0, 0, 1 } }, shape = { height = 20, width = 20 } } },
     }
-  ]] })
+  ]])
   runner.send({ type = "view", id = 2, path = "nodes/unsaved.lua", x = 0, y = 0, zoom = 2, width = 64, height = 64 })
   local second
   repeat
@@ -76,7 +76,7 @@ local function preview()
   check.equal({ pixel(block, 64, 30, 30), pixel(block, 64, 50, 50) }, { "0 0 255 255", "0 0 0 0" }, "an unsaved file, zoomed")
 
   -- A file that does not load: the view's error names it, and the preview goes on.
-  runner.send({ type = "file", path = "nodes/unsaved.lua", text = "return {" })
+  runner.send({ type = "file", path = "nodes/unsaved.lua" }, "return {")
   local err = assert(runner.expect("error"), "no error")
   check.equal({ err.view, err.file }, { 2, "nodes/unsaved.lua" }, "the error of a file that does not load")
   runner.send({ type = "view", id = 2, closed = true })
