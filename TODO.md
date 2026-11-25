@@ -243,14 +243,8 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 - **P2 · The editor's test depends on the computer.** `samples/editor/editortest.lua:1053-1068` The Linux build passes only when `LOVE` is an unpacked AppImage, as CI has it, and the Windows build downloads 10 MB into the user's own `~/.local/share/onlr`. Set `XDG_DATA_HOME` in shuild's tests, and say what the test needs in DESIGN 16. Size: S.
 - **P3 · CI and releases.** `checks.yml:101` downloads LÖVE without checking its hash; `checks.yml:91` takes OpenECS's default branch, not the built commit; `release.yml` does not need the checks to have passed; `check.sh:49-57` ignores the Lua check's exit status. Size: S.
 
-**Guide and keys**
-
-- **P2 · GUIDE 1.4 misses Id and Game version** (`settings.lua:165-166`), and GUIDE 9 does not say that a Linux build needs LÖVE's unpacked AppImage until the Linux runtime has an address (`runtimes.lua:29`). Size: S.
-
 **Runner and link, documents**
 
-- **P2 · DESIGN 12.2's table of messages misses `halted` and `hello`**, which `plugins/onlr/runner/init.lua:76` and `runners.lua:430` send, and the fields `hidden` and `closed` of `view` and `tree` of `watch` (`runners.lua:222-223`, `:305`, `:489`). Size: S.
-- **P2 · DESIGN 12 says what the code does not do yet.** The Linux runtime has no address, and would be unpacked as a zip (DESIGN 15.2); the offer to move a project to another LÖVE is not written (DESIGN 15.1). Write each as a limit where it is described. Size: S.
 - **P2 · Colours are written out.** `#e06c75` and `#98c379` in the node hierarchy, the tools, the settings, the inspector and the node view, and the node view's grid in `#ffffff10` and `#ffffff60`, stay the same in OpenECS's light theme (OpenECS DESIGN 12.4). Use the theme's names where they exist, and check the light theme by a screenshot. Size: S.
 
 **Releases and this file**
@@ -260,5 +254,4 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 **Engine, documents**
 
 - **P2 · A kept node runs after the root.** `packages/onlr/library/node.lua:96-103` `node:setParent(onlr.tree.top)`, DESIGN 5's way to keep a node, puts it after the root, so it updates and draws after it; DESIGN 5 says the root is the top node's last child. Insert kept nodes before the root. Size: S.
-- **P2 · DESIGN 11.11 and 11.12 say components run by their names.** `componentOrder` orders them now (DESIGN 5, `component.lua:365-399`); `audio/components/listener.lua:49` says the same. Size: S.
 - **P3 · Smaller differences.** OVERVIEW 7 lists the tools without Rect and Shape and has no History panel; DESIGN 3.2's reversed-domain `id` against the folder's name that `project.lua:875` writes; DESIGN 8.3 misses `paint.lua`; DESIGN 10 says paint, follow and shake have `bounds`; DESIGN 6.4 says a new order waits for the next frame, which `life.lua:398-400` does not; DESIGN 11.6 and 11.9 miss `sizeVariation`, `spinVariation`, `getRaw` and `getJoystick`; DESIGN 14.2 against the tooltip "an AppImage" (`export.lua:287`); `samples/check.lua:1` and `samples/animation/test.lua:1` name the wrong script and section. Size: S.
