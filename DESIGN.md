@@ -1512,6 +1512,7 @@ end
 
 - The preview only draws, and what it draws are views.
 - A node view shows a view of an open node file. Other files, such as an image or a sound, are shown by the asset viewer (13.1) as the files they are; how the game draws them shows in the node view.
+- The preview makes a view's nodes from its node file, and makes them again only when that file or a file that they come from, such as an instance's base, changes, or when the view shows another file. It then forgets the old nodes: the engine lets go of their components and of the files that they held, so a long session keeps only the views that show. A file that does not load is read again only when a file changes, not when the view moves.
 - The preview draws a view when the editor asks: after a change, or when the view moves, and 30 times a second while a chosen node has `updateEditor` (6.5). It runs no loop of frames otherwise, so it uses the processor only when something changed or moves.
 - What is drawn is split by what it depends on:
 

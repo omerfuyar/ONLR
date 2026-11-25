@@ -129,6 +129,25 @@ local function brokenView()
   runner.stopped()
 end
 
+-- A view made again forgets its old nodes and their components (DESIGN 12.3): samples/life's alive counts, in each loadEditor,
+-- the components of its type that are still alive, and says it as its node's error.
+local function keptView()
+  local runner = editor.start("life", "preview")
+  local text = [[return { format = 1, id = "al1ve0", name = "Alive", components = { alive = {} } }]]
+  runner.send({ type = "view", id = 1, path = "nodes/alive.lua", x = 0, y = 0, zoom = 1, width = 16, height = 16 })
+  local said = {}
+  for i = 1, 4 do
+    local bounds = assert(runner.expect("bounds"), "no bounds")
+    said[i] = assert(nodeOf(bounds, "al1ve0")).errors[1]
+    runner.expect("frame")
+    runner.send({ type = "shown", id = 1 })
+    runner.send({ type = "file", path = "nodes/alive.lua" }, text)
+  end
+  check.equal(said, { "0 alive", "0 alive", "0 alive", "0 alive" }, "a view made again keeps none of its old components")
+  runner.send({ type = "stop" })
+  runner.stopped()
+end
+
 -- loadEditor: the preview calls it once a node's components are made, and after each change of their values (DESIGN 6.5).
 -- anim8's sets the sprite's quad to the first frame of the animation that plays first, so the view shows that frame.
 local function animationView()
@@ -278,6 +297,7 @@ end
 check.run(function()
   preview()
   brokenView()
+  keptView()
   animationView()
   game()
   errors()
