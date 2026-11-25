@@ -1341,7 +1341,9 @@ return {
     writeMain(mainBefore)
     test.call("onlr.restart")
     test.wait(1)
-    check(shown > 0 and shown <= 110, "the preview's last lines show when it ends, not all 500: " .. shown)
+    -- main.lua's change on disk starts the preview again too, so it may end twice, each time with its last lines; without the
+    -- limit one end shows all 500
+    check(shown > 0 and shown <= 220, "the preview's last lines show when it ends, not all 500: " .. shown)
 
     -- a node file's getmetatable gives nothing for a text, so the file cannot reach the strings' table, which is the editor's
     -- string, and change it for the whole editor (DESIGN 4.1)
