@@ -721,6 +721,13 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the added tag is one change, undone")
+    -- a list folds as a component does: a click on Tags' heading hides its items and Add, and another shows them (DESIGN 13.4)
+    test.click(inspected("aaaaaa:thing:tags:heading", 0.2))
+    test.wait(0.2)
+    check(test.panel(panelOf(test, "onlr.inspector")).state.rects["aaaaaa:thing:tags:add"] == nil, "a click on Tags folds the list")
+    test.click(inspected("aaaaaa:thing:tags:heading", 0.2))
+    test.wait(0.2)
+    check(test.panel(panelOf(test, "onlr.inspector")).state.rects["aaaaaa:thing:tags:add"] ~= nil, "and another opens it")
 
     -- an angle's field takes degrees, and the file keeps radians, as scripts read them: 45 in Turn is a quarter of pi; Lean is an
     -- angle only while mode is fly, so in walk a typed 2 stays 2 (DESIGN 6.2)

@@ -93,7 +93,7 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 | Transform         | The bar over the node view | The tool and its pivot, snapping and the grid (2.1).                                           |
 | Node hierarchy    | Left                    | The tree of the node file that is open: choose nodes, rename them, drag them into other nodes.   |
 | Node view         | Middle                  | The node file drawn as the game draws it: choose nodes, and move, turn and scale them.           |
-| Inspector         | Right                   | The chosen nodes' place and components, and their values.                                      |
+| Inspector         | Right                   | The chosen nodes' place and components, and their values. A click on a component's heading, or on a list's, folds it. |
 | Project, Export   | **Window** in the title bar | The project's settings (1.4), and export (9). Each opens as a tab beside the inspector, and closes with its tab. |
 | Viewer            | Under the inspector     | The picture, sound or text of the file chosen in the files panel.                                |
 | Console           | Bottom                  | What the game prints, its errors, and the editor's warnings. A click on an error's file opens it in your code editor. |

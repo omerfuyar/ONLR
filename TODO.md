@@ -47,7 +47,6 @@ What the owner wants worked on, in this order.
 
 - **The owner's reports of 2026-11-25.** To fix first:
   - **Add component's folders draw broken.** In the inspector's Add component dropdown, the entries in a folder show as tiny, unreadable marks, and the popup is too narrow (a screenshot shows it over Title and About). Find whether the editor gives the dropdown's folders wrongly or std ui's dropdown draws nested entries wrongly, and fix it where it lies.
-  - **Folding lists and tables in the inspector.** A property that holds a list or a table, such as a polygon's points, should fold and unfold, as a component's section does.
   - **The console's first level.** OpenECS-std's console is to show Warnings and up at first (OpenECS TODO); the game's prints are info, so ONLR then needs a way to start at Info and up, or GUIDE 8 says to change Show.
   - **Tooltips are cut by small panels.** OpenECS-std's ui is to draw them over everything (OpenECS TODO); nothing to change in ONLR but checking its panels then.
 
