@@ -234,7 +234,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Export**
 
-- **P1 · An export can hold the exports before it.** `plugins/onlr/export.lua:88` When the export folder is the project's own, the folder to leave out is `""`, which matches nothing, and a typed `./out` never equals `out/` (`:60-67`). Each `.love`, `.tar.gz` and `.zip` then goes into the next export, against DESIGN 14.1. Make the folder whole as `project.lua:700` does, refuse the project's own folder, and test patterns such as `**` and folders in `samples/editor`. Size: S.
 - **P2 · Getting a runtime breaks easily.** `plugins/onlr/runtimes.lua:159` Every download is unpacked as a zip, though the Linux runtime is a `.tar.gz`; a cut unpack is taken as whole for ever (`:87-90`); two clicks start two downloads into one folder. Unpack by format into a folder of its own, rename it into place, and run one download for each platform. Size: S.
 - **P3 · Export holds the whole project in memory, on the editor's thread.** `export.lua:107`, `:189-216` The editor stops while it writes. OpenECS's workers now take buffers (OpenECS DESIGN 3.3), so an export can run beside the editor. Size: M.
 

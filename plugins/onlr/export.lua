@@ -41,15 +41,71 @@ local function write(path, data)
   return true
 end
 
--- A pattern of the manifest's exclude as a Lua pattern: * stands for any part of a name, ** for any folders,
--- and a pattern that ends with / names a folder (DESIGN 3.2). A pattern names a path from the project's folder.
-local function luaPattern(pattern)
-  local folder = pattern:sub(-1) == "/"
-  local out = pattern:gsub("[%^%$%(%)%%%.%[%]%+%-%?]", "%%%0"):gsub("%*%*/?", "\1"):gsub("%*", "[^/]*"):gsub("\1", ".*")
-  return "^" .. out .. (folder and "" or "$")
+-- The parts of a path between its slashes.
+local function partsOf(path)
+  local parts = {}
+  for part in path:gmatch("[^/]+") do
+    parts[#parts + 1] = part
+  end
+  return parts
 end
 
----The export's folder, ending with a slash: the one that the user chose, which the editor keeps for the project.
+---A pattern of the manifest's exclude, made ready to match (DESIGN 3.2): it names a path from the project's folder, part by
+---part. In a part, * stands for any part of a name; a part ** stands for any folders, or none; and a pattern that ends with /
+---names a folder, with all that it holds.
+---@param pattern string
+---@return {parts: (string|true)[], folder: boolean}
+local function compile(pattern)
+  local parts = partsOf(pattern)
+  for i, part in ipairs(parts) do
+    parts[i] = part == "**" or "^" .. (part:gsub("[%^%$%(%)%%%.%[%]%+%-%?]", "%%%0"):gsub("%*", ".*")) .. "$"
+  end
+  return { parts = parts, folder = pattern:sub(-1) == "/" }
+end
+
+---Whether a path matches a pattern of exclude; a folder's path ends with a slash.
+---@param pattern {parts: (string|true)[], folder: boolean}
+---@param path string
+---@return boolean
+local function matches(pattern, path)
+  local names, isFolder = partsOf(path), path:sub(-1) == "/"
+  local function at(i, j)
+    if i > #pattern.parts then
+      if j > #names then
+        return not pattern.folder or isFolder
+      end
+      return pattern.folder
+    end
+    local part = pattern.parts[i]
+    if part == true then
+      for k = j, #names + 1 do
+        if at(i + 1, k) then
+          return true
+        end
+      end
+      return false
+    end
+    return j <= #names and names[j]:match(part) ~= nil and at(i + 1, j + 1)
+  end
+  return at(1, 1)
+end
+
+-- A folder's path made whole, ending with a slash: its . and .. parts worked out, and each part between single slashes, so two
+-- ways to write one folder give one path.
+local function whole(path)
+  local lead = path:match("^%a:/") or path:match("^/") or ""
+  local parts = {}
+  for part in path:sub(#lead + 1):gmatch("[^/]+") do
+    if part == ".." then
+      parts[#parts] = nil
+    elseif part ~= "." then
+      parts[#parts + 1] = part
+    end
+  end
+  return lead .. table.concat(parts, "/") .. (#parts > 0 and "/" or "")
+end
+
+---The export's folder, made whole and ending with a slash: the one that the user chose, which the editor keeps for the project.
 ---A path that does not start at a root is in the project's folder.
 ---@return string? folder nil when none is chosen
 local function exportFolder()
@@ -61,10 +117,7 @@ local function exportFolder()
   if not folder:match("^/") and not folder:match("^%a:/") then
     folder = project.folder() .. folder
   end
-  if folder:sub(-1) ~= "/" then
-    folder = folder .. "/"
-  end
-  return folder
+  return whole(folder)
 end
 
 -- The game's name as a file's name.
@@ -82,14 +135,15 @@ local function collect()
   local manifest = project.manifest() or {}
   local patterns = {}
   for _, pattern in ipairs(type(manifest.exclude) == "table" and manifest.exclude or {}) do
-    patterns[#patterns + 1] = luaPattern(tostring(pattern))
+    patterns[#patterns + 1] = compile(tostring(pattern))
   end
   local out = exportFolder()
-  local skip = out and out:sub(1, #root) == root and out:sub(#root + 1) or nil
+  local home = whole(root)
+  local skip = out and out:sub(1, #home) == home and out:sub(#home + 1) or nil
   local files = {}
   local function excluded(path)
     for _, pattern in ipairs(patterns) do
-      if path:match(pattern) then
+      if matches(pattern, path) then
         return true
       end
     end
@@ -125,6 +179,11 @@ local function prepare()
   local folder = exportFolder()
   if not folder then
     say("Choose the folder that exports are written to first.", true)
+    return nil
+  end
+  -- the project's own folder would put each export into the next one (DESIGN 14.1)
+  if folder == whole(project.folder()) then
+    say("The export's folder cannot be the project's own folder, since each export would hold the ones before it. Choose another, such as out.", true)
     return nil
   end
   if not project.saveAll() then
