@@ -694,6 +694,25 @@ return {
     test.wait(0.2)
     save()
     check(read("nodes/start.lua") == start, "a path outside the project is refused")
+    -- a file from outside the project dropped on a file's row is copied into the project first, after asking, as a drop on a node
+    -- view is (DESIGN 13.4)
+    local gem = os.getenv("PWD") .. "/../gem.png"
+    local gemFile = assert(io.open(gem, "wb"))
+    gemFile:write(read("images/coin.png"))
+    gemFile:close()
+    local gx, gy = inspected("aaaaaa:thing:picture:path", 0.3)
+    test.dropFiles(gx, gy, { gem })
+    test.match(test.dialog(), { title = "Copy into the project" }, "a file from outside dropped on a row asks")
+    test.key("Return")
+    test.wait(0.3)
+    save()
+    check(read("images/gem.png") == read("images/coin.png") and read("nodes/start.lua"):find('picture = "images/gem.png"'),
+      "the copy is in images/, and the row names it:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    os.remove("images/gem.png")
+    os.remove(gem)
+    check(read("nodes/start.lua") == start, "the drop on the row is undone")
 
     -- a sound's row has a Stream toggle beside its file, which the node file keeps with the path (DESIGN 6.2)
     test.click(inspected("aaaaaa:thing:sound:stream", 0.5))

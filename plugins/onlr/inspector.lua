@@ -242,7 +242,7 @@ local function control(state, subject, id, decl, value, set)
     local named = type(value) == "string" and subject.tree.index[value]
     local shown = value == MIXED and "" or named and (named.name or value) or value and (tostring(value) .. " (no such node)") or "(none)"
     local needs = kind == "component" and decl.type or nil
-    state.drops[#state.drops + 1] = { id = id, type = "onlr.node", set = set, needs = needs, tree = subject.tree }
+    state.drops[#state.drops + 1] = { id = id, type = "onlr.node", set = set, needs = needs, tree = subject.tree, file = subject.file }
     local waiting = nodeview.picking()
     local mine = waiting ~= nil and waiting.id == id
     return ui.row({ id = id, gap = 4, grow = 1, align = "center" }, {
@@ -809,28 +809,39 @@ local function drop(state, event)
     local rect = ui.rect(state.panel, row.id)
     if rect and row.type == event.dataType and x >= rect.x - 120 and x <= rect.x + rect.width and y >= rect.y and y <= rect.y + rect.height then
       if row.type == "file-list" then
-        local folder = project.folder()
         local path = type(event.value) == "table" and tostring(event.value[1] or ""):gsub("\\", "/") or ""
-        if path:sub(1, #folder) == folder then
-          path = path:sub(#folder + 1)
-          local ending = (path:match("%.(%w+)$") or ""):lower()
-          local fits = not row.extensions
-          for _, extension in ipairs(row.extensions or {}) do
-            fits = fits or extension:lower() == ending
-          end
-          if row.nodeFile and not path:match("^nodes/.+%.lua$") then
-            fits = false
-          end
-          if fits then
-            row.set(path)
-          end
+        local ending = (path:match("%.(%w+)$") or ""):lower()
+        local fits = path ~= "" and not row.extensions
+        for _, extension in ipairs(row.extensions or {}) do
+          fits = fits or extension:lower() == ending
         end
-      elseif type(event.value) == "table" and event.value.file == shared.file() then
-        local node = row.tree.index[event.value.path]
+        local inside
+        if fits and row.nodeFile then
+          -- a node file must be one of the project's already
+          local folder = project.folder()
+          inside = path:sub(1, #folder) == folder and path:sub(#folder + 1) or nil
+          if not (inside and inside:match("^nodes/.+%.lua$")) then
+            console.add(("%s is no node file of the project's nodes/ folder."):format(path), "warn")
+            inside = nil
+          end
+        elseif fits then
+          -- a file from outside the project is copied in first, after asking, as a drop on a node view does (DESIGN 13.4)
+          inside = project.bringIn(path)
+        elseif path ~= "" then
+          console.add(("%s is not a file that this row takes."):format(path), "warn")
+        end
+        if inside then
+          row.set(inside)
+        end
+      elseif type(event.value) == "table" then
+        -- a reference names a node of the file of the inspector's nodes, also while the inspector is locked on another file
+        local node = event.value.file == row.file and row.tree.index[event.value.path]
         if node and (not row.needs or node.components[row.needs]) then
           row.set(event.value.path)
         elseif node then
           console.add(("The node %s has no component %s."):format(node.name or node.path, row.needs), "warn")
+        else
+          console.add(("A reference names a node of %s, the file of the inspector's nodes."):format(tostring(row.file)), "warn")
         end
       end
       return
