@@ -3,8 +3,11 @@
 
 local format = {}
 
+-- The engine's reading of data files, from ONLR's engine beside the plugin, so a file loads in the editor as in the game.
+local data = assert(loadfile(require("ecs").plugin.folder .. "../../packages/onlr/library/data.lua"))()
+
 -- The version of the data files' format that this editor reads (DESIGN 17).
-format.FORMAT = 1
+format.FORMAT = data.FORMAT
 
 -- The order of a node's fields, and of the fields of an instance's change (DESIGN 5).
 local NODE = { "format", "id", "instance", "name", "posX", "posY", "rot", "sclX", "sclY", "z", "active", "componentOrder", "components", "children" }
@@ -246,59 +249,15 @@ function format.write(t, kind)
   return out:get()
 end
 
--- The basic functions that a data file may call (DESIGN 4.1).
-local BASIC = {
-  "assert", "error", "getmetatable", "ipairs", "next", "pairs", "pcall", "rawequal", "rawget", "rawset", "select",
-  "setmetatable", "tonumber", "tostring", "type", "xpcall",
-}
-
-local function copy(t)
-  local c = {}
-  for k, v in pairs(t) do
-    c[k] = v
-  end
-  return c
-end
-
-local function sandbox()
-  local env = {}
-  for _, name in ipairs(BASIC) do
-    env[name] = _G[name]
-  end
-  env.unpack = table.unpack
-  env.string = copy(string)
-  env.table = copy(table)
-  env.math = copy(math)
-  -- A text's metatable is shared by every text, and its __index is the real string, so the file gets nothing for it.
-  env.getmetatable = function(value)
-    if type(value) == "string" then
-      return nil
-    end
-    return getmetatable(value)
-  end
-  env._G = env
-  return env
-end
-
----Runs a data file's text in its sandbox and gives the table that it returns.
+---Runs a data file's text in its sandbox and gives the table that it returns, as the engine reads it (DESIGN 4.1).
 ---@param text string the file's Lua
 ---@param path string its path, for the messages
 ---@return table? t the table, or nil when the file does not load
 ---@return string? message why it does not load
 function format.read(text, path)
-  local chunk, err = load(text, "@" .. path, "t", sandbox())
-  if not chunk then
-    return nil, err
-  end
-  local ok, result = pcall(chunk)
+  local ok, result = pcall(data.run, text, path)
   if not ok then
     return nil, tostring(result)
-  end
-  if type(result) ~= "table" then
-    return nil, path .. ": a data file returns a table"
-  end
-  if result.format ~= format.FORMAT then
-    return nil, ("%s: format %s is not %d, the one that this editor reads"):format(path, tostring(result.format), format.FORMAT)
   end
   return result
 end

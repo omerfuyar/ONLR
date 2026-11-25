@@ -9,32 +9,14 @@ local life = require("onlr.library.life")
 local component = require("onlr.library.component")
 local property = require("onlr.library.property")
 local nodes = require("onlr.library.node")
+local instances = require("onlr.library.instances")
 
 local build = {}
 
 ---What one build shares.
 ---@class onlr.BuildContext
 ---@field lenient boolean? in the node view: a problem is noted on its node, and the rest is made
----@field stack table<string, boolean> the node files that are being made, to find one that holds itself
 ---@field todo onlr.Node[] the nodes whose components wait for the next steps
-
----The nodes of one node file, as one instance of it holds them: ids are read in the file that writes them (DESIGN 9).
----@class onlr.Scope
----@field file string the node file
----@field prefix string the path of ids before its nodes' ids, from the file that the build started with
----@field nodes table<string, onlr.Node> its nodes, by id, or by a path of ids inside an instance
-
----The changes that one instance lays over its base's nodes.
----@class onlr.Overlay
----@field changes table<string, table> by the id that the changed node has in the file being made
----@field scope onlr.Scope the file that wrote the changes, where their ids are read
----@field overlays onlr.Overlay[] the overlays over that file's own nodes
----@field used table<string, boolean> the keys that found their node
----@field parent onlr.Overlay? the overlay that this one is a part of
----@field keys table<string, string>? this overlay's keys in the parent
-
--- The key, in an overlay, of a change to the first node of the file being made.
-local FIRST = {}
 
 local FIELDS = { "name", "posX", "posY", "rot", "sclX", "sclY" }
 
@@ -45,13 +27,6 @@ local function note(node, ctx, message)
     return
   end
   error(message, 0)
-end
-
-local function use(overlay, key)
-  overlay.used[key] = true
-  if overlay.parent then
-    use(overlay.parent, overlay.keys[key])
-  end
 end
 
 -- Lays the fields of a node's entry, or of a change, over a node, and notes its components' values.
@@ -75,120 +50,35 @@ local function lay(node, entry, scope)
   end
 end
 
-local buildFile
-
----@param entry table a node's entry
----@param scope onlr.Scope
----@param overlays onlr.Overlay[]
+-- The engine's maker of nodes for the walk over a file's instances (instances.lua): nodes with their fields, whose components
+-- wait in ctx.todo for the next steps.
 ---@param ctx onlr.BuildContext
----@return onlr.Node
-local function buildEntry(entry, scope, overlays, ctx)
-  local id = entry.id
-  if type(id) ~= "string" then
-    error(scope.file .. ": a node has no id", 0)
-  end
-  if scope.nodes[id] then
-    error(("%s: the id %s is there twice"):format(scope.file, id), 0)
-  end
-
-  if entry.instance then
-    local instance = entry.instance
-    if type(instance) ~= "table" or type(instance.base) ~= "string" then
-      error(("%s: the instance %s names no base"):format(scope.file, id), 0)
-    end
-    -- The instance's own changes are laid over first, then those that reach it from outside.
-    local own = { changes = instance.changes or {}, scope = scope, overlays = overlays, used = {} }
-    local inner = { own }
-    local prefix = id .. "/"
-    for _, o in ipairs(overlays) do
-      local sub, keys, any = {}, {}, false
-      for key, change in pairs(o.changes) do
-        if key == id then
-          sub[FIRST], keys[FIRST], any = change, key, true
-        elseif type(key) == "string" and key:sub(1, #prefix) == prefix then
-          local rest = key:sub(#prefix + 1)
-          sub[rest], keys[rest], any = change, key, true
-        end
+---@return onlr.Maker
+local function maker(ctx)
+  return {
+    file = function(path)
+      return data.load("node", path)
+    end,
+    node = function(entry, scope)
+      local node = nodes.new(entry.name)
+      node._id = entry.id
+      node._path = scope.prefix .. entry.id
+      node._layers = {}
+      node._file = scope.file
+      ctx.todo[#ctx.todo + 1] = node
+      return node
+    end,
+    lay = lay,
+    attach = nodes.attach,
+    first = function(node, path)
+      node._path = path
+    end,
+    instance = function(node, entry, scope, unused)
+      for _, key in ipairs(unused) do
+        note(node, ctx, ("%s: the instance %s changes %s, which names no node"):format(scope.file, entry.id, tostring(key)))
       end
-      if any then
-        inner[#inner + 1] = { changes = sub, scope = o.scope, overlays = o.overlays, used = {}, parent = o, keys = keys }
-      end
-    end
-    local node, innerScope = buildFile(instance.base, inner, ctx, scope.prefix .. id)
-    scope.nodes[id] = node
-    for path, other in pairs(innerScope.nodes) do
-      if other ~= node then
-        scope.nodes[prefix .. path] = other
-      end
-    end
-    for key in pairs(own.changes) do
-      if not own.used[key] then
-        note(node, ctx, ("%s: the instance %s changes %s, which names no node"):format(scope.file, id, tostring(key)))
-      end
-    end
-    return node
-  end
-
-  local node = nodes.new(entry.name)
-  node._id = id
-  node._path = scope.prefix .. id
-  node._layers = {}
-  node._file = scope.file
-  scope.nodes[id] = node
-  ctx.todo[#ctx.todo + 1] = node
-  lay(node, entry, scope)
-
-  local added = {}
-  for _, o in ipairs(overlays) do
-    local change = o.changes[id]
-    if change then
-      use(o, id)
-      lay(node, change, o.scope)
-      if change.children then
-        added[#added + 1] = { children = change.children, overlay = o }
-      end
-    end
-  end
-
-  for _, child in ipairs(entry.children or {}) do
-    nodes.attach(buildEntry(child, scope, overlays, ctx), node)
-  end
-  -- Children that a change adds are nodes of the file that wrote the change.
-  for _, add in ipairs(added) do
-    for _, child in ipairs(add.children) do
-      nodes.attach(buildEntry(child, add.overlay.scope, add.overlay.overlays, ctx), node)
-    end
-  end
-  return node
-end
-
----@param path string a node file
----@param overlays onlr.Overlay[]
----@param ctx onlr.BuildContext
----@param firstPath string? the path of ids of its first node, when an instance holds the file
----@return onlr.Node first
----@return onlr.Scope scope
-function buildFile(path, overlays, ctx, firstPath)
-  if ctx.stack[path] then
-    error(path .. ": a node file cannot hold itself", 0)
-  end
-  local fileData = data.load("node", path)
-  ctx.stack[path] = true
-  ---@type onlr.Scope
-  local scope = { file = path, prefix = firstPath and (firstPath .. "/") or "", nodes = {} }
-  -- A change to the instance's first node is written, from outside, under the instance's id.
-  for _, o in ipairs(overlays) do
-    if o.changes[FIRST] and type(fileData.id) == "string" then
-      o.changes[fileData.id] = o.changes[FIRST]
-      o.keys[fileData.id] = o.keys[FIRST]
-    end
-  end
-  local first = buildEntry(fileData, scope, overlays, ctx)
-  if firstPath then
-    first._path = firstPath
-  end
-  ctx.stack[path] = nil
-  return first, scope
+    end,
+  }
 end
 
 -- Splits a node file's components, tables in tables by the dots of their names, into entries by type name.
@@ -359,8 +249,8 @@ function build.file(path, lenient)
     error("a node file is named by its path", 0)
   end
   ---@type onlr.BuildContext
-  local ctx = { lenient = lenient or life.mode == "preview", stack = {}, todo = {} }
-  local first, scope = buildFile(path, {}, ctx)
+  local ctx = { lenient = lenient or life.mode == "preview", todo = {} }
+  local first, scope = instances.walk(path, maker(ctx))
   for _, node in ipairs(ctx.todo) do
     make(node, ctx)
   end

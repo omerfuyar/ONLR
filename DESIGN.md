@@ -192,7 +192,7 @@ return {
 
 - Every data file that ONLR writes is a Lua file that returns one table: the manifests, the node files and the graphs (6.8).
 - The table is plain data: numbers, texts, booleans and tables, and no function.
-- The engine and the editor each read a file by running it, with LuaJIT: LÖVE's in the game, and OpenECS's in the editor. The file runs with Lua's basic functions and its `string`, `table` and `math` libraries, and nothing else. It cannot reach LÖVE, the engine, the editor or another file.
+- The engine and the editor read a file in one way, by running it with the engine's `library/data.lua`, with LuaJIT: LÖVE's in the game, and OpenECS's in the editor, which loads that file from ONLR's own engine (13.1). The file runs with Lua's basic functions and its `string`, `table` and `math` libraries, and nothing else. It cannot reach LÖVE, the engine, the editor or another file.
 - The basic functions are those that compute: `assert`, `error`, `getmetatable`, `ipairs`, `next`, `pairs`, `pcall`, `rawequal`, `rawget`, `rawset`, `select`, `setmetatable`, `tonumber`, `tostring`, `type`, `unpack` and `xpcall`. Those that load code or reach outside are left out, such as `require`, `load`, `dofile` and `print`. Each file gets its own copies of the three libraries, so it changes nothing for another file. `getmetatable` gives nothing for a text, since every text shares one metatable, whose `__index` is the real `string` of the game or the editor.
 - So a file that a person writes may compute its table, such as a manifest that works out the window's size. Its code must be LuaJIT 2.1's Lua without the syntax that OpenECS's LuaJIT takes from LuaJIT 3.0, such as `+=`, which LÖVE 11.5's lacks.
 - A file's kind is known by its folder, without reading it: a node file is in `nodes/`, a script in `components/`, an ira-script in `ira-scripts/` and an ira-shader in `ira-shaders/` (3.1). No file's name has a second ending.
@@ -789,7 +789,8 @@ Each file of the engine holds one thing. The engine is laid out as a package is 
 | `library/node.lua`                                  | Nodes and their functions (7).                                                                                                                             |
 | `library/component.lua`                             | Component types (6.1): finding and loading a type's file, and a node's `components`.                                                                       |
 | `library/life.lua`                                  | The life of components (6.4), and the lists that a frame walks (8.2).                                                                                      |
-| `library/build.lua`                                 | Making nodes from node files: instances, their changes and ids (9).                                                                                        |
+| `library/build.lua`                                 | Making nodes from node files: their fields, components and values (9).                                                                                     |
+| `library/instances.lua`                             | The walk over a node file's nodes and its instances, with their changes and ids (9), which the editor's trees share. It requires nothing.                   |
 | `library/property.lua`                              | `onlr.property` (6.2), and turning a node file's values into a component's.                                                                                |
 | `library/font.lua`                                  | `onlr.font`: fonts at the size that the drawing shows them (10).                                                                                           |
 | `library/shader.lua`                                | Shaders (6.7): loading a GLSL file or an ira-shader, reading its values, checking it as GLSL ES, and `time`.                                              |
@@ -895,6 +896,7 @@ return {
 - A change to a node file reaches every instance of it, apart from what the instance's changes write.
 - When the base later gets a component that an instance added, what the instance wrote is from then on a change of the base's component. Nothing else is needed.
 - An instance's nodes are nodes of the tree as the others are: `onlr.tree.find` and `onlr.tree.findComponent` look through them too.
+- The engine and the editor walk instances with one file, the engine's `library/instances.lua`, so this section lives in one place. The walk reads each node file, lays an instance's changes over its base's nodes in their order, and reads each id in the file that writes it; what a node is, and what laying an entry over it does, is its caller's. The engine makes nodes with components; the editor makes the nodes that its panels show, each with where a change of it is written (13.1). The editor goes on past an instance whose base does not load, which becomes a node with an error, and marks an instance's change that names no node (13.6); the engine stops at both, but notes a change that names no node on its node in the node view.
 - `onlr.tree.spawn` makes an instance while the game runs, and calls `load` and `enable` of its components before it returns (6.4).
 
 ## 10. The engine's components
@@ -1585,7 +1587,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 | In `plugins/onlr/`                      | Holds                                                                                         |
 | --------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `init.lua`                              | Loads the parts, and registers the functions that they give as the plugin's.                  |
-| `project.lua`, `format.lua`, `resolve.lua` | The open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. |
+| `project.lua`, `format.lua`, `resolve.lua` | The open project: its manifest, its node files, the chosen nodes, the chosen tool and the history. It reads and writes the files, and watches the folder. `format.lua` reads a file with the engine's `data.lua`, and `resolve.lua` makes a file's tree with the engine's `instances.lua` (9), both loaded from ONLR's own engine in `packages/onlr/`, beside the plugin, not from the project's copy. |
 | `nodeview.lua`, `runners.lua`, `link.lua`, `hints.lua` | The node view, the runners and the link, and the functions Play, Play This File, Pause, Step and Stop. |
 | `panels.lua`, `hierarchy.lua`, `inspector.lua`, `tools.lua`, `settings.lua`, `history.lua`, `search.lua`, `shared.lua` | The other panels of ONLR's own: the node hierarchy, the inspector, the bars Transform, Game and Action, the project settings, the history and the search. |
 | `graph.lua`                             | The graph panel (13.9).                                                                       |

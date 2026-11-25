@@ -64,7 +64,7 @@ function data.run(text, path)
     error(path .. ": a data file returns a table", 0)
   end
   if result.format ~= data.FORMAT then
-    error(("%s: format %s is not %d, the one that this engine reads"):format(path, tostring(result.format), data.FORMAT), 0)
+    error(("%s: format %s is not %d, the one that this version of ONLR reads"):format(path, tostring(result.format), data.FORMAT), 0)
   end
   return result
 end

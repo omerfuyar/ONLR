@@ -1158,6 +1158,40 @@ return {
     file:write(start)
     file:close()
     check(waitFor(true), "the file written again on disk shows again")
+
+    -- an instance's change that names no node is marked in the inspector, which offers to clear it; an instance whose base does not
+    -- load is a node with an error, and the rest of the file loads (DESIGN 9, 13.6)
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write((start:gsub('%["p4rt00"%] = {', '["ghost"] = {\n            posX = 1,\n          },\n          ["p4rt00"] = {', 1)))
+    file:close()
+    test.wait(1)
+    test.click(at(210, 50))
+    test.wait(0.3)
+    local ghost
+    for _ = 1, 10 do
+      ghost = test.panel(panelOf(test, "onlr.inspector")).state.rects["unused:ghost"]
+      if ghost then
+        break
+      end
+      test.wait(0.2)
+    end
+    check(ghost, "the inspector marks the change that names no node")
+    test.click(inspected("unused:ghost"))
+    save()
+    check(read("nodes/start.lua") == start, "Clear takes the change out:\n" .. read("nodes/start.lua"))
+    before = #test.errors()
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write((start:gsub('base = "nodes/part.lua"', 'base = "nodes/gone.lua"', 1)))
+    file:close()
+    test.wait(1)
+    rx, ry = row(4)
+    test.click(rx, ry)
+    test.match(chosen(), { "p4rt01" }, "the node hierarchy shows Part, whose base does not load, among the file's nodes")
+    test.match(test.errors()[before + 1], nil, "a base that does not load raises nothing")
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write(start)
+    file:close()
+    test.wait(1)
     check(read("nodes/start.lua") == start, "the file is left as it was")
 
     -- F fits the view to the chosen node: node A's red square fills its middle, at a greater zoom
