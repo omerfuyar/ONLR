@@ -13,7 +13,6 @@ local resolve = require("resolve")
 
 local STYLES = ui.styles()
 local STATE_VERSION = 1
-local RED = "#e06c75"
 
 -- The values that Copy Values kept, with their component's type, for Paste Values.
 ---@type { type: string, values: table }?
@@ -299,7 +298,7 @@ local function control(state, subject, id, decl, value, set)
     local waiting = nodeview.picking()
     local mine = waiting ~= nil and waiting.id == id
     return ui.row({ id = id, gap = 4, grow = 1, align = "center" }, {
-      ui.text(mine and "Click a node..." or shown, { grow = 1, color = mine and "accent" or value and value ~= MIXED and not named and RED or nil }),
+      ui.text(mine and "Click a node..." or shown, { grow = 1, color = mine and "accent" or value and value ~= MIXED and not named and "error" or nil }),
       ui.button(mine and "Cancel" or "Pick", {
         id = id .. ":pick",
         tooltip = mine and "End the pick, setting nothing" or "Then click the node, in a node view or in the node hierarchy", keys = mine and "Escape" or nil,
@@ -458,14 +457,14 @@ local function fileSubject(state, out)
   end
   for _, node in ipairs(nodes) do
     for _, message in ipairs(node.errors) do
-      out[#out + 1] = ui.text(message, { color = RED, wrap = true })
+      out[#out + 1] = ui.text(message, { color = "error", wrap = true })
     end
   end
   -- A change of an instance that names no node is marked, and can be cleared (DESIGN 13.6).
   if #nodes == 1 and first.holder and first.path == first.holder.id then
     for _, unused in ipairs(tree.unused[first.path] or {}) do
       out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-        ui.text(("A change names %s, which is no node."):format(unused), { color = RED, grow = 1 }),
+        ui.text(("A change names %s, which is no node."):format(unused), { color = "error", grow = 1 }),
         ui.button("Clear", { id = "unused:" .. unused, tooltip = "Take the change out, as its node is gone", onClick = function()
           project.dropChange(file, first.path, unused)
         end }),
@@ -580,7 +579,7 @@ local function fileSubject(state, out)
     local declared = {}
     if not known[typeName] then
       -- A type that the editor does not find shows as the node file writes it, and its values can be given to another.
-      body[#body + 1] = ui.text("The project has no such type. Its values are kept.", { color = RED, wrap = true })
+      body[#body + 1] = ui.text("The project has no such type. Its values are kept.", { color = "error", wrap = true })
       local names = project.typeNames()
       body[#body + 1] = ui.row({ gap = 6, align = "center" }, {
         label("Give values to"),
@@ -589,7 +588,7 @@ local function fileSubject(state, out)
         end }),
       })
     elseif info and info.error then
-      body[#body + 1] = ui.text(tostring(info.error), { color = RED, wrap = true })
+      body[#body + 1] = ui.text(tostring(info.error), { color = "error", wrap = true })
     elseif not info then
       body[#body + 1] = ui.text("The preview is down, so the values show without their kinds.", { style = STYLES.note, wrap = true })
     end
@@ -646,7 +645,7 @@ local function fileSubject(state, out)
       local shown = value == MIXED and "" or type(value) == "table" and "(a table)" or tostring(value)
       body[#body + 1] = ui.row({ gap = 6, align = "center" }, {
         label(name),
-        ui.text(shown, { grow = 1, color = info and info.properties and RED or nil }),
+        ui.text(shown, { grow = 1, color = info and info.properties and "error" or nil }),
         (#targets > 0 and ui.dropdown(0, targets, { id = cid .. ":give:" .. name, tooltip = "Give the value to a property", onSelect = function(choice)
           project.giveValues(file, paths, typeName, typeName, name, targets[choice])
         end })) --[[@as ui.Element]],

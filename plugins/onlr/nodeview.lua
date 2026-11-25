@@ -230,6 +230,7 @@ end
 
 -- The move tool's arrows: their length on the screen, and their colours, as Unity's.
 local HANDLE = 60
+-- the axes are red and green in every theme, as Unity's are, so x and y read the same everywhere
 local AXIS_X, AXIS_Y = "#e06c75", "#98c379"
 -- The square between the arrows: where it starts from the node's place, and its size.
 local SQUARE, SQUARE_SIZE = 10, 18
@@ -649,11 +650,11 @@ local function drawView(view, surface)
   if step >= 8 then
     local fx = (-view.x * view.zoom) % step
     for x = fx, w, step do
-      gpu.fill(surface, x, 0, 1, h, "#ffffff10")
+      gpu.fill(surface, x, 0, 1, h, "tab")
     end
     local fy = (-view.y * view.zoom) % step
     for y = fy, h, step do
-      gpu.fill(surface, 0, y, w, 1, "#ffffff10")
+      gpu.fill(surface, 0, y, w, 1, "tab")
     end
   end
 
@@ -674,7 +675,7 @@ local function drawView(view, surface)
 
   for _, node in ipairs(view.nodes) do
     local chosen = isChosen(view, node.path)
-    local color = node.errors and "#e06c75" or chosen and "accent" or nil
+    local color = node.errors and "error" or chosen and "accent" or nil
     if isMarked(view, "hidden", node.path) then
       -- a hidden node draws nothing, not even its outline or its marker
     elseif node.rect then
@@ -746,7 +747,7 @@ local function drawView(view, surface)
         local a, b = list.points[i - 1], list.points[i]
         local ax, ay = toScreen(view, nodeToWorld(placed, a.x or 0, a.y or 0))
         local bx, by = toScreen(view, nodeToWorld(placed, b.x or 0, b.y or 0))
-        gpu.line(surface, ax, ay, bx, by, 1, "#ffffff60")
+        gpu.line(surface, ax, ay, bx, by, 1, "textDim")
       end
     end
     local dragged = view.drag and view.drag.kind == "handle" and view.drag.handle
@@ -781,7 +782,7 @@ local function drawView(view, surface)
     local font = draw.font("ui")
     local y = 12
     for line in (message .. "\n"):gmatch("(.-)\n") do
-      gpu.text(surface, font, line, 12, y, 13, view.file and "#e06c75" or "textDim")
+      gpu.text(surface, font, line, 12, y, 13, view.file and "error" or "textDim")
       y = y + 18
     end
   end

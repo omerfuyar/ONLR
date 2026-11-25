@@ -119,7 +119,7 @@ function Game:draw(surface)
     ui.dropdown(sizeIndex(), sizes, { id = "playSize", width = 170, tooltip = "The size of the game's window when it plays, such as a phone's, for the run only: the manifest keeps its own", onSelect = function(choice)
       project.setSetting("playSize", runners.SIZES[choice].size)
     end }),
-    ui.text(note, { style = STYLES.note, color = running.halted and "#e06c75" or nil }),
+    ui.text(note, { style = STYLES.note, color = running.halted and "error" or nil }),
     running.playing and running.stats and ui.text(stats(running.stats), {
       id = "stats", style = STYLES.note, tooltip = "The game's frames a second, and the time that a frame spends in update and in draw",
     }) or false,

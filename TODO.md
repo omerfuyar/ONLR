@@ -237,10 +237,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 - **P3 · CI and releases.** `checks.yml:101` downloads LÖVE without checking its hash; `checks.yml:91` takes OpenECS's default branch, not the built commit; `release.yml` does not need the checks to have passed; `check.sh:49-57` ignores the Lua check's exit status. Size: S.
 
-**Runner and link, documents**
-
-- **P2 · Colours are written out.** `#e06c75` and `#98c379` in the node hierarchy, the tools, the settings, the inspector and the node view, and the node view's grid in `#ffffff10` and `#ffffff60`, stay the same in OpenECS's light theme (OpenECS DESIGN 12.4). Use the theme's names where they exist, and check the light theme by a screenshot. Size: S.
-
 **Releases and this file**
 
 - **P3 · Items of this file that are done or out of date.** the files panel's handlers exist (`files.setHandlers`); the tool's menu takes plugins' entries now (`ecs.app.addMenuEntry`), though not ones that change while the tool runs; Libraries names `shadows.shape.box` and physics' folders, which are `shadows.caster` and flat now. Size: S.

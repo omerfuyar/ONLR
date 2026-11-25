@@ -22,7 +22,7 @@ local function draw(state, surface)
   })
   if not manifest then
     if project.folder() ~= "" then
-      out[#out + 1] = ui.text(project.file("manifest.lua").error or "The manifest does not load.", { color = "#e06c75", wrap = true })
+      out[#out + 1] = ui.text(project.file("manifest.lua").error or "The manifest does not load.", { color = "error", wrap = true })
     end
     out[#out + 1] = ui.text("Opened last", { style = STYLES.heading })
     for i, folder in ipairs(project.recent()) do
