@@ -5,12 +5,14 @@ local onlr = require("onlr")
 
 ---@class physics.world : onlr.Component
 ---@field private world love.World?
+---@field private gx number the gravity that the world has
+---@field private gy number
 ---@field private bodies physics.body[] the running bodies, in the order they started
 ---@field private contacts table[] what Box2D told during the last step, which the nodes are told after it
 local World = {}
 
 World.gravity = onlr.property.vector(0, 640, { description = "Pixels a second, each second: 640 down is about Earth's at the default meter" })
-World.meter = onlr.property.number(64, { min = 1, description = "How many pixels are a meter. Box2D works best with bodies of 0.1 to 10 meters" })
+World.meter = onlr.property.number(64, { min = 1, description = "How many pixels are a meter, read when the world is made. Box2D works best with bodies of 0.1 to 10 meters" })
 
 -- Not called by the engine: bodies call it. It makes the world at the first call, so it does not matter whose load runs first.
 ---@return love.World
@@ -18,6 +20,7 @@ function World:get()
   if not self.world then
     love.physics.setMeter(self.meter)
     self.world = love.physics.newWorld(self.gravity.x, self.gravity.y, true)
+    self.gx, self.gy = self.gravity.x, self.gravity.y
     self.bodies, self.contacts = {}, {}
     -- Box2D tells of contacts during its step, when nothing may change the world: they wait until it ends.
     local contacts = self.contacts
@@ -85,6 +88,12 @@ end
 function World:fixedUpdate(dt)
   if not self.world then
     return
+  end
+  -- a gravity that a script changed
+  local g = self.gravity
+  if g.x ~= self.gx or g.y ~= self.gy then
+    self.world:setGravity(g.x, g.y)
+    self.gx, self.gy = g.x, g.y
   end
   -- contacts that came between two steps, such as when a body was taken out
   tell(self.contacts)
