@@ -6,6 +6,6 @@ return {
   name = "audio",
   description = "LÖVE's sound, as sources and a listener on nodes",
   version = "0.1.0",
-  license = "zlib",
+  license = "0BSD",
   -- Its component types are the files of components/: components/source.lua is audio.source.
 }

@@ -6,6 +6,6 @@ return {
   name = "particles",
   description = "LÖVE's particle systems, as an emitter on a node",
   version = "0.1.0",
-  license = "zlib",
+  license = "0BSD",
   -- Its component type is the file of components/: components/emitter.lua is particles.emitter.
 }

@@ -7,6 +7,6 @@ return {
   description = "The engine: nodes and components",
   version = "0.1.0",
   source = "https://github.com/omerfuyar/ONLR",
-  license = "zlib",
+  license = "0BSD",
   -- Its component types are the files of components/: components/sprite.lua is onlr.sprite.
 }

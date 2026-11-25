@@ -6,6 +6,6 @@ return {
   name = "physics",
   description = "LÖVE's physics: bodies that fall, collide, bounce and turn",
   version = "0.1.0",
-  license = "zlib",
+  license = "0BSD",
   -- Its component types are the files of components/: components/body.lua is physics.body.
 }
