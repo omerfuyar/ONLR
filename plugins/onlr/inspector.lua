@@ -631,7 +631,13 @@ local function fileSubject(state, out)
         state.panel:redraw()
       end,
       onMenu = function(x, y)
+        local script = project.typeFile(typeName)
         ui.menu(state.panel, x, y, {
+          -- the type's script opens in the code editor, as the console's links do (DESIGN 13.4)
+          { label = "Open script", enabled = script ~= "", onClick = function()
+            console.open(script, 1)
+          end },
+          { line = true },
           -- The order is the node file's, in which the components run too (DESIGN 5).
           { label = "Move up", enabled = at > 1, onClick = function()
             project.moveComponent(file, paths, typeName, -1)

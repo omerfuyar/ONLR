@@ -48,7 +48,6 @@ What the owner wants worked on, in this order.
 - **The owner's reports of 2026-11-25.** To fix first:
   - **Add component's folders draw broken.** In the inspector's Add component dropdown, the entries in a folder show as tiny, unreadable marks, and the popup is too narrow (a screenshot shows it over Title and About). Find whether the editor gives the dropdown's folders wrongly or std ui's dropdown draws nested entries wrongly, and fix it where it lies.
   - **Folding lists and tables in the inspector.** A property that holds a list or a table, such as a polygon's points, should fold and unfold, as a component's section does.
-  - **Open a component's file from its menu.** A right click on a component's heading in the inspector gets an entry that opens its script in the code editor (the setting `console.editor`, as the console's links do).
   - **The console's first level.** OpenECS-std's console is to show Warnings and up at first (OpenECS TODO); the game's prints are info, so ONLR then needs a way to start at Info and up, or GUIDE 8 says to change Show.
   - **Tooltips are cut by small panels.** OpenECS-std's ui is to draw them over everything (OpenECS TODO); nothing to change in ONLR but checking its panels then.
 
@@ -60,6 +59,7 @@ What the owner wants worked on, in this order.
   - The editor: a window for keys is OpenECS-std's key list now (below). The search (DESIGN 13.8) could find functions written as `X.y = function(`, and text inside files.
   - Tools of their own, each a panel: a cutter of sprite sheets into quads, a timeline for animations, a palette for tile maps.
 - **The Rectangle tool's limits** (DESIGN 13.3): sizing many chosen nodes as one rectangle; Shift to keep a node's proportions; a circle that keeps round, by its `radius`, and a text that gets a `width` to wrap at, in place of a scale.
+- **A check of Open script.** The inspector's Open script (DESIGN 13.4) has no check in the editor's test yet: a click on it would start the user's code editor, or the system's opener, so the test first points `console.editor` at a harmless command, with OpenECS's `test.setSetting`.
 - **Dragging components in the inspector.** Move Up and Move Down order them (DESIGN 13.4). Dragging a component's heading needs OpenECS-std's `ui.section` to start a drag and to tell where a drop lands among the sections, as its tree does.
 - **moonshine's order.** `moonshine.chain` applies its effects in its `order` list (DESIGN 11.11). The node's `componentOrder` (DESIGN 5) could replace it, so the user orders the effects as the inspector shows them; `order` stays while a script changes the order at run time.
 - **Graphs: what is left for later.** The graph panel, ira-scripts and ira-shaders are designed (DESIGN 6.8, 13.9). For later, after the milestones under [Tasks](#tasks):

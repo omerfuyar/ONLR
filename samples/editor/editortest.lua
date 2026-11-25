@@ -660,13 +660,14 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the paste is one change, undone")
 
-    -- the menu's first entry, Move up, moves A's thing above its shape: the node file keeps the order, which the inspector shows,
-    -- and the move is one change (DESIGN 13.4)
+    -- the menu's second entry, Move up, after Open script, moves A's thing above its shape: the node file keeps the order, which
+    -- the inspector shows, and the move is one change (DESIGN 13.4)
     rx, ry = row(2)
     test.click(rx, ry)
     test.wait(0.2)
     hx, hy = inspected("aaaaaa:thing:heading", 0.2)
     test.click(hx, hy, 3)
+    test.key("Down")
     test.key("Return")
     test.wait(0.2)
     save()
