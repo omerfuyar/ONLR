@@ -1015,18 +1015,24 @@ return {
   format = 1,
   name = "bump",
   description = "Collision of boxes",
-  version = "3.1.7",
-  source = "https://github.com/kikito/bump.lua",
-  license = "MIT",
+  version = "0.1.0",
+  license = "0BSD",
+  library = {
+    version = "3.1.7",
+    source = "https://github.com/kikito/bump.lua",
+    license = "MIT",
+  },
 }
 ```
+
+- The package's `version` is its own, and grows whenever ONLR changes the package, such as a component of it, even with the same library; its `license` is that of ONLR's files in it. The library's own version, where it comes from and its licence are in `library`, so the editor can tell a newer package from a newer library, and offer either (below). A library that names no version gives its last commit.
 
 - The manifest and `init.lua` stay two files. The editor reads the manifest as any data file (4.1), which cannot load the library. So the manifest describes the package and holds none of its code.
 - `library/` holds what the library's author ships. A newer version of the library replaces that folder and nothing else. One library is the exception: a library that breaks a rule of ONLR's, such as one that sets a global, is shipped as ONLR's own copy, changed only as far as the rule needs. Each change is marked in its code, and a note in `library/`, `ONLR.md`, says what was changed and how to change a newer version the same way. `shadows` is so (11.14).
 - A component type is one file, since its name is its file's (6.1). The names start with the package's: `bump.body` is `packages/bump/components/body.lua`. The types are written as scripts are (6), and the editor offers every one of them (13.4).
 - A node file of a package is named by its path, as the project's are: `packages/bump/nodes/box.lua`.
 - A package adds nothing to the engine and changes nothing in it. A game uses a package's library with its components, without them, or both.
-- A package may wrap a system of LÖVE's own instead of a library (OVERVIEW 9), as `physics` wraps `love.physics` (11.4). It has no `library/`, no `init.lua` and no definitions file, since a script calls LÖVE as it always does. A module that its components share is a file of the package's own, which they require by its path: `physics/find.lua` is `require("physics.find")`. Its manifest names no `source`, and its `version` is the package's own.
+- A package may wrap a system of LÖVE's own instead of a library (OVERVIEW 9), as `physics` wraps `love.physics` (11.4). It has no `library/`, no `init.lua` and no definitions file, since a script calls LÖVE as it always does. A module that its components share is a file of the package's own, which they require by its path: `physics/find.lua` is `require("physics.find")`. Its manifest has no `library`.
 - The editor copies a package into a project when the user adds it, and deletes its folder when the user removes it. In the project, the package is the project's own copy, and an export holds it.
 - The editor adds a package from ONLR's own, or from a folder that the user chooses, so anyone can make one. ONLR's own are in its `packages/`, beside the engine (2.2), each as a project holds it.
 - The user does not change a package in the project, as they do not change the engine (3.1). To change one of its components, they copy it into `components/` under another name. When ONLR ships a newer version of a package that a project holds, the editor offers it, and updating replaces the package's folder whole.
