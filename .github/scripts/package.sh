@@ -106,6 +106,8 @@ esac
 # ONLR's own files, laid out as the repository holds them, so the plugin finds the engine and the definitions where it
 # looks for them (DESIGN.md, section 13.1)
 cp -r plugins packages preset.lua LICENSE.md "$out/"
+# The guide as it is at this release, with the documents that it links to (DESIGN.md, section 17)
+cp GUIDE.md OVERVIEW.md DESIGN.md "$out/"
 mkdir -p "$out/dependencies/love2d"
 cp -r dependencies/love2d/library "$out/dependencies/love2d/"
 cp dependencies/love2d/LICENSE* "$out/dependencies/love2d/" 2> /dev/null || true
