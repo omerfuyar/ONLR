@@ -46,6 +46,27 @@ local component = {}
 -- Names that a property cannot have, since a component or its type has them (DESIGN 6.2).
 local RESERVED = { enabled = true, node = true, needs = true, isEnabled = true, setEnabled = true }
 
+-- Names that the engine calls: a property's default would stand where the engine looks for a function (DESIGN 6.2, 6.3).
+local CALLED = {}
+for name in ([[load enable start fixedUpdate update lateUpdate draw drawTree disable destroy bounds drawEditor drawTreeEditor
+  loadEditor updateEditor quit]]):gmatch("%a+") do
+  CALLED[name] = true
+end
+
+---Why a property cannot have a name, or nil when it can.
+---@param name string
+---@return string?
+local function refused(name)
+  if RESERVED[name] then
+    return "a component has it"
+  end
+  -- LÖVE's table of events, which its definitions do not declare
+  local handlers = love and rawget(love, "handlers")
+  if CALLED[name] or handlers and rawget(handlers, name) then
+    return "the engine calls a function of that name"
+  end
+end
+
 local KEYWORDS = {}
 for word in ([[and break do else elseif end false for function goto if in local nil not or repeat return then true until while]]):gmatch("%a+") do
   KEYWORDS[word] = true
@@ -271,8 +292,9 @@ function component.type(name)
   info = { name = name, table = t, file = file, properties = {}, needs = {}, meta = { __index = t } }
   for key, value in pairs(t) do
     if property.isDeclaration(value) then
-      if RESERVED[key] then
-        error(("%s: a property cannot be named %s"):format(file, key), 0)
+      local why = refused(key)
+      if why then
+        error(("%s: a property cannot be named %s: %s"):format(file, key, why), 0)
       end
       info.properties[#info.properties + 1] = { name = key, decl = value }
     end

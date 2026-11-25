@@ -301,8 +301,12 @@ end
 ---@param index? integer
 function Node:setParent(parent, index)
   check(self, "node:setParent")
-  if not nodes.isNode(parent) or parent._gone then
-    error("node:setParent takes a node that is in the tree", 2)
+  -- a destroyed node goes when the frame ends, with its branch: it cannot be taken out of it, nor can a node join it
+  if self._destroyed then
+    error("node:setParent: the node was destroyed", 2)
+  end
+  if not nodes.isNode(parent) or parent._gone or parent._destroyed then
+    error("node:setParent takes a node that is in the tree, and not destroyed", 2)
   end
   local tree = require("onlr.library.tree")
   if self == tree.top or self == tree.root then
@@ -346,7 +350,14 @@ function Node:destroy()
   if inTree(self) then
     life.destroy(self)
   else
-    self._destroyed = true
+    -- a node outside the tree marks every node under it too, as one in the tree does
+    local function mark(n)
+      n._destroyed = true
+      for _, child in ipairs(n._children) do
+        mark(child)
+      end
+    end
+    mark(self)
   end
 end
 
