@@ -72,10 +72,16 @@
 
 ---The manifest of the engine and of a package. The project's manifest is onlr.Project.
 ---A package's component types are the files of its components/, so the manifest does not name them.
----@class onlr.Package
+---@class (exact) onlr.Package
 ---@field format integer
 ---@field name string
 ---@field description string
----@field version string
----@field source string? where the library comes from; a package of a system of LÖVE's own has none
----@field license string
+---@field version string the package's own version, which grows when ONLR changes the package, as its components, even with the same library
+---@field license string the licence of ONLR's files in the package, such as its components
+---@field library onlr.PackageLibrary? the library that the package wraps; a package of a system of LÖVE's own has none
+
+---The library of a package, as its author ships it in the package's library/.
+---@class (exact) onlr.PackageLibrary
+---@field version string the library's own version, or its last commit when it names none
+---@field source string where it comes from
+---@field license string its licence

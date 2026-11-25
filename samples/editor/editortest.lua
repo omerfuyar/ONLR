@@ -34,6 +34,19 @@ return {
   files = { "manifest.lua" },
   run = function(test)
     local start, outer = read("nodes/start.lua"), read("nodes/outer.lua")
+
+    -- ONLR's packages, which the editor reads to offer a newer one (DESIGN 11.2): each has its own version, and one that wraps a library,
+    -- which its library/ holds, names the library's version, source and licence in library; the engine wraps none
+    for _, name in ipairs({ "anim8", "audio", "baton", "bump", "flux", "moonshine", "onlr", "particles", "physics", "push", "shadows", "sti", "suit", "tick" }) do
+      local text = read("../../../../packages/" .. name .. "/manifest.lua")
+      local chunk = load(text, name, "t", {})
+      local ok, manifest = pcall(assert(chunk, name .. "'s manifest loads"))
+      check(ok and type(manifest) == "table" and manifest.name == name and manifest.source == nil, name .. "'s manifest")
+      check(type(manifest.version) == "string" and manifest.version:match("^%d+%.%d+%.%d+$"), name .. "'s version is the package's own")
+      local wraps = name ~= "onlr" and read("../../../../packages/" .. name .. "/init.lua") ~= ""
+      check((manifest.library ~= nil) == wraps, name .. (wraps and " names its library" or " names no library"))
+      check(not wraps or (manifest.library.version and manifest.library.source and manifest.library.license), name .. "'s library")
+    end
     local view = test.rect(panelOf(test, "onlr.view"))
     -- A node view starts with the world's point -40, -40 at its top left, at a zoom of 1.
     local function at(x, y)

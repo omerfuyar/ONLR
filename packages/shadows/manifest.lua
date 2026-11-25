@@ -6,9 +6,15 @@ return {
   description = "Lights that cast shadows: a world of light over a node and all under it, lights, and shapes that block them",
   -- The library's own version, where it comes from, and its licence. Shädows names no version: this is the commit
   -- that ONLR's copy was made from, changed as library/ONLR.md says.
-  version = "ccb3597",
-  source = "https://github.com/matiasah/shadows",
-  license = "MIT",
+  -- The package's own version, which grows when ONLR changes the package, and the licence of ONLR's files in it.
+  version = "0.1.0",
+  license = "0BSD",
+  -- The library that it wraps, as its author ships it in library/: its version, where it comes from, and its licence.
+  library = {
+    version = "ccb3597",
+    source = "https://github.com/matiasah/shadows",
+    license = "MIT",
+  },
   -- Its component types are the files of components/: components/world.lua is shadows.world, and
   -- components/shape/box.lua is shadows.shape.box.
 }

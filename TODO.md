@@ -234,7 +234,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 **Packages**
 
 - **P3 · bump's body and shadows' caster make outlines at each frame.** `bump/components/body.lua:75` and `shadows/components/caster.lua:256-262` call `onlr.shape:outline()`, which makes tables, at each frame, as physics did before 2026-11-25. Compare the shape's values in place, as `physics/find.lua`'s `start`, `note` and `finish` do. Not measured. Size: S.
-- **P2 · A package's version is its library's.** `packages/bump/manifest.lua:8` A changed `bump.body` with the same bump 3.1.7 has the same version, so the editor cannot offer it (DESIGN 11.2), and nothing offers it yet (`project.lua:722-789`). Decide before the first release: ONLR's own version, with the library's in a field of its own. Size: S.
 - **P2 · Some properties are read only at the start, unsaid.** `physics/components/world.lua:18-20` (`gravity`), `push/components/screen.lua:28-36`, `sti/components/bump.lua:155`, `sti/components/physics.lua:212-214`. Apply them as `physics.body` does, or write them into DESIGN 11's limits. Size: S.
 - **P3 · Packages fail on the top node while it loads.** `bump/components/body.lua:18`, `physics/components/body.lua:38`, `shadows/components/world.lua:112` add their world to `onlr.tree.root`, nil then (DESIGN 5). Say it in DESIGN 11.3, or check it. Size: S.
 
