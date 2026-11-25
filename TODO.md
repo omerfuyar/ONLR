@@ -259,6 +259,5 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Engine, documents**
 
-- **P2 · A kept node runs after the root.** `packages/onlr/library/node.lua:96-103` `node:setParent(onlr.tree.top)`, DESIGN 5's way to keep a node, puts it after the root, so it updates and draws after it; DESIGN 5 says the root is the top node's last child. Insert kept nodes before the root. Size: S.
 - **P2 · DESIGN 11.11 and 11.12 say components run by their names.** `componentOrder` orders them now (DESIGN 5, `component.lua:365-399`); `audio/components/listener.lua:49` says the same. Size: S.
 - **P3 · Smaller differences.** OVERVIEW 7 lists the tools without Rect and Shape and has no History panel; DESIGN 3.2's reversed-domain `id` against the folder's name that `project.lua:875` writes; DESIGN 8.3 misses `paint.lua`; DESIGN 10 says paint, follow and shake have `bounds`; DESIGN 6.4 says a new order waits for the next frame, which `life.lua:398-400` does not; DESIGN 11.6 and 11.9 miss `sizeVariation`, `spinVariation`, `getRaw` and `getJoystick`; DESIGN 14.2 against the tooltip "an AppImage" (`export.lua:287`); `samples/check.lua:1` and `samples/animation/test.lua:1` name the wrong script and section. Size: S.
