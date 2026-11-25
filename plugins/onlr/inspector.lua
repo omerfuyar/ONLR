@@ -860,6 +860,7 @@ ecs.panel.registerType({
   stateVersion = STATE_VERSION,
   create = function(panel, saved, version)
     local state = { panel = panel, folded = {}, drops = {}, scale = 1 }
+    shared.inspectors[panel] = true
     if version == STATE_VERSION and type(saved) == "table" then
       state.folded = saved.folded or {}
       state.lock = type(saved.lock) == "table" and type(saved.lock.file) == "string" and type(saved.lock.paths) == "table" and saved.lock or nil
@@ -884,6 +885,7 @@ ecs.panel.registerType({
     return { folded = state.folded, lock = state.lock, file = shared.chosenFile, rects = rects(state) }
   end,
   destroy = function(state)
+    shared.inspectors[state.panel] = nil
     shared.forget(state.panel)
     ui.forget(state.panel)
   end,

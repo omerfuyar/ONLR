@@ -1,6 +1,7 @@
 -- Export (DESIGN 14): the .love file, and the builds, which are made from it and LÖVE's runtime by copying and joining files.
 
 local ecs = require("ecs")
+local shared = require("shared")
 local ui = require("ui")
 local fs = require("fs")
 local compress = require("compress")
@@ -368,6 +369,9 @@ for _, name in ipairs({ "onlr.opened", "onlr.closed", "onlr.settings" }) do
 end
 
 local functions = {
+  showExport = { sig = "void()", doc = "Show the Export panel", fn = function()
+    shared.show("onlr.export", panels)
+  end },
   exportLove = { sig = "void()", doc = "Export the .love file", fn = function()
     exportLove()
   end },

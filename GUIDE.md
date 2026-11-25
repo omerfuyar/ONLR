@@ -49,7 +49,7 @@ ONLR starts as you closed it: with the project that was open, the panels where y
 
 ### 1.3 A new project
 
-1. Choose **File**, then **New Project**, in the title bar, or press **New project** in the **Project** panel, a tab beside the inspector.
+1. Choose **File**, then **New Project**, in the title bar, or press **New project** in the **Project** panel, which shows when no project is open, and under **Window**, **Project Settings**.
 2. Choose an empty folder. The editor makes the project in it and opens it.
 
 The project is a folder that LÖVE runs as it is (DESIGN 3.1):
@@ -69,7 +69,7 @@ Your pictures, sounds and fonts go in any folder you like, such as `images/`. Do
 
 ### 1.4 The project's settings
 
-The **Project** panel shows `manifest.lua` (DESIGN 3.2):
+The **Project** panel, under **Window**, **Project Settings**, in the title bar, shows `manifest.lua` (DESIGN 3.2):
 
 - **Name** is the window's title and the name of the exports.
 - **Start node** is the node file that the game starts with.
@@ -92,7 +92,7 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 | Node hierarchy    | Left                    | The tree of the node file that is open: choose nodes, rename them, drag them into other nodes.   |
 | Node view         | Middle                  | The node file drawn as the game draws it: choose nodes, and move, turn and scale them.           |
 | Inspector         | Right                   | The chosen nodes' place and components, and their values.                                      |
-| Project, Export   | Tabs beside the inspector | The project's settings (1.4), and export (9).                                                  |
+| Project, Export   | **Window** in the title bar | The project's settings (1.4), and export (9). Each opens as a tab beside the inspector, and closes with its tab. |
 | Viewer            | Under the inspector     | The picture, sound or text of the file chosen in the files panel.                                |
 | Console           | Bottom                  | What the game prints, and its errors. A click on an error's file opens it in your code editor.   |
 | Files             | A tab beside the console | The project's files: open, rename, move and delete them, and make folders, scripts and node files. |
@@ -336,7 +336,7 @@ What is not under the camera, such as the score, stays where it is on the screen
 
 ### 6.2 Scaling to the window
 
-A game made for 640 by 360 shows at 640 by 360 pixels, whatever the window's size. To scale it to the window, press **Scale to the window** in the Project panel. The editor:
+A game made for 640 by 360 shows at 640 by 360 pixels, whatever the window's size. To scale it to the window, press **Scale to the window** in the Project panel (**Window**, **Project Settings**). The editor:
 
 - copies ONLR's `push` package into the project, when it lacks it;
 - makes `nodes/top.lua` the top node, when the project has none;
@@ -383,7 +383,7 @@ A package is a library of LÖVE's world with components for ONLR (DESIGN 11.2). 
 
 ## 9. Export
 
-The **Export** panel, a tab beside the inspector, writes the game into a folder that you name first, such as `out`. A name that starts at no root is a folder in the project, which every export leaves out of itself. The project's own folder is refused, since each export would then hold the ones before it:
+The **Export** panel, under **Window** in the title bar, writes the game into a folder that you name first, such as `out`. A name that starts at no root is a folder in the project, which every export leaves out of itself. The project's own folder is refused, since each export would then hold the ones before it:
 
 - **Export the .love file**: one file, which any LÖVE 11.5 runs.
 - **Export a Linux build** and **Export a Windows build**: the game with LÖVE inside, in a `.tar.gz` or a `.zip`, which runs with nothing installed. The Windows build downloads LÖVE's runtime the first time.

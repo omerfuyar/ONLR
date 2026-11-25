@@ -63,6 +63,7 @@ The plan is done, and the implementation has started. Build it in small mileston
 
 - The samples are the tests (DESIGN 16). Run the tests of what a change touches before each push, and all of them before a pull request.
 - A significant feature that a game shows also goes into `samples/gallery`, in the same piece of work (DESIGN 16).
+- Every change of behaviour, however small, changes the documents that describe it in the same commit: DESIGN.md for what the code does and its limits, GUIDE.md for what a user sees or does, TODO.md for what it settles or leaves open, and OpenECS's and OpenECS-std's documents for a change there. Before each commit, search the documents for the feature's names and read what they say against the code.
 - A change that a user sees, such as a panel, a key or a component, goes into GUIDE.md in the same piece of work, as DESIGN does. Check the guide's steps by doing them, in the editor or in a game, with screenshots, as the verify skill says.
 - Run an experiment only when a decision depends on its result, and never the same one twice.
 - The owner runs experiments on their own computer when asked. Give exact steps: the files, the commands, and what to report back.

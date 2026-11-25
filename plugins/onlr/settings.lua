@@ -110,11 +110,14 @@ local function draw(state, surface)
   ui.show(state.panel, surface, ui.scroll({ id = "settings", padding = 8, gap = 6 }, out))
 end
 
+local open = {} ---@type table<ecs.Panel, true> the open Project panels
+
 ecs.panel.registerType({
   name = "settings",
   title = "Project",
   create = function(panel)
     shared.follow(panel, { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.saved", "onlr.settings" })
+    open[panel] = true
     return { panel = panel }
   end,
   draw = draw,
@@ -122,7 +125,23 @@ ecs.panel.registerType({
     ui.event(state.panel, event)
   end,
   destroy = function(state)
+    open[state.panel] = nil
     shared.forget(state.panel)
     ui.forget(state.panel)
   end,
 })
+
+-- The editor that starts with no project shows the Project panel, which lists the projects opened last (DESIGN 13.2).
+ecs.timer.start(0, false, function()
+  if project.folder() == "" then
+    shared.show("onlr.settings", open)
+  end
+end)
+
+return {
+  functions = {
+    showProjectSettings = { sig = "void()", doc = "Show the Project panel, the project's settings", fn = function()
+      shared.show("onlr.settings", open)
+    end },
+  },
+}
