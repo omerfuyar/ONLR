@@ -20,13 +20,7 @@ ecs.event.subscribe("onlr.said", function(_, text)
   console.add(text, "info")
 end)
 
-for _, panel in ipairs({
-  "onlr.hierarchy", "onlr.inspector", "onlr.transform", "onlr.game", "onlr.action", "onlr.settings", "onlr.history", "onlr.search",
-}) do
-  for key, name in pairs({ ["Ctrl+Z"] = "onlr.undo", ["Ctrl+Y"] = "onlr.redo", ["Ctrl+S"] = "onlr.save" }) do
-    ecs.key.bind(panel, key, name)
-  end
-end
+-- Undo, redo and save, and the game's keys, act on the whole project, so the preset binds them for the whole editor (DESIGN 13.1).
 ecs.key.bind("onlr.hierarchy", "Delete", "onlr.deleteChosen")
 ecs.key.bind("onlr.hierarchy", "Ctrl+D", "onlr.duplicateChosen")
 ecs.key.bind("onlr.hierarchy", "H", "onlr.hideChosen")

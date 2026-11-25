@@ -391,7 +391,8 @@ Files whose names start with a dot, such as `.onlr/`, stay out, and so do the pa
 
 | Key            | Where             | Does                                                    |
 | -------------- | ----------------- | ------------------------------------------------------- |
-| Ctrl+Z, Ctrl+Y | Everywhere        | Undo, redo                                              |
+| Ctrl+Z         | Everywhere        | Undo                                                    |
+| Ctrl+Y, Ctrl+Shift+Z | Everywhere  | Redo                                                    |
 | Ctrl+S         | Everywhere        | Save                                                    |
 | Ctrl+K         | Everywhere        | Search                                                  |
 | F5, F6         | Everywhere        | Play, Play this file                                     |

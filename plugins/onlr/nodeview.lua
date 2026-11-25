@@ -1662,10 +1662,7 @@ functions = {
 
 for key, name in pairs({
   ["Delete"] = "onlr.deleteChosen", ["Ctrl+D"] = "onlr.duplicateChosen", ["Ctrl+C"] = "onlr.copyChosen",
-  ["Ctrl+V"] = "onlr.pasteChosen", ["Ctrl+Z"] = "onlr.undo", ["Ctrl+Y"] = "onlr.redo",
-  ["Ctrl+Shift+Z"] = "onlr.redo", ["Ctrl+S"] = "onlr.save", ["F5"] = "onlr.play",
-  ["F6"] = "onlr.playFile", ["F7"] = "onlr.pause", ["F8"] = "onlr.step",
-  ["Shift+F5"] = "onlr.stop", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
+  ["Ctrl+V"] = "onlr.pasteChosen", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
   ["R"] = "onlr.toolScale", ["T"] = "onlr.toolRect", ["Y"] = "onlr.toolShape", ["F"] = "onlr.frame", ["H"] = "onlr.hideChosen",
   ["L"] = "onlr.lockChosen", ["Escape"] = "onlr.cancelPick", ["Ctrl+A"] = "onlr.selectAll", ["Shift+A"] = "onlr.selectWithChildren",
 }) do
