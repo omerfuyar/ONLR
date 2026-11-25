@@ -652,7 +652,7 @@ local function fileSubject(state, out)
         end })) --[[@as ui.Element]],
       })
     end
-    out[#out + 1] = ui.section(typeName, { id = cid, open = not folded,
+    out[#out + 1] = ui.section(typeName, { id = cid, gap = 6, open = not folded,
       onToggle = function(open)
         state.folded[typeName] = not open or nil
         state.panel:redraw()

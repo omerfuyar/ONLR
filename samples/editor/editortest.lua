@@ -631,6 +631,9 @@ return {
       "Move up writes the order:\n" .. read("nodes/start.lua"))
     local ordered = test.panel(panelOf(test, "onlr.inspector")).state.rects
     check(ordered["aaaaaa:thing:heading"].y < ordered["aaaaaa:onlr.shape:heading"].y, "the inspector shows thing above the shape")
+    -- a component's rows have a gap between them, as the node's own rows do, so its fields do not touch
+    local width, height = ordered["aaaaaa:onlr.shape:width"], ordered["aaaaaa:onlr.shape:height"]
+    check(width and height and height.y - (width.y + width.height) >= 4, "the shape's Width and Height fields do not touch")
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the move is one change, undone")
