@@ -1301,13 +1301,20 @@ return {
     file:close()
     test.wait(0.5)
 
-    -- the Linux build is LÖVE's files with the .love file joined to LÖVE's executable: unpacked, its launcher runs the game
+    -- the Linux build is LÖVE's files with the .love file joined to LÖVE's executable: unpacked, its launcher runs the game.
+    -- Until the Linux runtime has an address, the build takes the runners' LÖVE when it is LÖVE's unpacked AppImage, as LOVE is in
+    -- the checks; with another LÖVE, there is no build, and none is checked (DESIGN 15.2, 16)
     test.call("onlr.exportLinux")
     test.wait(1)
-    os.execute("mkdir -p out/linux && tar -xzf out/Editor-linux-x86_64.tar.gz -C out/linux && cd out/linux && "
-      .. "SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 3 ./Editor/Editor > /dev/null 2>&1")
-    check(read("out/linux/played.txt") == "Start", "the Linux build runs the game")
-    check(read("out/linux/Editor/license.txt") ~= "", "and holds LÖVE's license.txt")
+    local unpacked = list('d=$(dirname "$(readlink -f "$(command -v "$LOVE")")"); [ -x "$d/bin/love" ] && echo yes') ~= ""
+    if unpacked then
+      os.execute("mkdir -p out/linux && tar -xzf out/Editor-linux-x86_64.tar.gz -C out/linux && cd out/linux && "
+        .. "SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 3 ./Editor/Editor > /dev/null 2>&1")
+      check(read("out/linux/played.txt") == "Start", "the Linux build runs the game")
+      check(read("out/linux/Editor/license.txt") ~= "", "and holds LÖVE's license.txt")
+    else
+      check(read("out/Editor-linux-x86_64.tar.gz") == "", "no Linux build without a runtime")
+    end
 
     -- the Windows build is made from LÖVE's runtime, which is downloaded and checked against the hash that ONLR ships
     test.call("onlr.exportWindows")

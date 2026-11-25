@@ -351,8 +351,13 @@ static void TestSample(const char *path, SHUFileType type, void *data)
     }
 
     // the offscreen driver gives LÖVE a window that no screen shows, and OpenAL Soft's null driver needs no sound device.
+    // The user's folders of data, settings and state are build/tests/home/'s, so a test reads nothing of this computer's, such as
+    // ONLR's runtimes or OpenECS's settings, and writes nothing there; the runtime that the editor's test downloads stays for the next run.
     // A test that never ends is stopped after two minutes
-    const char *settings = SHU_UtilFormat("LOVE=\"%s\" SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 120", CONFIG.FLAGS.love);
+    const char *home = SHU_UtilGetPath("build/tests/home/");
+    const char *settings = SHU_UtilFormat("LOVE=\"%s\" XDG_DATA_HOME=\"%sdata\" XDG_CONFIG_HOME=\"%sconfig\" XDG_STATE_HOME=\"%sstate\" "
+                                          "SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 120",
+                                          CONFIG.FLAGS.love, home, home, home);
 
     if (SHU_UtilFileExists(SHU_UtilFormat("%seditortest.lua", path)) == SHUFileType_Regular)
     {
@@ -390,6 +395,9 @@ static void RunTests(void)
     }
 
     SHU_UtilCreateDirectory("build/tests/work/");
+    SHU_UtilCreateDirectory("build/tests/home/data/");
+    SHU_UtilCreateDirectory("build/tests/home/config/");
+    SHU_UtilCreateDirectory("build/tests/home/state/");
     SHU_UtilListDirectory("samples/", false, TestSample, NULL);
 
     if (CONFIG.TESTS.skipped)
