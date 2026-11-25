@@ -46,9 +46,7 @@ What the owner wants worked on, in this order.
 ## Editor
 
 - **The owner's reports of 2026-11-25.** To fix first:
-  - **Add component's folders draw broken.** In the inspector's Add component dropdown, the entries in a folder show as tiny, unreadable marks, and the popup is too narrow (a screenshot shows it over Title and About). Find whether the editor gives the dropdown's folders wrongly or std ui's dropdown draws nested entries wrongly, and fix it where it lies.
-  - **The console's first level.** OpenECS-std's console is to show Warnings and up at first (OpenECS TODO); the game's prints are info, so ONLR then needs a way to start at Info and up, or GUIDE 8 says to change Show.
-  - **Tooltips are cut by small panels.** OpenECS-std's ui is to draw them over everything (OpenECS TODO); nothing to change in ONLR but checking its panels then.
+  - **Add component's folders draw broken: to check on Wayland.** The dropdown's popup asked for every type's row, taller than the room below or above it, and only a popup drawn inside the window was kept inside it; as a popup window on Wayland it stuck out, and the compositor moved and shrank it, squeezing its rows. OpenECS keeps every popup inside its window now, and std's dropdown scrolls a list longer than its room (OpenECS DESIGN 4.6, OpenECS-std DESIGN 5). The owner checks it on their desktop.
 
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
   - The node view: marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.

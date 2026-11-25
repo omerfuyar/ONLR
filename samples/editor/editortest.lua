@@ -70,6 +70,8 @@ return {
     -- the editor keeps its session, so it starts again with this project, its panels and their locks, and lists it among the
     -- projects opened last (DESIGN 13.2)
     test.match(test.setting("ecs.keepSession"), true, "the editor keeps its session")
+    -- a new console shows the game's prints, which are info: OpenECS-std's console starts at Warnings (DESIGN 13.1)
+    test.match(test.setting("console.show"), "Info and up", "the console starts at Info and up")
     local kept = test.session().pluginState.onlr.state
     check(kept.folder and kept.folder:find("editor/$") and kept.recent[1] == kept.folder, "the session holds the project: " .. tostring(kept.folder))
     -- the title bar holds the editor's menus, then Play, Pause and Step, which are off while nothing plays (DESIGN 13.2)
