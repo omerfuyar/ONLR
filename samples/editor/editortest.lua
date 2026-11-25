@@ -684,6 +684,26 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the move is one change, undone")
 
+    -- the menu's first entry, Open script, opens the type's script with the command that console.editor names: here one that
+    -- marks the file, so no code editor starts (DESIGN 13.4)
+    test.setSetting("console.editor", "touch {file}.opened")
+    hx, hy = inspected("aaaaaa:thing:heading", 0.2)
+    test.click(hx, hy, 3)
+    local entries = test.menu()
+    test.match(entries and entries[1], { label = "Open script", enabled = true, chosen = true }, "the component's menu starts with Open script")
+    test.key("Return")
+    local opened = false
+    for _ = 1, 20 do
+      test.wait(0.1)
+      opened = io.open("components/thing.lua.opened") ~= nil
+      if opened then
+        break
+      end
+    end
+    check(opened, "Open script opens components/thing.lua")
+    os.remove("components/thing.lua.opened")
+    test.setSetting("console.editor", nil)
+
     -- the lock keeps A in the inspector while B is chosen, until it is turned off (DESIGN 13.4)
     test.click(inspected("lock"))
     test.wait(0.2)

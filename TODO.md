@@ -56,7 +56,6 @@ What the owner wants worked on, in this order.
   - The editor: a window for keys is OpenECS-std's key list now (below). The search (DESIGN 13.8) could find functions written as `X.y = function(`, and text inside files.
   - Tools of their own, each a panel: a cutter of sprite sheets into quads, a timeline for animations, a palette for tile maps.
 - **The Rectangle tool's limits** (DESIGN 13.3): sizing many chosen nodes as one rectangle; Shift to keep a node's proportions; a circle that keeps round, by its `radius`, and a text that gets a `width` to wrap at, in place of a scale.
-- **A check of Open script.** The inspector's Open script (DESIGN 13.4) has no check in the editor's test yet: a click on it would start the user's code editor, or the system's opener, so the test first points `console.editor` at a harmless command, with OpenECS's `test.setSetting`.
 - **Dragging components in the inspector.** Move Up and Move Down order them (DESIGN 13.4). Dragging a component's heading needs OpenECS-std's `ui.section` to start a drag and to tell where a drop lands among the sections, as its tree does.
 - **moonshine's order.** `moonshine.chain` applies its effects in its `order` list (DESIGN 11.11). The node's `componentOrder` (DESIGN 5) could replace it, so the user orders the effects as the inspector shows them; `order` stays while a script changes the order at run time.
 - **Graphs: what is left for later.** The graph panel, ira-scripts and ira-shaders are designed (DESIGN 6.8, 13.9). For later, after the milestones under [Tasks](#tasks):
