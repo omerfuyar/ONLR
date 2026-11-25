@@ -993,6 +993,50 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the base's own name leaves no change")
 
+    -- a file with changes that are not saved asks when it is deleted on disk, and when the editor's are kept, a save writes it again
+    -- (DESIGN 13.6)
+    local function rename(name)
+      test.click(x, y)
+      test.wait(0.2)
+      test.click(inspector.x + 200, inspector.y + 104)
+      test.key("Ctrl+A")
+      test.text(name)
+      test.key("Return")
+      test.wait(0.2)
+    end
+    local function answer(title)
+      local asked
+      for _ = 1, 20 do
+        test.wait(0.2)
+        asked = test.dialog()
+        if asked then
+          break
+        end
+      end
+      test.match(asked and asked.title, title, "the editor asks")
+      test.key("Return")
+      test.wait(0.3)
+    end
+    rename("Kept")
+    os.remove("nodes/start.lua")
+    answer("nodes/start.lua was deleted")
+    save()
+    check(read("nodes/start.lua"):find('name = "Kept"'), "the editor's changes are written again:\n" .. read("nodes/start.lua"))
+    -- a person's comment that came while the editor held changes is the person's: the save asks before it writes over it (DESIGN 4.2)
+    rename("Twice")
+    local noted = read("nodes/start.lua") .. "-- a person's note\n"
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write(noted)
+    file:close()
+    answer("nodes/start.lua changed on disk")
+    test.key("Ctrl+S")
+    answer("Save nodes/start.lua")
+    check(read("nodes/start.lua"):find('name = "Twice"') and not read("nodes/start.lua"):find("a person's note"), "Replace writes the editor's")
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write(start)
+    file:close()
+    test.wait(1)
+
     -- F fits the view to the chosen node: node A's red square fills its middle, at a greater zoom
     test.click(at(56, 56))
     test.key("F")
