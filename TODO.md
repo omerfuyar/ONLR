@@ -251,7 +251,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Guide and keys**
 
-- **P2 · The project opened last is forgotten.** `project.lua:2163-2172` keeps the open project and the projects opened last in the plugin's state, which OpenECS restores only with `ecs.keepSession`, off by default (OpenECS DESIGN 13.4); the preset does not set it. So DESIGN 13.2's "the editor starts with the project it was closed with" and the project settings' list of projects opened last do not hold, nor do the locks kept in the session (13.4, 13.7). Keep them in ONLR's own file in the user's data folder, or set the setting in the preset. Size: S.
 - **P2 · GUIDE 1.4 misses Id and Game version** (`settings.lua:165-166`), and GUIDE 9 does not say that a Linux build needs LÖVE's unpacked AppImage until the Linux runtime has an address (`runtimes.lua:29`). Size: S.
 
 **Runner and link, documents**

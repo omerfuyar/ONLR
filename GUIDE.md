@@ -45,6 +45,8 @@ Download the archive for your platform from the [releases](https://github.com/om
 
 To work on ONLR itself, or to run it from its repository, see [README.md](README.md).
 
+ONLR starts as you closed it: with the project that was open, the panels where you put them, and the node files you had open. While no project is open, the **Project** panel lists the projects opened last. `ONLR --fresh` starts from ONLR's own layout instead, as a new version of ONLR may bring a changed one.
+
 ### 1.3 A new project
 
 1. Choose **File**, then **New Project**, in the title bar, or press **New project** in the **Project** panel, a tab beside the inspector.

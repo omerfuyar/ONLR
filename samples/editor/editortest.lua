@@ -54,6 +54,11 @@ return {
     end
     test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
+    -- the editor keeps its session, so it starts again with this project, its panels and their locks, and lists it among the
+    -- projects opened last (DESIGN 13.2)
+    test.match(test.setting("ecs.keepSession"), true, "the editor keeps its session")
+    local kept = test.session().pluginState.onlr.state
+    check(kept.folder and kept.folder:find("editor/$") and kept.recent[1] == kept.folder, "the session holds the project: " .. tostring(kept.folder))
     -- the title bar holds the editor's menus, then Play, Pause and Step, which are off while nothing plays (DESIGN 13.2)
     local function titleParts()
       local parts = {}
