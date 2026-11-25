@@ -7,6 +7,7 @@ local process = require("process")
 local project = require("project")
 local console = require("console")
 local link = require("link")
+local stringBuffer = require("string.buffer")
 local hints = require("hints")
 local runtimes = require("runtimes")
 
@@ -18,7 +19,7 @@ local runners = {}
 ---@field process any
 ---@field server any the link's listening end
 ---@field connection any? the link, once the runner has connected
----@field buffer string what arrived and was not read yet
+---@field buffer string.buffer what arrived and was not read yet
 ---@field ready boolean it sent hello
 ---@field output string[] the preview's last lines, which it shows when it ends; the game's go to the console at once
 ---@field partial string the start of a line that it has not ended yet
@@ -56,8 +57,9 @@ end)
 ---The running game: whether it is paused, or halted at an error, and what the game sent of it.
 runners.running = { playing = false, paused = false, tree = nil, values = nil }
 
----Called with each message of the preview for a view: its type, the message and its block.
----@type fun(type: string, message: table, block: string?)
+---Called with each message of the preview for a view: its type, the message, and its block with its size in bytes. The block
+---lies in the runner's buffer, and is read during the call only.
+---@type fun(type: string, message: table, block: ffi.cdata*?, size: integer?)
 runners.onView = function() end
 
 ecs.event.declare("state", "A runner started, ended, paused or went on")
@@ -194,7 +196,7 @@ local function start(mode, startPath)
   end
   ---@type onlr.editor.Runner
   return {
-    mode = mode, process = started, server = server, buffer = "", ready = false, output = {}, partial = "",
+    mode = mode, process = started, server = server, buffer = stringBuffer.new(), ready = false, output = {}, partial = "",
     sent = {}, owed = {}, since = clock,
   }
 end
@@ -406,13 +408,13 @@ function fromPreview.hello(message)
   ecs.event.emit("onlr.state")
 end
 
-function fromPreview.frame(message, block)
+function fromPreview.frame(message, block, size)
   local runner = assert(preview)
   runner.owed[message.view] = nil
   strikes = 0
   -- The runner may draw the next frame while the editor shows this one (DESIGN 12.4).
   send(runner, { type = "shown", id = message.view })
-  runners.onView("frame", message, block)
+  runners.onView("frame", message, block, size)
 end
 
 function fromPreview.bounds(message)
@@ -539,12 +541,6 @@ end
 
 -- Reading both runners
 
--- The size of the message that some bytes start, when they hold its first line.
-local function wanted(bytes)
-  local textSize, blockSize, headerEnd = bytes:match("^(%d+) (%d+)\n()")
-  return textSize and headerEnd - 1 + tonumber(textSize) + tonumber(blockSize)
-end
-
 local function read(runner, handlers)
   local text = runner.process:read() .. runner.process:readErrors()
   if text ~= "" then
@@ -570,8 +566,8 @@ local function read(runner, handlers)
     runner.connection = runner.server:accept()
   end
   if runner.connection then
-    local chunks = { runner.buffer }
-    local size = #runner.buffer
+    -- What arrives is added to the runner's buffer, and the messages are read where they lie in it, so a frame is copied once.
+    local buf = runner.buffer
     local function take()
       local got = false
       while true do
@@ -579,29 +575,25 @@ local function read(runner, handlers)
         if not bytes or bytes == "" then
           return got
         end
-        chunks[#chunks + 1] = bytes
-        size = size + #bytes
+        buf:put(bytes)
         got = true
       end
     end
     if take() then
       -- A frame is bigger than what the system holds of a connection, so it arrives in parts while the runner sends on.
       -- The rest of a message that has started is read now, for a short while, not at the next tick.
-      local need = wanted(chunks[1] ~= "" and chunks[1] or chunks[2])
+      local need = link.need(buf)
       local limit = os.clock() + 0.03
-      while need and size < need and os.clock() < limit do
+      while need and #buf < need and os.clock() < limit do
         take()
       end
-      runner.buffer = table.concat(chunks)
-      local messages
-      messages, runner.buffer = link.unpack(runner.buffer)
-      for _, item in ipairs(messages) do
+      link.unpack(buf, function(message, block, size)
         runner.since = clock
-        local handler = handlers[item[1].type]
+        local handler = handlers[message.type]
         if handler then
-          handler(item[1], item[2])
+          handler(message, block, size)
         end
-      end
+      end)
     end
   end
 end
