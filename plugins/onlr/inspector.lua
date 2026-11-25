@@ -21,22 +21,7 @@ local copied
 -- A value that differs among the chosen nodes: its control shows empty.
 local MIXED = {}
 
-local function same(a, b)
-  if type(a) ~= "table" or type(b) ~= "table" then
-    return a == b
-  end
-  for k, v in pairs(a) do
-    if not same(v, b[k]) then
-      return false
-    end
-  end
-  for k in pairs(b) do
-    if a[k] == nil then
-      return false
-    end
-  end
-  return true
-end
+local same, copy = format.same, format.copy
 
 -- The one value that every node gives, or MIXED.
 local function common(nodes, get)
@@ -47,17 +32,6 @@ local function common(nodes, get)
     end
   end
   return value
-end
-
-local function copy(value)
-  if type(value) ~= "table" then
-    return value
-  end
-  local c = {}
-  for k, v in pairs(value) do
-    c[k] = copy(v)
-  end
-  return c
 end
 
 local function label(text, tooltip)

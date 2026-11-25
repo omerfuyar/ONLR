@@ -2,7 +2,10 @@
 -- their bases. The engine's build.lua does the same for the game; here no component is made, and each node remembers
 -- where the editor writes a change of it.
 
+local ecs = require("ecs")
 local format = require("format")
+-- The walk over instances is the engine's own, from ONLR's engine beside the plugin (DESIGN 13.1).
+local instances = assert(loadfile(ecs.plugin.folder .. "../../packages/onlr/library/instances.lua"))()
 
 local resolve = {}
 
@@ -46,7 +49,6 @@ local resolve = {}
 ---@field prefix table<string, string> for each value, the path before the ids that it names
 
 local FIELDS = { "name", "posX", "posY", "rot", "sclX", "sclY", "z", "active", "componentOrder" }
-local FIRST = {}
 
 ---Splits a node file's components, tables in tables by the dots of their names, into tables by type name.
 ---A name that the project does not know is taken for a type, so its values are kept.
@@ -169,193 +171,104 @@ local function over(decl, under, value)
   return value
 end
 
-local expandFile
-
-local function expandEntry(entry, scope, overlays, ctx)
-  local id = entry.id
-  if type(id) ~= "string" then
-    error(scope.file .. ": a node has no id", 0)
-  end
-  if scope.nodes[id] then
-    error(("%s: the id %s is there twice"):format(scope.file, id), 0)
-  end
-
-  if entry.instance then
-    local instance = entry.instance
-    if type(instance) ~= "table" or type(instance.base) ~= "string" then
-      error(("%s: the instance %s names no base"):format(scope.file, id), 0)
-    end
-    local own = { changes = instance.changes or {}, scope = scope, overlays = overlays, used = {} }
-    local inner = { own }
-    local prefix = id .. "/"
-    for _, o in ipairs(overlays) do
-      local sub, keys, any = {}, {}, false
-      for key, change in pairs(o.changes) do
-        if key == id then
-          sub[FIRST], keys[FIRST], any = change, key, true
-        elseif type(key) == "string" and key:sub(1, #prefix) == prefix then
-          local rest = key:sub(#prefix + 1)
-          sub[rest], keys[rest], any = change, key, true
-        end
+-- The editor's maker of nodes for the walk over a file's instances, which the engine's build shares (instances.lua): the nodes
+-- that the panels show, each with where the editor writes a change of it.
+local function maker(ctx)
+  return {
+    file = function(path)
+      -- a file that does not load is one of the tree's files too, so the tree is made again when it changes
+      ctx.files[path] = true
+      local data, err = ctx.source.file(path)
+      if not data then
+        error(err or (path .. ": no such file"), 0)
       end
-      if any then
-        inner[#inner + 1] = { changes = sub, scope = o.scope, overlays = o.overlays, used = {}, parent = o, keys = keys }
-      end
-    end
-    if scope.top then
-      ctx.instances[id] = entry
-    end
-    -- A base that does not load, such as a deleted node file, makes this instance a node with an error, and the rest of the file
-    -- still loads, so the user can delete the instance or give it its file back.
-    local stack = {}
-    for file in pairs(ctx.stack) do
-      stack[file] = true
-    end
-    local ok, node, innerScope = pcall(expandFile, instance.base, inner, ctx, scope.prefix .. id)
-    if not ok then
-      ctx.stack = stack
+      return data
+    end,
+    node = function(entry, scope)
       ---@type onlr.editor.Node
-      local broken = {
-        path = scope.prefix .. id, id = id, file = scope.file, own = false, instanceOf = instance.base,
+      local node = {
+        path = scope.prefix .. entry.id, id = entry.id, file = scope.file, own = scope.top,
         posX = 0, posY = 0, rot = 0, sclX = 1, sclY = 1, z = 0, active = true,
-        base = {}, changed = {}, components = {}, children = {}, errors = { tostring(node) },
+        -- the base starts with format.DEFAULTS, and the file's layers that are no change are laid over it
+        base = { posX = 0, posY = 0, rot = 0, sclX = 1, sclY = 1, z = 0, active = true },
+        changed = {}, components = {}, children = {}, errors = {},
       }
-      scope.nodes[id] = broken
-      ctx.index[broken.path] = broken
-      ctx.order[#ctx.order + 1] = broken
-      return broken
-    end
-    node.instanceOf = instance.base
-    scope.nodes[id] = node
-    for path, other in pairs(innerScope.nodes) do
-      if other ~= node then
-        scope.nodes[prefix .. path] = other
+      if node.own then
+        node.raw = entry
       end
-    end
-    if scope.top then
-      local unused = {}
-      for key in pairs(own.changes) do
-        if not own.used[key] then
-          unused[#unused + 1] = key
-          node.errors[#node.errors + 1] = ("the instance changes %s, which names no node"):format(tostring(key))
-        end
-      end
-      ctx.unused[id] = unused
-    end
-    return node
-  end
-
-  ---@type onlr.editor.Node
-  local node = {
-    path = scope.prefix .. id, id = id, file = scope.file, own = scope.top or false,
-    posX = 0, posY = 0, rot = 0, sclX = 1, sclY = 1, z = 0, active = true,
-    base = {}, changed = {}, components = {}, children = {}, errors = {},
-  }
-  if node.own then
-    node.raw = entry
-  end
-  scope.nodes[id] = node
-  ctx.index[node.path] = node
-  ctx.order[#ctx.order + 1] = node
-
-  local layers = { { entry = entry, scope = scope } }
-  local added = {}
-  local function use(o, key)
-    o.used[key] = true
-    if o.parent then
-      use(o.parent, o.keys[key])
-    end
-  end
-  for _, o in ipairs(overlays) do
-    local change = o.changes[id]
-    if change then
-      use(o, id)
-      layers[#layers + 1] = { entry = change, scope = o.scope, change = o.scope.top }
-      if type(change.children) == "table" then
-        added[#added + 1] = { children = change.children, overlay = o }
-      end
-    end
-  end
-
-  for _, layer in ipairs(layers) do
-    local e = layer.entry
-    for _, field in ipairs(FIELDS) do
-      if e[field] ~= nil then
-        node[field] = e[field]
-        if layer.change then
-          node.changed[field] = true
-        else
-          node.base[field] = e[field]
-        end
-      end
-    end
-    if type(e.components) == "table" then
-      for typeName, values in pairs(resolve.flatten(e.components, ctx.source.space)) do
-        local c = node.components[typeName]
-        if not c then
-          c = { values = {}, changed = {}, prefix = {}, base = not layer.change and {} or nil }
-          node.components[typeName] = c
-        end
-        local decls = kinds(ctx.source, typeName)
-        for name, value in pairs(values) do
-          c.values[name] = over(decls[name], c.values[name], value)
-          c.prefix[name] = layer.scope.prefix
-          if layer.change then
-            c.changed[name] = true
-          elseif c.base then
-            c.base[name] = over(decls[name], c.base[name], value)
+      ctx.index[node.path] = node
+      ctx.order[#ctx.order + 1] = node
+      return node
+    end,
+    -- A change that the shown file writes is the node's change; the others are its base.
+    lay = function(node, e, scope, change)
+      change = change and scope.top
+      for _, field in ipairs(FIELDS) do
+        if e[field] ~= nil then
+          node[field] = e[field]
+          if change then
+            node.changed[field] = true
+          else
+            node.base[field] = e[field]
           end
         end
       end
-    end
-  end
-  for _, field in ipairs(FIELDS) do
-    if node.base[field] == nil then
-      node.base[field] = format.DEFAULTS[field]
-    end
-  end
-
-  local function attach(child)
-    child.parent = node
-    node.children[#node.children + 1] = child
-  end
-  for _, child in ipairs(type(entry.children) == "table" and entry.children or {}) do
-    attach(expandEntry(child, scope, overlays, ctx))
-  end
-  for _, add in ipairs(added) do
-    for _, child in ipairs(add.children) do
-      attach(expandEntry(child, add.overlay.scope, add.overlay.overlays, ctx))
-    end
-  end
-  return node
-end
-
-function expandFile(path, overlays, ctx, firstPath)
-  if ctx.stack[path] then
-    error(path .. ": a node file cannot hold itself", 0)
-  end
-  -- a file that does not load is one of the tree's files too, so the tree is made again when it changes
-  ctx.files[path] = true
-  local data, err = ctx.source.file(path)
-  if not data then
-    error(err or (path .. ": no such file"), 0)
-  end
-  ctx.stack[path] = true
-  local scope = { file = path, prefix = firstPath and (firstPath .. "/") or "", nodes = {}, top = firstPath == nil }
-  for _, o in ipairs(overlays) do
-    if o.changes[FIRST] and type(data.id) == "string" then
-      o.changes[data.id] = o.changes[FIRST]
-      o.keys[data.id] = o.keys[FIRST]
-    end
-  end
-  local first = expandEntry(data, scope, overlays, ctx)
-  if firstPath then
-    ctx.index[first.path] = nil
-    first.path = firstPath
-    ctx.index[firstPath] = first
-  end
-  ctx.stack[path] = nil
-  return first, scope
+      if type(e.components) == "table" then
+        for typeName, values in pairs(resolve.flatten(e.components, ctx.source.space)) do
+          local c = node.components[typeName]
+          if not c then
+            c = { values = {}, changed = {}, prefix = {}, base = not change and {} or nil }
+            node.components[typeName] = c
+          end
+          local decls = kinds(ctx.source, typeName)
+          for name, value in pairs(values) do
+            c.values[name] = over(decls[name], c.values[name], value)
+            c.prefix[name] = scope.prefix
+            if change then
+              c.changed[name] = true
+            elseif c.base then
+              c.base[name] = over(decls[name], c.base[name], value)
+            end
+          end
+        end
+      end
+    end,
+    attach = function(child, parent)
+      child.parent = parent
+      parent.children[#parent.children + 1] = child
+    end,
+    first = function(node, path)
+      ctx.index[node.path] = nil
+      node.path = path
+      ctx.index[path] = node
+    end,
+    instance = function(node, entry, scope, unused)
+      node.instanceOf = entry.instance.base
+      if scope.top then
+        ctx.instances[entry.id] = entry
+        for _, key in ipairs(unused) do
+          node.errors[#node.errors + 1] = ("the instance changes %s, which names no node"):format(tostring(key))
+        end
+        ctx.unused[entry.id] = unused
+      end
+    end,
+    -- A base that does not load, such as a deleted node file, makes this instance a node with an error, and the rest of the file
+    -- still loads, so the user can delete the instance or give it its file back.
+    failed = function(entry, scope, message)
+      if scope.top then
+        ctx.instances[entry.id] = entry
+      end
+      ---@type onlr.editor.Node
+      local broken = {
+        path = scope.prefix .. entry.id, id = entry.id, file = scope.file, own = false, instanceOf = entry.instance.base,
+        posX = 0, posY = 0, rot = 0, sclX = 1, sclY = 1, z = 0, active = true,
+        base = {}, changed = {}, components = {}, children = {}, errors = { message },
+      }
+      ctx.index[broken.path] = broken
+      ctx.order[#ctx.order + 1] = broken
+      return broken
+    end,
+  }
 end
 
 ---The nodes of a node file.
@@ -374,8 +287,8 @@ end
 ---@param source onlr.editor.Source
 ---@return onlr.editor.Tree
 function resolve.tree(path, source)
-  local ctx = { source = source, stack = {}, index = {}, order = {}, instances = {}, unused = {}, files = {} }
-  local ok, first = pcall(expandFile, path, {}, ctx)
+  local ctx = { source = source, index = {}, order = {}, instances = {}, unused = {}, files = {} }
+  local ok, first = pcall(instances.walk, path, maker(ctx))
   ---@type onlr.editor.Tree
   local tree = { file = path, index = ctx.index, order = ctx.order, instances = ctx.instances, unused = ctx.unused, files = ctx.files }
   if not ok then
