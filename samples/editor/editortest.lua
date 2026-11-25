@@ -94,6 +94,18 @@ return {
     save()
     check(read("nodes/start.lua") == start, "undo and save give the first text again")
 
+    -- Ctrl+Z, Ctrl+Y and Ctrl+S act in the whole editor, also while a panel that is not ONLR's has the focus, as the console
+    test.key("Ctrl+Y")
+    local log = test.rect(panelOf(test, "console.log"))
+    test.click(log.x + log.width / 2, log.y + log.height / 2)
+    test.key("Ctrl+S")
+    test.wait(0.2)
+    check(read("nodes/start.lua") == moved, "Ctrl+Y and Ctrl+S in the console redo and save the move")
+    test.key("Ctrl+Z")
+    test.key("Ctrl+S")
+    test.wait(0.2)
+    check(read("nodes/start.lua") == start, "Ctrl+Z and Ctrl+S in the console undo and save")
+
     -- with Ctrl held, a drag snaps to the grid of 32, though snapping is off
     x, y = at(70, 70)
     test.drag(x, y, x + 50, y + 20, "Ctrl")

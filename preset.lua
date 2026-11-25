@@ -10,10 +10,11 @@ return {
   pluginsDir = "plugins",
   -- a project's folder, or a file in it, named on the command line opens the project (DESIGN 13.2)
   open = "onlr.openPath",
-  -- the search over everything, from any panel, on Unity's key for it (DESIGN 13.8), and the game's functions, which the Game bar and
-  -- the title bar show (DESIGN 13.1)
+  -- the search over everything, from any panel, on Unity's key for it (DESIGN 13.8), the game's functions, which the Game bar and
+  -- the title bar show, and undo, redo and save, which act on the whole project (DESIGN 13.1)
   keys = {
     ["Ctrl+K"] = "onlr.search",
+    ["Ctrl+Z"] = "onlr.undo", ["Ctrl+Y"] = "onlr.redo", ["Ctrl+Shift+Z"] = "onlr.redo", ["Ctrl+S"] = "onlr.save",
     F5 = "onlr.play", F6 = "onlr.playFile", F7 = "onlr.pause", F8 = "onlr.step", ["Shift+F5"] = "onlr.stop",
   },
   settings = {
