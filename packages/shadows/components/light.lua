@@ -12,10 +12,10 @@ local Lamp = {}
 
 Lamp.radius = onlr.property.number(200, { min = 1, description = "How far it reaches, in the world's pixels" })
 Lamp.color = onlr.property.color({ 1, 1, 1, 1 }, { description = "Its colour. Its alpha is how bright it is" })
-Lamp.arc = onlr.property.number(360, {
+Lamp.arc = onlr.property.number(2 * math.pi, {
   min = 0,
-  max = 360,
-  description = "The angle that it lights, in degrees, around its node's way: 360 lights all around, 60 is a torch's beam",
+  max = 2 * math.pi,
+  description = "The angle that it lights, in radians, around its node's way: 6.28, a whole turn, lights all around, 1 is a torch's beam",
 })
 Lamp.blur = onlr.property.bool(true, { description = "Soft edges of its shadows, which harden near what casts them" })
 Lamp.sizeRadius = onlr.property.number(10, { min = 0, description = "How large the light's source is: larger softens far shadows more" })
@@ -46,12 +46,14 @@ function Lamp:_sync()
   local x, y = self.node:toWorld(0, 0)
   local ax, ay = self.node:toWorld(1, 0)
   light:SetPosition(x, y)
-  light:SetAngle(math.deg(math.atan2(ay - y, ax - x)))
+  -- Shädows' beam points up at its angle 0, and the node's way is along its x axis, so a quarter turn more
+  light:SetAngle(math.deg(math.atan2(ay - y, ax - x)) + 90)
   if light:GetRadius() ~= self.radius then
     light:SetRadius(self.radius)
   end
   light:SetColor(self.color[1], self.color[2], self.color[3], self.color[4] or 1)
-  light.Arc, light.Blur, light.SizeRadius = self.arc, self.blur, self.sizeRadius
+  -- Shädows takes the arc in degrees, and lights all around from 360
+  light.Arc, light.Blur, light.SizeRadius = math.min(360, math.deg(self.arc)), self.blur, self.sizeRadius
 end
 
 -- In the node view, its reach as a circle, or its beam as an arc.
@@ -60,10 +62,10 @@ function Lamp:drawEditor(chosen)
   love.graphics.setColor(c[1], c[2], c[3], chosen and 0.9 or 0.5)
   love.graphics.circle("fill", 0, 0, 4)
   love.graphics.setLineWidth(1)
-  if self.arc >= 360 then
+  if self.arc >= 2 * math.pi then
     love.graphics.circle("line", 0, 0, self.radius)
   else
-    local half = math.rad(self.arc) / 2
+    local half = self.arc / 2
     love.graphics.arc("line", "pie", 0, 0, self.radius, -half, half)
   end
 end

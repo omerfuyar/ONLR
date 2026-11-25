@@ -86,6 +86,16 @@ check.run(function()
   light.color = { 1, 1, 1, 1 }
   lamp.posX, lamp.posY = 30, 30
 
+  -- Its arc is in radians, as every angle is: a quarter turn lights ahead of its node's way, 37 degrees to the side of it,
+  -- and not beside the lamp.
+  light.arc = math.pi / 2
+  check.frames(1)
+  bright(50, 45, "a beam of a quarter turn lights ahead")
+  dark(30, 58, "and not beside the lamp")
+  light.arc = 2 * math.pi
+  check.frames(1)
+  bright(30, 58, "a whole turn lights beside it again")
+
   -- A camera that shows the world 40 pixels to the right: the lamp at 30, 30 of the world is at -10, 30 of the window.
   local view = assert(tree.find("View")).components.onlr.camera.view
   view.posX = 120
