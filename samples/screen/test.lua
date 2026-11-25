@@ -39,17 +39,23 @@ check.run(function()
   end)
   check.equal(got:getHeight(), text.font:getHeight() * 2, "a text under the screen is sharp")
   onlr.tree.root:removeComponent("onlr.text")
-  -- With canvas, the game draws into push's canvas and the canvas is scaled: the squares are the same. canvas is read
-  -- when the screen starts, and a screen that starts again draws from the next frame on (DESIGN 6.4).
+  -- With canvas, the game draws into push's canvas and the canvas is scaled: the squares are the same. A script sets
+  -- canvas as a field, and the screen sets push up again before it draws.
   screen.canvas = true
-  screen:setEnabled(false)
-  screen:setEnabled(true)
+  check.equal(screen:hasCanvas(), true, "canvas that a script sets")
   check.frames(1)
   shot = capture()
   check.equal({ color(shot, 2, 2), color(shot, 18, 18), color(shot, 22, 22), color(shot, 622, 342) }, { "1 0 0", "1 0 0", "0 0 0", "0 0 1" }, "with a canvas")
   screen.canvas = false
-  screen:setEnabled(false)
-  screen:setEnabled(true)
+  check.frames(1)
+  -- So are the game's size and the bars' colour: half as wide, the game is scaled 2 times still, with bars of 160.
+  screen.width = 160
+  screen.borderColor = { 0, 1, 0, 1 }
+  check.frames(1)
+  shot = capture()
+  check.equal({ screen:get():getWidth(), color(shot, 80, 180) }, { 160, "0 1 0" }, "a size and a colour that a script sets")
+  screen.width = 320
+  screen.borderColor = { 0, 0, 0, 1 }
   check.frames(1)
 
   -- Places between the window and the game.

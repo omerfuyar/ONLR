@@ -80,11 +80,19 @@ check.run(function()
   check.equal(box.posY, 0, "a bump.body stops on the tiles")
   local others = world:queryRect(66, 8, 8, 1)
   check.equal(others[1] and others[1].node, node, "and the tile's box names the map's node")
+  -- solid, that a script changes, holds at once: the box falls through the tiles, and is still told of them.
+  node.components.sti.bump.solid = false
+  box.components.bump.body:move(66, 30)
+  check.equal(box.posY, 30, "a bump.body passes tiles that are not solid")
+  node.components.sti.bump.solid = true
 
   -- sti.physics: one static body with a fixture for each tile, on which a ball of Box2D falls and rests.
   local body = assert(node.components.sti.physics:getBody(), "the map's static body")
   check.equal(#body:getFixtures(), 9, "a fixture for each tile")
   check.equal(body:getFixtures()[1]:getUserData().owner.node, node, "whose contacts name the map's node")
+  node.components.sti.physics.friction = 0.7
+  check.frames(1)
+  check.ok(math.abs(body:getFixtures()[1]:getFriction() - 0.7) < 1e-6, "a friction that a script changes")
   local ball = assert(onlr.tree.find("Ball"))
   check.frames(120)
   check.ok(math.abs(ball.posY - 4) < 0.5, "a physics.body rests on the tiles: " .. ball.posY)
