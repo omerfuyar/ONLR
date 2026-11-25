@@ -137,6 +137,13 @@ ecs.event.subscribe("onlr.state", function()
 end)
 
 ecs.setting.declare({
+  name = "clearOnPlay",
+  type = "bool",
+  description = "Whether Play and Play This File clear the console first, so it shows the new game's output alone",
+  default = true,
+})
+
+ecs.setting.declare({
   name = "love",
   type = "string",
   description = "LÖVE's executable, which runs the preview and the game; when empty, the variable LOVE names it, or else the one of ONLR's archive, or else love",
@@ -479,8 +486,10 @@ function runners.play(startPath)
     stop(game)
     game = nil
   end
-  -- The console clears for the new game, unless its Clear on run toggle is off (DESIGN 12.1).
-  console.run()
+  -- The console clears for the new game, unless the setting onlr.clearOnPlay is off (DESIGN 12.1).
+  if ecs.setting.get("onlr.clearOnPlay") == true then
+    console.clear()
+  end
   local top = project.manifest() and project.manifest().topNode
   if startPath == top then
     -- The top node's own file plays as Play does (DESIGN 12.1).
