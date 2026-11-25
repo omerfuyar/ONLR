@@ -1688,7 +1688,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 - A node file with changes marks its panel as unsaved, so OpenECS asks before it closes (OpenECS DESIGN 4.5). A file that no view shows keeps its changes until the next save, and the editor asks about them before it closes the project.
 - When a file goes back to what is on disk, because the user does not save its changes, or keeps a change made outside the editor, every record that changed it is taken out of the history. So is every record of a file that a rename or a move changes, the files that name the renamed one too (13.7), since the rename itself is not in the history.
 - Play saves every node file with changes, and the manifest, before it starts the game (12.1). So the game that plays is the project's files, and the game is sent none. One game plays at a time: Play while a game plays stops it first.
-- A file of the project that changes on disk is read again. When the editor's copy has unsaved changes too, the editor asks which to keep.
+- A file of the project that changes on disk is read again. When the editor's copy has unsaved changes too, the editor asks which to keep. So it does when such a file is deleted on disk: the editor's changes, which the next save writes as a new file, or none. Kept changes are unsaved against the new text, and when a person wrote that text, the save asks first (4.2).
 - A node view of a file that is renamed follows it, and one of a file that is gone shows no file.
 
 ### 13.7 Files
