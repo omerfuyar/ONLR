@@ -610,6 +610,18 @@ local pendingTimer
 
 local watchFolder
 
+-- Keeps the editor's changes of a file over what is on disk now, its new text or nil when it is gone. The file is unsaved against that
+-- text, and a save asks first when a person wrote it, as when it was read (DESIGN 4.2).
+local function keepEditors(file, text)
+  file.disk, file.saved, file.handwritten = text, nil, false
+  if text then
+    local data = format.read(text, file.path)
+    file.saved = data and format.write(data, file.kind)
+    file.handwritten = text:gsub("\r\n", "\n") ~= file.saved
+  end
+  file.dirty = file.text ~= file.saved
+end
+
 local function diskChanged()
   pendingTimer = nil
   local p = P
@@ -631,7 +643,13 @@ local function diskChanged()
       local file = p.files[path]
       local text = format.readFile(absolute(path))
       if not text then
-        if file then
+        -- The file is gone. Changes that are not saved are the user's to keep, and a save writes the file again (DESIGN 13.6).
+        local keep = file and file.dirty and ecs.dialog.showMessage(path .. " was deleted",
+          path .. " was deleted outside the editor, and the editor holds changes of it that are not saved.",
+          { "Keep the editor's", "Let it go" }) == 1
+        if file and keep then
+          keepEditors(file, nil)
+        elseif file then
           dropHistory(path)
           p.files[path] = nil
           reread[#reread + 1] = path
@@ -645,7 +663,7 @@ local function diskChanged()
             { "Keep the editor's", "Read the file" }) == 1
         end
         if keep and file then
-          file.disk = text
+          keepEditors(file, text)
         else
           dropHistory(path)
           p.files[path] = nil
