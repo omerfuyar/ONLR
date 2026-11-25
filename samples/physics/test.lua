@@ -116,6 +116,12 @@ check.run(function()
   body.type = "kinematic"
   check.frames(1)
   check.equal({ body:get():getGravityScale(), body:get():getType() }, { 0, "kinematic" }, "and a body's")
+  local world = tree.findComponent("physics.world")
+  local gravity = world.gravity
+  world.gravity = { x = 10, y = 20 }
+  check.frames(1)
+  check.equal({ world:get():getGravity() }, { 10, 20 }, "a gravity that a script changes")
+  world.gravity = gravity
 
   -- A chain may close into a loop: a line of three points is two edges open, and three as a loop.
   local function chainOf(loop)
