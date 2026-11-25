@@ -20,11 +20,11 @@ local runners = {}
 ---@field connection any? the link, once the runner has connected
 ---@field buffer string what arrived and was not read yet
 ---@field ready boolean it sent hello
----@field output string[] what it printed
+---@field output string[] the preview's last lines, which it shows when it ends; the game's go to the console at once
 ---@field partial string the start of a line that it has not ended yet
 ---@field sent table<string, string> the node files' texts that it was sent
 ---@field owed table<any, boolean> the answers that it owes: a type's name, or a view's number
----@field since integer when it was last asked, or last heard
+---@field since number when it was last asked, or last heard, by the clock below
 ---@field stopping boolean? the editor asked it to end
 
 ---@type onlr.editor.Runner?
@@ -41,6 +41,17 @@ runners.views = {}
 runners.down = nil
 -- A view that stopped the preview twice in a row is not drawn again until the user asks.
 local strikes, blocked = 0, false
+
+-- The lines of the preview that the editor keeps, which it shows when the preview ends: the error that ended it is among the
+-- last, and a preview that prints at each frame does not grow the editor's memory.
+local KEEP = 100
+
+-- Seconds in steps of a tenth, for the preview's two seconds (DESIGN 12.1): os.time counts whole seconds, so two of them were
+-- two to three, and os.clock counts the editor's own work, not the time that passes.
+local clock = 0
+ecs.timer.start(0.1, true, function()
+  clock = clock + 0.1
+end)
 
 ---The running game: whether it is paused, or halted at an error, and what the game sent of it.
 runners.running = { playing = false, paused = false, tree = nil, values = nil }
@@ -177,7 +188,7 @@ local function start(mode, startPath)
   ---@type onlr.editor.Runner
   return {
     mode = mode, process = started, server = server, buffer = "", ready = false, output = {}, partial = "",
-    sent = {}, owed = {}, since = os.time(),
+    sent = {}, owed = {}, since = clock,
   }
 end
 
@@ -236,7 +247,7 @@ local function sendView(id)
     })
     if view.width >= 1 and view.height >= 1 then
       preview.owed[id] = true
-      preview.since = os.time()
+      preview.since = clock
     end
   end
 end
@@ -250,7 +261,7 @@ local function oweFrames(path)
       preview.owed[id] = true
     end
   end
-  preview.since = os.time()
+  preview.since = clock
 end
 
 -- Sends the node files that the editor holds otherwise than the preview does (DESIGN 12.2): those of paths, which changed in the
@@ -280,7 +291,7 @@ local function ask(name)
   if preview and preview.ready then
     send(preview, { type = "question", name = name })
     preview.owed[name] = true
-    preview.since = os.time()
+    preview.since = clock
   end
 end
 
@@ -534,9 +545,13 @@ local function read(runner, handlers)
       last = after
       -- OpenAL Soft says on every start that it found no sound device, which says nothing of the game.
       if not line:match("^%[ALSOFT%]") then
-        runner.output[#runner.output + 1] = line
         if runner.mode == "game" then
           console.add(line, "info", nil, "game")
+        else
+          runner.output[#runner.output + 1] = line
+          if #runner.output > KEEP then
+            table.remove(runner.output, 1)
+          end
         end
       end
     end
@@ -572,7 +587,7 @@ local function read(runner, handlers)
       local messages
       messages, runner.buffer = link.unpack(runner.buffer)
       for _, item in ipairs(messages) do
-        runner.since = os.time()
+        runner.since = clock
         local handler = handlers[item[1].type]
         if handler then
           handler(item[1], item[2])
@@ -594,7 +609,7 @@ local function poll()
           console.add(line, "error", nil, "preview")
         end
         previewEnded("The preview ended. It starts again at the next change.")
-      elseif next(runner.owed) and os.time() - runner.since > 2 then
+      elseif next(runner.owed) and clock - runner.since > 2 then
         -- It gets two seconds for each answer (DESIGN 12.1).
         runner.process:kill(true)
         for _, line in ipairs(runner.output) do

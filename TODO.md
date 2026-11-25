@@ -215,7 +215,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 - **P2 · Watching the running tree takes 14 ms four times a second.** `plugins/onlr/runner/game.lua:41-58`, `:183-191` Each quarter second the game makes a table for each node and writes the whole tree, to compare it with the last. Measured on `samples/speed`: 13.81 ms, middle of three, the first message 570 KB, against a frame of 3 ms; it also skews the frames a second that the tools show. Keep a number in `life` that each change of the tree raises, and write the tree only when it changed. Size: M.
 - **P2 · The two ends write the link's messages each in its own way.** `plugins/onlr/runner/link.lua:159` and `plugins/onlr/link.lua:13` already differ (`%d` and `%.0f`). One file that both load, with the module of instances under Editor. Size: S.
-- **P2 · The editor keeps every line a runner prints.** `plugins/onlr/runners.lua:519-523` A game that prints at each frame grows the editor's memory for its whole run, and a preview that ends shows every line since its start as errors (`:551-553`). Its two seconds of waiting are measured with `os.time()`, so 2 to 4 seconds (`:556`). Keep the last lines only, and a clock finer than a second. Size: S.
 - **P3 · The preview makes much at each draw.** `preview.lua:49-68` `ordered()` makes a table for each node and sorts with a closure at each draw, twice when bounds are due (`:124`, `:178`); each node's parents are walked for the hidden ones (`:181-185`); a frame's header is joined to its whole block of pixels, another 8 MB copy for each frame (`:220`). Keep the order until the nodes change, and send the header and the block apart. Not measured. Size: S.
 
 **Editor**
@@ -253,7 +252,7 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 **Runner and link, documents**
 
 - **P2 · DESIGN 12.2's table of messages misses `halted` and `hello`**, which `plugins/onlr/runner/init.lua:76` and `runners.lua:430` send, and the fields `hidden` and `closed` of `view` and `tree` of `watch` (`runners.lua:222-223`, `:305`, `:489`). Size: S.
-- **P2 · DESIGN 12 says what the code does not do yet.** Start the Preview Again has no button or menu, only the search and the key list (`nodeview.lua:1574`); the preview's printed lines reach the console only when it stops (`runners.lua:518-519`); the Linux runtime has no address, and would be unpacked as a zip (DESIGN 15.2); the offer to move a project to another LÖVE is not written (DESIGN 15.1). Write each as a limit where it is described. Size: S.
+- **P2 · DESIGN 12 says what the code does not do yet.** The Linux runtime has no address, and would be unpacked as a zip (DESIGN 15.2); the offer to move a project to another LÖVE is not written (DESIGN 15.1). Write each as a limit where it is described. Size: S.
 - **P2 · Colours are written out.** `#e06c75` and `#98c379` in the node hierarchy, the tools, the settings, the inspector and the node view, and the node view's grid in `#ffffff10` and `#ffffff60`, stay the same in OpenECS's light theme (OpenECS DESIGN 12.4). Use the theme's names where they exist, and check the light theme by a screenshot. Size: S.
 
 **Releases and this file**
