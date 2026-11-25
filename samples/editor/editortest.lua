@@ -1176,9 +1176,23 @@ return {
       test.match(test.setting(name) ~= color, true, name .. " takes the tint while the game plays, and loses it at Stop")
     end
 
-    -- Export: the folder that exports are written to is typed into the Export panel, which is a tab beside the inspector
-    test.click(inspector.x + 210, inspector.y - 14)
+    -- Export: the Export panel is not in the layout, and the title bar's Window menu shows it; showing it again gives the open one the
+    -- focus, not a second one (DESIGN 13.2). The folder that exports are written to is typed into it
+    local function count(type)
+      local n = 0
+      for _, panel in ipairs(test.panels()) do
+        n = n + (panel.type == type and 1 or 0)
+      end
+      return n
+    end
+    test.match({ count("onlr.export"), count("onlr.settings") }, { 0, 0 }, "Project and Export wait in the Window menu")
+    local windowMenu = test.setting("ecs.titleMenus")[4]
+    test.match({ windowMenu[1][1], windowMenu[2][1] }, { "onlr.showProjectSettings", "onlr.showExport" }, "the Window menu shows them")
+    test.call("onlr.showExport")
     test.wait(0.2)
+    test.call("onlr.showExport")
+    test.wait(0.2)
+    test.match(count("onlr.export"), 1, "Export opens once")
     local export = test.rect(panelOf(test, "onlr.export"))
     test.click(export.x + 100, export.y + 50)
     test.key("Ctrl+A")

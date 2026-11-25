@@ -38,6 +38,26 @@ function shared.forget(panel)
   end
 end
 
+shared.inspectors = {} ---@type table<ecs.Panel, true> the open inspectors, beside which shown panels open
+
+---Gives the focus to an open panel of a set, or opens one of the type, for an entry of the title bar's menus that shows a panel
+---(DESIGN 13.2).
+---@param typeName string
+---@param open table<ecs.Panel, any> the open panels of the type
+function shared.show(typeName, open)
+  local panel = next(open)
+  if panel then
+    ecs.layout.focus(panel)
+    return
+  end
+  -- as a tab beside an inspector, where the project's details are; beside the focused panel when no inspector is open
+  local beside = next(shared.inspectors)
+  local made, message = ecs.layout.open(typeName, nil, beside, beside and "center" or nil)
+  if not made then
+    require("console").add(message or (typeName .. " cannot open."), "warn")
+  end
+end
+
 ---Draws every panel that follows the project again.
 function shared.redraw()
   for panel in pairs(panels) do

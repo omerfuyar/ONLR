@@ -37,7 +37,7 @@ return {
         { "onlr.play", setting = "onlr.playing" }, "onlr.playFile", { "onlr.pause", label = "Pause", setting = "onlr.paused" },
         "onlr.step", "onlr.stop", { "onlr.restart", label = "Start the Preview Again" },
       },
-      { label = "Window", "ecs.layout.reopen", "ecs.layout.maximize", "ecs.layout.popOut", "ecs.layout.lock", "ecs.layout.moveToNewWorkspace", "ecs.layout.reset" },
+      { label = "Window", { "onlr.showProjectSettings", label = "Project Settings" }, { "onlr.showExport", label = "Export" }, "ecs.layout.reopen", "ecs.layout.maximize", "ecs.layout.popOut", "ecs.layout.lock", "ecs.layout.moveToNewWorkspace", "ecs.layout.reset" },
     },
     -- Play, Pause and Step on the title bar too, as Unity's above its view; the Game bar keeps its own
     ["ecs.titleButtons"] = {
@@ -82,7 +82,7 @@ return {
             {
               size = 340,
               split = "vertical",
-              { share = 3, panels = { { type = "onlr.inspector" }, { type = "onlr.settings" }, { type = "onlr.export" } } },
+              { share = 3, panels = { { type = "onlr.inspector" } } },
               { share = 1, panels = { { type = "viewer.file" } } },
             },
           },
