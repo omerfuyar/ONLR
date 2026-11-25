@@ -1951,7 +1951,7 @@ end
 ---@return boolean ok
 local function deleteFile(path)
   local p = assert(P)
-  local _, code = process.run({ "gio", "trash", absolute(path) }, "", "")
+  local _, code = process.run({ "gio", "trash", absolute(path) }, "", {}, "")
   if code ~= 0 then
     fs.makeFolder(absolute(".onlr"))
     fs.makeFolder(absolute(".onlr/trash"))
