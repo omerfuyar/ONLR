@@ -19,8 +19,9 @@ check.run(function()
   check.equal(data.read("cases/reach.lua"), {
     format = 1, love = false, require = false, io = false, os = false, loadstring = false, getfenv = false, sum = 4,
   }, "what a data file reaches")
-  data.read("cases/spoil.lua")
+  check.equal(data.read("cases/spoil.lua").reached, false, "a data file does not reach the strings' table")
   check.equal(string.upper("a"), "A", "a data file changes nothing for the game")
+  check.equal(("A"):lower(), "a", "nor for the game's texts")
   check.equal(data.read("manifest.lua").name, "Data FILES", "nor for another data file")
 
   -- The engine reads only the format that it knows, and says so of another.

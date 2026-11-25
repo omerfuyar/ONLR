@@ -31,6 +31,13 @@ local function sandbox()
   env.string = copy(string)
   env.table = copy(table)
   env.math = copy(math)
+  -- A text's metatable is shared by every text, and its __index is the real string, so the file gets nothing for it.
+  env.getmetatable = function(value)
+    if type(value) == "string" then
+      return nil
+    end
+    return getmetatable(value)
+  end
   env._G = env
   return env
 end

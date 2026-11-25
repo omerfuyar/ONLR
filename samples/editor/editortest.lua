@@ -1295,6 +1295,21 @@ return {
     save()
     check(not read("manifest.lua"):find("topNode"), "Ctrl+Z takes the top node out of the manifest:\n" .. read("manifest.lua"))
 
+    -- a node file's getmetatable gives nothing for a text, so the file cannot reach the strings' table, which is the editor's
+    -- string, and change it for the whole editor (DESIGN 4.1)
+    local upper, partBefore = string.upper, read("nodes/part.lua")
+    local function writePart(text)
+      local part = assert(io.open("nodes/part.lua", "wb"))
+      part:write(text)
+      part:close()
+      test.wait(1)
+    end
+    writePart('local strings = getmetatable("")\nif strings then strings.__index.upper = nil end\n' .. partBefore)
+    local spoiled = string.upper == nil
+    string.upper = upper
+    writePart(partBefore)
+    check(not spoiled, "a node file changes nothing of the editor's string")
+
     -- no panel failed
     for _, panel in ipairs(test.panels()) do
       check(not test.panel(panel.id).fault, panel.type .. " failed: " .. tostring(test.panel(panel.id).fault))
