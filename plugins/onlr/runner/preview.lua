@@ -26,6 +26,8 @@ local preview = {}
 ---@field hidden table<string, boolean> the nodes that the user hid in the node view, which draw nothing there, nor the nodes under them
 ---@field root onlr.Node? its nodes, or nil when the file did not load
 ---@field scope onlr.Scope? its nodes by their ids
+---@field loaded string? the node file that it was last made from, whether it loaded or not
+---@field files table<string, boolean>? the node files that its nodes come from: its own and its instances' bases
 ---@field dirty boolean it must be drawn again
 ---@field moved number? when its chosen nodes moved last, or nil when none moves (DESIGN 6.5)
 ---@field boundsDue boolean? its nodes changed, so their bounds are sent again
@@ -93,16 +95,28 @@ local function loadEditor(node)
   end
 end
 
+-- Forgets a view's nodes: the engine lets go of their components and of the files that they held, so a long session does not
+-- keep every view it ever made (DESIGN 12.3). The preview never called their load, so no destroy is called.
+local function forget(view)
+  if view.root then
+    life.finish(view.root, data)
+  end
+  view.root, view.scope, view.files = nil, nil, nil
+end
+
 -- Makes a view's nodes from its node file, as the editor holds it. A file that does not load leaves the view empty.
+-- The old nodes are forgotten after the new ones are made, so the files that both hold are not read again.
 local function load(view)
+  view.loaded = view.path
   local ok, root, scope = pcall(build.file, view.path, true)
+  forget(view)
   if ok then
-    view.root, view.scope = root, scope
+    view.root, view.scope, view.files = root, scope, {}
     for _, entry in ipairs(ordered(root)) do
+      view.files[entry.node._file or view.path] = true
       loadEditor(entry.node)
     end
   else
-    view.root, view.scope = nil, nil
     local file, line, rest = tostring(root):match("^([^:\n]+):(%d+): (.*)$")
     send({ type = "error", view = view.id, message = rest or tostring(root), file = file or view.path, line = tonumber(line) })
   end
@@ -267,10 +281,15 @@ local FIELDS = { name = true, posX = true, posY = true, rot = true, sclX = true,
 local handlers = {}
 
 -- A node file as the editor holds it, saved or not, its text in the block: it is read in place of the project's file.
+-- Only the views made of it are made again, and those that did not load, which it may mend.
 function handlers.file(message, block)
   data.texts[message.path] = block
   data.forget(message.path)
-  loadAll()
+  for _, view in pairs(views) do
+    if not view.root or view.files[message.path] then
+      load(view)
+    end
+  end
 end
 
 -- One edit of a node's own fields, such as a moved node, or of its components' values, such as a shape's dragged point, set on the
@@ -309,6 +328,9 @@ end
 function handlers.view(message)
   local view = views[message.id]
   if message.closed then
+    if view then
+      forget(view)
+    end
     views[message.id] = nil
     return
   end
@@ -316,7 +338,6 @@ function handlers.view(message)
     view = { id = message.id, path = message.path, chosen = {}, hidden = {}, waiting = false, dirty = true, x = 0, y = 0, zoom = 1, width = 0, height = 0 }
     views[message.id] = view
   end
-  local path = view.root and view.path
   view.path = message.path or view.path
   view.x, view.y, view.zoom = message.x or view.x, message.y or view.y, message.zoom or view.zoom
   view.width, view.height = math.floor(message.width or view.width), math.floor(message.height or view.height)
@@ -332,7 +353,8 @@ function handlers.view(message)
       view.chosen[id] = true
     end
   end
-  if view.path ~= path then
+  -- a view is made again only for another file, so a file that does not load is not read again at each pan and zoom
+  if view.path ~= view.loaded then
     load(view)
   end
   view.dirty = true

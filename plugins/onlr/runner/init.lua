@@ -72,6 +72,8 @@ function love.errorhandler(message)
   local traceback = debug.traceback("", 2):gsub("^\n", "")
   print("Error: " .. tostring(message) .. "\n" .. traceback)
   report(message, traceback)
+  -- the preview ends now, and LÖVE's screen may read no link: the error goes before, waiting at most two seconds
+  link.flush(2)
   if options.mode == "game" and shown then
     link.send({ type = "halted" })
     local engine = package.loaded["onlr"]

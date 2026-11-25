@@ -384,7 +384,7 @@ return Player
 - Each function takes the default value, then optionally a table of options (below). A default that is left out is false for `bool`, 0 for a number, an empty text for `string`, the first choice for `choice`, white for `color` and an empty list for `list`. A kind that names a file, a node or a component has no default and takes the options only. `component` takes the type's name first, `vector` its two numbers, `group` a table of properties, and `list` one property.
 - Each declaration gets a number when its function is called. The inspector shows a type's properties by that number, which is the order its file declares them in.
 - Each function's annotation names what the component gets, so a code editor knows that `self.speed` is a number.
-- A property cannot be named `enabled`, `node` or `needs`, which a component or its type has (6.1, 6.6), or as a function of its type.
+- A property cannot be named `enabled`, `node` or `needs`, which a component or its type has (6.1, 6.6), or as a function of its type. Nor can it have the name of a function that the engine calls (6.3, 6.5), such as `update`, or of one of LÖVE's callbacks, every key of `love.handlers`, such as `focus` or `visible`: its default would stand where the engine looks for the function. The engine refuses such a type when it loads it, with an error that names the file and the property, and it calls only what is a function.
 
 | Function of `onlr.property` | The inspector shows                               | The component gets                           |
 | --------------------------- | ------------------------------------------------- | -------------------------------------------- |
@@ -471,9 +471,9 @@ The engine calls the functions that a type has. All are optional.
 - What a script makes exists at once: an instance from `onlr.tree.spawn`, a node from `onlr.tree.newNode`, and a component from `node:addComponent` (7). `onlr.tree.find`, `onlr.tree.findComponent`, `node:getChildren()` and `components` give it, and its `load` and `enable` are called before the function that made it returns. Its `start` and its other functions are called from the next frame on. So a script sets values on what it made, and `start` finds them.
 - `component:setEnabled` and `node:setActive` take effect at once, as making does. A component that stops running gets `disable` before the function returns, and from then on no call but `enable` or `destroy`. One that starts to run gets `enable` before the function returns, and `start` and its other functions from the next frame on. `node:setParent` does the same for the components that it starts or stops.
 - A node whose `z` `node:setZ` changed, and a node that `node:setParent` moved, draw in their new order from the frame's next draw. The other functions follow the new order from the next frame on.
-- `node:destroy()` marks the node and every node under it, and their `isDestroyed()` is true from then on. The top node and the root are not destroyed so: `onlr.tree.loadRoot` ends the root. They stay in the tree, and their functions are called, until the frame ends. Then the engine calls `disable` and `destroy` of their components and takes them out of the tree. A component that holds another node asks `isDestroyed()` before it uses it.
+- `node:destroy()` marks the node and every node under it, and their `isDestroyed()` is true from then on. A destroyed branch goes whole: `node:setParent` takes no node out of it, and puts none into it. The top node and the root are not destroyed so: `onlr.tree.loadRoot` ends the root. They stay in the tree, and their functions are called, until the frame ends. Then the engine calls `disable` and `destroy` of their components and takes them out of the tree. A component that holds another node asks `isDestroyed()` before it uses it.
 - `node:removeComponent(type)` does the same to one component: it stays, and its functions are called, until the frame ends. Then the engine calls its `disable` and `destroy` and takes it off the node, and the node can get a component of that type again.
-- `onlr.tree.loadRoot` does the same to every node of the root when the frame ends. Then it makes the new root in the old one's place among the top node's children. The top node and its own nodes stay.
+- `onlr.tree.loadRoot` does the same to every node of the root when the frame ends, and their `isDestroyed()` is true from then on. Then it makes the new root in the old one's place among the top node's children. The top node and its own nodes stay.
 - What a function returns is not used. `quit` is the exception: as in LÖVE, the game does not quit when `love.quit` or a component's `quit` returns true.
 
 ### 6.5 In the node view
@@ -1480,6 +1480,7 @@ end
 - A message is a Lua table written as text, and may carry a block of bytes after it, such as a frame's pixels. Each message starts with a line of the sizes of both, in bytes: `52 0`, then the text, then the block.
 - A message's `type` names it. The tables below give each message's type, and the runner's files document its fields.
 - When a runner has connected, it sends `hello`, with its mode and the engine's version.
+- A runner never waits to send. What the system does not take at once, such as the rest of a large frame, waits, and goes at the runner's next frame, so an editor that stops reading for a while stops neither the game nor the link. While messages wait, only the newest `values`, `tree` and `stats` are kept. When more than 64 MB waits, the runner closes the link, as the editor reads nothing. At an error, the runner waits at most two seconds for the error to go, since the preview ends then.
 
 | The editor sends | Type                      | To              | For                                                                                                        |
 | ---------------- | ------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -1512,6 +1513,7 @@ end
 
 - The preview only draws, and what it draws are views.
 - A node view shows a view of an open node file. Other files, such as an image or a sound, are shown by the asset viewer (13.1) as the files they are; how the game draws them shows in the node view.
+- The preview makes a view's nodes from its node file, and makes them again only when that file or a file that they come from, such as an instance's base, changes, or when the view shows another file. It then forgets the old nodes: the engine lets go of their components and of the files that they held, so a long session keeps only the views that show. A file that does not load is read again only when a file changes, not when the view moves.
 - The preview draws a view when the editor asks: after a change, or when the view moves, and 30 times a second while a chosen node has `updateEditor` (6.5). It runs no loop of frames otherwise, so it uses the processor only when something changed or moves.
 - What is drawn is split by what it depends on:
 

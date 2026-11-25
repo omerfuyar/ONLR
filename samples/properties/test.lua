@@ -69,6 +69,13 @@ check.run(function()
   check.fails(function() onlr.property.integer(1.5) end, "whole number", "an integer's default")
   check.fails(function() onlr.property.list(5) end, "one property", "a list of no property")
 
+  -- A property cannot be named as a function that the engine calls, or as one of LÖVE's callbacks: its default would stand
+  -- where the engine looks for the function.
+  check.fails(function() component.type("badfocus") end, "a property cannot be named focus: the engine calls a function of that name",
+    "a property named as a callback of LÖVE")
+  check.fails(function() component.type("badupdate") end, "a property cannot be named update: the engine calls a function of that name",
+    "a property named as a function of the engine")
+
   -- A path or an id that names nothing is an error, which names the node file, the node and the property.
   check.fails(function() onlr.tree.spawn("nodes/missing.lua") end, "nodes/missing.lua, node Mistake, property picture: images/nothing.png: no such file", "a missing file")
   check.fails(function() onlr.tree.spawn("nodes/badid.lua") end, "property target: the id n0such names no node", "an id of no node")

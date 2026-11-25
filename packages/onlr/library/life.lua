@@ -256,8 +256,9 @@ function life.finish(node, data)
     end
     node._parent = nil
   end
+  -- what ended is destroyed, as destroy marks it, so a component that holds one of its nodes knows (DESIGN 6.4)
   local function gone(n)
-    n._gone = true
+    n._gone, n._destroyed = true, true
     for _, child in ipairs(n._children) do
       gone(child)
     end
@@ -349,7 +350,7 @@ local function namesOf(info)
   if info.walkedVersion ~= walkedVersion then
     local names = {}
     for name in pairs(walked) do
-      if info.table[name] then
+      if type(info.table[name]) == "function" then
         names[#names + 1] = name
       end
     end
