@@ -29,17 +29,24 @@ function format.isName(text)
   return type(text) == "string" and text:match("^[%a_][%w_]*$") ~= nil and not KEYWORDS[text]
 end
 
+local buffer = require("string.buffer")
+
+local function escape(c)
+  if c == "\\" then
+    return "\\\\"
+  elseif c == '"' then
+    return '\\"'
+  elseif c == "\n" then
+    return "\\n"
+  end
+  return ("\\%03d"):format(c:byte())
+end
+
 local function quote(text)
-  return '"' .. text:gsub('[%c"\\]', function(c)
-    if c == "\\" then
-      return "\\\\"
-    elseif c == '"' then
-      return '\\"'
-    elseif c == "\n" then
-      return "\\n"
-    end
-    return ("\\%03d"):format(c:byte())
-  end) .. '"'
+  if not text:find('[%c"\\]') then
+    return '"' .. text .. '"'
+  end
+  return '"' .. text:gsub('[%c"\\]', escape) .. '"'
 end
 
 local function number(n)
@@ -78,81 +85,127 @@ local function byName(a, b)
   return a < b
 end
 
--- The keys of a table in the order they are written: those of first, then the others by name, then those of last.
-local function ordered(t, first, last)
-  local keys, seen = {}, {}
-  for _, key in ipairs(first or {}) do
+local function set(list)
+  local s = {}
+  for _, key in ipairs(list) do
+    s[key] = true
+  end
+  return s
+end
+local NODE_SET, INSTANCE_SET = set(NODE), set(INSTANCE)
+local MANIFEST_SET = set(MANIFEST_FIRST)
+for _, key in ipairs(MANIFEST_LAST) do
+  MANIFEST_SET[key] = true
+end
+local NONE = {}
+
+-- The keys of a table in the order they are written: those of first, then the others by name, then those of last. seen holds
+-- the keys of first and last.
+local function ordered(t, first, last, seen)
+  local keys, n = {}, 0
+  for i = 1, #first do
+    local key = first[i]
     if t[key] ~= nil then
-      keys[#keys + 1] = key
+      n = n + 1
+      keys[n] = key
     end
-    seen[key] = true
   end
-  for _, key in ipairs(last or {}) do
-    seen[key] = true
-  end
-  local rest = {}
+  local from = n + 1
   for key in pairs(t) do
     if not seen[key] then
-      rest[#rest + 1] = key
+      n = n + 1
+      keys[n] = key
     end
   end
-  table.sort(rest, byName)
-  for _, key in ipairs(rest) do
-    keys[#keys + 1] = key
+  if n - from > 0 then
+    -- only the keys after first's are sorted
+    local rest = {}
+    for i = from, n do
+      rest[#rest + 1] = keys[i]
+    end
+    table.sort(rest, byName)
+    for i = 1, #rest do
+      keys[from + i - 1] = rest[i]
+    end
   end
-  for _, key in ipairs(last or {}) do
+  for i = 1, #last do
+    local key = last[i]
     if t[key] ~= nil then
-      keys[#keys + 1] = key
+      n = n + 1
+      keys[n] = key
     end
   end
   return keys
 end
 
-local writeNode
+-- The keys that are names, as format.isName tells, which a table's keys are written as without brackets.
+local names, nameCount = {}, 0
+local function isName(key)
+  local known = names[key]
+  if known == nil then
+    known = format.isName(key)
+    if nameCount > 10000 then
+      names, nameCount = {}, 0
+    end
+    names[key], nameCount = known, nameCount + 1
+  end
+  return known
+end
+
+-- The indents, by depth.
+local INDENTS = setmetatable({}, {
+  __index = function(t, depth)
+    local text = ("  "):rep(depth)
+    t[depth] = text
+    return text
+  end,
+})
 
 -- Writes a value. kind tells the order of a table's fields: "node", "instance", "changes", "children", "manifest" or nil.
-local function write(out, value, indent, kind)
+local function write(out, value, depth, kind)
   local t = type(value)
   if t == "number" then
-    out[#out + 1] = number(value)
+    out:put(number(value))
   elseif t == "string" then
-    out[#out + 1] = quote(value)
+    out:put(quote(value))
   elseif t == "boolean" then
-    out[#out + 1] = tostring(value)
+    out:put(value and "true" or "false")
   elseif t ~= "table" then
     error("a data file holds no " .. t, 0)
   elseif next(value) == nil then
-    out[#out + 1] = "{}"
+    out:put("{}")
   else
-    local inner = indent .. "  "
-    out[#out + 1] = "{\n"
-    if not kind and isList(value) or kind == "children" then
+    local inner = INDENTS[depth + 1]
+    out:put("{\n")
+    if kind == "children" or not kind and isList(value) then
+      local sub = kind == "children" and "node" or nil
       for _, item in ipairs(value) do
-        out[#out + 1] = inner
-        write(out, item, inner, kind == "children" and "node" or nil)
-        out[#out + 1] = ",\n"
+        out:put(inner)
+        write(out, item, depth + 1, sub)
+        out:put(",\n")
       end
     else
       local keys
       if kind == "node" then
-        keys = ordered(value, NODE)
+        keys = ordered(value, NODE, NONE, NODE_SET)
       elseif kind == "manifest" then
-        keys = ordered(value, MANIFEST_FIRST, MANIFEST_LAST)
+        keys = ordered(value, MANIFEST_FIRST, MANIFEST_LAST, MANIFEST_SET)
       elseif kind == "instance" then
-        keys = ordered(value, INSTANCE)
+        keys = ordered(value, INSTANCE, NONE, INSTANCE_SET)
       else
-        keys = ordered(value)
+        keys = ordered(value, NONE, NONE, NONE)
       end
-      for _, key in ipairs(keys) do
-        out[#out + 1] = inner
-        if kind ~= "changes" and format.isName(key) then
-          out[#out + 1] = key
+      for i = 1, #keys do
+        local key = keys[i]
+        out:put(inner)
+        if kind ~= "changes" and isName(key) then
+          out:put(key)
         else
-          out[#out + 1] = "["
-          write(out, key, inner)
-          out[#out + 1] = "]"
+          out:put("[")
+          write(out, key, depth + 1)
+          out:put("]")
         end
-        out[#out + 1] = " = "
+        out:put(" = ")
         local sub
         if kind == "node" then
           sub = key == "instance" and "instance" or key == "children" and "children" or nil
@@ -161,29 +214,36 @@ local function write(out, value, indent, kind)
         elseif kind == "changes" then
           sub = "node"
         end
-        write(out, value[key], inner, type(value[key]) == "table" and sub or nil)
-        out[#out + 1] = ",\n"
+        local item = value[key]
+        write(out, item, depth + 1, type(item) == "table" and sub or nil)
+        out:put(",\n")
       end
     end
-    out[#out + 1] = indent .. "}"
+    out:put(INDENTS[depth], "}")
   end
 end
+
+local out = buffer.new()
 
 ---The text that the editor writes for a data file's table (DESIGN 4.2).
 ---@param t table the table that the file returns
 ---@param kind "node"|"manifest"|"data" a node file, the project's manifest, or another table, whose fields are in the order of their names
 ---@return string
 function format.write(t, kind)
-  local out = {}
+  out:reset()
   if kind == "node" then
-    out[1] = "---@type onlr.NodeFile\n"
+    out:put("---@type onlr.NodeFile\n")
   elseif kind == "manifest" then
-    out[1] = "---@type onlr.Project\n"
+    out:put("---@type onlr.Project\n")
   end
-  out[#out + 1] = "return "
-  write(out, t, "", kind ~= "data" and kind or nil)
-  out[#out + 1] = "\n"
-  return table.concat(out)
+  out:put("return ")
+  local ok, err = pcall(write, out, t, 0, kind ~= "data" and kind or nil)
+  if not ok then
+    out:reset()
+    error(err, 0)
+  end
+  out:put("\n")
+  return out:get()
 end
 
 -- The basic functions that a data file may call (DESIGN 4.1).

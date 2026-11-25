@@ -1,6 +1,8 @@
 -- The editor's end of the link (DESIGN 12.2): a message is a Lua table written as text, and may carry a block of bytes
 -- after it. Each message starts with a line of two numbers: the size of the text and the size of the block.
 
+local ffi = require("ffi")
+
 local link = {}
 
 local function escape(c)
@@ -54,33 +56,60 @@ function link.pack(message, block)
   return ("%d %d\n"):format(#text, block and #block or 0) .. text .. (block or "")
 end
 
----Takes the whole messages out of what arrived.
----@param buffer string what arrived and was not read yet
----@return {[1]: table, [2]: string}[] messages each as { message, block }
----@return string rest what is left, the start of a message
-function link.unpack(buffer)
-  local messages = {}
-  local at = 1
+-- The most that a message's first line takes: two numbers and a space and a line's end.
+local HEADER = 48
+
+---The size of the first message of what arrived, when its first line has arrived.
+---@param buf string.buffer what arrived and was not read yet
+---@return integer?
+function link.need(buf)
+  local ptr, len = buf:ref()
+  local textSize, blockSize, headerEnd = ffi.string(ptr, math.min(len, HEADER)):match("^(%d+) (%d+)\n()")
+  return textSize and headerEnd - 1 + tonumber(textSize) + tonumber(blockSize)
+end
+
+-- The types of arrays of bytes, by their size, so a block's view, which OpenECS's functions take as bytes, is made without a
+-- new type for each frame.
+local arrays, arrayCount = {}, 0
+
+---Takes the whole messages out of what arrived, and gives each to handle. A message's block is given where it lies in buf,
+---without a copy, as an array of bytes, so it is read during handle only, which must not change buf.
+---@param buf string.buffer what arrived and was not read yet; what is left is the start of a message
+---@param handle fun(message: table, block: ffi.cdata*?, size: integer)
+function link.unpack(buf, handle)
   while true do
-    local textSize, blockSize, headerEnd = buffer:match("^(%d+) (%d+)\n()", at)
+    local ptr, len = buf:ref()
+    local textSize, blockSize, headerEnd = ffi.string(ptr, math.min(len, HEADER)):match("^(%d+) (%d+)\n()")
     if not textSize then
-      break
+      return
     end
-    textSize, blockSize = tonumber(textSize), tonumber(blockSize)
-    if #buffer < headerEnd - 1 + textSize + blockSize then
-      break
+    textSize, blockSize = tonumber(textSize) --[[@as integer]], tonumber(blockSize) --[[@as integer]]
+    local total = headerEnd - 1 + textSize + blockSize
+    if len < total then
+      return
     end
-    local text = buffer:sub(headerEnd, headerEnd + textSize - 1)
-    local block = buffer:sub(headerEnd + textSize, headerEnd + textSize + blockSize - 1)
-    at = headerEnd + textSize + blockSize
+    local text = ffi.string(ptr + headerEnd - 1, textSize)
     -- The text runs as data, with nothing but math.huge in reach.
     local chunk = load("return " .. text, "=message", "t", { math = { huge = math.huge } })
     local ok, message = pcall(chunk or error)
     if ok and type(message) == "table" then
-      messages[#messages + 1] = { message, block }
+      local block
+      if blockSize > 0 then
+        local array = arrays[blockSize]
+        if not array then
+          array = ffi.typeof("uint8_t(*)[$]", blockSize)
+          -- a view's size changes rarely, so few types are kept
+          if arrayCount >= 8 then
+            arrays, arrayCount = {}, 0
+          end
+          arrays[blockSize], arrayCount = array, arrayCount + 1
+        end
+        block = ffi.cast(array, ptr + headerEnd - 1 + textSize)[0]
+      end
+      handle(message, block, blockSize)
     end
+    buf:skip(total)
   end
-  return messages, buffer:sub(at)
 end
 
 return link

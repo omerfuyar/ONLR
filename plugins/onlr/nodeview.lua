@@ -790,12 +790,16 @@ end
 
 -- The link's messages for the views
 
-runners.onView = function(kind, message, block)
+runners.onView = function(kind, message, block, size)
   for _, view in pairs(views) do
     if kind == "down" then
       view.panel:redraw()
     elseif view.id == message.view then
       if kind == "frame" then
+        -- gpu copies exactly 4 bytes for each pixel from where the block lies, so a block of another size is not read.
+        if not block or type(message.width) ~= "number" or type(message.height) ~= "number" or size ~= message.width * message.height * 4 then
+          return
+        end
         if view.image then
           local iw, ih = view.image:size()
           if iw ~= message.width or ih ~= message.height then

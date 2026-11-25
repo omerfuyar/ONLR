@@ -274,11 +274,14 @@ local source = {
   end,
 }
 
--- Forgets the trees that are made of any of the files, so they are made again when next asked.
-local function dropTrees(paths)
+-- Forgets the trees that are made of any of the files, so they are made again when next asked, but those of kept, which an edit
+-- changed in place.
+---@param paths string[]
+---@param kept table<string, boolean>?
+local function dropTrees(paths, kept)
   local p = assert(P)
   for key, t in pairs(p.trees) do
-    for _, path in ipairs(paths) do
+    for _, path in ipairs(kept and kept[key] and {} or paths) do
       if key == path or t.files[path] then
         p.trees[key] = nil
         break
@@ -374,7 +377,7 @@ end
 
 -- Tells that files changed: their texts are written again, unless fresh says an edit did it, and only the trees made of them
 -- are made again.
-local function emitChanged(paths, history, fresh)
+local function emitChanged(paths, history, fresh, kept)
   local p = assert(P)
   for _, path in ipairs(paths) do
     local file = p.files[path]
@@ -382,7 +385,7 @@ local function emitChanged(paths, history, fresh)
       refresh(file)
     end
   end
-  dropTrees(paths)
+  dropTrees(paths, kept)
   ecs.event.emit("onlr.changed", { files = paths, history = history or false })
 end
 
@@ -413,11 +416,13 @@ end
 
 ---Makes one change of the history: fn changes the files' tables, after telling which with touch.
 ---@param label string what the change is, such as "Move"
----@param fn fun(touch: fun(path: string): table?) touch gives a file's table, and notes how it was
+---@param fn fun(touch: (fun(path: string): table?), keep: fun(path: string)) touch gives a file's table, and notes how it was;
+---keep tells that fn changed the file's own tree as it changed the file, so the tree is kept
 ---@return boolean changed whether anything changed
 local function edit(label, fn)
   local p = assert(P)
   local before = {} ---@type table<string, string|false> each touched file's text before the change
+  local kept = {} ---@type table<string, boolean>
   local function touch(path)
     local file = getFile(path)
     if before[path] == nil then
@@ -425,14 +430,17 @@ local function edit(label, fn)
     end
     return file and file.data
   end
+  local function keep(path)
+    kept[path] = true
+  end
   -- A change reads the trees of the files that it touches before it changes them, so they are forgotten at its end; one that
-  -- reads a tree after changing its file forgets it first, as Delete does.
-  local ok, err = pcall(fn, touch)
+  -- reads a tree after changing its file forgets it first, as Delete does. A tree that the change kept in step stays.
+  local ok, err = pcall(fn, touch, keep)
   local touched = {}
   for path in pairs(before) do
     touched[#touched + 1] = path
   end
-  dropTrees(touched)
+  dropTrees(touched, ok and kept or nil)
   if not ok then
     for path, old in pairs(before) do
       local file = p.files[path]
@@ -471,7 +479,7 @@ local function edit(label, fn)
       P.joinable = nil
     end
   end)
-  emitChanged(paths, false, true)
+  emitChanged(paths, false, true, kept)
   return true
 end
 
@@ -485,12 +493,15 @@ local function step(record, field)
       if file then
         file.data = format.read(change[field], path)
         file.error = nil
+        -- The record's text is the one that the editor wrote for that table, so it is not written again.
+        file.text = change[field]
+        file.dirty = file.text ~= file.saved
         paths[#paths + 1] = path
       end
     end
   end
   table.sort(paths)
-  emitChanged(paths, true)
+  emitChanged(paths, true, true)
   -- The nodes that were chosen then are chosen again; one that the change took away is not.
   -- A choice is a value: the records keep theirs, and the live one is a copy, which a later change replaces and never changes.
   if record.chosen then
@@ -1160,21 +1171,49 @@ local function entryOf(node)
   end
 end
 
+-- The fields that a node's place, turn, scale and z are, which nothing in a tree but the node's own fields hold, so an edit of
+-- them changes the file's tree in place, and the tree is not made again (DESIGN 13.1). A name or active shows in the lists, which
+-- keep their rows while the tree is the same, so a change of them makes the tree again.
+local IN_PLACE = { posX = true, posY = true, rot = true, sclX = true, sclY = true, z = true }
+
+-- Sets a node's field, or its default when value is it, inside an edit; returns whether the tree is changed in step.
+local function setNodeField(node, field, value)
+  local t = target(node, true)
+  local default = format.DEFAULTS[field]
+  if not node.own then
+    default = node.base[field]
+  end
+  if value == default then
+    t[field] = nil
+  else
+    t[field] = value
+  end
+  if not IN_PLACE[field] then
+    return false
+  end
+  -- as resolve lays the layers: an own node's field is its base, and an instance's node takes its change over its base
+  if value == nil then
+    value = default
+  end
+  node[field] = value
+  if node.own then
+    node.base[field] = value
+  else
+    node.changed[field] = t[field] ~= nil or nil
+  end
+  return true
+end
+
 local function setField(file, paths, field, value)
-  return edit("Change " .. field, function(touch)
+  return edit("Change " .. field, function(touch, keep)
     touch(file)
+    local inPlace = true
     for _, node in ipairs((nodesOf(file, paths))) do
-      local t = target(node, true)
-      local default = format.DEFAULTS[field]
-      if not node.own then
-        default = node.base[field]
-      end
-      if value == default then
-        t[field] = nil
-      else
-        t[field] = value
-      end
+      inPlace = setNodeField(node, field, value) and inPlace
       prune(node)
+    end
+    if inPlace then
+      keep(file)
     end
   end)
 end
@@ -1185,22 +1224,17 @@ local function setFields(file, changes, label)
   for path in pairs(changes) do
     paths[#paths + 1] = path
   end
-  return edit(label or "Change", function(touch)
+  return edit(label or "Change", function(touch, keep)
     touch(file)
+    local inPlace = true
     for _, node in ipairs((nodesOf(file, paths))) do
-      local t = target(node, true)
       for field, value in pairs(changes[node.path]) do
-        local default = format.DEFAULTS[field]
-        if not node.own then
-          default = node.base[field]
-        end
-        if value == default then
-          t[field] = nil
-        else
-          t[field] = value
-        end
+        inPlace = setNodeField(node, field, value) and inPlace
       end
       prune(node)
+    end
+    if inPlace then
+      keep(file)
     end
   end)
 end

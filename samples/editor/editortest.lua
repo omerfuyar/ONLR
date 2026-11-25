@@ -148,8 +148,33 @@ return {
     test.wait(0.3)
     save()
     check(read("nodes/start.lua") == start:gsub("posX = 40,\n      posY = 40,", "posX = 104,\n      posY = 72,"), "the square moves A:\n" .. read("nodes/start.lua"))
+    -- a move changes the file's tree in place (DESIGN 13.1), so the next drag starts where A is now, and a drag back gives the first
+    -- text
+    x, y = at(59 + 64, 59 + 32)
+    test.drag(x, y, x - 64, y - 32)
+    test.wait(0.3)
+    save()
+    check(read("nodes/start.lua") == start, "a second drag starts where the first left A:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
     test.key("Ctrl+Z")
     save()
+    check(read("nodes/start.lua") == start, "both drags are undone")
+    -- the instance Part is at 200, 40 by its change, over its base's 0, 0: two drags that end at the base's place take the change out
+    x, y = at(210, 50)
+    test.drag(x, y, x + 32, y)
+    test.wait(0.3)
+    save()
+    check(read("nodes/start.lua"):find('["p4rt00"] = {\n            posX = 232,\n            posY = 40,', 1, true),
+      "a drag moves the instance:\n" .. read("nodes/start.lua"))
+    x, y = at(242, 50)
+    test.drag(x, y, x - 232, y - 40)
+    test.wait(0.3)
+    save()
+    check(not read("nodes/start.lua"):find("changes", 1, true), "a drag to the base's place takes the change out:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "the instance's drags are undone")
 
     -- one gizmo for the chosen nodes, at their pivot, turns them all (DESIGN 13.3). A and B are squares of 32 at 40, 40 and 120, 40;
     -- B, chosen last, leads. A drag from 10 right and 10 below the gizmo to 10 left of it turns them a quarter, clockwise.
