@@ -123,7 +123,7 @@ return {
       components = {
         shadows = {
           light = {
-            arc = 50,
+            arc = 0.87,
             color = { 1, 0.3, 0.2, 1 },
             radius = 420,
           },

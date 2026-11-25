@@ -1428,7 +1428,7 @@ end
 | Type                    | Is                                                                                        |
 | ----------------------- | ----------------------------------------------------------------------------------------- |
 | `shadows.world`         | A group (5): it draws its node and all under it, then the light over them.                |
-| `shadows.light`         | A light at its node: `radius`, `color`, the `arc` that it lights around its node's way, and soft edges, `blur` and `sizeRadius`. |
+| `shadows.light`         | A light at its node: `radius`, `color`, the `arc` that it lights around its node's way, in radians as every angle, and soft edges, `blur` and `sizeRadius`. |
 | `shadows.caster`        | Its node's `onlr.shape` blocks light and casts shadows (10): a rectangle, a circle or a convex polygon. A line casts nothing. |
 
 - A light and a caster belong to the nearest `shadows.world` on their node or above it, as a physics fixture belongs to the nearest body (11.4). Without one, a world is added to the root, as a body of physics or of bump adds its world (11.3); a world on the root darkens all of the game. So a level puts the world on the node of all that it lights, and a world's lights light only its own casters.
