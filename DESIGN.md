@@ -1360,7 +1360,7 @@ end
 
 `moonshine` wraps vrld's moonshine, a chain of shaders that a scene is drawn through: blur, glow, a vignette, a CRT's glass and others. `moonshine.chain` is a group (5) that draws its node and all under it through the effects. Each effect is a component type of its own beside it on the same node, in the folder `effect/` and named as moonshine names the effect, whose properties are the effect's parameters with moonshine's defaults: `moonshine.effect.vignette`, `crt`, `scanlines`, `glow`, `gaussianblur`, `fastgaussianblur`, `boxblur`, `chromasep`, `desaturate`, `pixelate`, `posterize`, `filmgrain`, `colorgradesimple`, `godsray`, `dmg` and `sketch`. Each needs the chain (6.6).
 
-- A node's components run in the order of their names (5), not in an order that the user gives them, so the chain orders its effects itself: its property `order` lists the effects' names, such as `pixelate` then `crt`, in the order they apply, and those it does not name apply after, by their names. A game composes its look by adding and removing components, as it does for anything else, and by `order`. A script that changes `order` makes the chain anew.
+- The effects apply in the chain's own order, not in the node's `componentOrder` (5), so a script changes the look by changing one list: its property `order` lists the effects' names, such as `pixelate` then `crt`, in the order they apply, and those it does not name apply after, by their names. A game composes its look by adding and removing components, as it does for anything else, and by `order`. A script that changes `order` makes the chain anew.
 - An effect whose component is turned off is skipped. A property that a script or a tween changes, such as a vignette's `opacity` that flux moves when the player is hurt (11.8), reaches the effect in the next frame: the chain sends each parameter that changed, before it draws.
 - An effect that joins or leaves the node makes the chain anew.
 - The chain draws into canvases of the size of what it draws into: the window, or push's canvas under a `push.screen` that has one (11.10). It draws its nodes with the drawing's place, as a camera above it set it, and its result with none, so they are not moved twice.
@@ -1395,7 +1395,7 @@ end
   - `positional` is read when the component loads; a script that changes it afterwards changes nothing.
   - A node that `node:setPaused` pauses (6.4) plays its sounds on, as pausing calls no function of a component. A pause menu that should quiet the level pauses its sounds itself, or turns their nodes off.
   - `playNew`'s copies take the values of their start: a later `volume` reaches the sound and not its copies. With a place, they follow their node.
-  - Each frame the listener may run before a camera's follow on its node, since a node's components run by their names (5): it hears from where the camera was a frame before.
+  - The listener and a camera's follow both move in `lateUpdate`, in their node's `componentOrder` (5). A listener above the follow in the inspector hears from where the camera was a frame before; the user moves it below.
   - LÖVE's effects, such as reverb, and its filters have no property: a script sets them on `get()`.
   - Grouping sounds by kind, such as a volume for effects and one for music, as ripple does (TODO.md, Libraries), is not offered yet.
 
@@ -1494,18 +1494,19 @@ end
 | ---------------- | ------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
 | A file           | `file`                    | The preview | A node file or a graph as the editor holds it, saved or not, its text in the block: at each change in the editor or on disk, and when the preview starts, each with changes. A file that does not load goes as its text on disk, so its views go empty. The preview reads it in place of the project's file. |
 | A change         | `change`                  | The preview | One edit of a node's own fields in such a file, such as a moved node, or of its components' values, such as a dragged point. |
-| A view           | `view`                    | The preview | Which node file to draw, from where, at what size, and which nodes are chosen (12.3).                      |
+| A view           | `view`                    | The preview | Which node file to draw, from where, at what size, which nodes are chosen, and which the user hid (12.3, 13.3); or, with `closed`, that the view is gone. |
 | A shader's view  | `shaderView`              | The preview | Which shader to draw, on which picture, at what size, for a graph panel's preview (13.9).                 |
 | Shown            | `shown`                   | The preview | The editor has taken the last frame (12.4).                                                                |
 | A question       | `question`                | The preview | What a component type declares, what a shader's values are, which types of blocks there are, or a graph's built code (12.5). |
 | Reload           | `reload`                  | The preview | A file of the project that is not Lua changed, such as an image.                                           |
 | Stop             | `stop`                    | Both runners    | The runner ends.                                                                                           |
 | Pause, Step, Resume | `pause`, `step`, `resume` | The game | The game stops, runs one frame, or goes on (12.1).                                                      |
-| Watch            | `watch`                   | The game | Which running nodes to send, or none (12.6).                                                               |
+| Watch            | `watch`                   | The game | Whether to send the running tree, as `tree`, and which running nodes' values to send, or none (12.6).      |
 | A running change | `set`                     | The game | A new value for a running node (12.6).                                                                     |
 
 | The engine sends | Type     | From            | For                                                            |
 | ---------------- | -------- | --------------- | -------------------------------------------------------------- |
+| Hello            | `hello`  | Both runners    | The runner has connected: its mode and the engine's version.   |
 | A frame          | `frame`  | The preview | The picture of a view, or of a shader's view (12.4).           |
 | Bounds           | `bounds` | The preview | The nodes' bounds and places, when they change (12.3).         |
 | An answer        | `answer` | The preview | What a question asked, or why its file does not load (12.5).   |
@@ -1513,6 +1514,7 @@ end
 | Values           | `values` | The game | The watched nodes' places and values (12.6).                   |
 | Stats            | `stats`  | The game | The frames a second, and the time of update and draw (12.6).   |
 | An error         | `error`  | Both runners    | Its message, file, line and stack, and what raised it, with a graph's block (13.1, 6.8). |
+| Halted           | `halted` | The game        | The game stopped at its error, and keeps answering the link (12.6). |
 
 - A change carries a node's own fields, its name, its place, its `z` and whether it is active, and values of its components that a node file holds as they are, such as a shape's `width` or its `points` that the Shape tool drags (13.3). The preview sets them on the view's nodes, so a drag draws at once; a component reads them where it uses them, as `onlr.shape`'s users do (10). For any other edit, and at a drag's release, the editor sends the file again, and the preview makes the views' nodes anew.
 - A node file that does not load leaves its view empty, and its error names the view.
@@ -1778,6 +1780,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 
 - ONLR is made for LÖVE 11.5, and a project names the version it is made for (3.2). Each version of ONLR serves one version of LÖVE. When a project names another, the editor offers to move it to ONLR's, as it does for the engine (3.3).
 - The engine avoids the functions that LÖVE's development version, 12.0, removes or renames, so the move to it stays small.
+- The limit, as it is now: the editor does not offer the move yet. A project that names another version opens and runs on ONLR's LÖVE as it is, and LÖVE warns at its start that the game was made for another version, since the engine gives it `loveVersion` as `t.version`.
 
 ### 15.2 Runtimes
 
@@ -1787,6 +1790,8 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - A setting names a folder to use as a runtime instead, such as a LÖVE the user built: `onlr.linuxRuntime` and `onlr.windowsRuntime`.
 - The runners run the LÖVE that the setting `onlr.love` names, or else the one that the variable `LOVE` names, as the tests set it, or else the one of ONLR's archive (15.3), or else `love`, as the system finds it.
 - When the runners' LÖVE is a runtime of the editor's own platform, as the archive's is, a build for that platform uses it, and downloads nothing.
+- The limits, as they are now:
+  - Nothing hosts the Linux runtime yet, so ONLR has no address for it. A Linux build takes LÖVE from the runners' LÖVE when it is the contents of LÖVE's AppImage, as the archive's is, or from the folder that `onlr.linuxRuntime` names.
 
 ### 15.3 ONLR's archive
 

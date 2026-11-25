@@ -72,6 +72,8 @@ Your pictures, sounds and fonts go in any folder you like, such as `images/`. Do
 The **Project** panel, under **Window**, **Project Settings**, in the title bar, shows `manifest.lua` (DESIGN 3.2):
 
 - **Name** is the window's title and the name of the exports.
+- **Id** names the game to the system, such as `com.example.mygame`. LÖVE keeps the game's saved files in a folder of this name, so two games never share one. Change it before players have saved files, since a new Id starts them in an empty folder.
+- **Game version** is your game's own version, such as `0.1.0`. ONLR only keeps it in the manifest.
 - **Start node** is the node file that the game starts with.
 - **Top node** is a node file that the game loads once and keeps for the whole game, above every level, such as music that plays on in every level. Most games start without one.
 - **Window width** and **height** are the window's size in pixels. A new project starts at 1920 by 1080. **Resizable** lets the player resize the window, and **Fullscreen** fills the screen.
@@ -397,7 +399,7 @@ A package is a library of LÖVE's world with components for ONLR (DESIGN 11.2). 
 The **Export** panel, under **Window** in the title bar, writes the game into a folder that you name first, such as `out`. A name that starts at no root is a folder in the project, which every export leaves out of itself. The project's own folder is refused, since each export would then hold the ones before it:
 
 - **Export the .love file**: one file, which any LÖVE 11.5 runs.
-- **Export a Linux build** and **Export a Windows build**: the game with LÖVE inside, in a `.tar.gz` or a `.zip`, which runs with nothing installed. The Windows build downloads LÖVE's runtime the first time.
+- **Export a Linux build** and **Export a Windows build**: the game with LÖVE inside, in a `.tar.gz` or a `.zip`, which runs with nothing installed. The Windows build downloads LÖVE's runtime the first time. ONLR cannot download the Linux runtime yet: a Linux build takes LÖVE from the one that runs your game, when it is LÖVE's AppImage unpacked with `--appimage-extract`, or from the folder that the setting `onlr.linuxRuntime` names.
 
 Files whose names start with a dot, such as `.onlr/`, stay out, and so do the patterns of the manifest's `exclude`, such as `notes/` for a folder and all in it, `*.psd` for the files of the project's folder that end so, or `**/*.psd` for those of every folder. Every other file goes in, since a script may name a file in a text.
 
