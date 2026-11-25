@@ -177,7 +177,7 @@ return {
 | `modules`, `audio`, `console` and LÖVE's other settings | As in LÖVE's `t`, under LÖVE's names. LÖVE's `identity` is `id`, and its `version` is `loveVersion`. |
 | `defaultFilter`   | How images are scaled, as `love.graphics.setDefaultFilter` takes it: `linear`, LÖVE's default, or `nearest`, which keeps pixel art sharp. The engine sets it in both players, before anything loads (12.1). With `linear`, an image that is scaled by a number that is not whole, or drawn between two pixels, blends its neighbouring pixels, which blurs small pictures; a game of pixel art names `nearest`. A new project names `nearest` (13.2), since a game of small pictures is the common case for LÖVE, and pixel art blurred by `linear` looks broken, while a large image scaled down with `nearest` only looks rough; a game of large or smooth pictures sets `linear` in the project settings. |
 | `fixedRate`       | How many times a second `fixedUpdate` is called (6.3). 60 when left out.        |
-| `exclude`         | Patterns of files that an export leaves out. In a pattern, `*` stands for any part of a name, `**` for any folders, and a pattern that ends with `/` names a folder. |
+| `exclude`         | Patterns of files that an export leaves out. A pattern names a path from the project's folder, part by part: in a part, `*` stands for any part of a name; a part `**` stands for any folders, or none, so `**/notes.txt` names `notes.txt` in every folder; and a pattern that ends with `/` names a folder, with all that it holds. |
 
 - LÖVE's settings are here, and not in `conf.lua`, since two things need them: LÖVE, before it opens the window, and the project settings panel, to show and change them. The editor does not run `conf.lua`, which is the game's code.
 
@@ -1741,7 +1741,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 ### 14.1 The `.love` file
 
 - A `.love` file is a zip archive of the project's folder, with `main.lua` at its root.
-- The user chooses the folder that an export is written to, and the editor keeps it for the project in `.onlr/editor.lua`. A path that starts at no root is in the project's folder. A folder inside the project is left out of every export, as `exclude`'s files are.
+- The user chooses the folder that an export is written to, and the editor keeps it for the project in `.onlr/editor.lua`. A path that starts at no root is in the project's folder, and `./out`, `out` and `out/` name one folder. A folder inside the project is left out of every export, as `exclude`'s files are. The project's own folder is refused, since each export would hold the ones before it.
 - The file is named after the game: `My game.love`. A pattern of `exclude` names a path from the project's folder (3.2).
 - It leaves out every file and folder whose name starts with a dot, such as `.onlr/` and `.luarc.json`, and what `exclude` in the project's manifest names.
 - It holds every other file, as it is. The editor does not leave out a file that no node file names, since a script may name it in a text. Scripts stay source: LuaJIT's bytecode is tied to its version.

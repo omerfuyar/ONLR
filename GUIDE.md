@@ -380,12 +380,12 @@ A package is a library of LÖVE's world with components for ONLR (DESIGN 11.2). 
 
 ## 9. Export
 
-The **Export** panel, a tab beside the inspector, writes the game into a folder that you name first, such as `out`. A name that starts at no root is a folder in the project, which every export leaves out of itself:
+The **Export** panel, a tab beside the inspector, writes the game into a folder that you name first, such as `out`. A name that starts at no root is a folder in the project, which every export leaves out of itself. The project's own folder is refused, since each export would then hold the ones before it:
 
 - **Export the .love file**: one file, which any LÖVE 11.5 runs.
 - **Export a Linux build** and **Export a Windows build**: the game with LÖVE inside, in a `.tar.gz` or a `.zip`, which runs with nothing installed. The Windows build downloads LÖVE's runtime the first time.
 
-Files whose names start with a dot, such as `.onlr/`, stay out, and so do the patterns of the manifest's `exclude`, such as `notes/*`. Every other file goes in, since a script may name a file in a text.
+Files whose names start with a dot, such as `.onlr/`, stay out, and so do the patterns of the manifest's `exclude`, such as `notes/` for a folder and all in it, `*.psd` for the files of the project's folder that end so, or `**/*.psd` for those of every folder. Every other file goes in, since a script may name a file in a text.
 
 ## 10. Keys
 
