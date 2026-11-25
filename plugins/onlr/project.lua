@@ -466,8 +466,10 @@ local function step(record, field)
   table.sort(paths)
   emitChanged(paths, true)
   -- The nodes that were chosen then are chosen again; one that the change took away is not.
+  -- A choice is a value: the records keep theirs, and the live one is a copy, which a later change replaces and never changes.
   if record.chosen then
-    p.chosen = record.chosen[field]
+    local chosen = record.chosen[field]
+    p.chosen = { file = chosen.file, paths = format.copy(chosen.paths) }
     ecs.event.emit("onlr.chosen", p.chosen)
   end
   if p.chosen.file then
@@ -479,7 +481,7 @@ local function step(record, field)
       end
     end
     if #kept ~= #p.chosen.paths then
-      p.chosen.paths = kept
+      p.chosen = { file = p.chosen.file, paths = kept }
       ecs.event.emit("onlr.chosen", p.chosen)
     end
   end
@@ -955,6 +957,27 @@ local function nodesOf(file, paths)
   return list, t
 end
 
+-- The topmost of the nodes: those that no other of them holds, so a group whose children are chosen too, as Shift+A chooses them,
+-- moves, is duplicated and is copied once, with its children (DESIGN 13.4).
+local function topmost(list)
+  local listed = {}
+  for _, node in ipairs(list) do
+    listed[node] = true
+  end
+  local kept = {}
+  for _, node in ipairs(list) do
+    local parent, held = node.parent, false
+    while parent and not held do
+      held = listed[parent] == true
+      parent = parent.parent
+    end
+    if not held then
+      kept[#kept + 1] = node
+    end
+  end
+  return kept
+end
+
 local function declOf(typeName, name)
   for _, p in ipairs(source.properties(typeName) or {}) do
     if p.name == name then
@@ -1415,8 +1438,12 @@ local function deleteNodes(file, paths)
     clearNames(before, touch)
   end)
   local p = assert(P)
+  -- the deleted nodes are not chosen after it, and the record's choice before it keeps them, so undo chooses them again (DESIGN 13.6)
   if changed and p.chosen.file == file then
-    p.chosen.paths = {}
+    p.chosen = { file = file, paths = {} }
+    if p.joinable then
+      p.joinable.chosen.after = p.chosen
+    end
     ecs.event.emit("onlr.chosen", p.chosen)
   end
   return changed, message
@@ -1486,7 +1513,7 @@ local function duplicate(file, paths)
   edit("Duplicate", function(touch)
     local data = touch(file)
     local taken = ids(data)
-    for _, node in ipairs((nodesOf(file, paths))) do
+    for _, node in ipairs(topmost((nodesOf(file, paths)))) do
       local entry = entryOf(node)
       local children, at = locate(data, entry or {})
       if entry and children then
@@ -1503,7 +1530,7 @@ local clipboard = {} ---@type table[] the copied nodes' entries
 
 local function copyNodes(file, paths)
   clipboard = {}
-  for _, node in ipairs((nodesOf(file, paths))) do
+  for _, node in ipairs(topmost((nodesOf(file, paths)))) do
     local entry = entryOf(node)
     if entry then
       clipboard[#clipboard + 1] = format.copy(entry)
@@ -1539,7 +1566,7 @@ local function moveNodes(file, paths, parentPath, index)
     local data = touch(file)
     local list, t = nodesOf(file, paths)
     local parent = t.index[parentPath] or t.first
-    for _, node in ipairs(list) do
+    for _, node in ipairs(topmost(list)) do
       local entry = entryOf(node)
       local inside = parent
       while inside and inside ~= node do
@@ -1847,7 +1874,7 @@ local function renameFile(from, to)
   scanTypes()
   p.types = {}
   if p.chosen.file and (p.chosen.file == from or p.chosen.file:sub(1, #from + 1) == from .. "/") then
-    p.chosen.file = to .. p.chosen.file:sub(#from + 1)
+    p.chosen = { file = to .. p.chosen.file:sub(#from + 1), paths = p.chosen.paths }
   end
   ecs.event.emit("onlr.renamed", { from = from, to = to })
   emitChanged(changed, true)
