@@ -1301,11 +1301,45 @@ return {
     file:close()
     test.wait(0.5)
 
-    -- the Linux build is LÖVE's files with the .love file joined to LÖVE's executable: unpacked, its launcher runs the game.
-    -- Until the Linux runtime has an address, the build takes the runners' LÖVE when it is LÖVE's unpacked AppImage, as LOVE is in
-    -- the checks; with another LÖVE, there is no build, and none is checked (DESIGN 15.2, 16)
+    -- LÖVE's runtimes are downloaded from a server of the test's own, which ONLR_RUNTIMES names in place of LÖVE's releases
+    -- (DESIGN 15.2, 16): small runtimes that hold files of LÖVE's names, a .zip for Windows and a .tar.gz for Linux, served on
+    -- this computer, with their hashes. Nothing is kept of an earlier run
+    local server = "../editor-server/"
+    os.execute("rm -rf " .. server .. ' "$XDG_DATA_HOME/onlr/runtimes" && mkdir -p ' .. server .. "win/love-11.5-win64 " .. server .. "linux/bin && cd " .. server
+      .. " && for f in love.exe love.dll license.txt; do echo $f > win/love-11.5-win64/$f; done"
+      .. " && for f in AppRun bin/love license.txt; do echo $f > linux/$f; done"
+      .. " && (cd win && zip -qr ../win.zip love-11.5-win64) && tar -czf linux.tar.gz -C linux AppRun bin license.txt")
+    os.execute("cd " .. server .. " && (timeout 120 python3 -u -c 'import http.server, os; "
+      .. 's = http.server.ThreadingHTTPServer((\"127.0.0.1\", 0), http.server.SimpleHTTPRequestHandler); '
+      .. 'open(\"pid\", \"w\").write(str(os.getpid())); open(\"port\", \"w\").write(str(s.server_port)); s.serve_forever()'
+      .. "' > log.txt 2>&1 &)")
+    for _ = 1, 50 do
+      if read(server .. "port") ~= "" then
+        break
+      end
+      test.wait(0.1)
+    end
+    local port = read(server .. "port")
+    check(port ~= "", "the test's server starts")
+    local function sha(name)
+      return (list("sha256sum " .. server .. name):match("^(%x+)"))
+    end
+    file = assert(io.open(assert(os.getenv("ONLR_RUNTIMES"), "shuild names the file of the runtimes in ONLR_RUNTIMES"), "wb"))
+    file:write(("return {\n  [\"windows-x86_64\"] = { url = \"http://127.0.0.1:%s/win.zip\", file = \"win.zip\", sha256 = \"%s\", inside = \"love-11.5-win64/\" },\n"
+      .. "  [\"linux-x86_64\"] = { url = \"http://127.0.0.1:%s/linux.tar.gz\", file = \"linux.tar.gz\", sha256 = \"%s\" },\n}\n"):format(
+      port, sha("win.zip"), port, sha("linux.tar.gz")))
+    file:close()
+
+    -- the Linux build is LÖVE's files with the .love file joined to LÖVE's executable. The build takes the runners' LÖVE when it
+    -- is LÖVE's unpacked AppImage, as LOVE is in the checks: unpacked, its launcher runs the game. With another LÖVE, the
+    -- runtime is downloaded, a .tar.gz, and the build holds its files (DESIGN 15.2, 16)
     test.call("onlr.exportLinux")
-    test.wait(1)
+    for _ = 1, 100 do
+      test.wait(0.1)
+      if read("out/Editor-linux-x86_64.tar.gz") ~= "" then
+        break
+      end
+    end
     local unpacked = list('d=$(dirname "$(readlink -f "$(command -v "$LOVE")")"); [ -x "$d/bin/love" ] && echo yes') ~= ""
     if unpacked then
       os.execute("mkdir -p out/linux && tar -xzf out/Editor-linux-x86_64.tar.gz -C out/linux && cd out/linux && "
@@ -1313,10 +1347,16 @@ return {
       check(read("out/linux/played.txt") == "Start", "the Linux build runs the game")
       check(read("out/linux/Editor/license.txt") ~= "", "and holds LÖVE's license.txt")
     else
-      check(read("out/Editor-linux-x86_64.tar.gz") == "", "no Linux build without a runtime")
+      local linux = list("tar -tzf out/Editor-linux-x86_64.tar.gz")
+      check(linux:find("Editor/Editor\n", 1, true) and linux:find("Editor/bin/love\n", 1, true) and linux:find("Editor/license.txt\n", 1, true),
+        "the Linux build holds the downloaded runtime's files:\n" .. linux)
     end
 
-    -- the Windows build is made from LÖVE's runtime, which is downloaded and checked against the hash that ONLR ships
+    -- the Windows build is made from LÖVE's runtime, which is downloaded and checked against the hash that ONLR knows. What an
+    -- unpack that was cut short left is taken away; two exports while it downloads wait for one download
+    os.execute('mkdir -p "$XDG_DATA_HOME/onlr/runtimes/11.5/windows-x86_64/unpacking/love-11.5-win64" && '
+      .. 'echo cut > "$XDG_DATA_HOME/onlr/runtimes/11.5/windows-x86_64/unpacking/love-11.5-win64/love.exe"')
+    test.call("onlr.exportWindows")
     test.call("onlr.exportWindows")
     for _ = 1, 300 do
       test.wait(0.1)
@@ -1324,6 +1364,12 @@ return {
         break
       end
     end
+    test.wait(0.3)
+    local served = select(2, read(server .. "log.txt"):gsub("GET /win.zip", ""))
+    check(served == 1, "two exports download the Windows runtime once, not " .. served .. " times")
+    check(list('ls "$XDG_DATA_HOME/onlr/runtimes/11.5/windows-x86_64/"') == "love\n",
+      "the runtime is kept whole, and nothing else:\n" .. list('ls "$XDG_DATA_HOME/onlr/runtimes/11.5/windows-x86_64/"'))
+    os.execute("kill $(cat " .. server .. "pid)")
     local windows = list("unzip -l out/Editor-windows-x86_64.zip")
     check(windows:find(" Editor/Editor.exe\n") and windows:find(" Editor/love.dll\n") and windows:find(" Editor/license.txt\n"),
       "the Windows build holds the game's executable, LÖVE's libraries and its license.txt:\n" .. windows)
