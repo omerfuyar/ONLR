@@ -22,7 +22,7 @@ local find = require("physics.find")
 ---@class physics.joint : onlr.Component
 ---@field owner physics.body? the body of its node or above it
 ---@field joint love.Joint?
----@field private key string? what it was made from
+---@field private seen any[]? what it was made from, at the last check
 ---@field private applied table<string, any> the values that tune it, as they were last set
 local Joint = {}
 
@@ -170,30 +170,36 @@ local TUNING = {
 
 -- Sets the values that tune the joint and differ from those set last.
 function Joint:_apply()
-  local j = assert(self.joint)
-  local setters = {}
-  for name, set in pairs(TUNING[self.kind]) do
-    setters[name] = function(v)
-      set(j, v, self)
-    end
-  end
-  find.apply(self.applied, self, setters)
+  find.apply(self.applied, self, TUNING[self.kind], assert(self.joint))
 end
 
--- A text of what the joint is made from: its kind, its bodies, its place in its body, and the anchors that Box2D takes only
--- when it makes a joint.
-function Joint:_key()
+-- Whether what the joint is made from changed since the last check, which then keeps it (find.start): its kind, its bodies, its
+-- place in its body, and the anchors that Box2D takes only when it makes a joint.
+function Joint:_changed()
   local a, g, h, x = self.otherAnchor, self.groundAnchor, self.otherGroundAnchor, self.axis
-  return table.concat({
-    self.kind, tostring(self.other), tostring(self.collide), a.x, a.y, x.x, x.y, g.x, g.y, h.x, h.y, self.ratio,
-    self.kind == "rope" and (self.length > 0 and "set" or "as joined") or "",
-  }, " ") .. "|" .. find.placeKey(self.node, self.owner.node)
+  self.seen = self.seen or {}
+  find.start(self.seen)
+  find.note(self.kind)
+  find.note(self.other)
+  find.note(self.collide)
+  find.note(a.x)
+  find.note(a.y)
+  find.note(x.x)
+  find.note(x.y)
+  find.note(g.x)
+  find.note(g.y)
+  find.note(h.x)
+  find.note(h.y)
+  find.note(self.ratio)
+  find.note(self.kind == "rope" and self.length > 0)
+  find.place(self.node, self.owner.node)
+  return find.finish()
 end
 
 -- Not called by scripts: the body calls it before each step. A joint whose key changed is made again, which Box2D needs for
 -- its anchors; else what a script changed in the values that tune it is set.
 function Joint:_sync()
-  if self:_key() ~= self.key then
+  if self:_changed() then
     self:_unjoin()
     self:_join()
   elseif self.joint then
@@ -207,7 +213,7 @@ function Joint:_join()
     return
   end
   local ax, ay = self.node:toWorld(0, 0)
-  self.key = self:_key()
+  self:_changed()
   self.joint = self:_make(self.owner.b, self.other.b, ax, ay)
   self.applied = {}
   self:_apply()

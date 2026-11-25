@@ -1175,7 +1175,7 @@ A package of LÖVE's own system follows 11.3 too. The first is `physics`, which 
   - a joint whose node moved under its body, or whose `kind`, bodies, `collide`, anchors, `axis` or `ratio` changed, is made again, since Box2D takes them only when it makes a joint; the values that tune it, such as a motor's speed, a limit or a spring, are set on it without making it again.
   A fixture or a joint made again starts afresh: Box2D's contacts with it begin again, and a distance or a rope that was as far as they were when joined takes the distance that they are now.
 - The limits, as they are now:
-  - A body checks each fixture and joint before each step, which costs a little for each, also when nothing changed.
+  - A body checks each fixture and joint before each step, also when nothing changed: it compares the values that they are made from with those of the last check, kept in a list, and sets only the properties that differ, with setters that each type makes once. So a step makes almost no garbage, and costs a little for each body.
   - A joint's `otherAnchor` and `otherGroundAnchor` are taken in the other body's node's space when the joint is made. A node under the other body that moves does not move them.
   - `meter` is LÖVE's one setting for every world, set when a world is made.
   - Box2D's mouse and gear joints have no component: a mouse joint holds one body to a point, which a script makes with LÖVE's `newMouseJoint`, and a gear joint joins two other joints.
