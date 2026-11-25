@@ -253,8 +253,9 @@ local function oweFrames(path)
   preview.since = os.time()
 end
 
--- Sends the node files that the editor holds otherwise than the preview does (DESIGN 12.2): those of paths, or every node file.
--- A file's text is the one that its last change wrote.
+-- Sends the node files that the editor holds otherwise than the preview does (DESIGN 12.2): those of paths, which changed in the
+-- editor or on disk, or every node file with changes, when the preview starts. A file's text is the one that its last change wrote,
+-- or the one on disk when it does not load, so the preview fails on it too and empties its views (DESIGN 4.2).
 local function sendFiles(paths)
   if not (preview and preview.ready) then
     return
@@ -262,8 +263,8 @@ local function sendFiles(paths)
   local sent = false
   for _, path in ipairs(paths or project.nodeFiles()) do
     local file = project.file(path)
-    local text = file and file.kind == "node" and file.text
-    if text and (preview.sent[path] and preview.sent[path] ~= text or not preview.sent[path] and file.dirty) then
+    local text = file and file.kind == "node" and (file.text or file.disk)
+    if text and preview.sent[path] ~= text and (paths or file.dirty) then
       preview.sent[path] = text
       -- the text goes as the message's block, which is sent as it is, not written as a Lua text with its lines escaped
       send(preview, { type = "file", path = path }, text)

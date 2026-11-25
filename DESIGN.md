@@ -1484,7 +1484,7 @@ end
 
 | The editor sends | Type                      | To              | For                                                                                                        |
 | ---------------- | ------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
-| A file           | `file`                    | The preview | A node file or a graph as the editor holds it, saved or not, its text in the block. The preview reads it in place of the project's file. |
+| A file           | `file`                    | The preview | A node file or a graph as the editor holds it, saved or not, its text in the block: at each change in the editor or on disk, and when the preview starts, each with changes. A file that does not load goes as its text on disk, so its views go empty. The preview reads it in place of the project's file. |
 | A change         | `change`                  | The preview | One edit of a node's own fields in such a file, such as a moved node, or of its components' values, such as a dragged point. |
 | A view           | `view`                    | The preview | Which node file to draw, from where, at what size, and which nodes are chosen (12.3).                      |
 | A shader's view  | `shaderView`              | The preview | Which shader to draw, on which picture, at what size, for a graph panel's preview (13.9).                 |

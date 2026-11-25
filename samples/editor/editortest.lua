@@ -1063,7 +1063,20 @@ return {
     file = assert(io.open("nodes/start.lua", "wb"))
     file:write("<<<<<<< HEAD\n" .. start .. "=======\n" .. start .. ">>>>>>> other\n")
     file:close()
-    test.wait(1)
+    -- the preview gets the text that fails too, so the view goes empty, not on with the nodes that the file no longer holds (DESIGN 12.2)
+    local function redShows()
+      return test.pixel(at(56, 56)) == "#FF0000"
+    end
+    local function waitFor(wanted)
+      for _ = 1, 20 do
+        test.wait(0.2)
+        if redShows() == wanted then
+          break
+        end
+      end
+      return redShows() == wanted
+    end
+    check(waitFor(false), "a node file that does not load empties its view")
     local before = #test.errors()
     local ex, ey = at(300, 300)
     test.click(ex, ey, 3)
@@ -1077,7 +1090,7 @@ return {
     file = assert(io.open("nodes/start.lua", "wb"))
     file:write(start)
     file:close()
-    test.wait(1)
+    check(waitFor(true), "the file written again on disk shows again")
     check(read("nodes/start.lua") == start, "the file is left as it was")
 
     -- F fits the view to the chosen node: node A's red square fills its middle, at a greater zoom
