@@ -1589,7 +1589,8 @@ end
 ---@return string[] ids the pasted nodes' ids
 local function paste(file, parentPath)
   local made = {}
-  if #clipboard == 0 then
+  -- a file that does not load has no node to paste under (DESIGN 4.2)
+  if #clipboard == 0 or not tree(file).first then
     return made
   end
   edit("Paste", function(touch)
