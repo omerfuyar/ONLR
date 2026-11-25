@@ -95,6 +95,7 @@ end
 ---@param parent onlr.Node
 ---@param index integer?
 function nodes.attach(node, parent, index)
+  life.version = life.version + 1
   node._parent = parent
   local children = parent._children
   local tree = package.loaded["onlr.library.tree"]

@@ -281,6 +281,15 @@ local function game()
   runner.expect("tree", 0.5)
   runner.send({ type = "set", node = byName.Win.n, field = "active", value = false })
   tree = assert(runner.expect("tree", 2), "the tree after a change")
+  check.equal(runner.expect("tree", 0.6), nil, "a tree that did not change is not sent again")
+  -- A name is a field, which a script sets: the tree is sent again with it.
+  runner.send({ type = "set", node = byName.Win.n, field = "name", value = "Won" })
+  tree = assert(runner.expect("tree", 2), "the tree after a rename")
+  local named = false
+  for _, node in ipairs(tree.nodes) do
+    named = named or (node.n == byName.Win.n and node.name == "Won")
+  end
+  check.ok(named, "the tree holds the new name")
   runner.send({ type = "watch" })
 
   -- Stop ends the game.
