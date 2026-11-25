@@ -431,9 +431,9 @@ function Hierarchy:fileTree(file, children)
       end }),
     })
   end
-  local first, last = ui.range(self.panel, "tree", #rows.shown)
+  -- the tree builds only the rows in view
   children[#children + 1] = ui.tree(rows.nodes, {
-    id = "tree", open = rows.open, selected = paths, grow = 1, first = first, last = last,
+    id = "tree", open = rows.open, selected = paths, grow = 1,
     tooltip = "A drag moves a node before, into or after another, or to a reference in the inspector; a right click opens a menu",
     onSelect = function(id, how, between)
       self:select(file, paths, id, how, between)

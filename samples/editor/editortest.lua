@@ -420,6 +420,15 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the delete is undone")
+    -- the undo chooses A again, as it was chosen before the delete; redo chooses nothing, and undo A again (DESIGN 13.6)
+    local function chosenNow()
+      return test.panel(panelOf(test, "onlr.hierarchy")).state.chosen
+    end
+    test.match(chosenNow(), { "aaaaaa" }, "undo chooses the deleted node again")
+    test.key("Ctrl+Y")
+    test.match(chosenNow(), {}, "redo of the delete chooses nothing")
+    test.key("Ctrl+Z")
+    test.match(chosenNow(), { "aaaaaa" }, "and undo chooses it again")
     test.click(x, y)
     test.key("Ctrl+D")
     test.key("Ctrl+Z")
@@ -467,6 +476,12 @@ return {
     test.key("Ctrl+A")
     local all = chosen()
     check(has(all, "aaaaaa") and has(all, "p4rt01/t1p000") and #all > #with, "Ctrl+A chooses every node: " .. table.concat(all, ", "))
+    -- Duplicate takes the topmost of the chosen nodes, with all under them, once: with every node chosen that is Start, which is the file's
+    -- first node and is not duplicated, so the file stays as it was, and A, B and Part are not copied apart from it
+    test.key("Ctrl+D")
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua") == start, "Duplicate copies a chosen node's chosen children with it, not again:\n" .. read("nodes/start.lua"))
 
     -- a double click on a node opens it, and another closes it: Part shows Tip under it
     rx, ry = row(4)
