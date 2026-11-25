@@ -130,11 +130,13 @@ end
 ---@field query string
 ---@field items onlr.editor.Found[] what matches the query
 ---@field selected integer the chosen result
+---@field stale boolean? what the project holds changed since the results were found
 local Search = {}
 Search.__index = Search
 
--- Finds what matches the query again.
-function Search:refresh()
+-- Finds what matches the query again, without drawing.
+function Search:find()
+  self.stale = false
   index = index or build()
   self.items = {}
   if self.query ~= "" then
@@ -148,6 +150,11 @@ function Search:refresh()
     end
   end
   self.selected = math.min(math.max(self.selected, 1), math.max(#self.items, 1))
+end
+
+-- Finds what matches the query again, and draws it.
+function Search:refresh()
+  self:find()
   self.panel:redraw()
 end
 
@@ -174,6 +181,10 @@ function Search:rows()
 end
 
 function Search:draw(surface)
+  -- what the project holds changed since the last search: found again only now, when the panel shows
+  if self.stale then
+    self:find()
+  end
   local rows, first = self:rows()
   local list
   if #self.items == 0 then
@@ -208,12 +219,16 @@ function Search:draw(surface)
   }))
 end
 
--- What the project holds changed: the index is made again at the next search.
+-- What the project holds changed: the index is made again when a panel with a query next draws, not at each change, so a
+-- search in a hidden tab costs nothing.
 for _, name in ipairs({ "onlr.opened", "onlr.closed", "onlr.changed", "onlr.types", "onlr.disk", "onlr.renamed", "files.changed" }) do
   ecs.event.subscribe(name, function()
     index = nil
     for _, search in pairs(searches) do
-      search:refresh()
+      if search.query ~= "" then
+        search.stale = true
+        search.panel:redraw()
+      end
     end
   end)
 end

@@ -1432,7 +1432,7 @@ ecs.event.subscribe("onlr.closed", function()
 end)
 
 ecs.event.subscribe("onlr.changed", function(_, value)
-  runners.filesChanged()
+  runners.filesChanged(value and value.files or {})
   for _, view in pairs(views) do
     -- A node view of a file that is gone shows no file.
     local file = view.file and project.file(view.file)

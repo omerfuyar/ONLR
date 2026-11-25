@@ -334,12 +334,13 @@ function expandFile(path, overlays, ctx, firstPath)
   if ctx.stack[path] then
     error(path .. ": a node file cannot hold itself", 0)
   end
+  -- a file that does not load is one of the tree's files too, so the tree is made again when it changes
+  ctx.files[path] = true
   local data, err = ctx.source.file(path)
   if not data then
     error(err or (path .. ": no such file"), 0)
   end
   ctx.stack[path] = true
-  ctx.files[path] = true
   local scope = { file = path, prefix = firstPath and (firstPath .. "/") or "", nodes = {}, top = firstPath == nil }
   for _, o in ipairs(overlays) do
     if o.changes[FIRST] and type(data.id) == "string" then
