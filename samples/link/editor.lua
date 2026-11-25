@@ -46,10 +46,11 @@ function editor.start(sample, mode, more)
   local runner = { log = log }
   local buffer = ""
 
-  function runner.send(message)
+  function runner.send(message, block)
     local text = write(message)
+    block = block or ""
     connection:settimeout(5)
-    connection:send(("%d 0\n"):format(#text) .. text)
+    connection:send(("%d %d\n"):format(#text, #block) .. text .. block)
     connection:settimeout(0)
   end
 
