@@ -1128,12 +1128,14 @@ local function menu(view, event, x, y)
   local found = hits(view, x, y)
   local wx, wy = toWorld(view, x, y)
   if #found == 0 then
-    local first = view.byPath[project.tree(view.file).first.path]
+    -- a file that does not load, such as one with git's conflict marks, has no top node to add to (DESIGN 4.2)
+    local top = view.file and project.tree(view.file).first
+    local first = top and view.byPath[top.path]
     local nx, ny = worldToNode(first and first.place or IDENTITY, wx, wy)
     nx, ny = snap(math.floor(nx + 0.5)), snap(math.floor(ny + 0.5))
     ui.menu(view.panel, event.x, event.y, {
-      { label = "Add node here", onClick = function()
-        local id = project.addNode(view.file, project.tree(view.file).first.path, { posX = nx ~= 0 and nx or nil, posY = ny ~= 0 and ny or nil })
+      { label = "Add node here", enabled = top ~= nil, onClick = function()
+        local id = project.addNode(view.file, top.path, { posX = nx ~= 0 and nx or nil, posY = ny ~= 0 and ny or nil })
         if id then
           choose(view, { id })
         end
@@ -1613,9 +1615,9 @@ functions = {
   end },
   selectAll = { sig = "void()", doc = "Choose every node of the node file", fn = function()
     local file = shownFile()
-    if file then
-      local tree = project.tree(file)
-      project.choose(file, withChildren(tree.first, {}, {}))
+    local top = file and project.tree(file).first
+    if top then
+      project.choose(file, withChildren(top, {}, {}))
     end
   end },
   selectWithChildren = { sig = "void()", doc = "Choose the chosen nodes and every node under them", fn = onChosen(function(file, paths)

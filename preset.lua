@@ -18,6 +18,8 @@ return {
     F5 = "onlr.play", F6 = "onlr.playFile", F7 = "onlr.pause", F8 = "onlr.step", ["Shift+F5"] = "onlr.stop",
   },
   settings = {
+    -- the editor starts as it was closed: the project, the panels and their locks, and the projects opened last (DESIGN 13.2)
+    ["ecs.keepSession"] = true,
     -- the title bar's menus, which are the tool's menu (DESIGN 13.2, OpenECS DESIGN 6.11): what acts on the whole project, as
     -- Unity's File, Edit and a menu of the game; the settings and the panels put themselves under Tools
     ["ecs.titleMenus"] = {

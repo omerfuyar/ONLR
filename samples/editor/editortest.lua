@@ -54,6 +54,11 @@ return {
     end
     test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
+    -- the editor keeps its session, so it starts again with this project, its panels and their locks, and lists it among the
+    -- projects opened last (DESIGN 13.2)
+    test.match(test.setting("ecs.keepSession"), true, "the editor keeps its session")
+    local kept = test.session().pluginState.onlr.state
+    check(kept.folder and kept.folder:find("editor/$") and kept.recent[1] == kept.folder, "the session holds the project: " .. tostring(kept.folder))
     -- the title bar holds the editor's menus, then Play, Pause and Step, which are off while nothing plays (DESIGN 13.2)
     local function titleParts()
       local parts = {}
@@ -1050,6 +1055,30 @@ return {
     file:write(start)
     file:close()
     test.wait(1)
+
+    -- a node file that does not load, such as one with git's conflict marks, shows in its view with its error; a right click on it,
+    -- Select All and Paste do nothing, and raise no error (DESIGN 4.2)
+    test.click(at(56, 56))
+    test.key("Ctrl+C")
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write("<<<<<<< HEAD\n" .. start .. "=======\n" .. start .. ">>>>>>> other\n")
+    file:close()
+    test.wait(1)
+    local before = #test.errors()
+    local ex, ey = at(300, 300)
+    test.click(ex, ey, 3)
+    test.wait(0.2)
+    test.key("Escape")
+    test.click(ex, ey)
+    test.key("Ctrl+A")
+    test.key("Ctrl+V")
+    test.wait(0.2)
+    test.match(test.errors()[before + 1], nil, "a node file that does not load raises nothing")
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write(start)
+    file:close()
+    test.wait(1)
+    check(read("nodes/start.lua") == start, "the file is left as it was")
 
     -- F fits the view to the chosen node: node A's red square fills its middle, at a greater zoom
     test.click(at(56, 56))
