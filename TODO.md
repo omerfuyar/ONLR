@@ -47,7 +47,6 @@ What the owner wants worked on, in this order.
 
 - **The owner's reports of 2026-11-25.** To fix first:
   - **Add component's folders draw broken.** In the inspector's Add component dropdown, the entries in a folder show as tiny, unreadable marks, and the popup is too narrow (a screenshot shows it over Title and About). Find whether the editor gives the dropdown's folders wrongly or std ui's dropdown draws nested entries wrongly, and fix it where it lies.
-  - **F does not frame a node chosen in the node hierarchy.** Choosing a node in the hierarchy, then F, should frame it in the node view, as it does when the node view has the focus.
   - **Folding lists and tables in the inspector.** A property that holds a list or a table, such as a polygon's points, should fold and unfold, as a component's section does.
   - **Open a component's file from its menu.** A right click on a component's heading in the inspector gets an entry that opens its script in the code editor (the setting `console.editor`, as the console's links do).
   - **The console's first level.** OpenECS-std's console is to show Warnings and up at first (OpenECS TODO); the game's prints are info, so ONLR then needs a way to start at Info and up, or GUIDE 8 says to change Show.

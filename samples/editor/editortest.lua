@@ -1201,6 +1201,15 @@ return {
     local fitted = test.panel(panelOf(test, "onlr.view")).state
     check(fitted.zoom > 2, "F zooms in on the chosen node: " .. tostring(fitted.zoom))
     check(test.pixel(view.x + view.width / 2, view.y + view.height / 2) == "#FF0000", "and centres it")
+    -- F also frames a node chosen in the node hierarchy, with the focus there: B, which lies apart from A, moves the view
+    local onA = { x = fitted.x, y = fitted.y }
+    rx, ry = row(3)
+    test.click(rx, ry)
+    test.key("F")
+    test.wait(0.5)
+    fitted = test.panel(panelOf(test, "onlr.view")).state
+    check(fitted.x ~= onA.x or fitted.y ~= onA.y, "F in the node hierarchy frames B: " .. tostring(fitted.x) .. ", " .. tostring(fitted.y))
+    test.click(at(56, 56))
 
     -- Open Base, the last entry of an instance's menu in the node hierarchy, opens its base in a node view
     rx, ry = row(4)

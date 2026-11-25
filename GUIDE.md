@@ -127,7 +127,7 @@ The **Transform** bar, over the node view, chooses what a drag in the node view 
 
 - **Own place**, **Own middle** and **Selection** choose what the chosen nodes turn and scale around: each its own place, each the middle of its own picture, or the middle of all of them together.
 - **Snap** moves and sizes in steps of **Grid** pixels. Holding Ctrl while dragging turns snapping on or off for that drag.
-- The wheel zooms. A drag with the middle button, or with Alt held, moves the view. **F** fits the view to the chosen nodes.
+- The wheel zooms. A drag with the middle button, or with Alt held, moves the view. **F** fits the view to the chosen nodes, also when they were chosen in the node hierarchy.
 - A click chooses the node under the pointer, and Shift adds to the choice. A drag from empty space chooses every node in the rectangle.
 - **H** hides the chosen nodes in the node view, and **L** locks them, so a click there does not choose them, as a background that you do not want to move by mistake. Each row of the node hierarchy ends with an eye and a lock, which a click turns for that node alone: a closed eye or a shut lock shows the mark. The game still shows them.
 
@@ -416,7 +416,7 @@ Files whose names start with a dot, such as `.onlr/`, stay out, and so do the pa
 | F5, F6         | Everywhere        | Play, Play this file                                     |
 | F7, F8, Shift+F5 | Everywhere      | Pause, Step, Stop                                        |
 | W, E, R, T, Y  | Node view, Transform | Move, Turn, Scale, Rect and Shape tools               |
-| F              | Node view         | Fit the view to the chosen nodes                         |
+| F              | Node view, node hierarchy | Fit the node view to the chosen nodes            |
 | H, L           | Node view, node hierarchy | Hide, lock the chosen nodes in the node view             |
 | Ctrl+D         | Node view, node hierarchy | Duplicate                                               |
 | Delete         | Node view, node hierarchy | Delete                                                  |
