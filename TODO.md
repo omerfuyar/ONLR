@@ -6,13 +6,14 @@ What is not decided yet, and work that is waiting. When an item is settled, writ
 
 What the owner wants worked on, in this order.
 
-1. **OpenECS's dev of 2026-11-24.** The editor works on it. [Tasks](#tasks), "What OpenECS's dev of 2026-11-24 gives the editor", lists what to use of it.
-2. **The review of 2026-11-24.** Its items are under [Review](#review), P1 first.
-3. **The editor's look and use.** The owner's wishes are under [Editor](#editor). The owner chose these from Unity's list: the eye and the lock (built, DESIGN 13.3), a button that picks a node for a reference (built, 13.4), a list of the history (built, 13.6), and Pause on Error, which became the game stopping at its error with its nodes kept for the editor (built, 12.6).
-4. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
-5. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, and the second round. The camera's helpers are built too (DESIGN 10).
-6. **Linux and the `.love` file first.** Windows follows, then Android and iOS, which the owner wants; macOS is noted for later (see [Export](#export)).
-7. **Shaders, and the graph panel for scripts and shaders.** Decided with the owner on 2026-11-25 (DESIGN 6.7, 6.8, 10 and 13.9). The milestones are under [Tasks](#tasks), "Shaders and graphs". Their place in this list is the owner's to choose.
+1. **The owner's reports of 2026-11-25.** Under [Editor](#editor), and OpenECS's TODO for what lies in OpenECS-std.
+2. **OpenECS's dev of 2026-11-24.** The editor works on it. [Tasks](#tasks), "What OpenECS's dev of 2026-11-24 gives the editor", lists what to use of it.
+3. **The review of 2026-11-24.** Its items are under [Review](#review), P1 first.
+4. **The editor's look and use.** The owner's wishes are under [Editor](#editor). The owner chose these from Unity's list: the eye and the lock (built, DESIGN 13.3), a button that picks a node for a reference (built, 13.4), a list of the history (built, 13.6), and Pause on Error, which became the game stopping at its error with its nodes kept for the editor (built, 12.6).
+5. **The Windows experiment.** The owner runs it later, and reports what it prints (see [Tasks](#tasks)). Until then, the preview on Windows is built as DESIGN 12.1 says, and not tested.
+6. **The packages.** The first set is built, each with a sample that tests it (see [Libraries](#libraries)). Next: the open limits that each lists, and the second round. The camera's helpers are built too (DESIGN 10).
+7. **Linux and the `.love` file first.** Windows follows, then Android and iOS, which the owner wants; macOS is noted for later (see [Export](#export)).
+8. **Shaders, and the graph panel for scripts and shaders.** Decided with the owner on 2026-11-25 (DESIGN 6.7, 6.8, 10 and 13.9). The milestones are under [Tasks](#tasks), "Shaders and graphs". Their place in this list is the owner's to choose.
 
 ## Engine
 
@@ -43,6 +44,14 @@ What the owner wants worked on, in this order.
 - **A debugger.** Stopping at a line and reading variables. Not planned; an error's file, line and stack are shown (DESIGN 12.2).
 
 ## Editor
+
+- **The owner's reports of 2026-11-25.** To fix first:
+  - **Add component's folders draw broken.** In the inspector's Add component dropdown, the entries in a folder show as tiny, unreadable marks, and the popup is too narrow (a screenshot shows it over Title and About). Find whether the editor gives the dropdown's folders wrongly or std ui's dropdown draws nested entries wrongly, and fix it where it lies.
+  - **F does not frame a node chosen in the node hierarchy.** Choosing a node in the hierarchy, then F, should frame it in the node view, as it does when the node view has the focus.
+  - **Folding lists and tables in the inspector.** A property that holds a list or a table, such as a polygon's points, should fold and unfold, as a component's section does.
+  - **Open a component's file from its menu.** A right click on a component's heading in the inspector gets an entry that opens its script in the code editor (the setting `console.editor`, as the console's links do).
+  - **The console's first level.** OpenECS-std's console is to show Warnings and up at first (OpenECS TODO); the game's prints are info, so ONLR then needs a way to start at Info and up, or GUIDE 8 says to change Show.
+  - **Tooltips are cut by small panels.** OpenECS-std's ui is to draw them over everything (OpenECS TODO); nothing to change in ONLR but checking its panels then.
 
 - **From Unity.** What its editor has that ONLR's lacks, as candidates. None is decided.
   - The node view: marks for nodes that draw nothing, with a toggle; a picture of what each camera sees.
