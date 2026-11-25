@@ -1,6 +1,7 @@
 -- Checks both runners through the link: every message of DESIGN 12.2's tables.
 local check = require("check")
 local editor = require("editor")
+local socket = require("socket")
 
 -- A frame's pixel, as OpenECS's images hold it: blue, green, red and alpha.
 local function pixel(block, width, x, y)
@@ -125,6 +126,24 @@ local function brokenView()
   local second = assert(nodeOf(bounds, "br0k32")).errors
   check.ok(second and second[1]:find("changes nothing in the node view", 1, true),
     "the engine's functions that change the tree change nothing there")
+  runner.send({ type = "stop" })
+  runner.stopped()
+end
+
+-- An editor that stops reading, here during a frame larger than the system holds of a connection, breaks nothing: the runner
+-- keeps the rest and sends it at its next frames, and the link goes on (DESIGN 12.2).
+local function slowEditor()
+  local runner = editor.start("coinrun", "preview")
+  assert(runner.expect("hello"), "no hello")
+  runner.send({ type = "view", id = 1, path = "nodes/level.lua", x = 0, y = 0, zoom = 1, width = 2000, height = 2000 })
+  -- longer than a send could wait before
+  socket.sleep(6)
+  local frame, block = runner.expect("frame", 10)
+  check.equal(frame and #block, 2000 * 2000 * 4, "the whole frame arrives after the editor read nothing for six seconds")
+  runner.send({ type = "shown", id = 1 })
+  runner.send({ type = "view", id = 1, width = 32, height = 32 })
+  frame, block = runner.expect("frame")
+  check.equal(frame and #block, 32 * 32 * 4, "and the link goes on")
   runner.send({ type = "stop" })
   runner.stopped()
 end
@@ -298,6 +317,7 @@ check.run(function()
   preview()
   brokenView()
   keptView()
+  slowEditor()
   animationView()
   game()
   errors()

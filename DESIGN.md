@@ -1480,6 +1480,7 @@ end
 - A message is a Lua table written as text, and may carry a block of bytes after it, such as a frame's pixels. Each message starts with a line of the sizes of both, in bytes: `52 0`, then the text, then the block.
 - A message's `type` names it. The tables below give each message's type, and the runner's files document its fields.
 - When a runner has connected, it sends `hello`, with its mode and the engine's version.
+- A runner never waits to send. What the system does not take at once, such as the rest of a large frame, waits, and goes at the runner's next frame, so an editor that stops reading for a while stops neither the game nor the link. While messages wait, only the newest `values`, `tree` and `stats` are kept. When more than 64 MB waits, the runner closes the link, as the editor reads nothing. At an error, the runner waits at most two seconds for the error to go, since the preview ends then.
 
 | The editor sends | Type                      | To              | For                                                                                                        |
 | ---------------- | ------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |

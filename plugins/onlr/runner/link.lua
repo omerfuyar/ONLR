@@ -10,6 +10,19 @@ local link = {}
 local connection
 local buffer = ""
 
+-- What waits to be sent, the first in front, each as { bytes = text, type = the message's type }, and how many bytes of the first
+-- went already. A send never waits: what the system does not take now goes at the next flush, so an editor that stops reading
+-- stops neither the game nor the link (DESIGN 12.2).
+local queue = {}
+local sentOfFirst = 0
+local waiting = 0
+
+-- Messages that only their newest matters of: one that waits unsent is replaced by the next of its type.
+local NEWEST = { values = true, tree = true, stats = true }
+
+-- Past this many bytes waiting, the editor reads nothing, and the link is closed.
+link.LIMIT = 64 * 1024 * 1024
+
 ---Whether the editor closed the link, or it never opened.
 link.closed = true
 
@@ -84,7 +97,42 @@ function link.connect(port)
   return true
 end
 
----Sends a message, and a block of bytes after it when one is given.
+-- Ends the link from this side.
+local function close()
+  if connection then
+    connection:close()
+  end
+  connection, queue, sentOfFirst, waiting = nil, {}, 0, 0
+  link.closed = true
+end
+
+---Sends what waits, as much as the system takes now, or waiting at most some seconds for all of it.
+---@param seconds number? how long to wait; 0 or nil waits not at all
+---@return boolean all whether nothing waits now
+function link.flush(seconds)
+  local deadline = socket.gettime() + (seconds or 0)
+  while connection and #queue > 0 do
+    local first = queue[1]
+    local last, err, partial = connection:send(first.bytes, sentOfFirst + 1)
+    last = last or partial or sentOfFirst
+    waiting = waiting - (last - sentOfFirst)
+    sentOfFirst = last
+    if sentOfFirst >= #first.bytes then
+      table.remove(queue, 1)
+      sentOfFirst = 0
+    elseif err == "closed" then
+      close()
+    elseif socket.gettime() < deadline then
+      socket.select(nil, { connection }, deadline - socket.gettime())
+    else
+      break
+    end
+  end
+  return #queue == 0
+end
+
+---Sends a message, and a block of bytes after it when one is given, without waiting: what the system does not take now is sent
+---at the next flush, which each frame calls through poll.
 ---@param message table
 ---@param block string?
 function link.send(message, block)
@@ -93,18 +141,37 @@ function link.send(message, block)
   end
   local text = link.write(message)
   local bytes = ("%d %d\n"):format(#text, block and #block or 0) .. text .. (block or "")
-  connection:settimeout(5)
-  local sent, err = connection:send(bytes)
-  connection:settimeout(0)
-  if not sent and err == "closed" then
-    link.closed = true
+  local item = { bytes = bytes, type = message.type }
+  local replaced = false
+  if NEWEST[message.type] then
+    -- the first may have started to go, so only the others are replaced
+    for i = 2, #queue do
+      if queue[i].type == message.type then
+        waiting = waiting - #queue[i].bytes
+        queue[i], replaced = item, true
+        break
+      end
+    end
   end
+  if not replaced then
+    queue[#queue + 1] = item
+  end
+  waiting = waiting + #bytes
+  if waiting > link.LIMIT then
+    close()
+    return
+  end
+  link.flush()
 end
 
 ---Gives the messages that arrived, each as { message, block }, without waiting.
 ---@return {[1]: table, [2]: string}[]
 function link.poll()
   local messages = {}
+  if not connection then
+    return messages
+  end
+  link.flush()
   if not connection then
     return messages
   end
@@ -145,7 +212,8 @@ end
 ---@param seconds number
 function link.wait(seconds)
   if connection and not link.closed then
-    socket.select({ connection }, nil, seconds)
+    -- what waits to be sent wakes it too, when the system can take more
+    socket.select({ connection }, #queue > 0 and { connection } or nil, seconds)
   else
     socket.sleep(seconds)
   end
