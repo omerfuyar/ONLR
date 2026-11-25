@@ -94,7 +94,7 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 | Inspector         | Right                   | The chosen nodes' place and components, and their values.                                      |
 | Project, Export   | **Window** in the title bar | The project's settings (1.4), and export (9). Each opens as a tab beside the inspector, and closes with its tab. |
 | Viewer            | Under the inspector     | The picture, sound or text of the file chosen in the files panel.                                |
-| Console           | Bottom                  | What the game prints, and its errors. A click on an error's file opens it in your code editor.   |
+| Console           | Bottom                  | What the game prints, its errors, and the editor's warnings. A click on an error's file opens it in your code editor. |
 | Files             | A tab beside the console | The project's files: open, rename, move and delete them, and make folders, scripts and node files. |
 | History           | A tab beside the console | Everything that you did, which a click undoes or redoes to.                                     |
 | Search            | Ctrl+K, from anywhere   | Finds nodes, files, component types, your scripts' functions and the editor's commands.         |
@@ -379,6 +379,8 @@ A package is a library of LÖVE's world with components for ONLR (DESIGN 11.2). 
 - The **Game** bar shows the game's frames a second, and how long a frame spends in `update` and in `draw`.
 - The console shows what the game prints with `print`. An error names its file and line, which a click opens in your code editor, the node and the component that raised it, and often a hint of what it means. The game stops at the error, and the panels show the nodes as the error left them, until Stop.
 - The node view runs your scripts' `drawEditor` and `bounds` if they have them, so a script can draw in the editor what it does not draw in the game, such as a path (DESIGN 6.5).
+- Each entry of the console names where it comes from: **game**, **preview**, **export**, or **onlr** for the editor itself. The checkboxes under the levels hide a source's entries, or show them again, so you read the game's prints apart from the editor's warnings; each console tab keeps its own.
+- **Log**, beside the checkboxes, chooses which of the log's lines the console shows too: Warnings by default, so the editor's and OpenECS's warnings and errors reach you, Debug for every line, or None.
 - The console's code editor is a setting, `console.editor`, in the editor's settings.
 
 ## 9. Export

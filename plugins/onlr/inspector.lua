@@ -642,7 +642,7 @@ local function fileSubject(state, out)
           { label = "Remove component", onClick = function()
             local _, message = project.removeComponent(file, paths, typeName)
             if message then
-              console.add(message, "warn")
+              console.add(message, "warn", nil, "onlr")
             end
           end },
         })
@@ -821,14 +821,14 @@ local function drop(state, event)
           local folder = project.folder()
           inside = path:sub(1, #folder) == folder and path:sub(#folder + 1) or nil
           if not (inside and inside:match("^nodes/.+%.lua$")) then
-            console.add(("%s is no node file of the project's nodes/ folder."):format(path), "warn")
+            console.add(("%s is no node file of the project's nodes/ folder."):format(path), "warn", nil, "onlr")
             inside = nil
           end
         elseif fits then
           -- a file from outside the project is copied in first, after asking, as a drop on a node view does (DESIGN 13.4)
           inside = project.bringIn(path)
         elseif path ~= "" then
-          console.add(("%s is not a file that this row takes."):format(path), "warn")
+          console.add(("%s is not a file that this row takes."):format(path), "warn", nil, "onlr")
         end
         if inside then
           row.set(inside)
@@ -839,9 +839,9 @@ local function drop(state, event)
         if node and (not row.needs or node.components[row.needs]) then
           row.set(event.value.path)
         elseif node then
-          console.add(("The node %s has no component %s."):format(node.name or node.path, row.needs), "warn")
+          console.add(("The node %s has no component %s."):format(node.name or node.path, row.needs), "warn", nil, "onlr")
         else
-          console.add(("A reference names a node of %s, the file of the inspector's nodes."):format(tostring(row.file)), "warn")
+          console.add(("A reference names a node of %s, the file of the inspector's nodes."):format(tostring(row.file)), "warn", nil, "onlr")
         end
       end
       return

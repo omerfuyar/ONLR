@@ -54,7 +54,7 @@ function shared.show(typeName, open)
   local beside = next(shared.inspectors)
   local made, message = ecs.layout.open(typeName, nil, beside, beside and "center" or nil)
   if not made then
-    require("console").add(message or (typeName .. " cannot open."), "warn")
+    require("console").add(message or (typeName .. " cannot open."), "warn", nil, "onlr")
   end
 end
 

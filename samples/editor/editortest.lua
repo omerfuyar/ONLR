@@ -1163,6 +1163,17 @@ return {
     check(read("played.txt") == "Start", "the game played")
     check(read("window.txt") == "360x800", "in the window's size that Play chose: " .. read("window.txt"))
     check(read(".onlr/editor.lua"):find('playSize = "360x800"', 1, true) ~= nil, "which the project's editor settings keep")
+    -- what the game prints shows in the console as the source game, which its checkbox shows apart from the editor's own entries
+    local printed = false
+    for _ = 1, 30 do
+      test.wait(0.1)
+      local sources = test.panel(panelOf(test, "console.log")).state.sources or {}
+      printed = sources.game ~= nil
+      if printed then
+        break
+      end
+    end
+    check(printed, "the game's print is in the console, from the source game")
     -- the title bar's Play button is on while the game plays
     test.match(titleParts()[5], { label = "▶", on = true }, "Play is on while the game plays")
     -- the panels, the tabs and the space around them take some of the tint while the game plays, and lose it at Stop

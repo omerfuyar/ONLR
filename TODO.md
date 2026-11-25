@@ -169,7 +169,6 @@ What the owner wants worked on, in this order.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. ONLR's work makes them there, as CLAUDE.md says, when that is better than working around them:
   - fs: a file's permissions. Until it tells them, the Linux build marks as programs LÖVE's launcher, the files of `bin/` and the libraries.
   - fs: watching the folders inside a folder, for the project's folder, which also follows a folder that is removed and made again, as a checkout of git does, and reads a folder again after an overflow. The editor's own watching misses both (see [Review](#review), Editor), and the files panel watches the same folders.
-  - The core and the console: the log shown in the console, by level and source, so an author sees the editor's own warnings without a terminal. OpenECS's TODO, "Plugins hear the log", says how.
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).

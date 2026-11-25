@@ -16,7 +16,7 @@ local status = "" -- what the last export did
 
 local function say(text, isError)
   status = text
-  console.add(text, isError and "error" or "info")
+  console.add(text, isError and "error" or "info", nil, "export")
   for panel in pairs(panels) do
     panel:redraw()
   end

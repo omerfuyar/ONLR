@@ -146,7 +146,7 @@ local function start(mode, startPath)
   -- The link listens on this computer's own address only, so no other computer reaches it, on a free port that net picks (DESIGN 12.2).
   local server, err = net.listen("127.0.0.1", 0)
   if not server then
-    console.add(("The link could not listen on this computer: %s"):format(tostring(err)), "error")
+    console.add(("The link could not listen on this computer: %s"):format(tostring(err)), "error", nil, mode)
     return nil
   end
   local port = server:port()
@@ -171,7 +171,7 @@ local function start(mode, startPath)
   local started
   started, err = process.start(command, folder, environment)
   if not started then
-    console.add(("LÖVE did not start: %s. The setting onlr.love names its executable."):format(tostring(err)), "error")
+    console.add(("LÖVE did not start: %s. The setting onlr.love names its executable."):format(tostring(err)), "error", nil, mode)
     return nil
   end
   ---@type onlr.editor.Runner
@@ -181,10 +181,10 @@ local function start(mode, startPath)
   }
 end
 
--- Adds an error to the console, with its stack and a hint when the error is one that the hints know (DESIGN 13.1).
+-- Adds an error of the game or the preview, its source in the console, with its stack and a hint when the error is one that the hints know (DESIGN 13.1).
 -- An error that a component raised names it and its node; when a node file wrote the node, the name is a link, and a click
 -- opens the file and chooses the node.
-local function sayError(text, stack, source)
+local function sayError(from, text, stack, source)
   local links
   if type(source) == "table" then
     local name = ("%s on %s"):format(tostring(source.type), source.name ~= "" and tostring(source.name) or "a node")
@@ -197,10 +197,10 @@ local function sayError(text, stack, source)
       text = text .. "\nIn " .. name .. ", which code made."
     end
   end
-  console.add(stack and (text .. "\n" .. stack) or text, "error", links)
+  console.add(stack and (text .. "\n" .. stack) or text, "error", links, from)
   local hint = hints.of(text)
   if hint then
-    console.add("Hint: " .. hint, "info")
+    console.add("Hint: " .. hint, "info", nil, from)
   end
 end
 
@@ -360,11 +360,11 @@ local function previewEnded(why)
   end
   preview = nil
   runners.down = why
-  console.add(why, "error")
+  console.add(why, "error", nil, "preview")
   strikes = strikes + 1
   if strikes >= 2 then
     blocked = true
-    console.add("The preview stopped twice in a row. It starts again when asked: Start the preview again.", "error")
+    console.add("The preview stopped twice in a row. It starts again when asked: Start the preview again.", "error", nil, "preview")
   end
   runners.onView("down", { message = why })
   ecs.event.emit("onlr.state")
@@ -405,13 +405,13 @@ function fromPreview.answer(message)
   assert(preview).owed[message.name] = nil
   project.setTypeInfo(message.name, message)
   if message.error then
-    sayError(tostring(message.error))
+    sayError("preview", tostring(message.error))
   end
 end
 
 function fromPreview.error(message)
   local where = message.file and (message.file .. (message.line and (":" .. message.line) or "") .. ": ") or ""
-  sayError(where .. tostring(message.message), nil, message.source)
+  sayError("preview", where .. tostring(message.message), nil, message.source)
   if message.view then
     assert(preview).owed[message.view] = nil
     runners.onView("error", message)
@@ -454,7 +454,7 @@ end
 
 function fromGame.error(message)
   local where = message.file and (message.file .. (message.line and (":" .. message.line) or "") .. ": ") or ""
-  sayError(where .. tostring(message.message), message.stack, message.source)
+  sayError("game", where .. tostring(message.message), message.stack, message.source)
 end
 
 ---Plays the game: saves the project, then starts the game (DESIGN 13.6).
@@ -536,7 +536,7 @@ local function read(runner, handlers)
       if not line:match("^%[ALSOFT%]") then
         runner.output[#runner.output + 1] = line
         if runner.mode == "game" then
-          console.add(line, "info")
+          console.add(line, "info", nil, "game")
         end
       end
     end
@@ -591,14 +591,14 @@ local function poll()
       if exited and not runner.stopping then
         -- What it printed tells why, such as an error in main.lua before the engine loaded.
         for _, line in ipairs(runner.output) do
-          console.add(line, "error")
+          console.add(line, "error", nil, "preview")
         end
         previewEnded("The preview ended. It starts again at the next change.")
       elseif next(runner.owed) and os.time() - runner.since > 2 then
         -- It gets two seconds for each answer (DESIGN 12.1).
         runner.process:kill(true)
         for _, line in ipairs(runner.output) do
-          console.add(line, "error")
+          console.add(line, "error", nil, "preview")
         end
         previewEnded("The preview did not answer in two seconds, so it was ended. It starts again at the next change.")
       end
@@ -609,7 +609,7 @@ local function poll()
     read(runner, fromGame)
     if runner.process:exited() then
       if runner.partial ~= "" then
-        console.add(runner.partial, "info")
+        console.add(runner.partial, "info", nil, "game")
       end
       game = nil
       runners.running = { playing = false, paused = false }

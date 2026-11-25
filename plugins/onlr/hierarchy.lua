@@ -36,7 +36,7 @@ local EVENTS = {
 
 local function say(_, message)
   if message then
-    console.add(message, "warn")
+    console.add(message, "warn", nil, "onlr")
   end
 end
 
