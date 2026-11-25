@@ -29,6 +29,32 @@ runtimes.KNOWN = {
   ["linux-x86_64"] = { file = "love-11.5-x86_64.tar.gz" },
 }
 
+---What is known of the runtimes: runtimes.KNOWN, or the table that the Lua file which the variable ONLR_RUNTIMES names
+---returns, in its place, read at each export, so a test downloads from a server of its own (DESIGN 15.2, 16).
+---@return table<string, {url: string?, file: string, sha256: string?, inside: string?}>? known
+---@return string? message why the file named cannot be used
+local function known()
+  local path = os.getenv("ONLR_RUNTIMES")
+  if not path or path == "" then
+    return runtimes.KNOWN
+  end
+  local file = io.open(path, "rb")
+  if not file then
+    return nil, "The variable ONLR_RUNTIMES names " .. path .. ", which cannot be read."
+  end
+  local text = file:read("a")
+  file:close()
+  local chunk, err = load(text, "@" .. path, "t", {})
+  local ok, result = false, err
+  if chunk then
+    ok, result = pcall(chunk)
+  end
+  if not ok or type(result) ~= "table" then
+    return nil, ("The variable ONLR_RUNTIMES names %s, which returns no table: %s"):format(path, tostring(result))
+  end
+  return result
+end
+
 for _, platform in ipairs({ "linux", "windows" }) do
   ecs.setting.declare({
     name = platform .. "Runtime",
@@ -74,15 +100,58 @@ local function dataFolder()
   return base .. "/onlr/runtimes/" .. runtimes.VERSION .. "/"
 end
 
-local function makeFolders(path)
-  local at = path:sub(1, 1) == "/" and "/" or ""
-  for part in path:gmatch("[^/]+/?") do
-    at = at .. part
-    if part:sub(-1) == "/" and #at > 3 then
-      fs.makeFolder(at)
+-- Removes a folder and everything in it.
+local function removeAll(path)
+  for _, entry in ipairs(fs.list(path, "") or {}) do
+    if entry.type == "folder" then
+      removeAll(path .. entry.name .. "/")
+    else
+      fs.remove(path .. entry.name)
     end
   end
+  fs.remove(path)
 end
+
+-- Unpacks an archive into a folder, by its format: a .zip, or a .tar.gz.
+---@return boolean ok
+---@return string? message
+local function unpack(archive, body, folder)
+  if archive:match("%.zip$") then
+    return compress.zip.extract(archive, folder)
+  end
+  if not archive:match("%.tar%.gz$") then
+    return false, "ONLR unpacks a .zip or a .tar.gz, not " .. archive
+  end
+  local tar, err = compress.gzip.unpack(body)
+  local files = tar and compress.tar.unpack(tar)
+  if not files then
+    return false, err or "it is no tar archive"
+  end
+  for _, entry in ipairs(files) do
+    if entry.name:find("%.%.") then
+      return false, "it names a file outside its folder: " .. entry.name
+    end
+    if entry.name:sub(-1) == "/" then
+      fs.makeFolder(folder .. entry.name)
+    else
+      local dir = entry.name:match("^(.*/)")
+      if dir then
+        fs.makeFolder(folder .. dir)
+      end
+      local file = io.open(folder .. entry.name, "wb")
+      if not file then
+        return false, "it could not write " .. entry.name
+      end
+      file:write(entry.data or "")
+      file:close()
+    end
+  end
+  return true
+end
+
+-- The downloads under way, by platform, with the functions that wait for each.
+---@type table<string, fun(folder: string?, message: string?)[]>
+local waiting = {}
 
 local function isRuntime(folder, platform)
   local program = platform == "windows-x86_64" and "love.exe" or "bin/love"
@@ -120,9 +189,15 @@ function runtimes.get(platform, done)
     end
     return done(nil, ("The setting onlr.%sRuntime names %s, which holds no LÖVE."):format(name, set))
   end
-  local known = runtimes.KNOWN[platform]
+  local all, message = known()
+  if not all then
+    return done(nil, message)
+  end
+  local entry = all[platform] or {}
+  -- A runtime is unpacked into a folder of its own, and renamed into place whole, so a folder there is a runtime that was
+  -- unpacked to its end.
   local folder = dataFolder() .. platform .. "/"
-  local kept = folder .. (known.inside or "")
+  local kept = folder .. "love/"
   if isRuntime(kept, platform) then
     return done(kept)
   end
@@ -132,38 +207,66 @@ function runtimes.get(platform, done)
       return done(own)
     end
   end
-  if not known.url then
+  if not entry.url or not entry.file then
     return done(nil, ("ONLR has no address to download LÖVE's runtime for %s from yet. The setting onlr.%sRuntime names a folder to use."):format(
       platform, name))
   end
-  local request, err = web.get(known.url, function(request)
+  -- A second export while the runtime downloads waits for the same download.
+  if waiting[platform] then
+    table.insert(waiting[platform], done)
+    return
+  end
+  waiting[platform] = { done }
+  local function finish(path, why)
+    local callbacks = waiting[platform]
+    waiting[platform] = nil
+    for _, each in ipairs(callbacks) do
+      each(path, why)
+    end
+  end
+  local request, err = web.get(entry.url, function(request)
     if request:status() ~= 200 then
-      return done(nil, ("LÖVE's runtime was not downloaded from %s: %s"):format(known.url,
+      return finish(nil, ("LÖVE's runtime was not downloaded from %s: %s"):format(entry.url,
         request:status() == -1 and request:error() or ("status " .. request:status())))
     end
     local body = request:body()
     -- The download is checked against the hash that ONLR ships, before anything of it is used.
     local sum = hash.of("sha256", body)
-    if sum ~= known.sha256 then
-      return done(nil, ("LÖVE's runtime from %s is not the file that ONLR knows: its SHA-256 hash is %s, not %s. It is not used."):format(
-        known.url, sum, known.sha256))
+    if sum ~= entry.sha256 then
+      return finish(nil, ("LÖVE's runtime from %s is not the file that ONLR knows: its SHA-256 hash is %s, not %s. It is not used."):format(
+        entry.url, sum, tostring(entry.sha256)))
     end
-    makeFolders(folder)
-    local archive = folder .. known.file
+    -- What an unpack that was cut short left is taken away first.
+    local unpacking = folder .. "unpacking/"
+    removeAll(unpacking)
+    removeAll(kept)
+    fs.makeFolder(unpacking)
+    local archive = folder .. entry.file
     local file = io.open(archive, "wb")
     if not file then
-      return done(nil, "The runtime could not be written to " .. archive)
+      return finish(nil, "The runtime could not be written to " .. archive)
     end
     file:write(body)
     file:close()
-    local ok, message = compress.zip.extract(archive, folder)
-    if not ok or not isRuntime(kept, platform) then
-      return done(nil, "The runtime could not be unpacked: " .. tostring(message))
+    local ok, why = unpack(archive, body, unpacking)
+    os.remove(archive)
+    local inside = unpacking .. (entry.inside or "")
+    if ok and not isRuntime(inside, platform) then
+      ok, why = false, "it holds no LÖVE"
     end
-    done(kept)
+    if ok then
+      local renamed, err = os.rename(inside, kept)
+      ok, why = renamed == true, err
+    end
+    removeAll(unpacking)
+    if not ok then
+      removeAll(kept)
+      return finish(nil, "The runtime could not be unpacked: " .. tostring(why))
+    end
+    finish(kept)
   end)
   if not request then
-    done(nil, "The download could not start: " .. tostring(err))
+    finish(nil, "The download could not start: " .. tostring(err))
   end
 end
 
