@@ -25,7 +25,7 @@ ONLR's editor is an OpenECS tool, and this repository is worked on as OpenECS is
 | `.github/`                 | Checks, the release workflow, rulesets, the releases' descriptions in `release-notes/`, and the scripts that agents and CI run: `check.sh`, `test.sh` and `package.sh`, which makes ONLR's archive (DESIGN.md, section 15.3). `scripts/assets/` makes the samples' images and sounds. |
 | `.claude/`                 | Claude Code's settings, its hook for cloud sessions, `skills/` with the procedures for verifying, measuring, reviewing and changing OpenECS, and `notes.md`: why the tools are set up as they are. |
 | `.luarc.json`              | How the Lua language server checks the repository's Lua files.                                 |
-| `LICENSE.md`               | The license, zlib.                                                                             |
+| `LICENSE.md`               | The license, 0BSD.                                                                              |
 
 Before you propose or change anything, read the Contents of OVERVIEW.md and DESIGN.md, then every section the task touches.
 

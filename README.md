@@ -34,4 +34,4 @@ cc shuild.c -o shuild
 - [DESIGN.md](DESIGN.md): how it is built.
 - [TODO.md](TODO.md): what is open.
 
-The editor is an [OpenECS](https://github.com/omerfuyar/OpenECS) tool. ONLR's license is [zlib](LICENSE.md).
+The editor is an [OpenECS](https://github.com/omerfuyar/OpenECS) tool. ONLR's license is [0BSD](LICENSE.md).
