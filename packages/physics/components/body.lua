@@ -116,17 +116,19 @@ function Body:_release(joint)
   end
 end
 
+-- What sets each property on the body of love.physics.
+local SETTERS = {
+  type = function(b, v) b:setType(v) end,
+  fixedRotation = function(b, v) b:setFixedRotation(v) end,
+  bullet = function(b, v) b:setBullet(v) end,
+  gravityScale = function(b, v) b:setGravityScale(v) end,
+  linearDamping = function(b, v) b:setLinearDamping(v) end,
+  angularDamping = function(b, v) b:setAngularDamping(v) end,
+}
+
 -- Sets the properties that differ from those set last: at the start, and before each step, so a script changes them as fields.
 function Body:_apply()
-  local b = assert(self.b)
-  find.apply(self.applied, self, {
-    type = function(v) b:setType(v) end,
-    fixedRotation = function(v) b:setFixedRotation(v) end,
-    bullet = function(v) b:setBullet(v) end,
-    gravityScale = function(v) b:setGravityScale(v) end,
-    linearDamping = function(v) b:setLinearDamping(v) end,
-    angularDamping = function(v) b:setAngularDamping(v) end,
-  })
+  find.apply(self.applied, self, SETTERS, assert(self.b))
 end
 
 -- Before each step: when a script moved or turned the node, the body goes there; what a script changed in the body's
@@ -158,7 +160,11 @@ function Body:_pull()
   local x, y = self.b:getPosition()
   local angle = self.b:getAngle()
   local parent = self.node:getParent()
-  local parentAngle = parent and select(3, place(parent)) or 0
+  local parentAngle = 0
+  if parent then
+    local _, _, a = place(parent)
+    parentAngle = a
+  end
   self.node.rot = angle - parentAngle
   self.node:setWorldPosition(x, y)
   -- as the node now is, so that only a script's change differs at the next step

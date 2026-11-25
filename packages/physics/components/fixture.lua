@@ -10,7 +10,7 @@ local find = require("physics.find")
 ---@class physics.fixture : onlr.Component
 ---@field owner physics.body? the body that it is fixed to
 ---@field fixture love.Fixture?
----@field private key string? its shape and its place in the body, when it was made
+---@field private seen any[]? its shape and its place in the body, at the last check
 ---@field private applied table<string, any> the properties as they were last set on the fixture
 local Fixture = {}
 
@@ -90,35 +90,47 @@ function Fixture:_shape(b)
   return love.physics.newChainShape(self.loop, inBody(self.node, b, o.points))
 end
 
--- A text of the node's outline and its place in the body, which a change of either changes.
-function Fixture:_key()
-  local o = self.node.components.onlr.shape:outline()
-  local parts = { o.kind, o.x or 0, o.y or 0, o.width or 0, o.height or 0, o.radius or 0, self.loop and 1 or 0 }
-  for _, v in ipairs(o.points or {}) do
-    parts[#parts + 1] = v
+-- Whether the node's outline or its place in the body changed since the last check, which then keeps them (find.start).
+function Fixture:_changed()
+  local shape = assert(self.node.components.onlr.shape)
+  self.seen = self.seen or {}
+  find.start(self.seen)
+  find.note(shape.kind)
+  find.note(shape.origin.x)
+  find.note(shape.origin.y)
+  find.note(shape.width)
+  find.note(shape.height)
+  find.note(shape.radius)
+  find.note(self.loop)
+  find.note(#shape.points)
+  for _, point in ipairs(shape.points) do
+    find.note(point.x)
+    find.note(point.y)
   end
-  return table.concat(parts, " ") .. "|" .. find.placeKey(self.node, self.owner.node)
+  find.place(self.node, self.owner.node)
+  return find.finish()
 end
+
+-- What sets each property on the fixture of love.physics.
+local SETTERS = {
+  friction = function(f, v) f:setFriction(v) end,
+  restitution = function(f, v) f:setRestitution(v) end,
+  sensor = function(f, v) f:setSensor(v) end,
+  density = function(f, v, c)
+    f:setDensity(v)
+    c.owner.b:resetMassData()
+  end,
+}
 
 -- Sets on the fixture the properties that differ from those set last.
 function Fixture:_apply()
-  local fixture = assert(self.fixture)
-  local b = assert(self.owner and self.owner.b)
-  find.apply(self.applied, self, {
-    friction = function(v) fixture:setFriction(v) end,
-    restitution = function(v) fixture:setRestitution(v) end,
-    sensor = function(v) fixture:setSensor(v) end,
-    density = function(v)
-      fixture:setDensity(v)
-      b:resetMassData()
-    end,
-  })
+  find.apply(self.applied, self, SETTERS, assert(self.fixture))
 end
 
 -- Not called by scripts: the body calls it before each step. A fixture whose shape or place changed is made again, which
 -- Box2D needs, as its shapes do not change; else what a script changed in its properties is set.
 function Fixture:_sync()
-  if self:_key() ~= self.key then
+  if self:_changed() then
     self:_unfix()
     self:_fix()
   elseif self.fixture then
@@ -132,7 +144,7 @@ function Fixture:_fix()
   if not b then
     return
   end
-  self.key = self:_key()
+  self:_changed()
   local made = self:_shape(b)
   if not made then
     return
