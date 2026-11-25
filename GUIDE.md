@@ -111,6 +111,7 @@ A few things to know:
 - **Save** with Ctrl+S. Play saves first.
 - **Files changed outside the editor**, by your code editor or by git, are read again. When the editor holds changes of such a file that are not saved, or the file was deleted, it asks which to keep. Kept changes are written at the next save.
 - **A right click** opens a menu wherever there is one: on a node, on empty space in the node view, on a component's heading in the inspector, and on a file.
+- **The editor's colours** are a theme, the setting `ecs.theme` in the editor's settings, under **Tools** in the title bar: the system's dark or light, `dark`, `light`, two of high contrast, a deeper dark, and a few with colours of their own. Errors and warnings show in the theme's own colours for them.
 
 ### 2.1 The node view's tools
 
