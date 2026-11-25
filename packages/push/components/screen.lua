@@ -5,6 +5,7 @@ local onlr = require("onlr")
 local push = require("push")
 
 ---@class push.screen : onlr.Component
+---@field private applied string the settings that push was set up with
 local Screen = {}
 
 Screen.width = onlr.property.number(320, { min = 1, description = "The game's width, in its own pixels" })
@@ -23,6 +24,23 @@ function Screen:enable()
     error("push.screen: a game has one screen, and " .. running.node.name .. " has it", 0)
   end
   running = self
+  self:_setup()
+end
+
+-- What push was set up with, so a property that a script changes sets it up again before the next draw.
+function Screen:_settings()
+  return ("%s %s %s %s %s"):format(self.width, self.height, self.pixelPerfect, self.stretched, self.canvas)
+end
+
+-- Sets push up again when a script changed the settings since.
+function Screen:_fresh()
+  if running == self and self.applied ~= self:_settings() then
+    self:_setup()
+  end
+end
+
+function Screen:_setup()
+  self.applied = self:_settings()
   -- push sets the window's mode itself; it is given the window's own, so the manifest's window stays as it is.
   local w, h, flags = love.window.getMode()
   push:setupScreen(self.width, self.height, w, h, {
@@ -33,7 +51,6 @@ function Screen:enable()
     stretched = self.stretched,
     canvas = self.canvas,
   })
-  push:setBorderColor(self.borderColor)
 end
 
 function Screen:disable()
@@ -50,6 +67,8 @@ end
 -- The engine calls it in place of drawing the group, and gives it draw, which draws the group into push's canvas.
 ---@param draw fun()
 function Screen:drawTree(draw)
+  self:_fresh()
+  push:setBorderColor(self.borderColor)
   -- Without a canvas, push's start moves the drawing outside its own push, so the screen keeps the drawing around both.
   love.graphics.push()
   push:start()
@@ -73,10 +92,11 @@ end
 
 -- Not called by the engine: scripts call these.
 
--- Whether the game draws into push's canvas, as canvas said when the screen started. Without one, the drawing's
+-- Whether the game draws into push's canvas, as canvas says. Without one, the drawing's
 -- transform holds push's scale, so a component that reads its place from the drawing needs no toGame.
 ---@return boolean
 function Screen:hasCanvas()
+  self:_fresh()
   ---@diagnostic disable-next-line: invisible
   return push._canvas == true
 end
@@ -87,6 +107,7 @@ end
 ---@param y number
 ---@return number? x, number? y
 function Screen:toGame(x, y)
+  self:_fresh()
   return push:toGame(x, y)
 end
 
@@ -95,6 +116,7 @@ end
 ---@param y number
 ---@return number x, number y
 function Screen:toReal(x, y)
+  self:_fresh()
   return push:toReal(x, y)
 end
 

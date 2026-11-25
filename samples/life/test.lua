@@ -156,6 +156,11 @@ check.run(function()
   b:setParent(tree.top, 1)
   check.equal(tree.top:getChildren()[1], b, "moved to the first place")
   check.fails(function() b:setParent(b) end, "under itself", "a node under itself")
+  local kept = tree.newNode("Kept")
+  kept:setParent(tree.top)
+  local children = tree.top:getChildren()
+  check.equal({ children[#children - 1], children[#children] }, { kept, tree.root }, "a node kept without a place goes before the root")
+  kept:destroy()
 
   -- loadRoot: the old root ends when the frame ends, and the top node's own nodes stay.
   tree.loadRoot("nodes/second.lua")

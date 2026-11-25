@@ -7,6 +7,7 @@ local solid = require("sti.solid")
 ---@class sti.physics : onlr.Component
 ---@field private world physics.world
 ---@field private b love.Body? the static body, while it runs
+---@field private applied string? the friction, restitution and sensor that its fixtures have
 local Physics = {}
 
 Physics.needs = { "sti.map" }
@@ -39,6 +40,20 @@ function Physics:enable()
     fixture:setUserData({ owner = self, tile = r })
   end
   self.b = b
+  self.applied = ("%s %s %s"):format(self.friction, self.restitution, self.sensor)
+end
+
+-- After the scripts, before the next step: what a script changed of friction, restitution and sensor goes to the fixtures.
+function Physics:lateUpdate()
+  local now = ("%s %s %s"):format(self.friction, self.restitution, self.sensor)
+  if self.b and now ~= self.applied then
+    self.applied = now
+    for _, fixture in ipairs(self.b:getFixtures()) do
+      fixture:setFriction(self.friction)
+      fixture:setRestitution(self.restitution)
+      fixture:setSensor(self.sensor)
+    end
+  end
 end
 
 -- Each time it stops running: the body leaves the world.

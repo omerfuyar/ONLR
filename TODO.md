@@ -234,12 +234,10 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 **Packages**
 
 - **P3 · bump's body and shadows' caster make outlines at each frame.** `bump/components/body.lua:75` and `shadows/components/caster.lua:256-262` call `onlr.shape:outline()`, which makes tables, at each frame, as physics did before 2026-11-25. Compare the shape's values in place, as `physics/find.lua`'s `start`, `note` and `finish` do. Not measured. Size: S.
-- **P2 · Some properties are read only at the start, unsaid.** `physics/components/world.lua:18-20` (`gravity`), `push/components/screen.lua:28-36`, `sti/components/bump.lua:155`, `sti/components/physics.lua:212-214`. Apply them as `physics.body` does, or write them into DESIGN 11's limits. Size: S.
 - **P3 · Packages fail on the top node while it loads.** `bump/components/body.lua:18`, `physics/components/body.lua:38`, `shadows/components/world.lua:112` add their world to `onlr.tree.root`, nil then (DESIGN 5). Say it in DESIGN 11.3, or check it. Size: S.
 
 **Samples and build**
 
-- **P2 · Each sample's packages are listed in three places, already apart.** `shuild.c:38`, DESIGN 16, `.luarc.json:3`. DESIGN gives `tilemap` only sti. Glob `packages/*/library` in `.luarc.json` and let DESIGN name shuild's list. Size: S.
 - **P3 · CI and releases.** `checks.yml:101` downloads LÖVE without checking its hash; `checks.yml:91` takes OpenECS's default branch, not the built commit; `release.yml` does not need the checks to have passed; `check.sh:49-57` ignores the Lua check's exit status. Size: S.
 
 **Runner and link, documents**
@@ -252,5 +250,4 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Engine, documents**
 
-- **P2 · A kept node runs after the root.** `packages/onlr/library/node.lua:96-103` `node:setParent(onlr.tree.top)`, DESIGN 5's way to keep a node, puts it after the root, so it updates and draws after it; DESIGN 5 says the root is the top node's last child. Insert kept nodes before the root. Size: S.
 - **P3 · Smaller differences.** OVERVIEW 7 lists the tools without Rect and Shape and has no History panel; DESIGN 3.2's reversed-domain `id` against the folder's name that `project.lua:875` writes; DESIGN 8.3 misses `paint.lua`; DESIGN 10 says paint, follow and shake have `bounds`; DESIGN 6.4 says a new order waits for the next frame, which `life.lua:398-400` does not; DESIGN 11.6 and 11.9 miss `sizeVariation`, `spinVariation`, `getRaw` and `getJoystick`; DESIGN 14.2 against the tooltip "an AppImage" (`export.lua:287`); `samples/check.lua:1` and `samples/animation/test.lua:1` name the wrong script and section. Size: S.

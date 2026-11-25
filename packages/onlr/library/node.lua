@@ -90,12 +90,17 @@ function nodes.new(name)
 end
 
 ---Puts a node under a parent, at the end of its children or at index, without calling anything.
+---Under the top node, the end is before the root, which runs as the top node's last child (DESIGN 5).
 ---@param node onlr.Node
 ---@param parent onlr.Node
 ---@param index integer?
 function nodes.attach(node, parent, index)
   node._parent = parent
   local children = parent._children
+  local tree = package.loaded["onlr.library.tree"]
+  if not index and parent == life.top and tree and tree.root and children[#children] == tree.root then
+    index = #children
+  end
   if index then
     table.insert(children, math.max(1, math.min(index, #children + 1)), node)
   else

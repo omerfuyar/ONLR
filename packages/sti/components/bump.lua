@@ -7,6 +7,7 @@ local solid = require("sti.solid")
 ---@class sti.bump : onlr.Component
 ---@field private world table bump's world
 ---@field private boxes table[] the map's boxes in it
+---@field private reads table the boxes' metatable, which gives them the component's solid
 local Bump = {}
 
 Bump.needs = { "sti.map" }
@@ -18,6 +19,11 @@ function Bump:load()
   local world = onlr.tree.findComponent("bump.world") or onlr.tree.root:addComponent("bump.world")
   self.world = world:get()
   self.boxes = {}
+  self.reads = { __index = function(_, key)
+    if key == "solid" then
+      return self.solid
+    end
+  end }
 end
 
 -- Each time it starts to run: a box for each rectangle, where the node puts it in the world now. bump's boxes do not turn.
@@ -25,7 +31,8 @@ function Bump:enable()
   for _, r in ipairs(solid.rectangles(solid.mapOf(self.node, "sti.bump"))) do
     local x1, y1 = self.node:toWorld(r.x, r.y)
     local x2, y2 = self.node:toWorld(r.x + r.width, r.y + r.height)
-    local box = { solid = self.solid, node = self.node, tile = r }
+    -- a box's solid is the component's, which a script may change at any time
+    local box = setmetatable({ node = self.node, tile = r }, self.reads)
     self.world:add(box, math.min(x1, x2), math.min(y1, y2), math.abs(x2 - x1), math.abs(y2 - y1))
     self.boxes[#self.boxes + 1] = box
   end
