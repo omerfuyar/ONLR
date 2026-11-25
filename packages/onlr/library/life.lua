@@ -65,9 +65,14 @@ function life.guard(what)
   end
 end
 
+---A number that each change of the tree raises: a node that joins, leaves, moves or is turned on or off, and a component that joins
+---or leaves. A node's name is a field, which raises nothing. The game's runner sends the tree only when it changed (DESIGN 12.6).
+life.version = 0
+
 local function dirty()
   listsDirty = true
   drawDirty = true
+  life.version = life.version + 1
 end
 life.dirty = dirty
 

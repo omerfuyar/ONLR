@@ -213,7 +213,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Runner and link**
 
-- **P2 · Watching the running tree takes 14 ms four times a second.** `plugins/onlr/runner/game.lua:41-58`, `:183-191` Each quarter second the game makes a table for each node and writes the whole tree, to compare it with the last. Measured on `samples/speed`: 13.81 ms, middle of three, the first message 570 KB, against a frame of 3 ms; it also skews the frames a second that the tools show. Keep a number in `life` that each change of the tree raises, and write the tree only when it changed. Size: M.
 - **P2 · The two ends write the link's messages each in its own way.** `plugins/onlr/runner/link.lua:159` and `plugins/onlr/link.lua:13` already differ (`%d` and `%.0f`). One file that both load, with the module of instances under Editor. Size: S.
 - **P3 · The preview makes much at each draw.** `preview.lua:49-68` `ordered()` makes a table for each node and sorts with a closure at each draw, twice when bounds are due (`:124`, `:178`); each node's parents are walked for the hidden ones (`:181-185`); a frame's header is joined to its whole block of pixels, another 8 MB copy for each frame (`:220`). Keep the order until the nodes change, and send the header and the block apart. Not measured. Size: S.
 
