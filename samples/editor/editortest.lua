@@ -1295,6 +1295,33 @@ return {
     save()
     check(not read("manifest.lua"):find("topNode"), "Ctrl+Z takes the top node out of the manifest:\n" .. read("manifest.lua"))
 
+    -- a preview that ends shows in the console the last hundred lines that it printed, with the error that ended it, not every
+    -- line since it started (DESIGN 12.1)
+    local mainBefore = read("main.lua")
+    local function previewCount()
+      return (test.panel(panelOf(test, "console.log")).state.sources or {}).preview or 0
+    end
+    local function writeMain(text)
+      local main = assert(io.open("main.lua", "wb"))
+      main:write(text)
+      main:close()
+    end
+    local before = previewCount()
+    writeMain('for i = 1, 500 do print("line " .. i) end\nerror("the preview ends here")\n')
+    test.call("onlr.restart")
+    for _ = 1, 100 do
+      test.wait(0.1)
+      if previewCount() > before then
+        break
+      end
+    end
+    test.wait(0.5)
+    local shown = previewCount() - before
+    writeMain(mainBefore)
+    test.call("onlr.restart")
+    test.wait(1)
+    check(shown > 0 and shown <= 110, "the preview's last lines show when it ends, not all 500: " .. shown)
+
     -- a node file's getmetatable gives nothing for a text, so the file cannot reach the strings' table, which is the editor's
     -- string, and change it for the whole editor (DESIGN 4.1)
     local upper, partBefore = string.upper, read("nodes/part.lua")
