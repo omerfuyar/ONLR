@@ -42,26 +42,45 @@ local views = {} ---@type table<ecs.Panel, onlr.editor.View>
 local nextId = 0
 local focused ---@type onlr.editor.View? the node view that had the focus last
 
+local NO_MARKS = {}
+
 -- The eye and the lock (DESIGN 13.3): the nodes of a node file that the user hid in the node view, or locked against being chosen
 -- there, kept in the project's settings by the file and the node's path. A mark holds for the nodes under the node too.
 ---@param kind "hidden"|"locked"
 ---@return table<string, boolean>
 local function marks(kind, file)
   local all = project.setting(kind)
-  return type(all) == "table" and type(all[file]) == "table" and all[file] or {}
+  return type(all) == "table" and type(all[file]) == "table" and all[file] or NO_MARKS
 end
 
--- Whether a node of a view, or a node above it, has the mark.
+-- Whether a node of a view, or a node above it, has the mark. The answers for the view's nodes are kept, and made again
+-- when the marks or the nodes change, so a draw and a click ask each node once, not each node's parents (DESIGN 13.3).
 local function isMarked(view, kind, path)
   local set = marks(kind, view.file)
-  local node = view.byPath[path]
-  while node do
-    if set[node.path] then
-      return true
+  view.marked = view.marked or {}
+  local kept = view.marked[kind]
+  if not kept or kept.set ~= set or kept.byPath ~= view.byPath then
+    local answers = {}
+    local function ask(at)
+      local answer = answers[at]
+      if answer == nil then
+        local node = view.byPath[at]
+        answer = set[at] == true or (node ~= nil and node.parent ~= nil and view.byPath[node.parent] ~= nil and ask(node.parent))
+        answers[at] = answer
+      end
+      return answer
     end
-    node = node.parent and view.byPath[node.parent]
+    for _, node in ipairs(view.nodes) do
+      ask(node.path)
+    end
+    kept = { set = set, byPath = view.byPath, answers = answers }
+    view.marked[kind] = kept
   end
-  return set[path] == true
+  local answer = kept.answers[path]
+  if answer == nil then
+    return set[path] == true
+  end
+  return answer
 end
 
 -- Marks the nodes, or takes the mark off when each has it already, as Unity's eye does for many.
@@ -560,13 +579,16 @@ local function sameHandle(a, b)
   return (a.edges and a.edges.x) == (b.edges and b.edges.x) and (a.edges and a.edges.y) == (b.edges and b.edges.y)
 end
 
+-- The chosen paths as a set, made again when the view's list is another one; the list is replaced, never changed in place.
 local function isChosen(view, path)
-  for _, chosen in ipairs(view.chosen) do
-    if chosen == path then
-      return true
+  if view.chosenFor ~= view.chosen then
+    local set = {}
+    for _, chosen in ipairs(view.chosen) do
+      set[chosen] = true
     end
+    view.chosenFor, view.chosenSet = view.chosen, set
   end
-  return false
+  return view.chosenSet[path] == true
 end
 
 local function choose(view, paths)
@@ -595,13 +617,15 @@ end
 
 local function outline(surface, view, node, color, thickness)
   local r = node.rect
-  local corners = { { r[1], r[2] }, { r[1] + r[3], r[2] }, { r[1] + r[3], r[2] + r[4] }, { r[1], r[2] + r[4] } }
-  for i = 1, 4 do
-    local a, b = corners[i], corners[i % 4 + 1]
-    local x1, y1 = toScreen(view, nodeToWorld(node, a[1], a[2]))
-    local x2, y2 = toScreen(view, nodeToWorld(node, b[1], b[2]))
-    gpu.line(surface, x1, y1, x2, y2, thickness, color)
-  end
+  local left, top, right, bottom = r[1], r[2], r[1] + r[3], r[2] + r[4]
+  local ax, ay = toScreen(view, nodeToWorld(node, left, top))
+  local bx, by = toScreen(view, nodeToWorld(node, right, top))
+  local cx, cy = toScreen(view, nodeToWorld(node, right, bottom))
+  local dx, dy = toScreen(view, nodeToWorld(node, left, bottom))
+  gpu.line(surface, ax, ay, bx, by, thickness, color)
+  gpu.line(surface, bx, by, cx, cy, thickness, color)
+  gpu.line(surface, cx, cy, dx, dy, thickness, color)
+  gpu.line(surface, dx, dy, ax, ay, thickness, color)
 end
 
 local function drawView(view, surface)
@@ -1279,6 +1303,10 @@ local function pointer(view, event)
       local x1, y1 = math.min(d.startX, d.x), math.min(d.startY, d.y)
       local x2, y2 = math.max(d.startX, d.x), math.max(d.startY, d.y)
       local paths = d.shift and format.copy(view.chosen) or {}
+      local taken = {}
+      for _, path in ipairs(paths) do
+        taken[path] = true
+      end
       for _, node in ipairs(view.nodes) do
         local cx, cy = 0, 0
         if node.rect then
@@ -1286,8 +1314,9 @@ local function pointer(view, event)
         end
         local sx, sy = toScreen(view, nodeToWorld(node, cx, cy))
         local free = not isMarked(view, "hidden", node.path) and not isMarked(view, "locked", node.path)
-        if free and sx >= x1 and sx <= x2 and sy >= y1 and sy <= y2 and not isChosen({ chosen = paths }, node.path) then
+        if free and sx >= x1 and sx <= x2 and sy >= y1 and sy <= y2 and not taken[node.path] then
           paths[#paths + 1] = node.path
+          taken[node.path] = true
         end
       end
       choose(view, paths)
