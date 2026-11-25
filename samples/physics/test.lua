@@ -116,7 +116,7 @@ check.run(function()
   body.type = "kinematic"
   check.frames(1)
   check.equal({ body:get():getGravityScale(), body:get():getType() }, { 0, "kinematic" }, "and a body's")
-  local world = tree.findComponent("physics.world")
+  local world = assert(tree.findComponent("physics.world"))
   local gravity = world.gravity
   world.gravity = { x = 10, y = 20 }
   check.frames(1)
