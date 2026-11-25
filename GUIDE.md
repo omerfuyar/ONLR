@@ -391,8 +391,9 @@ A package is a library of LÖVE's world with components for ONLR (DESIGN 11.2). 
 - The **Game** bar shows the game's frames a second, and how long a frame spends in `update` and in `draw`.
 - The console shows what the game prints with `print`. An error names its file and line, which a click opens in your code editor, the node and the component that raised it, and often a hint of what it means. The game stops at the error, and the panels show the nodes as the error left them, until Stop.
 - The node view runs your scripts' `drawEditor` and `bounds` if they have them, so a script can draw in the editor what it does not draw in the game, such as a path (DESIGN 6.5).
-- Each entry of the console names where it comes from: **game**, **preview**, **export**, or **onlr** for the editor itself. The checkboxes under the levels hide a source's entries, or show them again, so you read the game's prints apart from the editor's warnings; each console tab keeps its own.
-- **Log**, beside the checkboxes, chooses which of the log's lines the console shows too: Warnings by default, so the editor's and OpenECS's warnings and errors reach you, Debug for every line, or None.
+- Each entry of the console names where it comes from: **game**, **preview**, **export**, **onlr** for the editor itself, or **ecs** and OpenECS's plugins for their own lines. The checkboxes under the search hide a source's entries, or show them again, so you read the game's prints apart from the editor's warnings; each console tab keeps its own.
+- **Show**, beside the search, chooses the lowest level that shows: Errors, Warnings and up, Info and up, which shows what the game prints, or Everything, which adds OpenECS's debug lines. Each choice says how many entries it shows.
+- Play clears the console first. To keep what earlier games printed, turn off `onlr.clearOnPlay` in the editor's settings.
 - The console's code editor is a setting, `console.editor`, in the editor's settings.
 
 ## 9. Export
