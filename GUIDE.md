@@ -1,6 +1,6 @@
 # ONLR User's Guide
 
-This guide shows how to make a game with ONLR, step by step. It is written for someone who knows LÖVE, or is learning it. It says what to do; [DESIGN.md](DESIGN.md) says how each part works, and its sections are named here in brackets, such as (DESIGN 6.2).
+This guide shows how to make a game with ONLR, step by step. It is written for someone who knows LÖVE, or is learning it. The guide in ONLR's repository describes its newest work, on `dev`; a release's archive holds the guide as it was at that release, in its `GUIDE.md`. It says what to do; [DESIGN.md](DESIGN.md) says how each part works, and its sections are named here in brackets, such as (DESIGN 6.2).
 
 **See also:**
 
@@ -39,7 +39,7 @@ The editor is where you arrange nodes, give them components, and set their value
 
 ### 1.2 Getting ONLR
 
-Download the archive for your platform from the [releases](https://github.com/omerfuyar/ONLR/releases), unpack it anywhere, and run `ONLR`, or `ONLR.cmd` on Windows. LÖVE 11.5 is inside, so nothing else is installed.
+Download the archive for your platform from the [releases](https://github.com/omerfuyar/ONLR/releases), unpack it anywhere, and run `ONLR`, or `ONLR.cmd` on Windows. LÖVE 11.5 is inside, so nothing else is installed. Its `GUIDE.md` is this guide as it was at that release: follow that one, since a release may lack what this guide shows.
 
 `ONLR gallery` opens the gallery: a project of rooms, each of which shows one thing that ONLR does. Play it, and open its node files to see how each room is made. Page Up and Page Down go from room to room.
 

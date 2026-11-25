@@ -1791,6 +1791,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
   | `gallery/`          | `samples/gallery` with its packages and without its test: a project to open first (16).                          |
   | `ONLR`, `ONLR.cmd`  | The program that starts the editor: OpenECS with `--preset` naming the archive's preset, and what it is given. `ONLR gallery` opens the gallery, and `--install` adds ONLR to the system's launcher (OpenECS DESIGN 13.9). |
   | `README.md`         | How to start it.                                                                                                 |
+  | `GUIDE.md`          | The user's guide as it is at the release, with `OVERVIEW.md` and `DESIGN.md`, which it links to (17).            |
 - On Windows, `ONLR.cmd` is a command file, so a console window shows for a moment when it starts. A shortcut that `--install` makes starts OpenECS without it.
 - `.github/scripts/package.sh` makes an archive: it downloads OpenECS's release and LÖVE's, checks each against its SHA-256 hash, and lays them out with ONLR's files. It runs on Linux for both platforms, since only Linux unpacks LÖVE's AppImage.
 
@@ -1816,6 +1817,7 @@ A build is made from the `.love` file and LÖVE's runtime for the platform (15.2
 - ONLR, its editor and its engine share one version, which `preset.lua` and the engine's manifest name (8.3). It is semantic versioning: before 1.0.0, a minor release may break anything, and a patch release only fixes.
 - Each release of ONLR holds one release of OpenECS, which the release workflow names, and the version of LÖVE that it serves (15.1). Between releases ONLR works on OpenECS's `dev`, so a release of ONLR waits for a release of OpenECS that holds what `dev` gave it.
 - A release is a tag `vMAJOR.MINOR.PATCH`, such as `v0.1.0`, on `main`, which names `preset.lua`'s version. The tag starts `.github/workflows/release.yml`, which makes the archives (15.3) and their checksums, `SHA256SUMS`, and drafts a release whose description is `.github/release-notes/TAG.md`. A version below 1.0.0 is a pre-release. The owner reads the draft, and publishes it.
+- The repository's GUIDE.md always describes `dev`. A release ships its own copy, as it is at the release's commit, in its archive (15.3), so the guide that a user of a release reads describes what they have.
 - A file's `format` is a number that changes when an older engine or editor cannot read the newer file (4.1). Nothing converts a file of an older format: while ONLR has no users, a new format may break projects.
 - `dev` is the default branch, where work is merged. `main` holds what is stable: it changes only through a pull request from `dev`, which the owner merges.
 
