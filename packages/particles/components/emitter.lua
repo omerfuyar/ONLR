@@ -11,8 +11,8 @@ local onlr = require("onlr")
 local Emitter = {}
 
 -- A range, as LÖVE's setters take two numbers: each particle gets a value between min and max.
-local function range(min, max, options)
-  return onlr.property.group({ min = onlr.property.number(min), max = onlr.property.number(max) }, options)
+local function range(min, max, options, angle)
+  return onlr.property.group({ min = onlr.property.number(min, { angle = angle }), max = onlr.property.number(max, { angle = angle }) }, options)
 end
 
 Emitter.image = onlr.property.image({ description = "The picture of each particle. Without one, a small white circle" })
@@ -31,12 +31,12 @@ Emitter.emissionArea = onlr.property.group({
   distribution = onlr.property.choice("none", { choices = { "none", "uniform", "normal", "ellipse", "borderellipse", "borderrectangle" } }),
   dx = onlr.property.number(0, { min = 0 }),
   dy = onlr.property.number(0, { min = 0 }),
-  angle = onlr.property.number(0),
+  angle = onlr.property.number(0, { angle = true }),
   directionRelativeToCenter = onlr.property.bool(false),
 }, { description = "Where particles start around the node: none is at its place; dx and dy are the area's half width and half height" })
 
-Emitter.direction = onlr.property.number(0, { description = "In radians, clockwise from the right", heading = "Motion" })
-Emitter.spread = onlr.property.number(0, { min = 0, description = "The angle around direction, in radians, that particles leave in" })
+Emitter.direction = onlr.property.number(0, { angle = true, description = "Clockwise from the right", heading = "Motion" })
+Emitter.spread = onlr.property.number(0, { min = 0, angle = true, description = "The angle around direction that particles leave in" })
 Emitter.speed = range(0, 0, { description = "Pixels a second" })
 Emitter.linearAcceleration = onlr.property.group({ min = onlr.property.vector(0, 0), max = onlr.property.vector(0, 0) }, { description = "Pixels a second, each second, such as gravity" })
 Emitter.radialAcceleration = range(0, 0, { description = "Away from the emitter" })
@@ -46,8 +46,8 @@ Emitter.linearDamping = range(0, 0)
 Emitter.sizes = onlr.property.list(onlr.property.number(1, { min = 0 }), { description = "Up to 8 sizes, which a particle goes through in its life. Empty is 1", heading = "Look" })
 Emitter.sizeVariation = onlr.property.number(0, { min = 0, max = 1 })
 Emitter.colors = onlr.property.list(onlr.property.color(), { description = "Up to 8 colours, which a particle goes through in its life. Empty is white" })
-Emitter.rotation = range(0, 0, { description = "Each particle's angle at its start, in radians" })
-Emitter.spin = range(0, 0, { description = "Radians a second" })
+Emitter.rotation = range(0, 0, { description = "Each particle's angle at its start" }, true)
+Emitter.spin = range(0, 0, { description = "Degrees a second" }, true)
 Emitter.spinVariation = onlr.property.number(0, { min = 0, max = 1 })
 Emitter.relativeRotation = onlr.property.bool(false, { description = "A particle turns to the way it moves" })
 

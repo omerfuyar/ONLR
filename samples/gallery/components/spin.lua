@@ -4,7 +4,7 @@ local onlr = require("onlr")
 ---@class spin : onlr.Component
 local Spin = {}
 
-Spin.speed = onlr.property.number(1, { description = "Radians a second" })
+Spin.speed = onlr.property.number(1, { angle = true, description = "Degrees a second" })
 
 function Spin:update(dt)
   self.node.rot = self.node.rot + self.speed * dt

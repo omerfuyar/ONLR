@@ -15,7 +15,8 @@ Lamp.color = onlr.property.color({ 1, 1, 1, 1 }, { description = "Its colour. It
 Lamp.arc = onlr.property.number(2 * math.pi, {
   min = 0,
   max = 2 * math.pi,
-  description = "The angle that it lights, in radians, around its node's way: 6.28, a whole turn, lights all around, 1 is a torch's beam",
+  angle = true,
+  description = "The angle that it lights around its node's way: a whole turn lights all around, a sixth of one is a torch's beam",
 })
 Lamp.blur = onlr.property.bool(true, { description = "Soft edges of its shadows, which harden near what casts them" })
 Lamp.sizeRadius = onlr.property.number(10, { min = 0, description = "How large the light's source is: larger softens far shadows more" })
