@@ -66,8 +66,8 @@ local function treeNodes(node, open, search, opened, marked)
   -- the eye and the lock of the node view (DESIGN 13.4): icons at the row's end, which a click turns; a hidden node is dimmed
   local hidden, locked = marked.hidden[node.path] == true, marked.locked[node.path] == true
   local marks = {
-    { id = "hidden", icon = hidden and "eyeClosed" or "eye", on = hidden, tooltip = hidden and "Hidden in the node view: a click shows it again" or "A click hides it in the node view", keys = "H" },
-    { id = "locked", icon = locked and "lock" or "lockOpen", on = locked, tooltip = locked and "Locked in the node view: a click lets it be chosen there again" or "A click keeps it from being chosen in the node view", keys = "L" },
+    { id = "hidden", label = { ui.icon(hidden and "eyeClosed" or "eye") }, on = hidden, tooltip = hidden and "Hidden in the node view: a click shows it again" or "A click hides it in the node view", keys = "H" },
+    { id = "locked", label = { ui.icon(locked and "lock" or "lockOpen") }, on = locked, tooltip = locked and "Locked in the node view: a click lets it be chosen there again" or "A click keeps it from being chosen in the node view", keys = "L" },
   }
   local children
   if #node.children > 0 then
