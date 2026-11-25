@@ -87,7 +87,7 @@ local function treeNodes(node, open, search, opened, marked)
     end
     opened[node.path] = true
   end
-  local color = #node.errors > 0 and "#e06c75" or (not node.active or hidden) and "textDim" or not node.own and "accent" or nil
+  local color = #node.errors > 0 and "error" or (not node.active or hidden) and "textDim" or not node.own and "accent" or nil
   return { id = node.path, label = label, color = color, children = children, marks = marks }
 end
 
@@ -402,7 +402,7 @@ function Hierarchy:fileTree(file, children)
   local chosen = project.chosen()
   children[#children + 1] = ui.text(file, { style = STYLES.heading })
   if tree.error then
-    children[#children + 1] = ui.text(tree.error, { color = "#e06c75", wrap = true })
+    children[#children + 1] = ui.text(tree.error, { color = "error", wrap = true })
     return
   end
   if self.openFile ~= file then
