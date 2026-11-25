@@ -8,7 +8,7 @@ ONLR is being built. The engine, the editor and export work on Linux. Windows is
 
 ## Using it
 
-Download the archive for your platform from the [releases](https://github.com/omerfuyar/ONLR/releases), unpack it anywhere, and run `ONLR`, or `ONLR.cmd` on Windows. It holds the editor, the engine and LÖVE 11.5: nothing else is installed. `ONLR gallery` opens a project that shows what ONLR does, and [GUIDE.md](GUIDE.md) shows how to make a game.
+Download the archive for your platform from the [releases](https://github.com/omerfuyar/ONLR/releases), unpack it anywhere, and run `ONLR`, or `ONLR.cmd` on Windows. It holds the editor, the engine and LÖVE 11.5: nothing else is installed. `ONLR gallery` opens a project that shows what ONLR does, and [GUIDE.md](GUIDE.md) shows how to make a game. This GUIDE.md describes the newest work, on `dev`; the archive holds the guide of its own release, which is the one to follow with it.
 
 ## Cloning
 
