@@ -207,7 +207,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Engine**
 
-- **P2 · Each change of the tree builds every list and draw group again.** `life.lua:68-72`, `:362-387`, `:498-544` Measured on `samples/speed`, middle of three: a frame takes 0.66 ms of update and 2.45 ms of draw; with 20 nodes spawned and 20 destroyed in each frame, 1.66 ms and 4.94 ms, and 0.50 ms at the frame's end, a quarter of it in three walks of the whole tree (`rebuildDraw`, `waiting` at `:298-318`, `rebuild`). One `setZ` a frame costs as much, since it marks the update lists too (`node.lua:280`). DESIGN 8.2 says only a list that changed is built again. A removed record is already passed over by `live` and `drawn`, so removing needs no build; `setZ` marks only the draw lists; a branch added last in the tree's order, as a spawn under the root is, joins the lists' ends. Size: M.
 - **P3 · Shapes and fonts make garbage at each draw.** `components/shape.lua:35-60` builds an outline and a list of points for each shape at each draw, a rectangle too; `library/data.lua:161` makes a table and a key for each `data.load("font")`, which `font.sharp` (`font.lua:38`) calls for each scaled text at each frame. Not measured. Size: S.
 - **P3 · Two errors mislead an author.** `tree.lua:159-163` `spawn` and `newNode` without a parent while the top node loads say "the parent is no node of the tree", not that the root is not loaded yet. Size: S.
 

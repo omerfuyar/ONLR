@@ -40,6 +40,43 @@ check.run(function()
   end
   check.equal(got, wanted, "one frame")
 
+  -- Nodes that join run in the tree's order: one added last joins the lists' ends, one added in the middle builds them again,
+  -- a lower z draws first, and a node turned off and on again runs where it was (DESIGN 8.2).
+  local function calls(name)
+    local out = {}
+    for _, line in ipairs(log.take()) do
+      local node = line:match("^(%w+)%." .. name .. "$")
+      if node then
+        out[#out + 1] = node
+      end
+    end
+    return table.concat(out, " ")
+  end
+  local x = tree.newNode("X")
+  x:addComponent("log")
+  check.frames(1)
+  local y = tree.newNode("Y", a)
+  y:addComponent("log")
+  check.frames(1)
+  log.take()
+  check.frames(1)
+  check.equal(calls("update"), "Keeper Root A A1 Y X", "nodes that joined update in the tree's order")
+  check.frames(1)
+  check.equal(calls("draw"), "Keeper Root A A1 Y X", "and draw in it")
+  x:setZ(-1)
+  check.frames(1)
+  check.equal(calls("draw"), "X Keeper Root A A1 Y", "a lower z draws first")
+  a:setActive(false)
+  a:setActive(true)
+  check.frames(1)
+  log.take()
+  check.frames(1)
+  check.equal(calls("update"), "Keeper Root A A1 Y X", "a node turned off and on runs where it was")
+  x:destroy()
+  y:destroy()
+  check.frames(1)
+  log.take()
+
   -- Turning a node off takes effect at once, children first; on again, parents first, with updates from the next frame.
   a:setActive(false)
   check.equal(log.take(), { "A1.disable", "A.disable" }, "setActive(false)")

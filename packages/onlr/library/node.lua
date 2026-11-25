@@ -283,7 +283,7 @@ function Node:setZ(z)
     error("z is a number", 2)
   end
   self._z = z
-  life.dirty()
+  life.zChanged()
 end
 
 ---The node's parent: nil for the top node.
@@ -340,7 +340,7 @@ function Node:setParent(parent, index)
   if nowIn and not wasIn then
     life.enter(life.collect(self, {}))
   elseif wasIn then
-    life.changed(self)
+    life.changed(self, true)
   end
 end
 
