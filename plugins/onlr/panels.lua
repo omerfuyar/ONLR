@@ -17,7 +17,7 @@ require("history")
 
 -- What the project says shows in the console.
 ecs.event.subscribe("onlr.said", function(_, text)
-  console.add(text, "info")
+  console.add(text, "info", nil, "onlr")
 end)
 
 -- Undo, redo and save, and the game's keys, act on the whole project, so the preset binds them for the whole editor (DESIGN 13.1).

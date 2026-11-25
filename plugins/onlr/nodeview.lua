@@ -111,11 +111,11 @@ local function pick(file, path)
   startPick(nil)
   local node = path and file == p.file and project.tree(file).index[path]
   if node and p.needs and not node.components[p.needs] then
-    console.add(("The node %s has no component %s."):format(node.name or node.path, p.needs), "warn")
+    console.add(("The node %s has no component %s."):format(node.name or node.path, p.needs), "warn", nil, "onlr")
   elseif node then
     p.set(path)
   elseif path then
-    console.add("A reference names a node of its own node file.", "warn")
+    console.add("A reference names a node of its own node file.", "warn", nil, "onlr")
   end
   return true
 end
@@ -1074,7 +1074,7 @@ local function drop(view, event)
         })
       end
       if message then
-        console.add(message, "error")
+        console.add(message, "error", nil, "onlr")
       end
       made[#made + 1] = id
     end
@@ -1525,7 +1525,7 @@ end
 
 local function say(_, message)
   if message then
-    console.add(message, "warn")
+    console.add(message, "warn", nil, "onlr")
   end
 end
 

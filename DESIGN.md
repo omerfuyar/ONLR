@@ -1473,6 +1473,7 @@ end
 - A runner is another program, so a game that fails or never returns leaves the editor running. The editor shows what happened, and starts the runner again when asked.
 - The editor gives the preview two seconds for each answer. When it does not answer, as when a `drawEditor` never returns, or the game's code fails before the engine has loaded, the editor ends it, shows in the console what it printed, and starts it again at the next change. When it stops twice in a row, it does not start again until the user asks, with Start the Preview Again.
 - The editor reads what a runner prints, and shows it in the console, each line an entry, which stacks on the one before it when it repeats it (OpenECS-std DESIGN 31). In a runner, the engine turns off the buffer of the game's output, so each line shows when it is printed. Play clears the console first, unless its Clear on Run toggle is off.
+- Each entry names its source, which the console's checkboxes show or hide: `game` for what the game prints and its errors, `preview` for the preview's errors and what it printed before it ended, `export` for what an export says, and `onlr` for the editor's own warnings. The console also shows the log's lines from the level of its setting `console.logLevel` up, warnings by default, each with its plugin as its source, `onlr` for the editor's own, so a misuse that the editor or OpenECS reports reaches the user without a terminal.
 
 ### 12.2 The link
 
@@ -1561,7 +1562,7 @@ end
 - Every panel is a panel type that a plugin registers (OpenECS DESIGN 4), and the preset only places them. No panel is built into the editor, so the user opens, moves and groups them as in any OpenECS tool.
 - The preset places the asset viewer under the inspector, in the same column, so a file that a click chooses shows beside its details (13.7).
 - A panel that needs nothing of ONLR, such as the files panel, the asset viewer and the console, is a standard plugin that knows nothing of ONLR and serves any OpenECS tool: OpenECS-std's `files`, `viewer` and `console` (OpenECS-std DESIGN 29, 30 and 31).
-- Such a plugin is told what ONLR needs through its functions. The files panel takes handlers: what a click shows, how a file opens, which files it makes, what a rename and a delete do, and what the question before a delete adds. It drags a file as a list of paths, as another application's files come. The console takes lines, and the folder that their files are in.
+- Such a plugin is told what ONLR needs through its functions. The files panel takes handlers: what a click shows, how a file opens, which files it makes, what a rename and a delete do, and what the question before a delete adds. It drags a file as a list of paths, as another application's files come. The console takes lines, each with its source (12.1), and the folder that their files are in.
 - A panel of ONLR's own, such as the inspector or the node hierarchy, is built from generic parts, such as ui's elements. A part that it needs and that knows nothing of ONLR is added to the standard plugin that it belongs to, not written inside ONLR, and not worked around.
 
 ONLR's own panels and functions are one plugin, `onlr`, whose names all start with `onlr.`, such as `onlr.play` and the panel type `onlr.view`. It has a file for each part:

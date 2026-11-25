@@ -284,7 +284,7 @@ function search.open()
   end
   local panel, message = ecs.layout.open("onlr.search")
   if not panel then
-    console.add(message or "The search cannot open.", "warn")
+    console.add(message or "The search cannot open.", "warn", nil, "onlr")
   end
 end
 
