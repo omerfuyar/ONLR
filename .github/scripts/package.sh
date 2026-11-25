@@ -146,6 +146,7 @@ base, in \`OpenECS/\`, and LÖVE 11.5 in \`love/\`, which runs your game. Nothin
 - Start the editor with \`ONLR\`. To open the gallery, a project that shows what ONLR does: \`$start\`.
 - \`$install\` adds ONLR to your system's list of programs; \`--uninstall\` removes it.
 - Your projects can be anywhere. A new project gets the engine, \`packages/onlr/\`, from this folder.
+- \`GUIDE.md\` shows how to make a game with this release, step by step.
 
 More: https://github.com/omerfuyar/ONLR
 EOF
