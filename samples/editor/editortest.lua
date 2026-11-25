@@ -536,14 +536,19 @@ return {
     test.wait(0.2)
     test.click(vx, vy)
     test.match(chosen(), { "aaaaaa" }, "an unlocked node is chosen again")
-    -- each row has Hide and Lock at its end, which a click turns as H and L do, and which choose nothing
+    -- each row has an eye and a lock at its end, which a click turns as H and L do, and which choose nothing; they are icons, as
+    -- square as the row is high, not words
     local function markAt(id)
       local r = assert(test.panel(panelOf(test, "onlr.hierarchy")).state.marks[id], "the node hierarchy shows " .. id)
       return tree.x + r.x + r.width / 2, tree.y + r.y + r.height / 2
     end
+    for _, mark in ipairs({ "hidden", "locked" }) do
+      local r = test.panel(panelOf(test, "onlr.hierarchy")).state.marks["bbbbbb:" .. mark]
+      check(r.width <= r.height + 1, "B's " .. mark .. " mark is an icon, " .. r.width .. " wide and " .. r.height .. " high")
+    end
     test.click(markAt("bbbbbb:hidden"))
     test.wait(0.2)
-    check(settings():find('hidden = {%s*%["nodes/start.lua"%] = {%s*bbbbbb = true'), "a click on B's Hide hides it:\n" .. settings())
+    check(settings():find('hidden = {%s*%["nodes/start.lua"%] = {%s*bbbbbb = true'), "a click on B's eye hides it:\n" .. settings())
     test.match(chosen(), { "aaaaaa" }, "and chooses nothing")
     test.click(markAt("bbbbbb:hidden"))
     test.wait(0.2)

@@ -126,7 +126,7 @@ The **Transform** bar, over the node view, chooses what a drag in the node view 
 - **Snap** moves and sizes in steps of **Grid** pixels. Holding Ctrl while dragging turns snapping on or off for that drag.
 - The wheel zooms. A drag with the middle button, or with Alt held, moves the view. **F** fits the view to the chosen nodes.
 - A click chooses the node under the pointer, and Shift adds to the choice. A drag from empty space chooses every node in the rectangle.
-- **H** hides the chosen nodes in the node view, and **L** locks them, so a click there does not choose them, as a background that you do not want to move by mistake. Each row of the node hierarchy has Hide and Lock too. The game still shows them.
+- **H** hides the chosen nodes in the node view, and **L** locks them, so a click there does not choose them, as a background that you do not want to move by mistake. Each row of the node hierarchy ends with an eye and a lock, which a click turns for that node alone: a closed eye or a shut lock shows the mark. The game still shows them.
 
 The grey rectangle, named "Window", is the game's window: what is outside any camera shows on the screen where it is drawn there.
 
