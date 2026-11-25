@@ -105,6 +105,7 @@ A few things to know:
 - **A double click** on a node file, in the files panel, opens it in the node view. A double click on a script opens it in your code editor.
 - **Every change can be undone** with Ctrl+Z, and choosing nodes is in the history too, so Ctrl+Z walks back through everything that you did. Renaming, moving and deleting files are not in the history: a deleted file goes to the system's trash.
 - **Save** with Ctrl+S. Play saves first.
+- **Files changed outside the editor**, by your code editor or by git, are read again. When the editor holds changes of such a file that are not saved, or the file was deleted, it asks which to keep. Kept changes are written at the next save.
 - **A right click** opens a menu wherever there is one: on a node, on empty space in the node view, on a component's heading in the inspector, and on a file.
 
 ### 2.1 The node view's tools
