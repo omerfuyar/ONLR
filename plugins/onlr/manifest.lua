@@ -3,7 +3,7 @@
 return {
   name = "onlr",
   version = "0.1.0",
-  api = 3,
+  api = 4,
   type = "lua",
   description = "ONLR's editor: the open project, the runners and the link, its panels, and export",
   depends = {
