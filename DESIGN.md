@@ -1458,6 +1458,7 @@ end
   - Shädows takes a camera's place and zoom, not its angle: under a camera that turns, the light does not turn with the world.
   - The light's canvas is multiplied over all that is in what the world draws into, also what drew before the world's node. So the world belongs on a node that draws first, such as the level's root, and what draws after it, such as a score, is not darkened.
   - A light's `radius` does not grow with its node's scale.
+  - Soft edges, `blur`, which is on by default, cost each frame in proportion to the light's area. On a weak GPU they are what costs: drawn in software, as the checks draw, the gallery's room of two lights of radius 260 and 420 takes 90 ms a frame with them and 9 without, where every other room takes about 1.5. A game for phones turns `blur` off on its large lights.
   - Each caster is a body of Shädows' own. Shädows' bodies of many shapes, its heights, its images, normal maps and height maps, its rooms and its stars have no component: a script makes them on `get()`.
   - A polygon is meant to be convex, as a physics fixture's is (11.4); a concave one is not tested.
   - Each caster that moves makes the shadows of the lights that reach it again, which is slow for many moving casters.
