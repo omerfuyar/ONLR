@@ -180,7 +180,7 @@ function Search:rows()
   return rows, first
 end
 
-function Search:draw(surface)
+function Search:view()
   -- what the project holds changed since the last search: found again only now, when the panel shows
   if self.stale then
     self:find()
@@ -203,7 +203,7 @@ function Search:draw(surface)
       end,
     }, rows)
   end
-  ui.show(self.panel, surface, ui.column({ padding = 8, gap = 6 }, {
+  return ui.column({ padding = 8, gap = 6 }, {
     ui.search(self.query, {
       placeholder = "Search everything",
       results = "results",
@@ -216,7 +216,7 @@ function Search:draw(surface)
       end,
     }),
     list,
-  }))
+  })
 end
 
 -- What the project holds changed: the index is made again when a panel with a query next draws, not at each change, so a
@@ -240,10 +240,6 @@ function Search.create(panel)
   return self
 end
 
-function Search:event(event)
-  ui.event(self.panel, event)
-end
-
 function Search:saveState()
   -- not read back; a test reads what shows
   local shown = {}
@@ -255,18 +251,16 @@ end
 
 function Search:destroy()
   searches[self.panel] = nil
-  ui.forget(self.panel)
 end
 
-ecs.panel.registerType({
+ecs.panel.registerType(ui.panelType({
   name = "search",
   title = "Search",
   create = Search.create,
-  draw = Search.draw,
-  event = Search.event,
+  view = Search.view,
   saveState = Search.saveState,
   destroy = Search.destroy,
-})
+}))
 
 local search = {}
 

@@ -796,7 +796,7 @@ local function chosenFileSubject(out)
   out[#out + 1] = ui.text("A double click in the files panel opens it.", { style = STYLES.note })
 end
 
-local function draw(state, surface)
+local function view(state, surface)
   state.drops = {}
   state.scale = surface.scale
   local out = {}
@@ -809,9 +809,8 @@ local function draw(state, surface)
   else
     fileSubject(state, out)
   end
-  local root = ui.scroll({ id = "inspector", padding = 8, gap = 6 }, out)
-  ui.show(state.panel, surface, root)
-  state.shown = root
+  state.shown = ui.scroll({ id = "inspector", padding = 8, gap = 6 }, out)
+  return state.shown
 end
 
 -- The rectangles of the elements that have ids, in the panel's pixels, as the last draw laid them out, for a test (DESIGN 16).
@@ -879,7 +878,7 @@ local function drop(state, event)
   end
 end
 
-ecs.panel.registerType({
+ecs.panel.registerType(ui.panelType({
   name = "inspector",
   title = "Inspector",
   stateVersion = STATE_VERSION,
@@ -898,12 +897,11 @@ ecs.panel.registerType({
     panel:acceptDrops({ "file-list", "onlr.node" })
     return state
   end,
-  draw = draw,
+  view = view,
+  -- ui gives the elements the events that reach them, and a drop that no element takes comes here
   event = function(state, event)
     if event.type == "drop" then
       drop(state, event)
-    else
-      ui.event(state.panel, event)
     end
   end,
   saveState = function(state)
@@ -912,6 +910,5 @@ ecs.panel.registerType({
   end,
   destroy = function(state)
     shared.inspectors[state.panel] = nil
-    ui.forget(state.panel)
   end,
-})
+}))

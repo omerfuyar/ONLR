@@ -324,7 +324,7 @@ local function chooseFolder()
   end)
 end
 
-ecs.panel.registerType({
+ecs.panel.registerType(ui.panelType({
   name = "export",
   title = "Export",
   redrawOn = { "onlr.opened", "onlr.closed", "onlr.settings", "onlr.exported" },
@@ -332,7 +332,7 @@ ecs.panel.registerType({
     open[panel] = true
     return { panel = panel }
   end,
-  draw = function(state, surface)
+  view = function()
     local children = {}
     if project.folder() == "" then
       children[1] = ui.text("No project is open.", { style = STYLES.note })
@@ -349,16 +349,12 @@ ecs.panel.registerType({
         ui.text(status, { wrap = true }),
       }
     end
-    ui.show(state.panel, surface, ui.column({ padding = 8, gap = 8 }, children))
-  end,
-  event = function(state, event)
-    ui.event(state.panel, event)
+    return ui.column({ padding = 8, gap = 8 }, children)
   end,
   destroy = function(state)
-    ui.forget(state.panel)
     open[state.panel] = nil
   end,
-})
+}))
 
 local functions = {
   showExport = { sig = "void()", doc = "Show the Export panel", fn = function()
