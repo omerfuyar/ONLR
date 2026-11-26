@@ -177,6 +177,14 @@ jobs:
       - name: Run the samples' tests
         run: .github/scripts/test.sh
 
+      # Each test's seconds, the slowest first, in the log and the run's summary, also when a test failed (DESIGN.md, section 16)
+      - name: List the tests' times
+        if: ${{ !cancelled() }}
+        run: |
+          times=$(sed -n -E 's/^(pass|FAIL) (.*) \(([0-9.]+) s\)$/\3 s  \1 \2/p' build/tests/tests.log | sort -rn)
+          echo "$times"
+          { echo '### The tests'"'"' times'; echo; echo '```'; echo "$times"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
   lua:
     name: Lua (LuaLS)
     runs-on: ubuntu-24.04
