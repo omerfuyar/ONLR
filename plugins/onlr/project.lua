@@ -47,7 +47,7 @@ local resolve = require("resolve")
 ---@field types table<string, table> what the preview answered of each type
 ---@field trees table<string, onlr.editor.Tree> the trees made since their files last changed
 ---@field nodeFiles string[]? the paths of the node files, in order, until a file under nodes/ comes or goes
----@field watches table<string, any>
+---@field watch fs.watch? the watch of the project's folder and the folders in it
 ---@field touch (fun(path: string))?
 
 ---@type onlr.editor.Project?
@@ -619,8 +619,6 @@ end
 local pending = {} ---@type table<string, string> the paths that changed on disk, and how
 local pendingTimer
 
-local watchFolder
-
 -- Keeps the editor's changes of a file over what is on disk now, its new text or nil when it is gone. The file is unsaved against that
 -- text, and a save asks first when a person wrote it, as when it was read (DESIGN 4.2).
 local function keepEditors(file, text)
@@ -648,7 +646,6 @@ local function diskChanged()
     end
     local info = fs.info(absolute(path))
     if info and info.type == "folder" then
-      watchFolder(path)
       code = code or path:match("^components") ~= nil or path:match("^packages") ~= nil
     elseif isNodeFile(path) or path == "manifest.lua" then
       local file = p.files[path]
@@ -705,46 +702,48 @@ local function diskChanged()
   ecs.event.emit("onlr.disk", { kind = "files" })
 end
 
--- Watches a folder and the folders in it that are not watched yet. A watch whose folder goes, such as one that git removes, is
--- forgotten and its parent read again, so the folder is watched again when it comes back; one that lost changes reads its folder
--- again (OpenECS-std DESIGN 20).
-function watchFolder(dir)
-  local p = assert(P)
-  if p.watches[dir] == nil then
-    local watch, err = fs.watch(absolute(dir), function(_, name, change)
-      if name == "" then
-        if change == "gone" then
-          p.watches[dir] = nil
-          if dir ~= "" then
-            pending[dir:match("^(.*)/[^/]*$") or ""] = "changed"
-          end
-        elseif change == "overflow" then
-          pending[dir] = "changed"
-          for _, entry in ipairs(fs.list(absolute(dir), "") or {}) do
-            if entry.type == "file" and entry.name:sub(1, 1) ~= "." then
-              pending[dir == "" and entry.name or (dir .. "/" .. entry.name)] = "changed"
-            end
-          end
-        end
-      elseif name:sub(1, 1) == "." or name:match("%.new$") then
-        return
-      else
-        pending[dir == "" and name or (dir .. "/" .. name)] = change
-      end
-      if not pendingTimer then
-        pendingTimer = ecs.timer.start(0.05, false, diskChanged)
-      end
-    end)
-    if not watch then
-      say(("The editor does not see changes in %s: %s"):format(dir == "" and "the project's folder" or dir, tostring(err)))
-    end
-    p.watches[dir] = watch or false
-  end
+-- Marks each file of a folder, and of the folders in it, as changed, so they are read again, as after an overflow.
+local function changedAll(dir)
   for _, entry in ipairs(fs.list(absolute(dir), "") or {}) do
-    if entry.type == "folder" and entry.name:sub(1, 1) ~= "." then
-      watchFolder(dir == "" and entry.name or (dir .. "/" .. entry.name))
+    local path = dir == "" and entry.name or (dir .. "/" .. entry.name)
+    if entry.name:sub(1, 1) == "." then
+      -- what starts with a dot is the editor's own, or a tool's, such as git's
+    elseif entry.type == "folder" then
+      changedAll(path)
+    else
+      pending[path] = "changed"
     end
   end
+end
+
+-- Watches the project's folder and the folders in it with fs's recursive watch, which watches a folder that comes, such as one that git
+-- makes again when it changes branches, and tells what it holds already; a watch that lost changes reads its folder again
+-- (OpenECS-std DESIGN 10).
+local function watchProject()
+  local p = assert(P)
+  local folder = absolute("")
+  -- the folder that a change comes with is the project's folder and the path in it, ending with a slash
+  local root = #folder:match("^(.-)[/\\]*$") + 2
+  local watch, err = fs.watch(folder, function(at, name, change)
+    local dir = at:sub(root, -2)
+    if name == "" then
+      if change == "overflow" then
+        pending[dir] = "changed"
+        changedAll(dir)
+      end
+    elseif name:sub(1, 1) == "." or name:match("%.new$") then
+      return
+    else
+      pending[dir == "" and name or (dir .. "/" .. name)] = change
+    end
+    if not pendingTimer then
+      pendingTimer = ecs.timer.start(0.05, false, diskChanged)
+    end
+  end, true)
+  if not watch then
+    say(("The editor does not see changes in the project's folder: %s"):format(tostring(err)))
+  end
+  p.watch = watch
 end
 
 -- Opening and closing
@@ -830,10 +829,8 @@ local function close()
       return false
     end
   end
-  for _, watch in pairs(p.watches) do
-    if watch then
-      watch:stop()
-    end
+  if p.watch then
+    p.watch:stop()
   end
   P = nil
   ecs.event.emit("onlr.closed")
@@ -893,7 +890,7 @@ local function open(folder)
 
   P = {
     folder = folder, files = {}, history = {}, position = 0, chosen = { paths = {} }, tool = "move", settings = {},
-    space = {}, typeNames = {}, typeFiles = {}, types = {}, trees = {}, watches = {},
+    space = {}, typeNames = {}, typeFiles = {}, types = {}, trees = {},
   }
   readSettings()
   scanTypes()
@@ -903,7 +900,7 @@ local function open(folder)
       getFile(path)
     end
   end)
-  watchFolder("")
+  watchProject()
 
   for i = #recent, 1, -1 do
     if recent[i] == folder then
@@ -1822,7 +1819,6 @@ local function scaleToWindow()
       return false, "ONLR's push package is not in " .. home() .. "packages/."
     end
     copyFolder(home() .. "packages/push", absolute("packages/push"))
-    watchFolder("packages/push")
     scanTypes()
     p.types = {}
     ecs.event.emit("onlr.types")

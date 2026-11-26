@@ -898,6 +898,34 @@ return {
     os.execute("rm -rf components/extra")
     test.wait(2)
 
+    -- a folder that is moved away and made again with other files in it, before the editor reads the changes, as git can do when it
+    -- changes branches: the editor reads the files that the new folder holds, so the node that part.lua gains shows in its instance, and
+    -- the old folder brought back takes it away again (DESIGN 13.6). The editor runs only while the test waits, so it sees all at once.
+    local function instanceHasNew()
+      test.click(row(2))
+      test.key("Ctrl+A")
+      local all = chosen()
+      test.click(row(2))
+      return has(all, "p4rt01/n3w000") == true
+    end
+    check(not instanceHasNew(), "Part's instance holds Tip only")
+    assert(os.rename("nodes", "nodes.away"))
+    os.execute("mkdir nodes")
+    for _, name in ipairs({ "start.lua", "outer.lua", "part.lua" }) do
+      local text = read("nodes.away/" .. name)
+      if name == "part.lua" then
+        text = text:gsub("\n  children = {\n", '\n  children = {\n    {\n      id = "n3w000",\n      name = "New",\n    },\n', 1)
+      end
+      local made = assert(io.open("nodes/" .. name, "wb"))
+      made:write(text)
+      made:close()
+    end
+    test.wait(1)
+    check(instanceHasNew(), "the files of a folder made again are read: Part's instance holds its new node")
+    os.execute("rm -rf nodes && mv nodes.away nodes")
+    test.wait(1)
+    check(not instanceHasNew(), "the folder brought back is read again")
+
     -- a property with when shows only while the property that it names has one of its values: a rectangle shows its width,
     -- and a circle its radius in its place (DESIGN 6.2)
     local panelState = test.panel(panelOf(test, "onlr.inspector")).state
