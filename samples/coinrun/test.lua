@@ -99,4 +99,13 @@ check.run(function()
   local round = tree.newNode("Round")
   round:addComponent("onlr.shape", { kind = "circle" })
   check.fails(function() round:addComponent("bump.body") end, "takes a rectangle, and its onlr.shape is a circle", "a body of a circle")
+
+  -- While the top node loads, there is no root to add a world to: a body that finds none says so (DESIGN 11.3).
+  local early = tree.newNode("Early", tree.top)
+  check.fails(function()
+    check.whileTopLoads(function() early:addComponent("bump.body") end)
+  end, "while the top node loads: put a bump.world on the top node", "a body on the top node without a world")
+  round:destroy()
+  early:destroy()
+  check.frames(1)
 end)

@@ -98,6 +98,22 @@ function check.fails(fn, text, what)
   return tostring(err)
 end
 
+---Runs a function as what loads with the top node runs, before the first root (DESIGN 5): onlr.tree.root is nil, and
+---onlr.tree.findComponent finds nothing, as in a top node without the component that it is asked for. Then puts both back,
+---and raises the function's error, if it raised one.
+---@param fn fun()
+function check.whileTopLoads(fn)
+  local tree = require("onlr").tree
+  local root, findComponent = tree.root, tree.findComponent
+  tree.root = nil
+  tree.findComponent = function() end
+  local ok, err = pcall(fn)
+  tree.root, tree.findComponent = root, findComponent
+  if not ok then
+    error(err, 0)
+  end
+end
+
 ---Lets the game run a number of frames, then goes on with the test.
 ---@param frames? integer 1 when left out
 function check.frames(frames)
