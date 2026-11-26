@@ -20,6 +20,8 @@ return {
   settings = {
     -- the editor starts as it was closed: the project, the panels and their locks, and the projects opened last (DESIGN 13.2)
     ["ecs.keepSession"] = true,
+    -- a new console shows from Info up, where the game's prints are; OpenECS-std's console starts at Warnings
+    ["console.show"] = "Info and up",
     -- the title bar's menus, which are the tool's menu (DESIGN 13.2, OpenECS DESIGN 6.11): what acts on the whole project, as
     -- Unity's File, Edit and a menu of the game; the settings and the panels put themselves under Tools
     ["ecs.titleMenus"] = {

@@ -28,6 +28,8 @@ ecs.key.bind("onlr.hierarchy", "Escape", "onlr.cancelPick")
 ecs.key.bind("onlr.inspector", "Escape", "onlr.cancelPick")
 ecs.key.bind("onlr.hierarchy", "L", "onlr.lockChosen")
 ecs.key.bind("onlr.hierarchy", "Shift+A", "onlr.selectWithChildren")
+-- F frames the nodes chosen in the hierarchy in their node view, as it does in the node view (DESIGN 13.4)
+ecs.key.bind("onlr.hierarchy", "F", "onlr.frame")
 -- the tools' keys work in the Transform bar that shows them, as in the node view
 for key, name in pairs({ W = "onlr.toolMove", E = "onlr.toolTurn", R = "onlr.toolScale", T = "onlr.toolRect", Y = "onlr.toolShape" }) do
   ecs.key.bind("onlr.transform", key, name)

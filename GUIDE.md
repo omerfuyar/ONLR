@@ -93,7 +93,7 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 | Transform         | The bar over the node view | The tool and its pivot, snapping and the grid (2.1).                                           |
 | Node hierarchy    | Left                    | The tree of the node file that is open: choose nodes, rename them, drag them into other nodes.   |
 | Node view         | Middle                  | The node file drawn as the game draws it: choose nodes, and move, turn and scale them.           |
-| Inspector         | Right                   | The chosen nodes' place and components, and their values.                                      |
+| Inspector         | Right                   | The chosen nodes' place and components, and their values. A click on a component's heading, or on a list's, folds it. |
 | Project, Export   | **Window** in the title bar | The project's settings (1.4), and export (9). Each opens as a tab beside the inspector, and closes with its tab. |
 | Viewer            | Under the inspector     | The picture, sound or text of the file chosen in the files panel.                                |
 | Console           | Bottom                  | What the game prints, its errors, and the editor's warnings. A click on an error's file opens it in your code editor. |
@@ -110,7 +110,7 @@ A few things to know:
 - **Every change can be undone** with Ctrl+Z, and choosing nodes is in the history too, so Ctrl+Z walks back through everything that you did. Renaming, moving and deleting files are not in the history: a deleted file goes to the system's trash.
 - **Save** with Ctrl+S. Play saves first.
 - **Files changed outside the editor**, by your code editor or by git, are read again. When the editor holds changes of such a file that are not saved, or the file was deleted, it asks which to keep. Kept changes are written at the next save.
-- **A right click** opens a menu wherever there is one: on a node, on empty space in the node view, on a component's heading in the inspector, and on a file.
+- **A right click** opens a menu wherever there is one: on a node, on empty space in the node view, on a component's heading in the inspector, and on a file. A component's menu opens its script in your code editor with **Open script**.
 - **The editor's colours** are a theme, the setting `ecs.theme` in the editor's settings, under **Tools** in the title bar: the system's dark or light, `dark`, `light`, two of high contrast, a deeper dark, and a few with colours of their own. Errors and warnings show in the theme's own colours for them.
 
 ### 2.1 The node view's tools
@@ -127,7 +127,7 @@ The **Transform** bar, over the node view, chooses what a drag in the node view 
 
 - **Own place**, **Own middle** and **Selection** choose what the chosen nodes turn and scale around: each its own place, each the middle of its own picture, or the middle of all of them together.
 - **Snap** moves and sizes in steps of **Grid** pixels. Holding Ctrl while dragging turns snapping on or off for that drag.
-- The wheel zooms. A drag with the middle button, or with Alt held, moves the view. **F** fits the view to the chosen nodes.
+- The wheel zooms. A drag with the middle button, or with Alt held, moves the view. **F** fits the view to the chosen nodes, also when they were chosen in the node hierarchy.
 - A click chooses the node under the pointer, and Shift adds to the choice. A drag from empty space chooses every node in the rectangle.
 - **H** hides the chosen nodes in the node view, and **L** locks them, so a click there does not choose them, as a background that you do not want to move by mistake. Each row of the node hierarchy ends with an eye and a lock, which a click turns for that node alone: a closed eye or a shut lock shows the mark. The game still shows them.
 
@@ -416,7 +416,7 @@ Files whose names start with a dot, such as `.onlr/`, stay out, and so do the pa
 | F5, F6         | Everywhere        | Play, Play this file                                     |
 | F7, F8, Shift+F5 | Everywhere      | Pause, Step, Stop                                        |
 | W, E, R, T, Y  | Node view, Transform | Move, Turn, Scale, Rect and Shape tools               |
-| F              | Node view         | Fit the view to the chosen nodes                         |
+| F              | Node view, node hierarchy | Fit the node view to the chosen nodes            |
 | H, L           | Node view, node hierarchy | Hide, lock the chosen nodes in the node view             |
 | Ctrl+D         | Node view, node hierarchy | Duplicate                                               |
 | Delete         | Node view, node hierarchy | Delete                                                  |

@@ -47,6 +47,13 @@ return {
       check((manifest.library ~= nil) == wraps, name .. (wraps and " names its library" or " names no library"))
       check(not wraps or (manifest.library.version and manifest.library.source and manifest.library.license), name .. "'s library")
     end
+    -- the link's two ends write and read messages with one file, runner/wire.lua, so they never write them each in its own way
+    -- (DESIGN 12.2)
+    for _, name in ipairs({ "link.lua", "runner/link.lua" }) do
+      local text = read("../../../../plugins/onlr/" .. name)
+      check(text:find("wire.lua", 1, true) or text:find('part("wire")', 1, true), name .. " loads wire.lua")
+      check(not text:find("function link.write", 1, true) and not text:find('"^(%d+) (%d+)', 1, true), name .. " writes no message itself")
+    end
     local view = test.rect(panelOf(test, "onlr.view"))
     -- A node view starts with the world's point -40, -40 at its top left, at a zoom of 1.
     local function at(x, y)
@@ -70,6 +77,8 @@ return {
     -- the editor keeps its session, so it starts again with this project, its panels and their locks, and lists it among the
     -- projects opened last (DESIGN 13.2)
     test.match(test.setting("ecs.keepSession"), true, "the editor keeps its session")
+    -- a new console shows the game's prints, which are info: OpenECS-std's console starts at Warnings (DESIGN 13.1)
+    test.match(test.setting("console.show"), "Info and up", "the console starts at Info and up")
     local kept = test.session().pluginState.onlr.state
     check(kept.folder and kept.folder:find("editor/$") and kept.recent[1] == kept.folder, "the session holds the project: " .. tostring(kept.folder))
     -- the title bar holds the editor's menus, then Play, Pause and Step, which are off while nothing plays (DESIGN 13.2)
@@ -660,13 +669,14 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the paste is one change, undone")
 
-    -- the menu's first entry, Move up, moves A's thing above its shape: the node file keeps the order, which the inspector shows,
-    -- and the move is one change (DESIGN 13.4)
+    -- the menu's second entry, Move up, after Open script, moves A's thing above its shape: the node file keeps the order, which
+    -- the inspector shows, and the move is one change (DESIGN 13.4)
     rx, ry = row(2)
     test.click(rx, ry)
     test.wait(0.2)
     hx, hy = inspected("aaaaaa:thing:heading", 0.2)
     test.click(hx, hy, 3)
+    test.key("Down")
     test.key("Return")
     test.wait(0.2)
     save()
@@ -680,6 +690,26 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the move is one change, undone")
+
+    -- the menu's first entry, Open script, opens the type's script with the command that console.editor names: here one that
+    -- marks the file, so no code editor starts (DESIGN 13.4)
+    test.setSetting("console.editor", "touch {file}.opened")
+    hx, hy = inspected("aaaaaa:thing:heading", 0.2)
+    test.click(hx, hy, 3)
+    local entries = test.menu()
+    test.match(entries and entries[1], { label = "Open script", enabled = true, chosen = true }, "the component's menu starts with Open script")
+    test.key("Return")
+    local opened = false
+    for _ = 1, 20 do
+      test.wait(0.1)
+      opened = io.open("components/thing.lua.opened") ~= nil
+      if opened then
+        break
+      end
+    end
+    check(opened, "Open script opens components/thing.lua")
+    os.remove("components/thing.lua.opened")
+    test.setSetting("console.editor", nil)
 
     -- the lock keeps A in the inspector while B is chosen, until it is turned off (DESIGN 13.4)
     test.click(inspected("lock"))
@@ -720,6 +750,13 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the added tag is one change, undone")
+    -- a list folds as a component does: a click on Tags' heading hides its items and Add, and another shows them (DESIGN 13.4)
+    test.click(inspected("aaaaaa:thing:tags:heading", 0.2))
+    test.wait(0.2)
+    check(test.panel(panelOf(test, "onlr.inspector")).state.rects["aaaaaa:thing:tags:add"] == nil, "a click on Tags folds the list")
+    test.click(inspected("aaaaaa:thing:tags:heading", 0.2))
+    test.wait(0.2)
+    check(test.panel(panelOf(test, "onlr.inspector")).state.rects["aaaaaa:thing:tags:add"] ~= nil, "and another opens it")
 
     -- an angle's field takes degrees, and the file keeps radians, as scripts read them: 45 in Turn is a quarter of pi; Lean is an
     -- angle only while mode is fly, so in walk a typed 2 stays 2 (DESIGN 6.2)
@@ -827,6 +864,30 @@ return {
     fold("aaaaaa:thing")
     fold("aaaaaa:onlr.shape")
     fold("aaaaaa:onlr.paint")
+
+    -- a folder that goes and comes back, as git does when it changes branches, is watched again: a script written into it
+    -- afterwards is a type that Add component offers (DESIGN 13.6)
+    local function addLabels()
+      test.click(inspected("aaaaaa:addComponent"))
+      local labels = {}
+      for i, entry in ipairs(test.menu() or {}) do
+        labels[i] = entry.label
+      end
+      test.key("Escape")
+      return table.concat(labels, " ")
+    end
+    os.execute("mkdir components/extra && printf 'return {}\\n' > components/extra/one.lua")
+    test.wait(1)
+    check(addLabels():find("extra", 1, true), "a new folder's script is offered: " .. addLabels())
+    os.execute("rm -rf components/extra")
+    test.wait(1)
+    os.execute("mkdir components/extra")
+    test.wait(1)
+    os.execute("printf 'return {}\\n' > components/extra/two.lua")
+    test.wait(1)
+    check(addLabels():find("extra", 1, true), "a script in a folder that came back is offered: " .. addLabels())
+    os.execute("rm -rf components/extra")
+    test.wait(2)
 
     -- a property with when shows only while the property that it names has one of its values: a rectangle shows its width,
     -- and a circle its radius in its place (DESIGN 6.2)
@@ -1201,6 +1262,15 @@ return {
     local fitted = test.panel(panelOf(test, "onlr.view")).state
     check(fitted.zoom > 2, "F zooms in on the chosen node: " .. tostring(fitted.zoom))
     check(test.pixel(view.x + view.width / 2, view.y + view.height / 2) == "#FF0000", "and centres it")
+    -- F also frames a node chosen in the node hierarchy, with the focus there: B, which lies apart from A, moves the view
+    local onA = { x = fitted.x, y = fitted.y }
+    rx, ry = row(3)
+    test.click(rx, ry)
+    test.key("F")
+    test.wait(0.5)
+    fitted = test.panel(panelOf(test, "onlr.view")).state
+    check(fitted.x ~= onA.x or fitted.y ~= onA.y, "F in the node hierarchy frames B: " .. tostring(fitted.x) .. ", " .. tostring(fitted.y))
+    test.click(at(56, 56))
 
     -- Open Base, the last entry of an instance's menu in the node hierarchy, opens its base in a node view
     rx, ry = row(4)

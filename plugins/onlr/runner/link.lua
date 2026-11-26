@@ -2,7 +2,9 @@
 -- A message is a Lua table written as text, and may carry a block of bytes after it, such as a frame's pixels.
 -- Each message starts with a line of two numbers: the size of the text and the size of the block.
 
+local part = ...
 local socket = require("socket")
+local wire = part("wire")
 
 local link = {}
 
@@ -26,60 +28,8 @@ link.LIMIT = 64 * 1024 * 1024
 ---Whether the editor closed the link, or it never opened.
 link.closed = true
 
-local function escape(c)
-  return ("\\%03d"):format(c:byte())
-end
-
----Writes a value as Lua text: numbers, texts, booleans and tables of them.
----@param value any
----@return string
-function link.write(value)
-  local kind = type(value)
-  if kind == "number" then
-    if value ~= value then
-      return "0/0"
-    elseif value == math.huge then
-      return "math.huge"
-    elseif value == -math.huge then
-      return "-math.huge"
-    elseif value == math.floor(value) and math.abs(value) < 2 ^ 53 then
-      return ("%d"):format(value)
-    end
-    return ("%.17g"):format(value)
-  elseif kind == "string" then
-    return '"' .. value:gsub('[%c"\\]', escape) .. '"'
-  elseif kind == "boolean" then
-    return tostring(value)
-  elseif kind == "table" then
-    local parts = {}
-    for i, item in ipairs(value) do
-      parts[i] = link.write(item)
-    end
-    local count = #parts
-    for key, item in pairs(value) do
-      local isIndex = type(key) == "number" and key >= 1 and key <= count and key == math.floor(key)
-      local written = not isIndex and link.write(item)
-      if written and written ~= "nil" then
-        parts[#parts + 1] = "[" .. link.write(key) .. "]=" .. written
-      end
-    end
-    return "{" .. table.concat(parts, ",") .. "}"
-  end
-  return "nil"
-end
-
----Reads a message's text. It runs as data, with nothing but math.huge in reach.
----@param text string
----@return table?
-function link.read(text)
-  local chunk = loadstring("return " .. text, "=message")
-  if not chunk then
-    return nil
-  end
-  setfenv(chunk, { math = { huge = math.huge } })
-  local ok, message = pcall(chunk)
-  return ok and type(message) == "table" and message or nil
-end
+-- how a message is written and read, which the editor's end shares
+link.write, link.read = wire.write, wire.read
 
 ---Connects to the editor, which listens on a port of this computer.
 ---@param port integer
@@ -139,8 +89,7 @@ function link.send(message, block)
   if not connection then
     return
   end
-  local text = link.write(message)
-  local bytes = ("%d %d\n"):format(#text, block and #block or 0) .. text .. (block or "")
+  local bytes = wire.pack(message, block)
   local item = { bytes = bytes, type = message.type }
   local replaced = false
   if NEWEST[message.type] then
@@ -189,11 +138,10 @@ function link.poll()
     end
   end
   while true do
-    local textSize, blockSize, headerEnd = buffer:match("^(%d+) (%d+)\n()")
+    local textSize, blockSize, headerEnd = wire.header(buffer:sub(1, wire.HEADER))
     if not textSize then
       break
     end
-    textSize, blockSize = tonumber(textSize), tonumber(blockSize)
     if #buffer < headerEnd - 1 + textSize + blockSize then
       break
     end

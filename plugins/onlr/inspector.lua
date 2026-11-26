@@ -301,27 +301,46 @@ local function rows(state, subject, out, id, decl, value, set, title, mark)
   if type(heading) == "string" and heading ~= "" then
     out[#out + 1] = ui.text(heading, { style = STYLES.heading })
   end
-  if decl.kind == "group" then
-    out[#out + 1] = ui.row({ gap = 6 }, { ui.text(name, { style = STYLES.heading, tooltip = description, grow = 1 }), mark or false })
-    local group = type(value) == "table" and value or {}
-    for _, field in ipairs(decl.fields or {}) do
-      local fieldValue = value == MIXED and MIXED or group[field.name]
-      if fieldValue == nil then
-        fieldValue = field.default
-      end
-      rows(state, subject, out, id .. "." .. field.name, field, fieldValue, function(new)
-        local whole = copy(group)
-        whole[field.name] = new
-        set(whole)
-      end)
+  if decl.kind == "group" or decl.kind == "list" then
+    -- a group and a list fold, as a component does, under a heading whose click folds them; the inspector keeps what is folded by
+    -- the property's place in its type, such as onlr.shape:points, so it stays folded for every node (DESIGN 13.4)
+    local foldKey = id:gsub("^[^:]*:", "")
+    local inner = {}
+    if mark then
+      inner[1] = ui.row({}, { ui.space(), mark })
     end
-  elseif decl.kind == "list" then
-    local list = type(value) == "table" and value or {}
-    out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-      ui.text(name, { style = STYLES.heading, tooltip = description, grow = 1 }),
-      -- no mark is false, which ui leaves out: a nil would end the list before the button
-      mark or false,
-      ui.button("Add", { id = id .. ":add", tooltip = "Add an item to the list", onClick = function()
+    if decl.kind == "group" then
+      local group = type(value) == "table" and value or {}
+      for _, field in ipairs(decl.fields or {}) do
+        local fieldValue = value == MIXED and MIXED or group[field.name]
+        if fieldValue == nil then
+          fieldValue = field.default
+        end
+        rows(state, subject, inner, id .. "." .. field.name, field, fieldValue, function(new)
+          local whole = copy(group)
+          whole[field.name] = new
+          set(whole)
+        end)
+      end
+    else
+      local list = type(value) == "table" and value or {}
+      for i, item in ipairs(list) do
+        rows(state, subject, inner, id .. "." .. i, decl.item or { kind = "string" }, item, function(new)
+          local whole = copy(list)
+          if new == nil then
+            table.remove(whole, i)
+          else
+            whole[i] = new
+          end
+          set(whole)
+        end, tostring(i))
+        inner[#inner + 1] = ui.row({}, { ui.space(), ui.button("Remove", { id = id .. "." .. i .. ":remove", tooltip = "Take this item out of the list", onClick = function()
+          local whole = copy(list)
+          table.remove(whole, i)
+          set(whole)
+        end }) })
+      end
+      inner[#inner + 1] = ui.row({}, { ui.space(), ui.button("Add", { id = id .. ":add", tooltip = "Add an item to the list", onClick = function()
         local whole = copy(list)
         local item = decl.item and decl.item.default
         if item == nil then
@@ -329,28 +348,13 @@ local function rows(state, subject, out, id, decl, value, set, title, mark)
         end
         whole[#whole + 1] = copy(item)
         set(whole)
-      end }),
-    })
-    for i, item in ipairs(list) do
-      local inner = {}
-      rows(state, subject, inner, id .. "." .. i, decl.item or { kind = "string" }, item, function(new)
-        local whole = copy(list)
-        if new == nil then
-          table.remove(whole, i)
-        else
-          whole[i] = new
-        end
-        set(whole)
-      end, tostring(i))
-      inner[#inner + 1] = ui.row({}, { ui.space(), ui.button("Remove", { id = id .. "." .. i .. ":remove", tooltip = "Take this item out of the list", onClick = function()
-        local whole = copy(list)
-        table.remove(whole, i)
-        set(whole)
       end }) })
-      for _, element in ipairs(inner) do
-        out[#out + 1] = element
-      end
     end
+    out[#out + 1] = ui.section(name, { id = id, gap = 6, tooltip = description, open = not state.folded[foldKey],
+      onToggle = function(open)
+        state.folded[foldKey] = not open or nil
+        state.panel:redraw()
+      end }, inner)
   else
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       label(name, description),
@@ -631,7 +635,13 @@ local function fileSubject(state, out)
         state.panel:redraw()
       end,
       onMenu = function(x, y)
+        local script = project.typeFile(typeName)
         ui.menu(state.panel, x, y, {
+          -- the type's script opens in the code editor, as the console's links do (DESIGN 13.4)
+          { label = "Open script", enabled = script ~= "", onClick = function()
+            console.open(script, 1)
+          end },
+          { line = true },
           -- The order is the node file's, in which the components run too (DESIGN 5).
           { label = "Move up", enabled = at > 1, onClick = function()
             project.moveComponent(file, paths, typeName, -1)
