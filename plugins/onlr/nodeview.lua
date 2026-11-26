@@ -36,7 +36,9 @@ local IMAGES = { png = true, jpg = true, jpeg = true, bmp = true, tga = true }
 ---@field drag table? what the pointer drags
 ---@field lastClick table? where the last click was, and which node it chose
 ---@field lastDown table? where the Shape tool's last press was, for 0.4 seconds, so a second one there is a double click
----@field point onlr.editor.Handle? the point that the Shape tool clicked last, which Delete removes
+---@field point { type: string, name: string?, index: integer? }? the point that the Shape tool clicked last, which Delete removes
+local View = {}
+View.__index = View
 
 local views = {} ---@type table<ecs.Panel, onlr.editor.View>
 local nextId = 0
@@ -55,26 +57,26 @@ end
 
 -- Whether a node of a view, or a node above it, has the mark. The answers for the view's nodes are kept, and made again
 -- when the marks or the nodes change, so a draw and a click ask each node once, not each node's parents (DESIGN 13.3).
-local function isMarked(view, kind, path)
-  local set = marks(kind, view.file)
-  view.marked = view.marked or {}
-  local kept = view.marked[kind]
-  if not kept or kept.set ~= set or kept.byPath ~= view.byPath then
+function View:isMarked(kind, path)
+  local set = marks(kind, self.file)
+  self.marked = self.marked or {}
+  local kept = self.marked[kind]
+  if not kept or kept.set ~= set or kept.byPath ~= self.byPath then
     local answers = {}
     local function ask(at)
       local answer = answers[at]
       if answer == nil then
-        local node = view.byPath[at]
-        answer = set[at] == true or (node ~= nil and node.parent ~= nil and view.byPath[node.parent] ~= nil and ask(node.parent))
+        local node = self.byPath[at]
+        answer = set[at] == true or (node ~= nil and node.parent ~= nil and self.byPath[node.parent] ~= nil and ask(node.parent))
         answers[at] = answer
       end
       return answer
     end
-    for _, node in ipairs(view.nodes) do
+    for _, node in ipairs(self.nodes) do
       ask(node.path)
     end
-    kept = { set = set, byPath = view.byPath, answers = answers }
-    view.marked[kind] = kept
+    kept = { set = set, byPath = self.byPath, answers = answers }
+    self.marked[kind] = kept
   end
   local answer = kept.answers[path]
   if answer == nil then
@@ -148,39 +150,39 @@ local function hiddenList(file)
   return list
 end
 
-local function sync(view)
-  if not view.file or view.width < 1 then
+function View:sync()
+  if not self.file or self.width < 1 then
     return
   end
-  runners.setView(view.id, {
-    path = view.file, x = view.x, y = view.y, zoom = view.zoom * view.scale,
-    width = math.floor(view.width * view.scale), height = math.floor(view.height * view.scale), chosen = view.chosen,
-    hidden = hiddenList(view.file),
+  runners.setView(self.id, {
+    path = self.file, x = self.x, y = self.y, zoom = self.zoom * self.scale,
+    width = math.floor(self.width * self.scale), height = math.floor(self.height * self.scale), chosen = self.chosen,
+    hidden = hiddenList(self.file),
   })
 end
 
-local function title(view)
-  local file = view.file and project.file(view.file)
-  view.panel.title = view.file and view.file:match("[^/]*$") or "Node view"
-  view.panel.unsaved = file ~= nil and file.dirty
+function View:title()
+  local file = self.file and project.file(self.file)
+  self.panel.title = self.file and self.file:match("[^/]*$") or "Node view"
+  self.panel.unsaved = file ~= nil and file.dirty
 end
 
 -- Frees the view's last frame, which the graphics card holds.
-local function dropImage(view)
-  if view.image then
-    view.image:free()
-    view.image = nil
+function View:dropImage()
+  if self.image then
+    self.image:free()
+    self.image = nil
   end
 end
 
-local function show(view, file)
-  view.file = file
-  view.chosen = {}
-  dropImage(view)
-  view.nodes, view.byPath, view.error = {}, {}, nil
-  title(view)
-  sync(view)
-  view.panel:redraw()
+function View:show(file)
+  self.file = file
+  self.chosen = {}
+  self:dropImage()
+  self.nodes, self.byPath, self.error = {}, {}, nil
+  self:title()
+  self:sync()
+  self.panel:redraw()
 end
 
 local function viewOf(file)
@@ -201,7 +203,7 @@ local function openFile(file, paths)
     -- A node view that shows no file takes it.
     for _, other in pairs(views) do
       if not other.file and not view then
-        show(other, file)
+        other:show(file)
         view = other
       end
     end
@@ -220,12 +222,12 @@ end
 
 -- Places
 
-local function toScreen(view, wx, wy)
-  return (wx - view.x) * view.zoom, (wy - view.y) * view.zoom
+function View:toScreen(wx, wy)
+  return (wx - self.x) * self.zoom, (wy - self.y) * self.zoom
 end
 
-local function toWorld(view, sx, sy)
-  return sx / view.zoom + view.x, sy / view.zoom + view.y
+function View:toWorld(sx, sy)
+  return sx / self.zoom + self.x, sy / self.zoom + self.y
 end
 
 -- The move tool's arrows: their length on the screen, and their colours, as Unity's.
@@ -262,14 +264,14 @@ local function boundsMiddle(node)
 end
 
 -- The middle of the rectangle in the world that holds every chosen node: their bounds' corners, or their places.
-local function selectionMiddle(view)
+function View:selectionMiddle()
   local x1, y1, x2, y2
   local function add(x, y)
     x1, y1 = math.min(x1 or x, x), math.min(y1 or y, y)
     x2, y2 = math.max(x2 or x, x), math.max(y2 or y, y)
   end
-  for _, path in ipairs(view.chosen) do
-    local node = view.byPath[path]
+  for _, path in ipairs(self.chosen) do
+    local node = self.byPath[path]
     if node and node.rect then
       local r = node.rect
       add(nodeToWorld(node, r[1], r[2]))
@@ -287,10 +289,10 @@ end
 
 -- What the chosen nodes are, and their places, turns and scales in the node file, to tell whether anything changed them since a
 -- turn. It reads the file, which a change writes at once, not the places that the preview sends back a frame later.
-local function placesKey(view)
-  local index = project.file(view.file) and project.tree(view.file).index or {}
+function View:placesKey()
+  local index = project.file(self.file) and project.tree(self.file).index or {}
   local parts = {}
-  for _, path in ipairs(view.chosen) do
+  for _, path in ipairs(self.chosen) do
     local n = index[path] or {}
     parts[#parts + 1] = ("%s %s %s %s %s %s"):format(path, n.posX, n.posY, n.rot, n.sclX, n.sclY)
   end
@@ -306,10 +308,10 @@ end
 
 -- The one gizmo of the chosen nodes: its place in the world, and the node that leads, the one chosen last. It is at the lead's
 -- place, the middle of the lead's bounds, or the middle of the choice, by the pivot.
-local function gizmo(view)
+function View:gizmo()
   local lead
-  for i = #view.chosen, 1, -1 do
-    lead = lead or view.byPath[view.chosen[i]]
+  for i = #self.chosen, 1, -1 do
+    lead = lead or self.byPath[self.chosen[i]]
   end
   if not lead then
     return nil
@@ -323,16 +325,16 @@ local function gizmo(view)
   end
   -- A turn or a scale goes around the point it started from, and the gizmo stays there, though the box around the turned bounds
   -- changes; after it, the point is kept while the chosen nodes are where it left them, so a second turn goes around the same one.
-  local d = view.drag
+  local d = self.drag
   if d and d.kind == "tool" and d.tool ~= "move" then
     return d.centerX, d.centerY, lead
   end
-  local kept = view.keptPivot
-  if kept and kept.key == placesKey(view) then
+  local kept = self.keptPivot
+  if kept and kept.key == self:placesKey() then
     return kept.x, kept.y, lead
   end
-  view.keptPivot = nil
-  local x, y = selectionMiddle(view)
+  self.keptPivot = nil
+  local x, y = self:selectionMiddle()
   return x, y, lead
 end
 
@@ -360,20 +362,20 @@ local function onGrip(x, y, dx, dy, sx, sy)
 end
 
 -- The nodes under a point of the view, the one that draws last first.
-local function hits(view, sx, sy)
-  local wx, wy = toWorld(view, sx, sy)
+function View:hits(sx, sy)
+  local wx, wy = self:toWorld(sx, sy)
   local found = {}
-  for i = #view.nodes, 1, -1 do
-    local node = view.nodes[i]
+  for i = #self.nodes, 1, -1 do
+    local node = self.nodes[i]
     local hit
-    if isMarked(view, "hidden", node.path) or isMarked(view, "locked", node.path) then
+    if self:isMarked("hidden", node.path) or self:isMarked("locked", node.path) then
       hit = false
     elseif node.rect then
       local x, y = worldToNode(node.place, wx, wy)
       hit = x >= node.rect[1] and y >= node.rect[2] and x <= node.rect[1] + node.rect[3] and y <= node.rect[2] + node.rect[4]
     else
       -- A node without bounds shows as a marker at its place.
-      local mx, my = toScreen(view, node.place[5], node.place[6])
+      local mx, my = self:toScreen(node.place[5], node.place[6])
       hit = math.abs(sx - mx) <= 7 and math.abs(sy - my) <= 7
     end
     if hit then
@@ -385,12 +387,12 @@ end
 
 -- The gizmo's handle under a point of the panel (DESIGN 13.3): the leading node's path and the axis, "x" or "y" for an arrow of the
 -- move tool and the scale tool's grips, and "both" for the square between the arrows, the turn tool's ring or the scale tool's square; or nil.
-local function handleAt(view, sx, sy)
-  local gx, gy, lead = gizmo(view)
+function View:handleAt(sx, sy)
+  local gx, gy, lead = self:gizmo()
   if not gx or not lead then
     return nil
   end
-  local x, y = toScreen(view, gx, gy)
+  local x, y = self:toScreen(gx, gy)
   local tool = project.tool()
   if tool == "move" then
     if sx >= x + SQUARE and sx <= x + SQUARE + SQUARE_SIZE and sy >= y + SQUARE and sy <= y + SQUARE + SQUARE_SIZE then
@@ -450,10 +452,10 @@ end
 
 -- The handles of the one chosen node, and its lists of points, to which a double click adds one. Nothing while more are chosen.
 ---@return onlr.editor.Handle[] handles, table[] lists, table? placed, string? path
-local function shapeHandles(view)
-  local path = #view.chosen == 1 and view.chosen[1] or nil
-  local placed = path and view.byPath[path]
-  local node = placed and view.file and project.tree(view.file).index[path]
+function View:shapeHandles()
+  local path = #self.chosen == 1 and self.chosen[1] or nil
+  local placed = path and self.byPath[path]
+  local node = placed and self.file and project.tree(self.file).index[path]
   if not node then
     return {}, {}
   end
@@ -475,7 +477,7 @@ local function shapeHandles(view)
       values[decl.name] = value
     end
     -- while a handle is dragged, its component's handles show the dragged values, which the history gets at the release
-    local d = view.drag
+    local d = self.drag
     if d and d.kind == "handle" and d.handle.type == typeName then
       for name, value in pairs(d.changed) do
         values[name] = value
@@ -513,11 +515,11 @@ end
 
 -- The Shape tool's handle under a point of the panel, the last drawn first.
 ---@return onlr.editor.Handle?
-local function shapeHandleAt(view, sx, sy)
-  local handles, _, placed = shapeHandles(view)
+function View:shapeHandleAt(sx, sy)
+  local handles, _, placed = self:shapeHandles()
   for i = #handles, 1, -1 do
     local h = handles[i]
-    local x, y = toScreen(view, nodeToWorld(placed, h.x, h.y))
+    local x, y = self:toScreen(nodeToWorld(placed, h.x, h.y))
     if math.abs(sx - x) <= POINT + 3 and math.abs(sy - y) <= POINT + 3 then
       return h
     end
@@ -527,8 +529,8 @@ end
 -- The Rectangle tool (DESIGN 13.3): handles at the corners and edges' middles of the one chosen node. A node whose onlr.shape is a
 -- rectangle gets the shape's, as the Shape tool's, which change its size; any other gets its bounds', which scale the node.
 ---@return onlr.editor.Handle[] handles, table? placed, string? path
-local function rectHandles(view)
-  local all, _, placed, path = shapeHandles(view)
+function View:rectHandles()
+  local all, _, placed, path = self:shapeHandles()
   if not placed then
     return {}
   end
@@ -553,16 +555,16 @@ end
 
 -- The handle of the Shape or Rectangle tool under a point of the panel.
 ---@return onlr.editor.Handle?
-local function toolHandleAt(view, sx, sy)
+function View:toolHandleAt(sx, sy)
   local tool = project.tool()
   if tool == "shape" then
-    return shapeHandleAt(view, sx, sy)
+    return self:shapeHandleAt(sx, sy)
   elseif tool == "rect" then
     -- the nearest, since a small node's handles are near each other
-    local handles, placed = rectHandles(view)
+    local handles, placed = self:rectHandles()
     local best, distance
     for _, h in ipairs(handles) do
-      local x, y = toScreen(view, nodeToWorld(placed, h.x, h.y))
+      local x, y = self:toScreen(nodeToWorld(placed, h.x, h.y))
       local far = math.max(math.abs(sx - x), math.abs(sy - y))
       if far <= POINT + 3 and (not distance or far < distance) then
         best, distance = h, far
@@ -581,20 +583,20 @@ local function sameHandle(a, b)
 end
 
 -- The chosen paths as a set, made again when the view's list is another one; the list is replaced, never changed in place.
-local function isChosen(view, path)
-  if view.chosenFor ~= view.chosen then
+function View:isChosen(path)
+  if self.chosenFor ~= self.chosen then
     local set = {}
-    for _, chosen in ipairs(view.chosen) do
+    for _, chosen in ipairs(self.chosen) do
       set[chosen] = true
     end
-    view.chosenFor, view.chosenSet = view.chosen, set
+    self.chosenFor, self.chosenSet = self.chosen, set
   end
-  return view.chosenSet[path] == true
+  return self.chosenSet[path] == true
 end
 
-local function choose(view, paths)
-  view.chosen = paths
-  project.choose(view.file, paths)
+function View:choose(paths)
+  self.chosen = paths
+  project.choose(self.file, paths)
 end
 
 -- Drawing
@@ -619,83 +621,83 @@ end
 local function outline(surface, view, node, color, thickness)
   local r = node.rect
   local left, top, right, bottom = r[1], r[2], r[1] + r[3], r[2] + r[4]
-  local ax, ay = toScreen(view, nodeToWorld(node, left, top))
-  local bx, by = toScreen(view, nodeToWorld(node, right, top))
-  local cx, cy = toScreen(view, nodeToWorld(node, right, bottom))
-  local dx, dy = toScreen(view, nodeToWorld(node, left, bottom))
+  local ax, ay = view:toScreen(nodeToWorld(node, left, top))
+  local bx, by = view:toScreen(nodeToWorld(node, right, top))
+  local cx, cy = view:toScreen(nodeToWorld(node, right, bottom))
+  local dx, dy = view:toScreen(nodeToWorld(node, left, bottom))
   gpu.line(surface, ax, ay, bx, by, thickness, color)
   gpu.line(surface, bx, by, cx, cy, thickness, color)
   gpu.line(surface, cx, cy, dx, dy, thickness, color)
   gpu.line(surface, dx, dy, ax, ay, thickness, color)
 end
 
-local function drawView(view, surface)
+function View:draw(surface)
   local w, h = surface.width / surface.scale, surface.height / surface.scale
-  if w ~= view.width or h ~= view.height or surface.scale ~= view.scale then
-    view.width, view.height, view.scale = w, h, surface.scale
-    sync(view)
+  if w ~= self.width or h ~= self.height or surface.scale ~= self.scale then
+    self.width, self.height, self.scale = w, h, surface.scale
+    self:sync()
   end
   gpu.clear(surface, "background")
 
   -- The panel draws a whole picture only: the grid, the outlines and the handles from the place and zoom of the frame
   -- that it has, not from where the view wants to be, so nothing shows that the frame does not hold yet (DESIGN 12.4).
-  local wantX, wantY, wantZoom = view.x, view.y, view.zoom
-  if view.file and view.image and view.frame and not view.error and not runners.down then
-    view.x, view.y, view.zoom = view.frame.x, view.frame.y, view.frame.zoom
+  local wantX, wantY, wantZoom = self.x, self.y, self.zoom
+  if self.file and self.image and self.frame and not self.error and not runners.down then
+    self.x, self.y, self.zoom = self.frame.x, self.frame.y, self.frame.zoom
   end
 
   -- The grid, when its lines are far enough apart to be told from each other.
   local grid = project.setting("grid") or 32
-  local step = grid * view.zoom
+  local step = grid * self.zoom
   if step >= 8 then
-    local fx = (-view.x * view.zoom) % step
+    local fx = (-self.x * self.zoom) % step
     for x = fx, w, step do
       gpu.fill(surface, x, 0, 1, h, "tab")
     end
-    local fy = (-view.y * view.zoom) % step
+    local fy = (-self.y * self.zoom) % step
     for y = fy, h, step do
       gpu.fill(surface, 0, y, w, 1, "tab")
     end
   end
 
   -- The last frame, placed by where it was drawn from, so it follows the view until the next one comes.
-  if view.image and view.frame then
-    local f = view.frame
-    local ratio = view.zoom / f.zoom
-    local x, y = toScreen(view, f.x, f.y)
-    gpu.image(surface, view.image, x, y, f.width * ratio, f.height * ratio)
+  local f = self.frame
+  if self.image and f then
+    local ratio = self.zoom / f.zoom
+    local x, y = self:toScreen(f.x, f.y)
+    gpu.image(surface, self.image, x, y, f.width * ratio, f.height * ratio)
   end
 
   -- The window's frame: where the nodes that no camera holds show, such as a score, named above its top left (DESIGN 13.3).
   local manifest = project.manifest()
   local window = manifest and manifest.window or {}
-  local x0, y0 = toScreen(view, 0, 0)
-  frameRect(surface, x0, y0, (window.width or 800) * view.zoom, (window.height or 600) * view.zoom, 1, "textDim")
+  local x0, y0 = self:toScreen(0, 0)
+  frameRect(surface, x0, y0, (window.width or 800) * self.zoom, (window.height or 600) * self.zoom, 1, "textDim")
   gpu.text(surface, draw.font("ui"), ("Window %d × %d"):format(window.width or 800, window.height or 600), x0, y0 - 16, 12, "textDim")
 
-  for _, node in ipairs(view.nodes) do
-    local chosen = isChosen(view, node.path)
+  for _, node in ipairs(self.nodes) do
+    local chosen = self:isChosen(node.path)
     local color = node.errors and "error" or chosen and "accent" or nil
-    if isMarked(view, "hidden", node.path) then
+    if self:isMarked("hidden", node.path) then
       -- a hidden node draws nothing, not even its outline or its marker
     elseif node.rect then
       if color then
-        outline(surface, view, node, color, chosen and 2 or 1)
+        outline(surface, self, node, color, chosen and 2 or 1)
       end
     else
-      local x, y = toScreen(view, node.place[5], node.place[6])
+      local x, y = self:toScreen(node.place[5], node.place[6])
       frameRect(surface, x - 4, y - 4, 8, 8, 1, color or "textDim")
     end
   end
 
   -- The one gizmo of the chosen nodes, at the pivot's place (DESIGN 13.3).
   local tool = project.tool()
-  local gx, gy, lead = gizmo(view)
+  local gx, gy, lead = self:gizmo()
   if gx and lead then
-    local x, y = toScreen(view, gx, gy)
+    local x, y = self:toScreen(gx, gy)
     if tool == "move" then
       -- the arrows along the world's x and y, which a drag moves along their axis alone, as Unity's do; y grows down, as in LÖVE
-      local axis = view.drag and view.drag.kind == "tool" and view.drag.axis
+      local axis = self.drag and self.drag.kind == "tool" and self.drag.axis
       local xColor, yColor = axis == "x" and "accent" or AXIS_X, axis == "y" and "accent" or AXIS_Y
       gpu.line(surface, x, y, x + HANDLE, y, 2, xColor)
       gpu.line(surface, x + HANDLE, y, x + HANDLE - 8, y - 5, 2, xColor)
@@ -710,13 +712,13 @@ local function drawView(view, surface)
       frameRect(surface, x + SQUARE, y + SQUARE, SQUARE_SIZE, SQUARE_SIZE, 2, "accent")
     elseif tool == "turn" then
       circle(surface, x, y, 14, 2, "accent")
-      local ox, oy = toScreen(view, lead.place[5], lead.place[6])
-      local ax, ay = toScreen(view, nodeToWorld(lead, 1, 0))
+      local ox, oy = self:toScreen(lead.place[5], lead.place[6])
+      local ax, ay = self:toScreen(nodeToWorld(lead, 1, 0))
       local length = math.max(1e-6, math.sqrt((ax - ox) ^ 2 + (ay - oy) ^ 2))
       gpu.line(surface, x, y, x + (ax - ox) / length * 14, y + (ay - oy) / length * 14, 2, "accent")
     elseif tool == "scale" then
       -- a grip along each of the leading node's own axes scales that axis alone, as Unity's do; the square scales both
-      local axis = view.drag and view.drag.kind == "tool" and view.drag.axis
+      local axis = self.drag and self.drag.kind == "tool" and self.drag.axis
       local ux, uy, vx, vy = ownAxes(lead)
       for _, grip in ipairs({ { "x", ux, uy, AXIS_X }, { "y", vx, vy, AXIS_Y } }) do
         local color = axis == grip[1] and "accent" or grip[4]
@@ -737,23 +739,23 @@ local function drawView(view, surface)
   if tool == "shape" or tool == "rect" then
     local handles, lists, placed
     if tool == "shape" then
-      handles, lists, placed = shapeHandles(view)
+      handles, lists, placed = self:shapeHandles()
     else
-      handles, placed = rectHandles(view)
+      handles, placed = self:rectHandles()
       lists = {}
     end
     for _, list in ipairs(lists) do
       for i = 2, #list.points do
         local a, b = list.points[i - 1], list.points[i]
-        local ax, ay = toScreen(view, nodeToWorld(placed, a.x or 0, a.y or 0))
-        local bx, by = toScreen(view, nodeToWorld(placed, b.x or 0, b.y or 0))
+        local ax, ay = self:toScreen(nodeToWorld(placed, a.x or 0, a.y or 0))
+        local bx, by = self:toScreen(nodeToWorld(placed, b.x or 0, b.y or 0))
         gpu.line(surface, ax, ay, bx, by, 1, "textDim")
       end
     end
-    local dragged = view.drag and view.drag.kind == "handle" and view.drag.handle
+    local dragged = self.drag and self.drag.kind == "handle" and self.drag.handle
     for _, h in ipairs(handles) do
-      local x, y = toScreen(view, nodeToWorld(placed, h.x, h.y))
-      if sameHandle(h, dragged) or h.index and sameHandle(h, view.point) then
+      local x, y = self:toScreen(nodeToWorld(placed, h.x, h.y))
+      if sameHandle(h, dragged) or h.index and sameHandle(h, self.point) then
         gpu.fill(surface, x - POINT, y - POINT, POINT * 2, POINT * 2, "accent")
       else
         gpu.fill(surface, x - POINT, y - POINT, POINT * 2, POINT * 2, "background")
@@ -762,27 +764,27 @@ local function drawView(view, surface)
     end
   end
 
-  if view.drag and view.drag.kind == "rectangle" then
-    local d = view.drag
+  local d = self.drag
+  if d and d.kind == "rectangle" then
     local x, y = math.min(d.startX, d.x), math.min(d.startY, d.y)
     frameRect(surface, x, y, math.abs(d.x - d.startX), math.abs(d.y - d.startY), 1, "accent")
   end
 
-  view.x, view.y, view.zoom = wantX, wantY, wantZoom
+  self.x, self.y, self.zoom = wantX, wantY, wantZoom
 
-  if picking and view.file == picking.file then
+  if picking and self.file == picking.file then
     gpu.text(surface, draw.font("ui"), ("Click the node for %s, here or in the node hierarchy. Escape ends it."):format(picking.label), 12, h - 22, 13, "accent")
   end
 
-  local message = view.error or runners.down
-  if not view.file then
+  local message = self.error or runners.down
+  if not self.file then
     message = project.folder() == "" and "No project is open." or "No node file is open."
   end
   if message then
     local font = draw.font("ui")
     local y = 12
     for line in (message .. "\n"):gmatch("(.-)\n") do
-      gpu.text(surface, font, line, 12, y, 13, view.file and "error" or "textDim")
+      gpu.text(surface, font, line, 12, y, 13, self.file and "error" or "textDim")
       y = y + 18
     end
   end
@@ -803,7 +805,7 @@ runners.onView = function(kind, message, block, size)
         if view.image then
           local iw, ih = view.image:size()
           if iw ~= message.width or ih ~= message.height then
-            dropImage(view)
+            view:dropImage()
           end
         end
         local failure
@@ -835,7 +837,7 @@ runners.onView = function(kind, message, block, size)
         view.panel:redraw()
       elseif kind == "error" then
         view.error = tostring(message.message)
-        dropImage(view)
+        view:dropImage()
         view.nodes, view.byPath = {}, {}
         view.panel:redraw()
       end
@@ -858,20 +860,20 @@ local function snap(value, flip)
   return value
 end
 
-local function startToolDrag(view, sx, sy)
-  local tree = project.tree(view.file)
+function View:startToolDrag(sx, sy)
+  local tree = project.tree(self.file)
   local nodes = {}
-  for _, path in ipairs(view.chosen) do
-    local node, placed = tree.index[path], view.byPath[path]
+  for _, path in ipairs(self.chosen) do
+    local node, placed = tree.index[path], self.byPath[path]
     -- A node whose parent is dragged too moves with it.
     local carried = false
     local parent = node and node.parent
     while parent do
-      carried = carried or isChosen(view, parent.path)
+      carried = carried or self:isChosen(parent.path)
       parent = parent.parent
     end
     if node and placed and not carried then
-      local parentPlace = placed.parent and view.byPath[placed.parent] and view.byPath[placed.parent].place or IDENTITY
+      local parentPlace = placed.parent and self.byPath[placed.parent] and self.byPath[placed.parent].place or IDENTITY
       nodes[#nodes + 1] = {
         path = path, posX = node.posX, posY = node.posY, rot = node.rot, sclX = node.sclX, sclY = node.sclY,
         parentPlace = parentPlace, originX = placed.place[5], originY = placed.place[6],
@@ -881,23 +883,23 @@ local function startToolDrag(view, sx, sy)
   -- Each node turns and scales around its pivot, a setting of the project (DESIGN 13.3): its own place, the middle of its bounds, or
   -- the middle of the choice. The pointer's turn and distance are seen from the gizmo, so every node turns and scales by one amount.
   local mode = pivotMode()
-  local centerX, centerY = gizmo(view)
+  local centerX, centerY = self:gizmo()
   for _, n in ipairs(nodes) do
     if mode == "own" then
       n.pivotX, n.pivotY = n.originX, n.originY
     elseif mode == "bounds" then
-      n.pivotX, n.pivotY = boundsMiddle(view.byPath[n.path])
+      n.pivotX, n.pivotY = boundsMiddle(self.byPath[n.path])
     else
       n.pivotX, n.pivotY = centerX, centerY
     end
   end
-  local wx, wy = toWorld(view, sx, sy)
-  local lead = select(3, gizmo(view))
+  local wx, wy = self:toWorld(sx, sy)
+  local lead = select(3, self:gizmo())
   local ux, uy, vx, vy = 1, 0, 0, 1
   if lead then
     ux, uy, vx, vy = ownAxes(lead)
   end
-  view.drag = {
+  self.drag = {
     kind = "tool", tool = project.tool() == "rect" and "move" or project.tool(), nodes = nodes, startX = wx, startY = wy, centerX = centerX, centerY = centerY, fields = {},
     axes = { x = { ux, uy }, y = { vx, vy } },
   }
@@ -905,9 +907,9 @@ end
 
 local TURN_STEP = math.pi / 12
 
-local function toolDrag(view, sx, sy, ctrl)
-  local d = view.drag
-  local wx, wy = toWorld(view, sx, sy)
+function View:toolDrag(sx, sy, ctrl)
+  local d = self.drag --[[@as table]]
+  local wx, wy = self:toWorld(sx, sy)
   local cx, cy = d.centerX, d.centerY
   local angle = math.atan2(wy - cy, wx - cx) - math.atan2(d.startY - cy, d.startX - cx)
   -- With Ctrl, a turn goes in steps of 15 degrees.
@@ -955,7 +957,7 @@ local function toolDrag(view, sx, sy, ctrl)
       fields.posX, fields.posY = n.posX + moveX, n.posY + moveY
     end
     d.fields[n.path] = fields
-    runners.change(view.file, n.path, fields)
+    runners.change(self.file, n.path, fields)
   end
 end
 
@@ -1023,16 +1025,16 @@ end
 
 -- A double click with the Shape tool adds a point to a list: between the two neighbouring points whose line is under the pointer,
 -- or after the last, which closes a polygon between its last corner and its first.
-local function addPoint(view, sx, sy, ctrl)
-  local _, lists, placed, path = shapeHandles(view)
+function View:addPoint(sx, sy, ctrl)
+  local _, lists, placed, path = self:shapeHandles()
   if #lists == 0 or not placed then
     return false
   end
   local list, at = lists[1], #lists[1].points + 1
   for _, each in ipairs(lists) do
     for i = 2, #each.points do
-      local ax, ay = toScreen(view, nodeToWorld(placed, each.points[i - 1].x or 0, each.points[i - 1].y or 0))
-      local bx, by = toScreen(view, nodeToWorld(placed, each.points[i].x or 0, each.points[i].y or 0))
+      local ax, ay = self:toScreen(nodeToWorld(placed, each.points[i - 1].x or 0, each.points[i - 1].y or 0))
+      local bx, by = self:toScreen(nodeToWorld(placed, each.points[i].x or 0, each.points[i].y or 0))
       local dx, dy = bx - ax, by - ay
       local length = dx * dx + dy * dy
       local f = length > 0 and math.max(0, math.min(1, ((sx - ax) * dx + (sy - ay) * dy) / length)) or 0
@@ -1041,21 +1043,21 @@ local function addPoint(view, sx, sy, ctrl)
       end
     end
   end
-  local nx, ny = worldToNode(placed.place, toWorld(view, sx, sy))
+  local nx, ny = worldToNode(placed.place, self:toWorld(sx, sy))
   local points = {}
   for i, point in ipairs(list.points) do
     points[i] = { x = point.x, y = point.y }
   end
   table.insert(points, at, { x = snap(nx, ctrl), y = snap(ny, ctrl) })
-  project.setValues(view.file, { path }, list.type, { [list.name] = points }, "Add a point")
-  view.point = { type = list.type, name = list.name, index = at }
+  project.setValues(self.file, { path }, list.type, { [list.name] = points }, "Add a point")
+  self.point = { type = list.type, name = list.name, index = at }
   return true
 end
 
 -- Delete with the Shape tool removes the point that the user clicked last.
-local function removePoint(view)
-  local p = view.point
-  local _, lists, _, path = shapeHandles(view)
+function View:removePoint()
+  local p = self.point
+  local _, lists, _, path = self:shapeHandles()
   for _, list in ipairs(lists) do
     if p and list.type == p.type and list.name == p.name and list.points[p.index] then
       local points = {}
@@ -1064,8 +1066,8 @@ local function removePoint(view)
           points[#points + 1] = { x = point.x, y = point.y }
         end
       end
-      project.setValues(view.file, { path }, list.type, { [list.name] = points }, "Remove a point")
-      view.point = nil
+      project.setValues(self.file, { path }, list.type, { [list.name] = points }, "Remove a point")
+      self.point = nil
       return true
     end
   end
@@ -1073,16 +1075,16 @@ local function removePoint(view)
 end
 
 -- Drops: an image makes a node with a sprite of it, and a node file an instance (DESIGN 13.3).
-local function drop(view, event)
-  if not view.file or type(event.value) ~= "table" then
+function View:drop(event)
+  if not self.file or type(event.value) ~= "table" then
     return
   end
-  local tree = project.tree(view.file)
+  local tree = project.tree(self.file)
   if not tree.first then
     return
   end
-  local first = view.byPath[tree.first.path]
-  local wx, wy = toWorld(view, event.x / view.scale, event.y / view.scale)
+  local first = self.byPath[tree.first.path]
+  local wx, wy = self:toWorld(event.x / self.scale, event.y / self.scale)
   local x, y = worldToNode(first and first.place or IDENTITY, wx, wy)
   x, y = snap(math.floor(x + 0.5)), snap(math.floor(y + 0.5))
   local made = {}
@@ -1093,10 +1095,10 @@ local function drop(view, event)
       local ending = (inside:match("%.(%w+)$") or ""):lower()
       local id, message
       if inside:match("^nodes/.+%.lua$") then
-        id, message = project.addInstance(view.file, tree.first.path, inside, x, y)
+        id, message = project.addInstance(self.file, tree.first.path, inside, x, y)
       elseif IMAGES[ending] then
         local name = inside:match("([^/]*)%.%w+$")
-        id = project.addNode(view.file, tree.first.path, {
+        id = project.addNode(self.file, tree.first.path, {
           name = name:sub(1, 1):upper() .. name:sub(2),
           posX = x ~= 0 and x or nil, posY = y ~= 0 and y or nil,
           components = { onlr = { sprite = { image = inside } } },
@@ -1109,7 +1111,7 @@ local function drop(view, event)
     end
   end
   if #made > 0 then
-    choose(view, made)
+    self:choose(made)
   end
 end
 
@@ -1118,15 +1120,15 @@ end
 local functions
 -- Moves and zooms the view so that the chosen nodes fill it, or every node when none is chosen, as Unity's F does.
 -- A lone node without bounds is centred at the zoom the view has.
-local function frame(view)
+function View:fit()
   local minX, minY, maxX, maxY
   local function add(x, y)
     minX, maxX = math.min(minX or x, x), math.max(maxX or x, x)
     minY, maxY = math.min(minY or y, y), math.max(maxY or y, y)
   end
-  local all = #view.chosen == 0
-  for _, node in ipairs(view.nodes) do
-    if all or isChosen(view, node.path) then
+  local all = #self.chosen == 0
+  for _, node in ipairs(self.nodes) do
+    if all or self:isChosen(node.path) then
       local r = node.rect
       if r then
         add(nodeToWorld(node, r[1], r[2]))
@@ -1138,46 +1140,47 @@ local function frame(view)
       end
     end
   end
-  if not minX or view.width < 1 then
+  if not minX or self.width < 1 then
     return
   end
   local w, h = maxX - minX, maxY - minY
   if w > 0 or h > 0 then
     -- A margin of a fifth of the view on each side.
-    local zoom = math.min(view.width / math.max(w, 1e-3), view.height / math.max(h, 1e-3)) * 0.6
-    view.zoom = math.max(0.05, math.min(32, zoom))
+    local zoom = math.min(self.width / math.max(w, 1e-3), self.height / math.max(h, 1e-3)) * 0.6
+    self.zoom = math.max(0.05, math.min(32, zoom))
   end
-  view.x = (minX + maxX) / 2 - view.width / 2 / view.zoom
-  view.y = (minY + maxY) / 2 - view.height / 2 / view.zoom
-  sync(view)
-  view.panel:redraw()
+  self.x = (minX + maxX) / 2 - self.width / 2 / self.zoom
+  self.y = (minY + maxY) / 2 - self.height / 2 / self.zoom
+  self:sync()
+  self.panel:redraw()
 end
 
-local function menu(view, event, x, y)
-  local found = hits(view, x, y)
-  local wx, wy = toWorld(view, x, y)
+function View:menu(event, x, y)
+  local found = self:hits(x, y)
+  local wx, wy = self:toWorld(x, y)
   if #found == 0 then
     -- a file that does not load, such as one with git's conflict marks, has no top node to add to (DESIGN 4.2)
-    local top = view.file and project.tree(view.file).first
-    local first = top and view.byPath[top.path]
+    local top = self.file and project.tree(self.file).first
+    local first = top and self.byPath[top.path]
     local nx, ny = worldToNode(first and first.place or IDENTITY, wx, wy)
     nx, ny = snap(math.floor(nx + 0.5)), snap(math.floor(ny + 0.5))
-    ui.menu(view.panel, event.x, event.y, {
+    ui.menu(self.panel, event.x, event.y, {
       { label = "Add node here", enabled = top ~= nil, onClick = function()
-        local id = project.addNode(view.file, top.path, { posX = nx ~= 0 and nx or nil, posY = ny ~= 0 and ny or nil })
+        ---@cast top -?
+        local id = project.addNode(self.file, top.path, { posX = nx ~= 0 and nx or nil, posY = ny ~= 0 and ny or nil })
         if id then
-          choose(view, { id })
+          self:choose({ id })
         end
       end },
       { label = "Paste", keys = "Ctrl+V", onClick = functions.pasteChosen.fn },
       { line = true },
       { label = "Frame all", keys = "F", onClick = function()
-        frame(view)
+        self:fit()
       end },
     })
     return
   end
-  ui.menu(view.panel, event.x, event.y, {
+  ui.menu(self.panel, event.x, event.y, {
     { label = "Duplicate", keys = "Ctrl+D", onClick = functions.duplicateChosen.fn },
     { label = "Delete", keys = "Delete", onClick = functions.deleteChosen.fn },
     { line = true },
@@ -1188,7 +1191,7 @@ local function menu(view, event, x, y)
     { label = "Select all", keys = "Ctrl+A", onClick = functions.selectAll.fn },
     { line = true },
     { label = "Frame chosen", keys = "F", onClick = function()
-      frame(view)
+      self:fit()
     end },
     { line = true },
     { label = "Hide in the view", keys = "H", onClick = functions.hideChosen.fn },
@@ -1196,142 +1199,142 @@ local function menu(view, event, x, y)
   })
 end
 
-local function pointer(view, event)
-  local x, y = event.x / view.scale, event.y / view.scale
-  if event.type == "pointerDown" and event.button == 3 and view.file then
-    local top = hits(view, x, y)[1]
-    if top and not isChosen(view, top) then
-      choose(view, { top })
+function View:pointer(event)
+  local x, y = event.x / self.scale, event.y / self.scale
+  if event.type == "pointerDown" and event.button == 3 and self.file then
+    local top = self:hits(x, y)[1]
+    if top and not self:isChosen(top) then
+      self:choose({ top })
     end
-  elseif event.type == "pointerUp" and event.button == 3 and view.file and not view.drag then
-    menu(view, event, x, y)
+  elseif event.type == "pointerUp" and event.button == 3 and self.file and not self.drag then
+    self:menu(event, x, y)
   elseif event.type == "pointerDown" and event.button == 1 and not event.alt and picking then
     -- a pick waits: the node under the pointer is the reference's, and a click beside the nodes ends the pick
-    pick(view.file, hits(view, x, y)[1])
+    pick(self.file, self:hits(x, y)[1])
   elseif event.type == "pointerDown" then
     if event.button == 2 or (event.button == 1 and event.alt) then
-      view.drag = { kind = "pan", startX = x, startY = y, viewX = view.x, viewY = view.y }
-    elseif event.button == 1 and view.file and toolHandleAt(view, x, y) then
+      self.drag = { kind = "pan", startX = x, startY = y, viewX = self.x, viewY = self.y }
+    elseif event.button == 1 and self.file and self:toolHandleAt(x, y) then
       -- a handle of the Shape or the Rectangle tool is above the nodes, and drags its point, edge or radius
-      local h = assert(toolHandleAt(view, x, y))
-      view.press = { x = x, y = y, found = {}, handle = h, wasChosen = true }
-      view.point = h.index and h or nil
-      view.panel:redraw()
-    elseif event.button == 1 and view.file and project.tool() == "shape" and view.lastDown
-      and math.abs(view.lastDown.x - x) <= 3 and math.abs(view.lastDown.y - y) <= 3 and addPoint(view, x, y, event.ctrl) then
+      local h = assert(self:toolHandleAt(x, y))
+      self.press = { x = x, y = y, found = {}, handle = h, wasChosen = true }
+      self.point = h.index and h or nil
+      self.panel:redraw()
+    elseif event.button == 1 and self.file and project.tool() == "shape" and self.lastDown
+      and math.abs(self.lastDown.x - x) <= 3 and math.abs(self.lastDown.y - y) <= 3 and self:addPoint(x, y, event.ctrl) then
       -- a second press within 0.4 seconds, a double click, added a point
-      view.lastDown = nil
-    elseif event.button == 1 and view.file and handleAt(view, x, y) then
+      self.lastDown = nil
+    elseif event.button == 1 and self.file and self:handleAt(x, y) then
       -- a handle of the move or scale tool is above the nodes, and drags the chosen nodes along its axis, or both
-      local path, axis = handleAt(view, x, y)
-      view.press = { x = x, y = y, found = { path }, axis = axis, wasChosen = true }
-    elseif event.button == 1 and view.file then
+      local path, axis = self:handleAt(x, y)
+      self.press = { x = x, y = y, found = { path }, axis = axis, wasChosen = true }
+    elseif event.button == 1 and self.file then
       if project.tool() == "shape" then
-        view.point = nil
+        self.point = nil
         local down = { x = x, y = y }
-        view.lastDown = down
+        self.lastDown = down
         ecs.timer.start(0.4, false, function()
-          if view.lastDown == down then
-            view.lastDown = nil
+          if self.lastDown == down then
+            self.lastDown = nil
           end
         end)
       end
-      local found = hits(view, x, y)
+      local found = self:hits(x, y)
       local top = found[1]
-      view.press = { x = x, y = y, found = found, shift = event.shift, wasChosen = top ~= nil and isChosen(view, top) }
-      if top and not event.shift and not isChosen(view, top) then
-        choose(view, { top })
+      self.press = { x = x, y = y, found = found, shift = event.shift, wasChosen = top ~= nil and self:isChosen(top) }
+      if top and not event.shift and not self:isChosen(top) then
+        self:choose({ top })
       end
     end
   elseif event.type == "pointerMove" then
-    local d, press = view.drag, view.press
+    local d, press = self.drag, self.press
     if press and not d and (math.abs(x - press.x) > 3 or math.abs(y - press.y) > 3) then
       if press.handle and press.handle.scales then
         -- the Rectangle tool on a node's bounds scales it from where the node was at the press
-        local path = view.chosen[1]
-        local node, placed = project.tree(view.file).index[path], view.byPath[path]
-        view.drag = {
+        local path = self.chosen[1]
+        local node, placed = project.tree(self.file).index[path], self.byPath[path]
+        self.drag = {
           kind = "bounds", handle = press.handle, path = path, fields = nil, place = { table.unpack(placed.place) },
           posX = node.posX, posY = node.posY, rot = node.rot, sclX = node.sclX, sclY = node.sclY,
         }
       elseif press.handle then
-        view.drag = { kind = "handle", handle = press.handle, path = view.chosen[1], changed = {} }
+        self.drag = { kind = "handle", handle = press.handle, path = self.chosen[1], changed = {} }
       elseif press.found[1] and not press.shift then
-        startToolDrag(view, press.x, press.y)
-        view.drag.axis = press.axis
+        self:startToolDrag(press.x, press.y)
+        self.drag.axis = press.axis
       else
-        view.drag = { kind = "rectangle", startX = press.x, startY = press.y, x = x, y = y, shift = press.shift }
+        self.drag = { kind = "rectangle", startX = press.x, startY = press.y, x = x, y = y, shift = press.shift }
       end
-      d = view.drag
+      d = self.drag
     end
     if d and d.kind == "pan" then
-      view.x = d.viewX - (x - d.startX) / view.zoom
-      view.y = d.viewY - (y - d.startY) / view.zoom
-      sync(view)
+      self.x = d.viewX - (x - d.startX) / self.zoom
+      self.y = d.viewY - (y - d.startY) / self.zoom
+      self:sync()
     elseif d and d.kind == "tool" then
-      toolDrag(view, x, y, event.ctrl)
+      self:toolDrag(x, y, event.ctrl)
     elseif d and d.kind == "bounds" then
-      local nx, ny = worldToNode(d.place, toWorld(view, x, y))
+      local nx, ny = worldToNode(d.place, self:toWorld(x, y))
       d.fields = boundsFields(d, nx, ny, event.ctrl)
-      runners.change(view.file, d.path, d.fields)
-    elseif d and d.kind == "handle" and view.byPath[d.path] then
-      local nx, ny = worldToNode(view.byPath[d.path].place, toWorld(view, x, y))
+      runners.change(self.file, d.path, d.fields)
+    elseif d and d.kind == "handle" and self.byPath[d.path] then
+      local nx, ny = worldToNode(self.byPath[d.path].place, self:toWorld(x, y))
       d.changed = handleValues(d.handle, nx, ny, event.ctrl)
-      runners.change(view.file, d.path, nil, { [d.handle.type] = d.changed })
+      runners.change(self.file, d.path, nil, { [d.handle.type] = d.changed })
     elseif d and d.kind == "rectangle" then
       d.x, d.y = x, y
     end
     if d then
-      view.panel:redraw()
+      self.panel:redraw()
     end
   elseif event.type == "pointerUp" then
-    local d, press = view.drag, view.press
-    view.drag, view.press = nil, nil
+    local d, press = self.drag, self.press
+    self.drag, self.press = nil, nil
     if d and d.kind == "tool" then
       if next(d.fields) then
         local label = d.tool == "move" and "Move" or d.tool == "turn" and "Turn" or "Scale"
-        project.setFields(view.file, d.fields, label)
+        project.setFields(self.file, d.fields, label)
         if d.tool ~= "move" and pivotMode() == "selection" then
-          view.keptPivot = { key = placesKey(view), x = d.centerX, y = d.centerY }
+          self.keptPivot = { key = self:placesKey(), x = d.centerX, y = d.centerY }
         end
       end
     elseif d and d.kind == "bounds" then
       if d.fields then
-        project.setFields(view.file, { [d.path] = d.fields }, "Size")
+        project.setFields(self.file, { [d.path] = d.fields }, "Size")
       end
     elseif d and d.kind == "handle" then
       if next(d.changed) then
-        project.setValues(view.file, { d.path }, d.handle.type, d.changed, d.handle.index and "Move a point" or "Change " .. d.handle.type)
+        project.setValues(self.file, { d.path }, d.handle.type, d.changed, d.handle.index and "Move a point" or "Change " .. d.handle.type)
       end
     elseif d and d.kind == "rectangle" then
       -- Every node whose place or bounds' middle is in the rectangle.
       local x1, y1 = math.min(d.startX, d.x), math.min(d.startY, d.y)
       local x2, y2 = math.max(d.startX, d.x), math.max(d.startY, d.y)
-      local paths = d.shift and format.copy(view.chosen) or {}
+      local paths = d.shift and format.copy(self.chosen) or {}
       local taken = {}
       for _, path in ipairs(paths) do
         taken[path] = true
       end
-      for _, node in ipairs(view.nodes) do
+      for _, node in ipairs(self.nodes) do
         local cx, cy = 0, 0
         if node.rect then
           cx, cy = node.rect[1] + node.rect[3] / 2, node.rect[2] + node.rect[4] / 2
         end
-        local sx, sy = toScreen(view, nodeToWorld(node, cx, cy))
-        local free = not isMarked(view, "hidden", node.path) and not isMarked(view, "locked", node.path)
+        local sx, sy = self:toScreen(nodeToWorld(node, cx, cy))
+        local free = not self:isMarked("hidden", node.path) and not self:isMarked("locked", node.path)
         if free and sx >= x1 and sx <= x2 and sy >= y1 and sy <= y2 and not taken[node.path] then
           paths[#paths + 1] = node.path
           taken[node.path] = true
         end
       end
-      choose(view, paths)
+      self:choose(paths)
     elseif press and not d and not press.axis and not press.handle then
       local found = press.found
       if press.shift then
         -- Shift adds the node to the choice, or takes it out.
         local paths = {}
         local had = false
-        for _, path in ipairs(view.chosen) do
+        for _, path in ipairs(self.chosen) do
           if path == found[1] then
             had = true
           else
@@ -1341,15 +1344,15 @@ local function pointer(view, event)
         if found[1] and not had then
           paths[#paths + 1] = found[1]
         end
-        choose(view, paths)
+        self:choose(paths)
       elseif #found == 0 then
         -- the Shape tool keeps its node chosen, so a double click beside the shape adds a point there
         if project.tool() ~= "shape" then
-          choose(view, {})
+          self:choose({})
         end
       else
         -- Another click at the same place chooses the node under the chosen one.
-        local last = view.lastClick
+        local last = self.lastClick
         local pick = found[1]
         if last and press.wasChosen and math.abs(last.x - x) <= 3 and math.abs(last.y - y) <= 3 then
           for i, path in ipairs(found) do
@@ -1358,20 +1361,82 @@ local function pointer(view, event)
             end
           end
         end
-        view.lastClick = { x = x, y = y, path = pick }
-        choose(view, { pick })
+        self.lastClick = { x = x, y = y, path = pick }
+        self:choose({ pick })
       end
     end
-    view.panel:redraw()
+    self.panel:redraw()
   elseif event.type == "wheel" then
     -- The wheel zooms around the pointer.
-    local wx, wy = toWorld(view, x, y)
+    local wx, wy = self:toWorld(x, y)
     local factor = (event.scrollY or 0) > 0 and 1.25 or 0.8
-    view.zoom = math.max(0.05, math.min(32, view.zoom * factor))
-    view.x, view.y = wx - x / view.zoom, wy - y / view.zoom
-    sync(view)
-    view.panel:redraw()
+    self.zoom = math.max(0.05, math.min(32, self.zoom * factor))
+    self.x, self.y = wx - x / self.zoom, wy - y / self.zoom
+    self:sync()
+    self.panel:redraw()
   end
+end
+
+function View.create(panel, saved, version)
+  nextId = nextId + 1
+  local self = setmetatable({
+    panel = panel, id = nextId, x = -40, y = -40, zoom = 1, width = 0, height = 0, scale = 1, chosen = {},
+    visible = true, nodes = {}, byPath = {},
+  }, View)
+  if version == STATE_VERSION and type(saved) == "table" then
+    self.file = saved.file
+    self.x, self.y, self.zoom = saved.x or self.x, saved.y or self.y, saved.zoom or 1
+    self.chosen = type(saved.chosen) == "table" and saved.chosen or self.chosen
+  end
+  if self.file and not project.file(self.file) then
+    self.file = nil
+  end
+  if not self.file and project.folder() ~= "" and next(views) == nil then
+    self.file = project.manifest() and project.manifest().startNode
+  end
+  views[panel] = self
+  panel:acceptDrops({ "file-list" })
+  self:title()
+  return self
+end
+
+function View:event(event)
+  local kind = event.type
+  if kind == "focused" then
+    focused = self
+    if self.file then
+      project.choose(self.file, self.chosen, true)
+    end
+  elseif kind == "shown" then
+    self.visible = true
+  elseif kind == "hidden" then
+    self.visible = false
+  elseif kind == "drop" then
+    self:drop(event)
+  elseif kind == "pointerDown" or kind == "pointerMove" or kind == "pointerUp" or kind == "wheel" then
+    self:pointer(event)
+  end
+end
+
+function View:saveState()
+  return { file = self.file, x = self.x, y = self.y, zoom = self.zoom }
+end
+
+function View:save()
+  if self.file and not project.saveFile(self.file) then
+    return nil, self.file .. " is not saved"
+  end
+  return true
+end
+
+function View:destroy()
+  ui.forget(self.panel)
+  runners.setView(self.id, nil)
+  self:dropImage()
+  if focused == self then
+    focused = nil
+  end
+  views[self.panel] = nil
 end
 
 ecs.panel.registerType({
@@ -1381,65 +1446,12 @@ ecs.panel.registerType({
   -- the tool and the settings, such as the grid, change every view; other events draw again only the views of their file
   redrawOn = { "onlr.tool", "onlr.settings" },
   stateVersion = STATE_VERSION,
-  create = function(panel, saved, version)
-    nextId = nextId + 1
-    ---@type onlr.editor.View
-    local view = {
-      panel = panel, id = nextId, x = -40, y = -40, zoom = 1, width = 0, height = 0, scale = 1, chosen = {},
-      visible = true, nodes = {}, byPath = {},
-    }
-    if version == STATE_VERSION and type(saved) == "table" then
-      view.file = saved.file
-      view.x, view.y, view.zoom = saved.x or view.x, saved.y or view.y, saved.zoom or 1
-      view.chosen = type(saved.chosen) == "table" and saved.chosen or view.chosen
-    end
-    if view.file and not project.file(view.file) then
-      view.file = nil
-    end
-    if not view.file and project.folder() ~= "" and next(views) == nil then
-      view.file = project.manifest() and project.manifest().startNode
-    end
-    views[panel] = view
-    panel:acceptDrops({ "file-list" })
-    title(view)
-    return view
-  end,
-  draw = drawView,
-  event = function(view, event)
-    local kind = event.type
-    if kind == "focused" then
-      focused = view
-      if view.file then
-        project.choose(view.file, view.chosen, true)
-      end
-    elseif kind == "shown" then
-      view.visible = true
-    elseif kind == "hidden" then
-      view.visible = false
-    elseif kind == "drop" then
-      drop(view, event)
-    elseif kind == "pointerDown" or kind == "pointerMove" or kind == "pointerUp" or kind == "wheel" then
-      pointer(view, event)
-    end
-  end,
-  saveState = function(view)
-    return { file = view.file, x = view.x, y = view.y, zoom = view.zoom }
-  end,
-  save = function(view)
-    if view.file and not project.saveFile(view.file) then
-      return nil, view.file .. " is not saved"
-    end
-    return true
-  end,
-  destroy = function(view)
-    ui.forget(view.panel)
-    runners.setView(view.id, nil)
-    dropImage(view)
-    if focused == view then
-      focused = nil
-    end
-    views[view.panel] = nil
-  end,
+  create = View.create,
+  draw = View.draw,
+  event = View.event,
+  saveState = View.saveState,
+  save = View.save,
+  destroy = View.destroy,
 })
 
 -- The project's events
@@ -1450,7 +1462,7 @@ ecs.event.subscribe("onlr.opened", function()
   local manifest = project.manifest()
   for _, view in pairs(views) do
     if not view.file or not project.file(view.file) then
-      show(view, nil)
+      view:show(nil)
     end
   end
   -- The start node opens: in a node view that shows no file, or in a new one.
@@ -1465,7 +1477,7 @@ ecs.event.subscribe("onlr.closed", function()
   runners.stop()
   runners.stopPreview()
   for _, view in pairs(views) do
-    show(view, nil)
+    view:show(nil)
   end
 end)
 
@@ -1475,9 +1487,9 @@ ecs.event.subscribe("onlr.changed", function(_, value)
     -- A node view of a file that is gone shows no file.
     local file = view.file and project.file(view.file)
     if view.file and (not file or file.missing) then
-      show(view, nil)
+      view:show(nil)
     end
-    title(view)
+    view:title()
   end
   -- Undoing or redoing a change of a file that no node view shows opens a view of it (DESIGN 13.6).
   if value and value.history then
@@ -1495,15 +1507,15 @@ ecs.event.subscribe("onlr.renamed", function(_, value)
   for _, view in pairs(views) do
     if view.file and (view.file == value.from or view.file:sub(1, #value.from + 1) == value.from .. "/") then
       view.file = value.to .. view.file:sub(#value.from + 1)
-      title(view)
-      sync(view)
+      view:title()
+      view:sync()
     end
   end
 end)
 
 ecs.event.subscribe("onlr.saved", function()
   for _, view in pairs(views) do
-    title(view)
+    view:title()
   end
 end)
 
@@ -1514,7 +1526,7 @@ ecs.event.subscribe("onlr.chosen", function(_, chosen)
         view.point = nil
       end
       view.chosen = chosen.paths
-      sync(view)
+      view:sync()
       view.panel:redraw()
     end
   end
@@ -1524,7 +1536,7 @@ end)
 ecs.event.subscribe("onlr.settings", function(_, setting)
   if setting == "hidden" then
     for _, view in pairs(views) do
-      sync(view)
+      view:sync()
     end
   end
 end)
@@ -1615,7 +1627,7 @@ functions = {
   view = { sig = "value(string file)", doc = "The node view of a node file: its place, zoom and the nodes' bounds", fn = viewOf },
   deleteChosen = { sig = "void()", doc = "Delete the chosen nodes; with the Shape tool, the point clicked last", fn = function()
     local view = current()
-    if view and project.tool() == "shape" and view.point and removePoint(view) then
+    if view and project.tool() == "shape" and view.point and view:removePoint() then
       return
     end
     onChosen(function(file, paths)
@@ -1641,7 +1653,7 @@ functions = {
   frame = { sig = "void()", doc = "Fit the node view to the chosen nodes, or to every node when none is chosen", fn = function()
     local view = current()
     if view then
-      frame(view)
+      view:fit()
     end
   end },
   cancelPick = { sig = "void()", doc = "End a pick of a node for a reference, setting nothing", fn = function()

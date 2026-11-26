@@ -16,7 +16,15 @@ Bump.solid = onlr.property.bool(true, { description = "Bodies stop at the tiles.
 
 -- Once: finds the tree's one bump.world, and adds one to the root when the tree has none, as bump.body does.
 function Bump:load()
-  local world = onlr.tree.findComponent("bump.world") or onlr.tree.root:addComponent("bump.world")
+  local world = onlr.tree.findComponent("bump.world")
+  if not world then
+    -- while the top node loads, there is no root yet (DESIGN 5)
+    if not onlr.tree.root then
+      error(("sti.bump on %s finds no bump.world, and there is no root to add one to while the top node loads: put a bump.world on the top node")
+        :format(self.node.name), 0)
+    end
+    world = onlr.tree.root:addComponent("bump.world")
+  end
   self.world = world:get()
   self.boxes = {}
   self.reads = { __index = function(_, key)

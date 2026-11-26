@@ -14,6 +14,7 @@ local onlr = require("onlr")
 ---@field points number[] a polygon's corners or a line's points, x, y, x, y, as love.graphics.polygon takes them
 
 ---@class onlr.shape : onlr.Component
+---@field private _flat number[]? the points as one list, x, y, x, y, which drawShape fills again at each draw
 local Shape = {}
 
 Shape.kind = onlr.property.choice("rectangle", { choices = { "rectangle", "circle", "polygon", "line" } })
@@ -46,17 +47,34 @@ end
 
 ---Draws the shape with LÖVE in the colour and the line width that are set: filled, or as an outline. A line is drawn as a line,
 ---and a polygon of fewer than 3 corners, or a line of fewer than 2 points, draws nothing.
+---It makes no garbage: a rectangle and a circle draw from the values themselves, and the points go into one list that the
+---shape keeps and fills again at each draw, as `outline` would give them.
 ---@param mode "fill"|"line"
 function Shape:drawShape(mode)
-  local o = self:outline()
-  if o.kind == "rectangle" then
-    love.graphics.rectangle(mode, o.x, o.y, o.width, o.height)
-  elseif o.kind == "circle" then
-    love.graphics.circle(mode, o.x, o.y, o.radius)
-  elseif o.kind == "line" and #o.points >= 4 then
-    love.graphics.line(o.points)
-  elseif o.kind == "polygon" and #o.points >= 6 then
-    love.graphics.polygon(mode, o.points)
+  local kind = self.kind
+  if kind == "rectangle" then
+    love.graphics.rectangle(mode, -self.origin.x, -self.origin.y, self.width, self.height)
+    return
+  elseif kind == "circle" then
+    love.graphics.circle(mode, -self.origin.x, -self.origin.y, self.radius)
+    return
+  end
+  local points = self.points
+  local count = #points * 2
+  if kind == "line" and count >= 4 or kind == "polygon" and count >= 6 then
+    local flat = self._flat or {}
+    self._flat = flat
+    for i, point in ipairs(points) do
+      flat[i * 2 - 1], flat[i * 2] = point.x, point.y
+    end
+    for i = #flat, count + 1, -1 do
+      flat[i] = nil
+    end
+    if kind == "line" then
+      love.graphics.line(flat)
+    else
+      love.graphics.polygon(mode, flat)
+    end
   end
 end
 

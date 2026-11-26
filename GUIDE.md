@@ -380,6 +380,7 @@ A package is a library of LÖVE's world with components for ONLR (DESIGN 11.2). 
 
 - To add one, copy its folder from ONLR's `packages/`, beside the editor, into your project's `packages/`, such as `packages/bump/`. Its components show in **Add component** at once, named after it: `bump.body`. The editor does not yet add packages itself; Scale to the window is the one exception (6.2).
 - Each package has a sample in ONLR's repository, `samples/`, and a room in the gallery, which show it at work.
+- A body of `bump` or `physics`, a light or a caster of `shadows`, and `sti`'s collisions find their package's world, and add one to the level's root node when there is none. The top node loads before any level, so one of these in the top node file needs its world there too: put a `bump.world`, `physics.world` or `shadows.world` on the top node, or the game stops with an error that says so. The levels' bodies then collide in that world as well (DESIGN 11.3).
 - A package's library is loaded by its own name, as its author documents it: `require("bump")`. ONLR renames nothing, so the library's own documentation holds.
 - Any other library works as in any LÖVE game: copy it into `packages/` and `require` it.
 

@@ -2197,7 +2197,7 @@ local functions = {
     return P and P.chosen or { paths = {} }
   end },
   choose = { sig = "void(string file, value paths, bool unrecorded)", doc = "Choose nodes of a node file; unrecorded keeps it out of the history, for a choice that the user did not make", fn = choose },
-  tool = { sig = "string()", doc = "The chosen tool: move, turn, scale or shape", fn = function()
+  tool = { sig = "string()", doc = "The chosen tool: move, turn, scale, rect or shape", fn = function()
     return P and P.tool or "move"
   end },
   setTool = { sig = "void(string tool)", doc = "Choose a tool", fn = function(tool)

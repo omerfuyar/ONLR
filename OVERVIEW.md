@@ -118,16 +118,17 @@ The editor is an OpenECS tool, so its panels can be arranged, grouped as tabs an
 
 | Panel            | Shows                                                                         |
 | ---------------- | ----------------------------------------------------------------------------- |
-| Node view        | An open node file. The user chooses nodes, and moves, turns and scales them.  |
+| Node view        | An open node file. The user chooses nodes, and moves, turns, scales and sizes them, and edits a shape's points. |
 | Node hierarchy   | The tree of nodes of the node view in focus.                                  |
 | Inspector        | The chosen node's components and their properties.                            |
-| Transform        | The node view's tools: move, turn and scale, and snapping.                    |
+| Transform        | The node view's tools: move, turn, scale, Rect and Shape, and snapping.       |
 | Game             | Play, Pause, Step and Stop, and the game's frames a second while it plays.    |
 | Action           | Undo, Redo and Save.                                                          |
 | Files            | The project's folders and files.                                              |
 | Asset viewer     | A file of the project as it is: an image, a sound or a text.                  |
 | Graph            | A graph: its blocks and wires, and for a shader, a preview.                   |
 | Console          | What the game prints, and its errors.                                         |
+| History          | Every change of the project, which Undo and Redo walk, OpenECS-std's panel.   |
 | Project settings | What the project's manifest holds.                                            |
 | Export           | The targets, and the export's progress.                                       |
 

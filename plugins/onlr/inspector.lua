@@ -136,6 +136,17 @@ local function filePath(id, value, kind, extensions, set, valid)
     end })
 end
 
+---A panel of the inspector.
+---@class onlr.editor.Inspector
+---@field panel ecs.Panel
+---@field folded table<string, true> the folded components and sections, by type and by row
+---@field drops table[] the rows of the last draw that take a dragged file or node
+---@field scale number the surface's pixels for each layout unit, at the last draw
+---@field lock { file: string, paths: string[] }? the nodes that it keeps showing while others are chosen
+---@field shown ui.Element? the elements of the last draw
+local Inspector = {}
+Inspector.__index = Inspector
+
 ---What an inspector shows: the chosen nodes of a node file.
 ---@class onlr.editor.Subject
 ---@field file string
@@ -144,7 +155,7 @@ end
 ---@field tree onlr.editor.Tree
 
 -- The control of a property's kind. set gets the new value; drops notes the rows that take a dragged file or node.
-local function control(state, subject, id, decl, value, set)
+function Inspector:control(subject, id, decl, value, set)
   local kind = decl.kind
   local options = decl.options or {}
   if kind == "number" and options.angle == true then
@@ -228,7 +239,7 @@ local function control(state, subject, id, decl, value, set)
       end
     end
     local known = path == nil or path == MIXED or path == "" or fs.info(project.folder() .. tostring(path)) ~= nil
-    state.drops[#state.drops + 1] = { id = id, type = "file-list", set = function(new)
+    self.drops[#self.drops + 1] = { id = id, type = "file-list", set = function(new)
       write(new, stream)
     end }
     return ui.row({ gap = 4, grow = 1, align = "center" }, {
@@ -244,14 +255,14 @@ local function control(state, subject, id, decl, value, set)
   elseif kind == "image" or kind == "file" or kind == "nodeFile" then
     -- A file is set by dragging it from the files panel onto the row, by the system's dialog, or by typing its path.
     local known = value == nil or value == MIXED or value == "" or fs.info(project.folder() .. tostring(value)) ~= nil
-    state.drops[#state.drops + 1] = { id = id, type = "file-list", set = set, extensions = options.extensions, nodeFile = kind == "nodeFile" }
+    self.drops[#self.drops + 1] = { id = id, type = "file-list", set = set, extensions = options.extensions, nodeFile = kind == "nodeFile" }
     return filePath(id, value, kind, options.extensions, function(new)
       set(new ~= "" and new or nil)
     end, known)
   elseif kind == "font" then
     local font = type(value) == "table" and value or {}
     local known = not font.path or fs.info(project.folder() .. tostring(font.path)) ~= nil
-    state.drops[#state.drops + 1] = { id = id, type = "file-list", set = function(path)
+    self.drops[#self.drops + 1] = { id = id, type = "file-list", set = function(path)
       set({ path = path, size = font.size or options.size or 12 })
     end }
     return ui.row({ gap = 4, grow = 1 }, {
@@ -268,7 +279,7 @@ local function control(state, subject, id, decl, value, set)
     local named = type(value) == "string" and subject.tree.index[value]
     local shown = value == MIXED and "" or named and (named.name or value) or value and (tostring(value) .. " (no such node)") or "(none)"
     local needs = kind == "component" and decl.type or nil
-    state.drops[#state.drops + 1] = { id = id, type = "onlr.node", set = set, needs = needs, tree = subject.tree, file = subject.file }
+    self.drops[#self.drops + 1] = { id = id, type = "onlr.node", set = set, needs = needs, tree = subject.tree, file = subject.file }
     local waiting = nodeview.picking()
     local mine = waiting ~= nil and waiting.id == id
     return ui.row({ id = id, gap = 4, grow = 1, align = "center" }, {
@@ -293,7 +304,7 @@ local function control(state, subject, id, decl, value, set)
 end
 
 -- The rows of a property: one row, or for a group and a list a heading with rows under it.
-local function rows(state, subject, out, id, decl, value, set, title, mark)
+function Inspector:rows(subject, out, id, decl, value, set, title, mark)
   local name = title or (decl.options and decl.options.label) or shared.words(decl.name or "")
   local description = decl.options and decl.options.description
   -- a heading that the declaration names shows above the property, to part a type's properties
@@ -316,7 +327,7 @@ local function rows(state, subject, out, id, decl, value, set, title, mark)
         if fieldValue == nil then
           fieldValue = field.default
         end
-        rows(state, subject, inner, id .. "." .. field.name, field, fieldValue, function(new)
+        self:rows(subject, inner, id .. "." .. field.name, field, fieldValue, function(new)
           local whole = copy(group)
           whole[field.name] = new
           set(whole)
@@ -325,7 +336,7 @@ local function rows(state, subject, out, id, decl, value, set, title, mark)
     else
       local list = type(value) == "table" and value or {}
       for i, item in ipairs(list) do
-        rows(state, subject, inner, id .. "." .. i, decl.item or { kind = "string" }, item, function(new)
+        self:rows(subject, inner, id .. "." .. i, decl.item or { kind = "string" }, item, function(new)
           local whole = copy(list)
           if new == nil then
             table.remove(whole, i)
@@ -350,15 +361,15 @@ local function rows(state, subject, out, id, decl, value, set, title, mark)
         set(whole)
       end }) })
     end
-    out[#out + 1] = ui.section(name, { id = id, gap = 6, tooltip = description, open = not state.folded[foldKey],
+    out[#out + 1] = ui.section(name, { id = id, gap = 6, tooltip = description, open = not self.folded[foldKey],
       onToggle = function(open)
-        state.folded[foldKey] = not open or nil
-        state.panel:redraw()
+        self.folded[foldKey] = not open or nil
+        self.panel:redraw()
       end }, inner)
   else
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       label(name, description),
-      control(state, subject, id, decl, value, set),
+      self:control(subject, id, decl, value, set),
       mark,
     })
   end
@@ -374,21 +385,21 @@ local FIELDS = {
 }
 
 -- The inspector's lock (DESIGN 13.4): a toggle that keeps the nodes that it shows while others are chosen.
-local function lockToggle(state, file, paths)
-  return ui.toggle(state.lock ~= nil, { id = "lock", label = "Lock", tooltip = "Keep showing these nodes while others are chosen",
+function Inspector:lockToggle(file, paths)
+  return ui.toggle(self.lock ~= nil, { id = "lock", label = "Lock", tooltip = "Keep showing these nodes while others are chosen",
     onChange = function(on)
-      state.lock = on and { file = file, paths = format.copy(paths) } or nil
-      state.panel:redraw()
+      self.lock = on and { file = file, paths = format.copy(paths) } or nil
+      self.panel:redraw()
     end })
 end
 
-local function fileSubject(state, out)
-  local lock = state.lock
+function Inspector:fileSubject(out)
+  local lock = self.lock
   local file = lock and lock.file or shared.file()
   local chosenPaths = lock and lock.paths or project.chosen().paths
   if lock and (project.folder() == "" or not fs.info(project.folder() .. lock.file)) then
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
-      ui.text("The locked node file is gone.", { style = STYLES.note, grow = 1, wrap = true }), lockToggle(state, file, chosenPaths),
+      ui.text("The locked node file is gone.", { style = STYLES.note, grow = 1, wrap = true }), self:lockToggle(file, chosenPaths),
     })
     return
   end
@@ -407,7 +418,7 @@ local function fileSubject(state, out)
   if #nodes == 0 then
     out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
       ui.text(tree.error or (lock and "The locked nodes are gone." or "No node is chosen."), { style = STYLES.note, wrap = true, grow = 1 }),
-      lock and lockToggle(state, file, chosenPaths) or nil,
+      lock and self:lockToggle(file, chosenPaths) or nil,
     })
     return
   end
@@ -418,7 +429,7 @@ local function fileSubject(state, out)
 
   out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
     ui.text(#nodes == 1 and (first.name or "(no name)") or (#nodes .. " nodes"), { style = STYLES.title, grow = 1 }),
-    lockToggle(state, file, paths),
+    self:lockToggle(file, paths),
   })
   if lock and file ~= shared.file() then
     out[#out + 1] = ui.text("Of " .. file, { style = STYLES.note })
@@ -520,7 +531,7 @@ local function fileSubject(state, out)
 
   for at, typeName in ipairs(types) do
     local info = project.typeInfo(typeName)
-    local folded = state.folded[typeName]
+    local folded = self.folded[typeName]
     local cid = key .. ":" .. typeName
     local function setProperty(name)
       return function(value)
@@ -596,7 +607,7 @@ local function fileSubject(state, out)
     for _, decl in ipairs(info and info.properties or {}) do
       declared[decl.name] = true
       if holds(decl.options and decl.options.when or {}) then
-        rows(state, subject, body, cid .. ":" .. decl.name, settleAngles(decl, holds), valueOf(decl.name, decl.default),
+        self:rows(subject, body, cid .. ":" .. decl.name, settleAngles(decl, holds), valueOf(decl.name, decl.default),
           setProperty(decl.name), nil, propertyMark(decl.name))
       end
     end
@@ -631,12 +642,12 @@ local function fileSubject(state, out)
     end
     out[#out + 1] = ui.section(typeName, { id = cid, gap = 6, open = not folded,
       onToggle = function(open)
-        state.folded[typeName] = not open or nil
-        state.panel:redraw()
+        self.folded[typeName] = not open or nil
+        self.panel:redraw()
       end,
       onMenu = function(x, y)
         local script = project.typeFile(typeName)
-        ui.menu(state.panel, x, y, {
+        ui.menu(self.panel, x, y, {
           -- the type's script opens in the code editor, as the console's links do (DESIGN 13.4)
           { label = "Open script", enabled = script ~= "", onClick = function()
             console.open(script, 1)
@@ -697,7 +708,7 @@ local function fileSubject(state, out)
 end
 
 -- The running game's chosen node: a change is sent to the game, and is gone at Stop (DESIGN 12.6).
-local function runningSubject(state, out)
+function Inspector:runningSubject(out)
   local running = nodeview.running()
   local node
   for _, n in ipairs(running.values or {}) do
@@ -754,7 +765,7 @@ local function runningSubject(state, out)
       if VALUES[decl.kind] then
         out[#out + 1] = ui.row({ gap = 6, align = "center" }, {
           label(decl.options and decl.options.label or shared.words(decl.name)),
-          control(state, { tree = { index = {} } }, cid .. ":" .. decl.name, decl, value, function(new)
+          self:control({ tree = { index = {} } }, cid .. ":" .. decl.name, decl, value, function(new)
             nodeview.set({ node = node.n, component = typeName, property = decl.name, value = new })
           end),
         })
@@ -796,46 +807,46 @@ local function chosenFileSubject(out)
   out[#out + 1] = ui.text("A double click in the files panel opens it.", { style = STYLES.note })
 end
 
-local function view(state, surface)
-  state.drops = {}
-  state.scale = surface.scale
+function Inspector:view(surface)
+  self.drops = {}
+  self.scale = surface.scale
   local out = {}
-  if state.lock then
-    fileSubject(state, out)
+  if self.lock then
+    self:fileSubject(out)
   elseif shared.running and nodeview.running().playing then
-    runningSubject(state, out)
+    self:runningSubject(out)
   elseif shared.chosenFile then
     chosenFileSubject(out)
   else
-    fileSubject(state, out)
+    self:fileSubject(out)
   end
-  state.shown = ui.scroll({ id = "inspector", padding = 8, gap = 6 }, out)
-  return state.shown
+  self.shown = ui.scroll({ id = "inspector", padding = 8, gap = 6 }, out)
+  return self.shown
 end
 
 -- The rectangles of the elements that have ids, in the panel's pixels, as the last draw laid them out, for a test (DESIGN 16).
-local function rects(state)
+function Inspector:rects()
   local found = {}
   local function walk(element)
     if element.id and not element.id:match("^root%.") then
-      local r = ui.rect(state.panel, element.id)
+      local r = ui.rect(self.panel, element.id)
       found[element.id] = r and { x = r.x, y = r.y, width = r.width, height = r.height }
     end
     for _, child in ipairs(element.children or {}) do
       walk(child)
     end
   end
-  if state.shown then
-    walk(state.shown)
+  if self.shown then
+    walk(self.shown)
   end
   return found
 end
 
 -- A file or a node dropped on a reference's row sets it (DESIGN 13.4).
-local function drop(state, event)
-  local x, y = event.x / state.scale, event.y / state.scale
-  for _, row in ipairs(state.drops) do
-    local rect = ui.rect(state.panel, row.id)
+function Inspector:drop(event)
+  local x, y = event.x / self.scale, event.y / self.scale
+  for _, row in ipairs(self.drops) do
+    local rect = ui.rect(self.panel, row.id)
     if rect and row.type == event.dataType and x >= rect.x - 120 and x <= rect.x + rect.width and y >= rect.y and y <= rect.y + rect.height then
       if row.type == "file-list" then
         local path = type(event.value) == "table" and tostring(event.value[1] or ""):gsub("\\", "/") or ""
@@ -878,6 +889,33 @@ local function drop(state, event)
   end
 end
 
+function Inspector.create(panel, saved, version)
+  local self = setmetatable({ panel = panel, folded = {}, drops = {}, scale = 1 }, Inspector)
+  shared.inspectors[panel] = true
+  if version == STATE_VERSION and type(saved) == "table" then
+    self.folded = saved.folded or {}
+    self.lock = type(saved.lock) == "table" and type(saved.lock.file) == "string" and type(saved.lock.paths) == "table" and saved.lock or nil
+  end
+  panel:acceptDrops({ "file-list", "onlr.node" })
+  return self
+end
+
+-- ui gives the elements the events that reach them, and a drop that no element takes comes here
+function Inspector:event(event)
+  if event.type == "drop" then
+    self:drop(event)
+  end
+end
+
+function Inspector:saveState()
+  -- The file that it shows is not read back; a test reads it here.
+  return { folded = self.folded, lock = self.lock, file = shared.chosenFile, rects = self:rects() }
+end
+
+function Inspector:destroy()
+  shared.inspectors[self.panel] = nil
+end
+
 ecs.panel.registerType(ui.panelType({
   name = "inspector",
   title = "Inspector",
@@ -887,28 +925,9 @@ ecs.panel.registerType(ui.panelType({
     "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.tool", "onlr.types", "onlr.saved", "onlr.settings", "onlr.state",
     "onlr.runningTree", "onlr.runningValues", "onlr.picking", "onlr.shown",
   },
-  create = function(panel, saved, version)
-    local state = { panel = panel, folded = {}, drops = {}, scale = 1 }
-    shared.inspectors[panel] = true
-    if version == STATE_VERSION and type(saved) == "table" then
-      state.folded = saved.folded or {}
-      state.lock = type(saved.lock) == "table" and type(saved.lock.file) == "string" and type(saved.lock.paths) == "table" and saved.lock or nil
-    end
-    panel:acceptDrops({ "file-list", "onlr.node" })
-    return state
-  end,
-  view = view,
-  -- ui gives the elements the events that reach them, and a drop that no element takes comes here
-  event = function(state, event)
-    if event.type == "drop" then
-      drop(state, event)
-    end
-  end,
-  saveState = function(state)
-    -- The file that it shows is not read back; a test reads it here.
-    return { folded = state.folded, lock = state.lock, file = shared.chosenFile, rects = rects(state) }
-  end,
-  destroy = function(state)
-    shared.inspectors[state.panel] = nil
-  end,
+  create = Inspector.create,
+  view = Inspector.view,
+  event = Inspector.event,
+  saveState = Inspector.saveState,
+  destroy = Inspector.destroy,
 }))

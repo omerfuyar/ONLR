@@ -34,8 +34,18 @@ local function place(node)
 end
 
 -- Once: finds the root's one world, and adds one to the root when the tree has none.
+-- While the top node loads there is no root, and that is an error.
 function Body:load()
-  self.world = onlr.tree.findComponent("physics.world") or onlr.tree.root:addComponent("physics.world")
+  local world = onlr.tree.findComponent("physics.world")
+  if not world then
+    -- while the top node loads, there is no root yet (DESIGN 5)
+    if not onlr.tree.root then
+      error(("physics.body on %s finds no physics.world, and there is no root to add one to while the top node loads: put a physics.world on the top node")
+        :format(self.node.name), 0)
+    end
+    world = onlr.tree.root:addComponent("physics.world")
+  end
+  self.world = world
   self.fixtures = self.fixtures or {}
   self.joints = self.joints or {}
 end

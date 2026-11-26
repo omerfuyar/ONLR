@@ -166,10 +166,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libegl1 libegl-mesa0 libgl1-mesa-dri libvulkan1 mesa-vulkan-drivers
 
-      # LÖVE's AppImage, unpacked, as ONLR's archive holds it (DESIGN.md, section 15.2)
+      # LÖVE's AppImage, checked against its hash as package.sh checks it, and unpacked, as ONLR's archive holds it (DESIGN.md, section 15.2)
       - name: Install LÖVE
         run: |
-          curl -sSL -o "$RUNNER_TEMP/love.AppImage" https://github.com/love2d/love/releases/download/11.5/love-11.5-x86_64.AppImage
+          curl -sSfL -o "$RUNNER_TEMP/love.AppImage" https://github.com/love2d/love/releases/download/11.5/love-11.5-x86_64.AppImage
+          echo "65a673406431eff7167a15a032bf7a2e4ba50108e091eb7b176465831f9b5e00  $RUNNER_TEMP/love.AppImage" | sha256sum -c --quiet -
           chmod +x "$RUNNER_TEMP/love.AppImage"
           (cd "$RUNNER_TEMP" && ./love.AppImage --appimage-extract > /dev/null)
           echo "LOVE=$RUNNER_TEMP/squashfs-root/AppRun" >> "$GITHUB_ENV"

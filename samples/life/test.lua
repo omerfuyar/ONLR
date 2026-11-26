@@ -18,6 +18,13 @@ check.run(function()
     "Root.enable", "A.enable", "A1.enable",
     "Keeper.start", "Root.start", "A.start", "A1.start",
   }, "loading")
+  -- Without a parent, a node has nowhere to go while the top node loads, and the error says why (DESIGN 9).
+  local early = assert(log.early)
+  for _, name in ipairs({ "spawn", "newNode" }) do
+    check.fails(function()
+      error(early[name], 0)
+    end, "onlr.tree." .. name .. ": the root is not loaded yet", name .. " while the top node loads")
+  end
   check.equal(tree.top.name, "Top", "the top node")
   check.equal(root:getParent(), tree.top, "the root is under the top node")
   check.equal(b:isActive(), false, "B is off")

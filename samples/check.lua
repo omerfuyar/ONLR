@@ -1,4 +1,4 @@
--- The helper of the samples' tests (DESIGN 16). test.sh copies it into each sample's packages/, so a test loads it
+-- The helper of the samples' tests (DESIGN 16). shuild.c copies it into each sample's packages/, so a test loads it
 -- with require("check"). A sample's main.lua loads its test.lua when LÖVE gets --test; the test calls check.run
 -- with a function, which runs beside the game, a frame at a time, and checks it. Then the game quits:
 -- with 0 when every check passed, and with 1 and the failed checks printed otherwise.
@@ -96,6 +96,22 @@ function check.fails(fn, text, what)
     fail(("%s: the error %q does not say %q"):format(what, tostring(err), text))
   end
   return tostring(err)
+end
+
+---Runs a function as what loads with the top node runs, before the first root (DESIGN 5): onlr.tree.root is nil, and
+---onlr.tree.findComponent finds nothing, as in a top node without the component that it is asked for. Then puts both back,
+---and raises the function's error, if it raised one.
+---@param fn fun()
+function check.whileTopLoads(fn)
+  local tree = require("onlr").tree
+  local root, findComponent = tree.root, tree.findComponent
+  tree.root = nil
+  tree.findComponent = function() end
+  local ok, err = pcall(fn)
+  tree.root, tree.findComponent = root, findComponent
+  if not ok then
+    error(err, 0)
+  end
 end
 
 ---Lets the game run a number of frames, then goes on with the test.

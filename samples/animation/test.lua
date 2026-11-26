@@ -1,4 +1,4 @@
--- Checks the anim8 package (DESIGN 11.3): an animation sets its sprite's quad to each frame in turn, loops, plays
+-- Checks the anim8 package (DESIGN 11.5): an animation sets its sprite's quad to each frame in turn, loops, plays
 -- another on play, stops at the end of one that does not loop and tells its node, and plays a range backwards.
 local check = require("check")
 local onlr = require("onlr")

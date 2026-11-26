@@ -174,4 +174,12 @@ check.run(function()
   check.frames(1)
   local _, ay = assert(hinge:get()):getAnchors()
   near(ay, 20, "a joint's node that moves under its body moves the joint")
+
+  -- While the top node loads, there is no root to add a world to: a body that finds none says so (DESIGN 11.4).
+  local early = tree.newNode("Early", tree.top)
+  check.fails(function()
+    check.whileTopLoads(function() early:addComponent("physics.body") end)
+  end, "while the top node loads: put a physics.world on the top node", "a body on the top node without a world")
+  early:destroy()
+  check.frames(1)
 end)

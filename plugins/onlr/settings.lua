@@ -13,7 +13,20 @@ local function label(text)
   return ui.text(text, { width = 110 })
 end
 
-local function view(state)
+---A panel of the project settings.
+---@class onlr.editor.Settings
+---@field panel ecs.Panel
+local Settings = {}
+Settings.__index = Settings
+
+local open = {} ---@type table<ecs.Panel, true> the open Project panels
+
+function Settings.create(panel)
+  open[panel] = true
+  return setmetatable({ panel = panel }, Settings)
+end
+
+function Settings:view()
   local out = {}
   local manifest = project.folder() ~= "" and project.manifest()
   out[#out + 1] = ui.row({ gap = 8 }, {
@@ -110,20 +123,17 @@ local function view(state)
   return ui.scroll({ id = "settings", padding = 8, gap = 6 }, out)
 end
 
-local open = {} ---@type table<ecs.Panel, true> the open Project panels
+function Settings:destroy()
+  open[self.panel] = nil
+end
 
 ecs.panel.registerType(ui.panelType({
   name = "settings",
   title = "Project",
   redrawOn = { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.saved", "onlr.settings" },
-  create = function(panel)
-    open[panel] = true
-    return { panel = panel }
-  end,
-  view = view,
-  destroy = function(state)
-    open[state.panel] = nil
-  end,
+  create = Settings.create,
+  view = Settings.view,
+  destroy = Settings.destroy,
 }))
 
 -- The editor that starts with no project shows the Project panel, which lists the projects opened last (DESIGN 13.2).

@@ -109,4 +109,16 @@ check.run(function()
   check.frames(1)
   bright(80, 115, "the light grows with the camera's zoom")
   dark(136, 60, "and so does the wall's shadow")
+
+  -- While the top node loads, there is no root to add a world to: a caster or a light that finds none above it says so
+  -- (DESIGN 11.14).
+  local early = tree.newNode("Early", tree.top)
+  check.fails(function()
+    check.whileTopLoads(function() early:addComponent("shadows.caster") end)
+  end, "while the top node loads: put a shadows.world on the top node", "a caster on the top node without a world")
+  check.fails(function()
+    check.whileTopLoads(function() early:addComponent("shadows.light") end)
+  end, "shadows.light on Early finds no shadows.world", "a light on the top node without a world")
+  early:destroy()
+  check.frames(1)
 end)

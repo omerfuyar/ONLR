@@ -8,6 +8,7 @@ return {
       id = "k33per",
       name = "Keeper",
       components = {
+        early = {},
         log = {},
       },
     },

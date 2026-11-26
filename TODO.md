@@ -101,7 +101,7 @@ What the owner wants worked on, in this order.
   | Screen effects       | moonshine (built)    | `moonshine.chain`, a group, with an effect type of its own for each of moonshine's effects beside it, in `moonshine.effect`, applied in the chain's `order` (DESIGN 11.11). Open: the limits that DESIGN 11.11 lists, such as effects that measure with the window's size under `push.screen`, and a chain that covers what drew before it. |
   | Sound                | `love.audio` (built) | `audio.source`, a sound decoded whole or streamed, at a node, with a place in the world if mono; `audio.listener`, LÖVE's listener at its node or its camera's point (DESIGN 11.12). No library. Open: the limits that DESIGN 11.12 lists, such as a node that `setPaused` pauses playing on, and volumes by kind of sound, as ripple gives. |
   | Interface inside the game | SUIT (built)    | A component for each of SUIT's widgets, `suit.button`, `suit.label`, `suit.checkbox`, `suit.slider`, `suit.input` and `suit.imagebutton`, placed on nodes, which tell their nodes of a click or a change (DESIGN 11.13). Open: the limits that DESIGN 11.13 lists, such as overlapping widgets, a theme for each widget, and a layout of rows and columns that a node could give its children. |
-  | Light and shadows    | Shädows (built)      | `shadows.world`, a group that draws the light over its node and all under it; `shadows.light` and `shadows.shape.box`, `.circle` and `.polygon` at nodes (DESIGN 11.14). Shipped as ONLR's own copy, which sets no global (`packages/shadows/library/ONLR.md`). Open: the limits that DESIGN 11.14 lists, such as a camera that turns, heights, rooms and stars, and Shädows' normal and height maps. |
+  | Light and shadows    | Shädows (built)      | `shadows.world`, a group that draws the light over its node and all under it; `shadows.light` at a node, and `shadows.caster`, whose node's `onlr.shape` casts shadows (DESIGN 11.14). Shipped as ONLR's own copy, which sets no global (`packages/shadows/library/ONLR.md`). Open: the limits that DESIGN 11.14 lists, such as a camera that turns, heights, rooms and stars, and Shädows' normal and height maps. |
 
 - **The second round, weighed on 2026-11-18.** Sound was built first, as `audio`, then SUIT, then Shädows (all above). Of each:
   - **In-game interface: SUIT, built on 2026-11-18** (above). Slab was left out: about 18,000 lines, made for a tool's windows and docking rather than a game's menus, and it sets globals.
@@ -170,14 +170,12 @@ What the owner wants worked on, in this order.
   3. Report everything that it prints, any error, and whether anything showed: a window, a flash, or a button in the task bar, even for a moment.
 - **What OpenECS's dev of 2026-11-24 gives the editor.** OpenECS #276 to #320 and OpenECS-std up to f29a872 changed much that the editor stands on: Lua is LuaJIT 2.1 in place of Lua 5.5, C functions are called through LuaJIT's FFI, handles and structs are cdata, the title bar has menus, plugins add their own entries to a menu Tools and their own keys after the prefix, std's `keys` lists those keys, and the theme has new colours, JetBrains Mono at 13 and denser controls. The editor works on it; what it should use of it, each with its OpenECS section:
   - To use what it gives, most useful first:
-    - **Panel types as classes** (OpenECS DESIGN 1.1, and its plugin skill). The node hierarchy, the search and the three bars are classes; the inspector, the node view, the project settings and export still return plain tables with closures from `create` (`inspector.lua`, `nodeview.lua`, `settings.lua:118`, `export.lua:273`). Size: S.
     - **The link's bytes.** Each frame of the preview joins the chunks it read, cuts each block out with `sub`, and gives `gpu.texture` another copy (`runners.lua:528-553`, `link.lua:61-85`, `nodeview.lua:785`). A `string.buffer` reads the blocks in place, and a buffer may be a `string.buffer` or cdata (OpenECS DESIGN 10.7). Measure first. Size: M.
     - **The tests' checks.** `test.errors()` at the test's end checks that no plugin reported an error; `test.titleBar()` checks the title bar's menus once they are ONLR's (OpenECS DESIGN 17.5). Size: S.
     - **The profiler's functions.** `ecs.profile` now names the Lua functions that take the most time, in the profiler's Functions tab (OpenECS DESIGN 3.5): a check of the editor on a large node file needs no code. Size: S.
   - Still open from OpenECS's updates of 2026-11-15 to 18: the console's double click goes to a file and line, so the game's errors and `print`s name the project's file from the project's folder, `components/player.lua:12:` (DESIGN 12.2), to check with a stack's lines; the key list shows ONLR's functions by their names, so each name says what it does to a user; `ui.graph` could show the running game's frame times, sent through the link, for later.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. ONLR's work makes them there, as CLAUDE.md says, when that is better than working around them:
   - fs: a file's permissions. Until it tells them, the Linux build marks as programs LÖVE's launcher, the files of `bin/` and the libraries.
-  - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - gpu and ui: what the graph panel needs, milestones 3 to 5 of "Shaders and graphs" below.
@@ -205,6 +203,7 @@ What the owner wants worked on, in this order.
   - The OpenECS job takes about 3.4 minutes when OpenECS changed, with ccache's files of the last build, 7.7 without them, and 12 seconds when its archive is kept.
   - The Wayland tests of OpenECS run one at a time (OpenECS's TODO).
 - **The editor's test still waits fixed times after clicks.** Its checks wait for what they check (DESIGN 16), but about 130 waits of 0.2 and 0.3 seconds after clicks and keys remain, some 30 of its 76 seconds. Some keep two clicks from being a double click, and some likely wait for the preview; which are needed was not tried. Measured on 2026-11-27 with a copy of the test that times each of its calls.
+- **A component whose `load` fails stays in the tree.** It keeps getting `update` and the other functions, as found on 2026-11-27 when a check in `samples/coinrun` made a `bump.body` fail as the top node loads; that test now destroys its node at its end. Open: whether the engine should leave such a component out, as the editor's node view marks it (DESIGN 6.4).
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the runners were written on Linux.
 - **What the editor does not do yet.** Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
 - **The tests on Windows.** `shuild.c` runs them on Linux only: they need SDL's offscreen driver, and set variables as a POSIX shell does.
@@ -220,11 +219,6 @@ What the owner wants worked on, in this order.
 
 Recommendations from the review of 2026-11-24, by area, the most important first. P1 is a bug, or a design flaw that gets harder to fix with each feature; P2 is worth doing before ONLR's first release; P3 when the code is touched. Each was checked at the lines it names. Times are of OpenECS's Release build and LÖVE 11.5, run offscreen. Measured and fine: `samples/speed`'s 5000 sprites draw in one batched draw call, 2.81 ms a frame, with 0.79 ms of update.
 
-**Engine**
-
-- **P3 · Shapes and fonts make garbage at each draw.** `components/shape.lua:35-60` builds an outline and a list of points for each shape at each draw, a rectangle too; `library/data.lua:161` makes a table and a key for each `data.load("font")`, which `font.sharp` (`font.lua:38`) calls for each scaled text at each frame. Not measured. Size: S.
-- **P3 · Two errors mislead an author.** `tree.lua:159-163` `spawn` and `newNode` without a parent while the top node loads say "the parent is no node of the tree", not that the root is not loaded yet. Size: S.
-
 **Runner and link**
 
 - **P3 · The preview makes much at each draw.** `preview.lua:49-68` `ordered()` makes a table for each node and sorts with a closure at each draw, twice when bounds are due (`:124`, `:178`); each node's parents are walked for the hidden ones (`:181-185`); a frame's header is joined to its whole block of pixels, another 8 MB copy for each frame (`:220`). Keep the order until the nodes change, and send the header and the block apart. Not measured. Size: S.
@@ -233,25 +227,7 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 **Editor**
 
 - **P3 · Delete runs `gio trash` and waits, on Linux only.** `project.lua:1887` On Windows and macOS a file goes to `.onlr/trash/`, though they have a trash (DESIGN 13.7). A trash in std's `fs` (see [Tasks](#tasks), "What OpenECS-std needs"). Size: S.
-- **P3 · A tooltip and a comment name the wrong keys and tools.** `tools.lua:79-83` The tooltips of Play, Pause, Step and Stop name F5 to F8 and Shift+F5, which only the node view binds (`nodeview.lua:1665-1675`). `project.lua:2040` lists the tools as move, turn, scale or shape, without `rect`. Size: S.
 
 **Export**
 
 - **P3 · Export holds the whole project in memory, on the editor's thread.** `export.lua:107`, `:189-216` The editor stops while it writes. OpenECS's workers now take buffers (OpenECS DESIGN 3.3), so an export can run beside the editor. Size: M.
-
-**Packages**
-
-- **P3 · bump's body and shadows' caster make outlines at each frame.** `bump/components/body.lua:75` and `shadows/components/caster.lua:256-262` call `onlr.shape:outline()`, which makes tables, at each frame, as physics did before 2026-11-25. Compare the shape's values in place, as `physics/find.lua`'s `start`, `note` and `finish` do. Not measured. Size: S.
-- **P3 · Packages fail on the top node while it loads.** `bump/components/body.lua:18`, `physics/components/body.lua:38`, `shadows/components/world.lua:112` add their world to `onlr.tree.root`, nil then (DESIGN 5). Say it in DESIGN 11.3, or check it. Size: S.
-
-**Samples and build**
-
-- **P3 · CI and releases.** `checks.yml:172` downloads LÖVE without checking its hash; `release.yml` does not need the checks to have passed; `check.sh:49-57` ignores the Lua check's exit status. Size: S.
-
-**Releases and this file**
-
-- **P3 · Items of this file that are done or out of date.** the files panel's handlers exist (`files.setHandlers`); the tool's menu takes plugins' entries now (`ecs.app.addMenuEntry`), though not ones that change while the tool runs; Libraries names `shadows.shape.box` and physics' folders, which are `shadows.caster` and flat now. Size: S.
-
-**Engine, documents**
-
-- **P3 · Smaller differences.** OVERVIEW 7 lists the tools without Rect and Shape and has no History panel; DESIGN 3.2's reversed-domain `id` against the folder's name that `project.lua:875` writes; DESIGN 8.3 misses `paint.lua`; DESIGN 10 says paint, follow and shake have `bounds`; DESIGN 6.4 says a new order waits for the next frame, which `life.lua:398-400` does not; DESIGN 11.6 and 11.9 miss `sizeVariation`, `spinVariation`, `getRaw` and `getJoystick`; DESIGN 14.2 against the tooltip "an AppImage" (`export.lua:287`); `samples/check.lua:1` and `samples/animation/test.lua:1` name the wrong script and section. Size: S.
