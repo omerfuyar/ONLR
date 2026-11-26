@@ -239,7 +239,7 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Samples and build**
 
-- **P3 · CI and releases.** `checks.yml:101` downloads LÖVE without checking its hash; `checks.yml:91` takes OpenECS's default branch, not the built commit; `release.yml` does not need the checks to have passed; `check.sh:49-57` ignores the Lua check's exit status. Size: S.
+- **P3 · CI and releases.** `checks.yml:131` downloads LÖVE without checking its hash; `release.yml` does not need the checks to have passed; `check.sh:49-57` ignores the Lua check's exit status. Size: S.
 
 **Releases and this file**
 
