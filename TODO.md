@@ -101,7 +101,7 @@ What the owner wants worked on, in this order.
   | Screen effects       | moonshine (built)    | `moonshine.chain`, a group, with an effect type of its own for each of moonshine's effects beside it, in `moonshine.effect`, applied in the chain's `order` (DESIGN 11.11). Open: the limits that DESIGN 11.11 lists, such as effects that measure with the window's size under `push.screen`, and a chain that covers what drew before it. |
   | Sound                | `love.audio` (built) | `audio.source`, a sound decoded whole or streamed, at a node, with a place in the world if mono; `audio.listener`, LÖVE's listener at its node or its camera's point (DESIGN 11.12). No library. Open: the limits that DESIGN 11.12 lists, such as a node that `setPaused` pauses playing on, and volumes by kind of sound, as ripple gives. |
   | Interface inside the game | SUIT (built)    | A component for each of SUIT's widgets, `suit.button`, `suit.label`, `suit.checkbox`, `suit.slider`, `suit.input` and `suit.imagebutton`, placed on nodes, which tell their nodes of a click or a change (DESIGN 11.13). Open: the limits that DESIGN 11.13 lists, such as overlapping widgets, a theme for each widget, and a layout of rows and columns that a node could give its children. |
-  | Light and shadows    | Shädows (built)      | `shadows.world`, a group that draws the light over its node and all under it; `shadows.light` and `shadows.shape.box`, `.circle` and `.polygon` at nodes (DESIGN 11.14). Shipped as ONLR's own copy, which sets no global (`packages/shadows/library/ONLR.md`). Open: the limits that DESIGN 11.14 lists, such as a camera that turns, heights, rooms and stars, and Shädows' normal and height maps. |
+  | Light and shadows    | Shädows (built)      | `shadows.world`, a group that draws the light over its node and all under it; `shadows.light` at a node, and `shadows.caster`, whose node's `onlr.shape` casts shadows (DESIGN 11.14). Shipped as ONLR's own copy, which sets no global (`packages/shadows/library/ONLR.md`). Open: the limits that DESIGN 11.14 lists, such as a camera that turns, heights, rooms and stars, and Shädows' normal and height maps. |
 
 - **The second round, weighed on 2026-11-18.** Sound was built first, as `audio`, then SUIT, then Shädows (all above). Of each:
   - **In-game interface: SUIT, built on 2026-11-18** (above). Slab was left out: about 18,000 lines, made for a tool's windows and docking rather than a game's menus, and it sets globals.
@@ -177,7 +177,6 @@ What the owner wants worked on, in this order.
   - Still open from OpenECS's updates of 2026-11-15 to 18: the console's double click goes to a file and line, so the game's errors and `print`s name the project's file from the project's folder, `components/player.lua:12:` (DESIGN 12.2), to check with a stack's lines; the key list shows ONLR's functions by their names, so each name says what it does to a user; `ui.graph` could show the running game's frame times, sent through the link, for later.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. ONLR's work makes them there, as CLAUDE.md says, when that is better than working around them:
   - fs: a file's permissions. Until it tells them, the Linux build marks as programs LÖVE's launcher, the files of `bin/` and the libraries.
-  - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
   - gpu and ui: what the graph panel needs, milestones 3 to 5 of "Shaders and graphs" below.
@@ -233,7 +232,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 **Editor**
 
 - **P3 · Delete runs `gio trash` and waits, on Linux only.** `project.lua:1887` On Windows and macOS a file goes to `.onlr/trash/`, though they have a trash (DESIGN 13.7). A trash in std's `fs` (see [Tasks](#tasks), "What OpenECS-std needs"). Size: S.
-- **P3 · A tooltip and a comment name the wrong keys and tools.** `tools.lua:79-83` The tooltips of Play, Pause, Step and Stop name F5 to F8 and Shift+F5, which only the node view binds (`nodeview.lua:1665-1675`). `project.lua:2040` lists the tools as move, turn, scale or shape, without `rect`. Size: S.
 
 **Export**
 
@@ -243,15 +241,3 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 - **P3 · bump's body and shadows' caster make outlines at each frame.** `bump/components/body.lua:75` and `shadows/components/caster.lua:256-262` call `onlr.shape:outline()`, which makes tables, at each frame, as physics did before 2026-11-25. Compare the shape's values in place, as `physics/find.lua`'s `start`, `note` and `finish` do. Not measured. Size: S.
 - **P3 · Packages fail on the top node while it loads.** `bump/components/body.lua:18`, `physics/components/body.lua:38`, `shadows/components/world.lua:112` add their world to `onlr.tree.root`, nil then (DESIGN 5). Say it in DESIGN 11.3, or check it. Size: S.
-
-**Samples and build**
-
-- **P3 · CI and releases.** `checks.yml:172` downloads LÖVE without checking its hash; `release.yml` does not need the checks to have passed; `check.sh:49-57` ignores the Lua check's exit status. Size: S.
-
-**Releases and this file**
-
-- **P3 · Items of this file that are done or out of date.** the files panel's handlers exist (`files.setHandlers`); the tool's menu takes plugins' entries now (`ecs.app.addMenuEntry`), though not ones that change while the tool runs; Libraries names `shadows.shape.box` and physics' folders, which are `shadows.caster` and flat now. Size: S.
-
-**Engine, documents**
-
-- **P3 · Smaller differences.** OVERVIEW 7 lists the tools without Rect and Shape and has no History panel; DESIGN 3.2's reversed-domain `id` against the folder's name that `project.lua:875` writes; DESIGN 8.3 misses `paint.lua`; DESIGN 10 says paint, follow and shake have `bounds`; DESIGN 6.4 says a new order waits for the next frame, which `life.lua:398-400` does not; DESIGN 11.6 and 11.9 miss `sizeVariation`, `spinVariation`, `getRaw` and `getJoystick`; DESIGN 14.2 against the tooltip "an AppImage" (`export.lua:287`); `samples/check.lua:1` and `samples/animation/test.lua:1` name the wrong script and section. Size: S.

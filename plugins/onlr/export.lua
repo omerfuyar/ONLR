@@ -344,7 +344,7 @@ ecs.panel.registerType(ui.panelType({
             project.setSetting("exportFolder", text)
           end }),
         ui.button("Export the .love file", { id = "love", tooltip = "The game as one file, which LÖVE runs anywhere", onClick = exportLove }),
-        ui.button("Export a Linux build", { id = "linux", tooltip = "The game with LÖVE, as an AppImage and a .tar.gz", onClick = exportLinux }),
+        ui.button("Export a Linux build", { id = "linux", tooltip = "The game with LÖVE's files, in a .tar.gz with a launcher named after the game", onClick = exportLinux }),
         ui.button("Export a Windows build", { id = "windows", tooltip = "The game with LÖVE, as a folder and a .zip", onClick = exportWindows }),
         ui.text(status, { wrap = true }),
       }

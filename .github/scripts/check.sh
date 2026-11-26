@@ -1,7 +1,7 @@
 #!/bin/sh
 # Checks ONLR's Lua files with the Lua language server when it is installed, for agents before they commit.
 # With no files named, it takes the Lua files that differ from dev, committed or not.
-# It prints only the problems, and fails when the Lua language server finds one.
+# It prints only the problems, and fails when the Lua language server finds one, or does not finish its check.
 set -u
 cd "$(dirname "$0")/../.." || exit 2
 
@@ -29,6 +29,12 @@ fi
 # named here are printed; its lines name a problem's file first, such as packages/onlr/library/node.lua:2:11 [Warning] ..., and the two lines after show where
 mkdir -p build
 lua-language-server --check="$PWD" --checklevel=Warning --check_format=pretty --logpath=build/luals > build/luals.log 2>&1
+# a check that did not finish, such as one that stopped with an error, found nothing, and is no pass
+if ! grep -q "Diagnosis complete" build/luals.log; then
+    echo "The Lua language server did not finish its check:"
+    tr '\r' '\n' < build/luals.log | tail -20
+    exit 2
+fi
 if tr '\r' '\n' < build/luals.log | sed 's/\x1b\[[0-9;]*m//g' | awk -v files="$lua" '
     BEGIN { split(files, list, " "); for (i in list) named[list[i]] = 1 }
     /:[0-9]+:[0-9]+ \[/ { split($0, parts, ":"); show = parts[1] in named; if (show) { found = 1; print }; next }

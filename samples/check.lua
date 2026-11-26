@@ -1,4 +1,4 @@
--- The helper of the samples' tests (DESIGN 16). test.sh copies it into each sample's packages/, so a test loads it
+-- The helper of the samples' tests (DESIGN 16). shuild.c copies it into each sample's packages/, so a test loads it
 -- with require("check"). A sample's main.lua loads its test.lua when LÖVE gets --test; the test calls check.run
 -- with a function, which runs beside the game, a frame at a time, and checks it. Then the game quits:
 -- with 0 when every check passed, and with 1 and the failed checks printed otherwise.
