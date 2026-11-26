@@ -1,5 +1,6 @@
 -- The tools' panels (DESIGN 13.1 and 13.3), each a bar of ui: Transform, the tool that every node view follows, its pivot and snapping;
--- Game, the functions of the game and how it plays; and Action, the history's functions and Save.
+-- Game, the functions of the game and how it plays; and Action, undo, redo and Save, with the count of the project's history, which
+-- OpenECS-std's history keeps (DESIGN 13.6).
 
 local ecs = require("ecs")
 local ui = require("ui")
@@ -136,7 +137,14 @@ function Action:view()
   })
 end
 
--- Each bar redraws at the events that change what it shows (DESIGN 13.1).
+function Action:saveState()
+  -- not read back; a test reads the history's place and finds the buttons here
+  local history = project.historyState()
+  return { position = history.position, count = history.count, undo = ui.rect(self.panel, "undo"), redo = ui.rect(self.panel, "redo") }
+end
+
+-- Each bar redraws at the events that change what it shows (DESIGN 13.1); the history says history.changed after each push, undo,
+-- redo and drop.
 ecs.panel.registerType(ui.panelType({
   name = "transform",
   title = "Transform",
@@ -152,6 +160,6 @@ ecs.panel.registerType(ui.panelType({
 ecs.panel.registerType(ui.panelType({
   name = "action",
   title = "Action",
-  redrawOn = { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.saved" },
-  create = Action.create, view = Action.view,
+  redrawOn = { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.saved", "history.changed" },
+  create = Action.create, view = Action.view, saveState = Action.saveState,
 }))

@@ -1,5 +1,5 @@
 -- The panels of ONLR's own, apart from the node view (DESIGN 13.1): the node hierarchy, the inspector, the tools' bars,
--- the project settings, the history and the search. Each shows the project that project.lua holds, and changes it through its functions.
+-- the project settings and the search. Each shows the project that project.lua holds, and changes it through its functions.
 
 local ecs = require("ecs")
 local project = require("project")
@@ -13,14 +13,14 @@ require("hierarchy")
 require("inspector")
 require("tools")
 require("settings")
-require("history")
 
 -- What the project says shows in the console.
 ecs.event.subscribe("onlr.said", function(_, text)
   console.add(text, "info", nil, "onlr")
 end)
 
--- Undo, redo and save, and the game's keys, act on the whole project, so the preset binds them for the whole editor (DESIGN 13.1).
+-- Save and the game's keys act on the whole project, so the preset binds them for the whole editor, and the core binds undo and
+-- redo, which act on the project's history from every panel (DESIGN 13.1, 13.6).
 ecs.key.bind("onlr.hierarchy", "Delete", "onlr.deleteChosen")
 ecs.key.bind("onlr.hierarchy", "Ctrl+D", "onlr.duplicateChosen")
 ecs.key.bind("onlr.hierarchy", "H", "onlr.hideChosen")

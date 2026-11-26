@@ -7,6 +7,7 @@ local fs = require("fs")
 local process = require("process")
 local format = require("format")
 local resolve = require("resolve")
+local history = require("history")
 
 ---A data file of the project, as the editor holds it.
 ---@class onlr.editor.File
@@ -35,8 +36,8 @@ local resolve = require("resolve")
 ---@class onlr.editor.Project
 ---@field folder string the project's folder, ending with a slash
 ---@field files table<string, onlr.editor.File>
----@field history onlr.editor.Record[]
----@field position integer how many records of the history are done
+---@field history history.history OpenECS-std's history of the project, which every record goes to (DESIGN 13.6)
+---@field last onlr.editor.Record? the record pushed last, while no undo or redo came after it
 ---@field chosen onlr.editor.Chosen
 ---@field joinable onlr.editor.Record? the change just made, which a choice that follows it in the same frame joins
 ---@field tool "move"|"turn"|"scale"|"rect"|"shape"
@@ -389,37 +390,39 @@ local function emitChanged(paths, history, fresh, kept)
   ecs.event.emit("onlr.changed", { files = paths, history = history or false })
 end
 
--- Takes out of the history every record that changed a file, when the file goes back to what is on disk (DESIGN 13.6).
+-- Takes out of the history every record that changed a file, when the file goes back to what is on disk (DESIGN 13.6). A record's
+-- tags are the paths of the files that it changed.
 local function dropHistory(path)
-  local p = assert(P)
-  local kept, position = {}, 0
-  for i, record in ipairs(p.history) do
-    if not record.files[path] then
-      kept[#kept + 1] = record
-      if i <= p.position then
-        position = position + 1
-      end
-    end
-  end
-  p.history, p.position = kept, position
+  history.drop(assert(P).history, path)
 end
 
--- Adds a record after the done ones, and drops those that were undone.
-local function push(record)
+local step
+
+-- Gives a record to the history, after the done ones: its undo and redo step through it. A record with a merge key joins the
+-- last one when it has the same key and came within history.mergeTime, so the first one's undo and this one's redo stay
+-- (OpenECS-std DESIGN 34).
+local function push(record, merge)
   local p = assert(P)
-  for i = #p.history, p.position + 1, -1 do
-    p.history[i] = nil
+  local tags = {}
+  for path in pairs(record.files) do
+    tags[#tags + 1] = path
   end
-  p.history[#p.history + 1] = record
-  p.position = #p.history
+  table.sort(tags)
+  p.last = record
+  history.push(p.history, record.label, merge or "", tags, function()
+    step(record, "before")
+  end, function()
+    step(record, "after")
+  end, nil)
 end
 
 ---Makes one change of the history: fn changes the files' tables, after telling which with touch.
 ---@param label string what the change is, such as "Move"
+---@param merge string? the key that merges it into the last record, such as the file, nodes and property that it changed
 ---@param fn fun(touch: (fun(path: string): table?), keep: fun(path: string)) touch gives a file's table, and notes how it was;
 ---keep tells that fn changed the file's own tree as it changed the file, so the tree is kept
 ---@return boolean changed whether anything changed
-local function edit(label, fn)
+local function edit(label, fn, merge)
   local p = assert(P)
   local before = {} ---@type table<string, string|false> each touched file's text before the change
   local kept = {} ---@type table<string, boolean>
@@ -471,7 +474,7 @@ local function edit(label, fn)
   end
   table.sort(paths)
   record.chosen = { before = p.chosen, after = p.chosen }
-  push(record)
+  push(record, merge)
   -- Nodes that the code chooses right after a change, such as a copy after Duplicate, are chosen by the same record.
   p.joinable = record
   ecs.timer.start(0, false, function()
@@ -483,8 +486,10 @@ local function edit(label, fn)
   return true
 end
 
-local function step(record, field)
+function step(record, field)
   local p = assert(P)
+  -- a choice after an undo or a redo is a record of its own
+  p.last, p.joinable = nil, nil
   local paths = {}
   for path, change in pairs(record.files) do
     -- Undoing a change that made a file leaves the file (DESIGN 13.5).
@@ -832,6 +837,7 @@ local function close()
   if p.watch then
     p.watch:stop()
   end
+  history.close(p.history)
   P = nil
   ecs.event.emit("onlr.closed")
   return true
@@ -889,9 +895,11 @@ local function open(folder)
   addLove(folder)
 
   P = {
-    folder = folder, files = {}, history = {}, position = 0, chosen = { paths = {} }, tool = "move", settings = {},
+    folder = folder, files = {}, history = history.open("onlr"), chosen = { paths = {} }, tool = "move", settings = {},
     space = {}, typeNames = {}, typeFiles = {}, types = {}, trees = {},
   }
+  -- Ctrl+Z acts on the project's history in every panel, the console's and the files' too (DESIGN 13.6)
+  history.useDefault(P.history)
   readSettings()
   scanTypes()
   getFile("manifest.lua")
@@ -1222,6 +1230,13 @@ local function setNodeField(node, field, value)
   return true
 end
 
+-- The key that merges quick changes of the same field or property of the same nodes into one record (DESIGN 13.6).
+local function mergeKey(file, paths, ...)
+  local sorted = format.copy(paths)
+  table.sort(sorted)
+  return table.concat({ file, table.concat(sorted, ","), ... }, "|")
+end
+
 local function setField(file, paths, field, value)
   return edit("Change " .. field, function(touch, keep)
     touch(file)
@@ -1233,7 +1248,7 @@ local function setField(file, paths, field, value)
     if inPlace then
       keep(file)
     end
-  end)
+  end, mergeKey(file, paths, field))
 end
 
 -- Sets fields of many nodes as one change, such as the places of the nodes that a drag moved.
@@ -1290,7 +1305,7 @@ local function setProperty(file, paths, typeName, name, value)
     for _, node in ipairs((nodesOf(file, paths))) do
       setValue(node, typeName, name, value)
     end
-  end)
+  end, mergeKey(file, paths, typeName, name))
 end
 
 -- Sets some values of the nodes' components of a type as one change, such as a rectangle's origin and width that the Shape tool's
@@ -2072,9 +2087,8 @@ local function choose(file, paths, unrecorded)
   -- A copy, so that the caller's list does not change a record.
   local chosen = { file = file, paths = format.copy(paths or {}) }
   if not unrecorded and not sameChoice(p.chosen, chosen) then
-    local last = p.history[p.position]
-    if p.joinable and p.joinable == last then
-      last.chosen.after = chosen
+    if p.joinable and p.joinable == p.last then
+      p.joinable.chosen.after = chosen
     else
       push({ label = "Choose", files = {}, chosen = { before = p.chosen, after = chosen } })
       p.joinable = nil
@@ -2140,7 +2154,7 @@ local functions = {
         last = part
       end
       t[last] = value
-    end)
+    end, mergeKey("manifest.lua", {}, field))
   end },
   nodeFiles = { sig = "value()", doc = "The paths of the project's node files, in order", fn = function()
     if not P then
@@ -2259,47 +2273,19 @@ local functions = {
     end
     return ok
   end },
-  undo = { sig = "void()", doc = "Undo", fn = function()
-    if P and P.position > 0 then
-      P.position = P.position - 1
-      step(P.history[P.position + 1], "before")
+  undo = { sig = "void()", doc = "Undo the project's last change or choice", fn = function()
+    if P then
+      history.undoIn(P.history)
     end
   end },
-  redo = { sig = "void()", doc = "Redo", fn = function()
-    if P and P.position < #P.history then
-      P.position = P.position + 1
-      step(P.history[P.position], "after")
+  redo = { sig = "void()", doc = "Redo the project's last change or choice that was undone", fn = function()
+    if P then
+      history.redoIn(P.history)
     end
   end },
-  historyState = { sig = "value()", doc = "The history: how many changes are done, and how many it holds", fn = function()
-    return { position = P and P.position or 0, count = P and #P.history or 0 }
-  end },
-  history = { sig = "value()", doc = "The history's records, the first done first: each one's label and the files that it changed; and how many are done",
-    fn = function()
-      local records = {}
-      for i, record in ipairs(P and P.history or {}) do
-        local paths = {}
-        for path in pairs(record.files) do
-          paths[#paths + 1] = path
-        end
-        table.sort(paths)
-        records[i] = { label = record.label, files = paths }
-      end
-      return { position = P and P.position or 0, records = records }
-    end },
-  goTo = { sig = "void(int position)", doc = "Undo or redo until that many records are done, as a jump in the history panel", fn = function(position)
-    if not P then
-      return
-    end
-    position = math.max(0, math.min(#P.history, position))
-    while P.position > position do
-      P.position = P.position - 1
-      step(P.history[P.position + 1], "before")
-    end
-    while P.position < position do
-      P.position = P.position + 1
-      step(P.history[P.position], "after")
-    end
+  historyState = { sig = "value()", doc = "The project's history: how many records are done, and how many it holds", fn = function()
+    local state = P and history.state(P.history)
+    return { position = state and state.position or 0, count = state and #state.records or 0 }
   end },
   openPath = { sig = "void(string path)", doc = "Open the project that holds a file or a folder", fn = function(path)
     open(path)

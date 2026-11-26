@@ -98,7 +98,7 @@ The editor is made of panels. Each can be moved, put beside another, or put in t
 | Viewer            | Under the inspector     | The picture, sound or text of the file chosen in the files panel.                                |
 | Console           | Bottom                  | What the game prints, its errors, and the editor's warnings. A click on an error's file opens it in your code editor. |
 | Files             | A tab beside the console | The project's files: open, rename, move and delete them, and make folders, scripts and node files. |
-| History           | A tab beside the console | Everything that you did, which a click undoes or redoes to.                                     |
+| History           | A tab beside the console | Everything that you did, with the files that each change changed, which a click undoes or redoes to. |
 | Search            | Ctrl+K, from anywhere   | Finds nodes, files, component types, your scripts' functions and the editor's commands.         |
 
 A tooltip names the keys of what it shows, dimmed after its text.
@@ -107,7 +107,7 @@ A few things to know:
 
 - **Choosing** is shared. A node chosen in the node hierarchy is chosen in the node view and shown in the inspector, and the other way round.
 - **A double click** on a node file, in the files panel, opens it in the node view. A double click on a script opens it in your code editor.
-- **Every change can be undone** with Ctrl+Z, and choosing nodes is in the history too, so Ctrl+Z walks back through everything that you did. Renaming, moving and deleting files are not in the history: a deleted file goes to the system's trash.
+- **Every change can be undone** with Ctrl+Z, and choosing nodes is in the history too, so Ctrl+Z walks back through everything that you did, from any panel. Values typed one after another into the same field, within a second, are one change, so one Ctrl+Z takes them all back. Undoing past a save marks the file unsaved again. The history holds your last 1000 changes and choices, which `history.limit`, in the settings under **Tools**, can raise. Renaming, moving and deleting files are not in the history: a deleted file goes to the system's trash.
 - **Save** with Ctrl+S. Play saves first.
 - **Files changed outside the editor**, by your code editor or by git, are read again. When the editor holds changes of such a file that are not saved, or the file was deleted, it asks which to keep. Kept changes are written at the next save.
 - **A right click** opens a menu wherever there is one: on a node, on empty space in the node view, on a component's heading in the inspector, and on a file. A component's menu opens its script in your code editor with **Open script**.

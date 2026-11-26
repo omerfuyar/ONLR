@@ -6,6 +6,7 @@
   ],
   "workspace.ignoreDir": [
     "build",
+    ".claude",
     "OpenECS",
     "packages/*/library",
     "!packages/onlr/library"

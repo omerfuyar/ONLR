@@ -81,7 +81,8 @@ return {
     test.match(test.setting("console.show"), "Info and up", "the console starts at Info and up")
     local kept = test.session().pluginState.onlr.state
     check(kept.folder and kept.folder:find("editor/$") and kept.recent[1] == kept.folder, "the session holds the project: " .. tostring(kept.folder))
-    -- the title bar holds the editor's menus, then Play, Pause and Step, which are off while nothing plays (DESIGN 13.2)
+    -- the title bar holds the editor's menus, then Tools, where OpenECS-std's History is, then Play, Pause and Step, which are off
+    -- while nothing plays (DESIGN 13.2)
     local function titleParts()
       local parts = {}
       for _, part in ipairs(test.titleBar()) do
@@ -93,7 +94,7 @@ return {
     end
     test.match(titleParts(), {
       { kind = "menu", label = "File" }, { kind = "menu", label = "Edit" }, { kind = "menu", label = "Game" },
-      { kind = "menu", label = "Window" },
+      { kind = "menu", label = "Window" }, { kind = "menu", label = "Tools" },
       { kind = "button", label = "▶", on = false }, { kind = "button", label = "||", on = false }, { kind = "button", label = "▶|" },
     })
     -- the preset puts the asset viewer under the inspector, in the same column
@@ -366,6 +367,20 @@ return {
     test.key("Ctrl+Z")
     save()
     check(read("nodes/start.lua") == start, "the name is undone")
+    -- two names typed within history.mergeTime are one record, so one undo gives the name before both back (DESIGN 13.6)
+    for _, name in ipairs({ "Hero", "Champion" }) do
+      test.click(inspector.x + 200, inspector.y + 76)
+      test.key("Ctrl+A")
+      test.text(name)
+      test.key("Return")
+    end
+    test.wait(0.2)
+    test.click(x, y)
+    save()
+    check(read("nodes/start.lua") == start:gsub('name = "A"', 'name = "Champion"'), "both names are typed:\n" .. read("nodes/start.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/start.lua") == start, "one undo takes back both names:\n" .. read("nodes/start.lua"))
 
     -- a node of an instance's base is changed by a change of the instance
     x, y = at(208, 112)
@@ -1105,14 +1120,18 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the added node is undone")
 
-    -- the history panel, the third tab beside the console, lists every record: a click on its first row, before every change, undoes
-    -- them all, and Redo brings them back (DESIGN 13.6)
+    -- OpenECS-std's History panel, the third tab beside the console, lists every record: a click on its first row, before every
+    -- change, undoes them all, and Redo brings them back (DESIGN 13.6)
     local console = test.rect(panelOf(test, "console.log"))
     save()
     local before = read("nodes/start.lua")
-    local history = panelOf(test, "onlr.history")
-    local done = test.panel(history).state.position
-    check(done > 0, "the history holds the test's records")
+    local action = panelOf(test, "onlr.action")
+    local function done()
+      return test.panel(action).state.position
+    end
+    local held = done()
+    check(held > 0, "the history holds the test's records")
+    local history = panelOf(test, "history.list")
     local function shown()
       local ok, rect = pcall(test.rect, history)
       return ok and rect or nil
@@ -1124,16 +1143,54 @@ return {
       end
     end
     local list = assert(shown(), "the history's tab shows it")
-    test.click(list.x + 60, list.y + 20)
+    -- the History panel shows the project's history, the default, as no panel with one of its own has had the focus (DESIGN 13.6)
+    test.match(test.panel(history).state.shown, "onlr", "the History panel shows the project's history")
+    local records = test.panel(history).state.records
+    test.click(list.x + records.x + 60, list.y + records.y + 8)
     test.wait(0.3)
-    check(test.panel(history).state.position == 0, "a click on the first row undoes every record: " .. test.panel(history).state.position)
-    for _ = 1, done do
+    check(done() == 0, "a click on the first row undoes every record: " .. done())
+    check(read("nodes/start.lua") == before, "undoing gives no unsaved file a new text on disk")
+    for _ = 1, held do
       test.key("Ctrl+Y")
     end
     test.wait(0.3)
-    check(test.panel(history).state.position == done, "Redo brings them back")
+    check(done() == held, "Ctrl+Y in the History panel brings them back: " .. done())
     save()
     check(read("nodes/start.lua") == before, "as they were:\n" .. read("nodes/start.lua"))
+    -- the Action bar's Undo and Redo act on the same history
+    local function press(id)
+      local bar, button = test.rect(action), test.panel(action).state[id]
+      test.click(bar.x + button.x + button.width / 2, bar.y + button.y + button.height / 2)
+    end
+    press("undo")
+    test.wait(0.2)
+    check(done() == held - 1, "the Action bar's Undo undoes one record: " .. done())
+    press("redo")
+    test.wait(0.2)
+    check(done() == held, "and its Redo redoes it: " .. done())
+
+    -- a file that goes back to what is on disk takes out every record that changed it: after a change of start.lua is saved and the
+    -- file is written outside the editor, undo does not change it (DESIGN 13.6)
+    x, y = at(56, 56)
+    test.drag(x, y, x + 32, y)
+    test.wait(0.3)
+    save()
+    local outside = read("nodes/start.lua") .. "-- written outside the editor\n"
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write(outside)
+    file:close()
+    test.wait(1)
+    for _ = 1, done() do
+      test.key("Ctrl+Z")
+    end
+    test.wait(0.3)
+    check(done() == 0, "every record left is undone: " .. done())
+    test.match(test.panel(panelOf(test, "onlr.view")), { unsaved = false }, "no undo changed start.lua")
+    check(read("nodes/start.lua") == outside, "start.lua is as it was written")
+    file = assert(io.open("nodes/start.lua", "wb"))
+    file:write(before)
+    file:close()
+    test.wait(1)
 
     -- the files panel renames a file: every path that names it changes with it, and the files are saved (DESIGN 13.7)
     -- the files panel is a tab beside the console, which shows first
@@ -1409,7 +1466,7 @@ return {
     end
     check(printed, "the game's print is in the console, from the source game")
     -- the title bar's Play button is on while the game plays
-    test.match(titleParts()[5], { label = "▶", on = true }, "Play is on while the game plays")
+    test.match(titleParts()[6], { label = "▶", on = true }, "Play is on while the game plays")
     -- the panels, the tabs and the space around them take some of the tint while the game plays, and lose it at Stop
     local tinted = {}
     for _, name in ipairs({ "ecs.colorPanel", "ecs.colorTabRow", "ecs.colorBackground" }) do
