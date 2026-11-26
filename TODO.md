@@ -221,8 +221,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Engine**
 
-- **P3 · Shapes and fonts make garbage at each draw.** `components/shape.lua:35-60` builds an outline and a list of points for each shape at each draw, a rectangle too; `library/data.lua:161` makes a table and a key for each `data.load("font")`, which `font.sharp` (`font.lua:38`) calls for each scaled text at each frame. Not measured. Size: S.
-- **P3 · Two errors mislead an author.** `tree.lua:159-163` `spawn` and `newNode` without a parent while the top node loads say "the parent is no node of the tree", not that the root is not loaded yet. Size: S.
 
 **Runner and link**
 
