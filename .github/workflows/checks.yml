@@ -60,10 +60,8 @@ jobs:
         id: cache
         uses: actions/cache@v4
         with:
-          path: |
-            OpenECS
-            packages.txt
-          key: openecs-2-debug-linux-${{ steps.commit.outputs.sha }}
+          path: OpenECS
+          key: openecs-debug-linux-${{ steps.commit.outputs.sha }}
 
       - uses: actions/checkout@v4
         if: steps.cache.outputs.cache-hit != 'true'
@@ -134,17 +132,9 @@ jobs:
           cp -r source/build/Debug/bin/. OpenECS/
           OpenECS/OpenECS --definitions OpenECS/include > definitions.log 2>&1 || (cat definitions.log && exit 1)
 
-      # the packages of the system libraries that the program and its plugins link to, so the tests install those alone, not the build tools
-      - name: List the libraries' packages
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          find OpenECS -type f \( -name '*.so*' -o -name OpenECS \) -exec ldd {} + 2>/dev/null | awk '/=> \// { print $3 }' | sort -u \
-            | xargs -r realpath | xargs -r dpkg -S 2>/dev/null | cut -d: -f1 | sort -u > packages.txt
-          cat packages.txt
-
       # a tar keeps the files' permissions, which an artifact does not
       - name: Pack OpenECS
-        run: tar -czf openecs.tar.gz OpenECS packages.txt
+        run: tar -czf openecs.tar.gz OpenECS
 
       - uses: actions/upload-artifact@v4
         with:
@@ -167,13 +157,14 @@ jobs:
         with:
           name: openecs
 
-      # OpenECS needs the system libraries that its build linked to, which the job OpenECS listed; and EGL, with Mesa drawing in software,
-      # lets OpenECS and LÖVE draw with SDL's offscreen driver on a runner without a graphics card
+      # OpenECS needs only the runtime libraries, not its build tools; SDL opens most of them when it runs, so a list of what the program
+      # links to misses them. EGL and Vulkan, with Mesa drawing in software, let OpenECS and LÖVE draw with SDL's offscreen driver on a
+      # runner without a graphics card: without Vulkan's driver, the editor's tests that drag a node in the preview fail
       - name: Unpack OpenECS
         run: |
           tar -xzf openecs.tar.gz
           sudo apt-get update
-          xargs -a packages.txt sudo apt-get install -y --no-install-recommends libegl1 libegl-mesa0 libgl1-mesa-dri
+          sudo apt-get install -y --no-install-recommends libegl1 libegl-mesa0 libgl1-mesa-dri libvulkan1 mesa-vulkan-drivers
 
       # LÖVE's AppImage, unpacked, as ONLR's archive holds it (DESIGN.md, section 15.2)
       - name: Install LÖVE
