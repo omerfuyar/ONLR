@@ -60,18 +60,33 @@ return {
       return view.x + x + 40, view.y + y + 40
     end
     local file
+    -- Saving writes every changed file before Ctrl+S is handled, so the file is read right after it
     local function save()
       test.key("Ctrl+S")
-      test.wait(0.2)
+      test.wait()
+    end
+    -- Waits until condition gives true, at most seconds (10 if left out), and gives whether it did: the editor sees a change on disk
+    -- and the preview, another process, answers in their own time, so a check waits for what it checks, not for a fixed time that a
+    -- slower computer outlasts
+    local function waitUntil(condition, seconds)
+      for _ = 1, (seconds or 10) / 0.05 do
+        if condition() then
+          return true
+        end
+        test.wait(0.05)
+      end
+      return condition() and true or false
+    end
+    -- Lets the editor read a change on disk that nothing shows, such as a file put back as the editor holds it: fs's watch reads
+    -- changes ten times a second, and the editor reads them 0.05 seconds after the first (DESIGN 13.6)
+    local function settle()
+      test.wait(0.5)
     end
     -- the preview starts, and answers what the types declare: node A's red square shows, which takes longer
     -- on a slow computer
-    for _ = 1, 40 do
-      test.wait(0.5)
-      if test.pixel(at(56, 56)) == "#FF0000" then
-        break
-      end
-    end
+    waitUntil(function()
+      return test.pixel(at(56, 56)) == "#FF0000"
+    end, 20)
     test.wait(0.5)
     test.match(test.panel(panelOf(test, "onlr.view")), { title = "start.lua", unsaved = false })
     -- the editor keeps its session, so it starts again with this project, its panels and their locks, and lists it among the
@@ -900,18 +915,22 @@ return {
       test.key("Escape")
       return table.concat(labels, " ")
     end
+    local function offered()
+      return addLabels():find("extra", 1, true) ~= nil
+    end
+    local function notOffered()
+      return not offered()
+    end
     os.execute("mkdir components/extra && printf 'return {}\\n' > components/extra/one.lua")
-    test.wait(1)
-    check(addLabels():find("extra", 1, true), "a new folder's script is offered: " .. addLabels())
+    check(waitUntil(offered), "a new folder's script is offered: " .. addLabels())
     os.execute("rm -rf components/extra")
-    test.wait(1)
+    check(waitUntil(notOffered), "a removed folder's script is not: " .. addLabels())
     os.execute("mkdir components/extra")
-    test.wait(1)
+    settle()
     os.execute("printf 'return {}\\n' > components/extra/two.lua")
-    test.wait(1)
-    check(addLabels():find("extra", 1, true), "a script in a folder that came back is offered: " .. addLabels())
+    check(waitUntil(offered), "a script in a folder that came back is offered: " .. addLabels())
     os.execute("rm -rf components/extra")
-    test.wait(2)
+    check(waitUntil(notOffered), "and not once it is removed again: " .. addLabels())
 
     -- a folder that is moved away and made again with other files in it, before the editor reads the changes, as git can do when it
     -- changes branches: the editor reads the files that the new folder holds, so the node that part.lua gains shows in its instance, and
@@ -935,11 +954,11 @@ return {
       made:write(text)
       made:close()
     end
-    test.wait(1)
-    check(instanceHasNew(), "the files of a folder made again are read: Part's instance holds its new node")
+    check(waitUntil(instanceHasNew), "the files of a folder made again are read: Part's instance holds its new node")
     os.execute("rm -rf nodes && mv nodes.away nodes")
-    test.wait(1)
-    check(not instanceHasNew(), "the folder brought back is read again")
+    check(waitUntil(function()
+      return not instanceHasNew()
+    end), "the folder brought back is read again")
 
     -- a property with when shows only while the property that it names has one of its values: a rectangle shows its width,
     -- and a circle its radius in its place (DESIGN 6.2)
@@ -1073,7 +1092,7 @@ return {
     rx, ry = row(3)
     test.click(rx, ry)
     os.remove("nodes/part.lua")
-    test.wait(1.5)
+    settle()
     rx, ry = row(2)
     test.click(rx, ry)
     test.match(chosen(), { "aaaaaa" }, "the node hierarchy works without the instance's base")
@@ -1179,7 +1198,7 @@ return {
     file = assert(io.open("nodes/start.lua", "wb"))
     file:write(outside)
     file:close()
-    test.wait(1)
+    settle()
     for _ = 1, done() do
       test.key("Ctrl+Z")
     end
@@ -1190,7 +1209,7 @@ return {
     file = assert(io.open("nodes/start.lua", "wb"))
     file:write(before)
     file:close()
-    test.wait(1)
+    settle()
 
     -- the files panel renames a file: every path that names it changes with it, and the files are saved (DESIGN 13.7)
     -- the files panel is a tab beside the console, which shows first
@@ -1273,13 +1292,10 @@ return {
     end
     local function answer(title)
       local asked
-      for _ = 1, 20 do
-        test.wait(0.2)
+      waitUntil(function()
         asked = test.dialog()
-        if asked then
-          break
-        end
-      end
+        return asked ~= nil
+      end, 4)
       test.match(asked and asked.title, title, "the editor asks")
       test.key("Return")
       test.wait(0.3)
@@ -1302,7 +1318,7 @@ return {
     file = assert(io.open("nodes/start.lua", "wb"))
     file:write(start)
     file:close()
-    test.wait(1)
+    settle()
 
     -- a node file that does not load, such as one with git's conflict marks, shows in its view with its error; a right click on it,
     -- Select All and Paste do nothing, and raise no error (DESIGN 4.2)
@@ -1316,13 +1332,9 @@ return {
       return test.pixel(at(56, 56)) == "#FF0000"
     end
     local function waitFor(wanted)
-      for _ = 1, 20 do
-        test.wait(0.2)
-        if redShows() == wanted then
-          break
-        end
-      end
-      return redShows() == wanted
+      return waitUntil(function()
+        return redShows() == wanted
+      end, 4)
     end
     check(waitFor(false), "a node file that does not load empties its view")
     local before = #test.errors()
@@ -1345,7 +1357,7 @@ return {
     file = assert(io.open("nodes/start.lua", "wb"))
     file:write((start:gsub('%["p4rt00"%] = {', '["ghost"] = {\n            posX = 1,\n          },\n          ["p4rt00"] = {', 1)))
     file:close()
-    test.wait(1)
+    settle()
     test.click(at(210, 50))
     test.wait(0.3)
     local ghost
@@ -1364,7 +1376,7 @@ return {
     file = assert(io.open("nodes/start.lua", "wb"))
     file:write((start:gsub('base = "nodes/part.lua"', 'base = "nodes/gone.lua"', 1)))
     file:close()
-    test.wait(1)
+    settle()
     rx, ry = row(4)
     test.click(rx, ry)
     test.match(chosen(), { "p4rt01" }, "the node hierarchy shows Part, whose base does not load, among the file's nodes")
@@ -1372,7 +1384,7 @@ return {
     file = assert(io.open("nodes/start.lua", "wb"))
     file:write(start)
     file:close()
-    test.wait(1)
+    settle()
     check(read("nodes/start.lua") == start, "the file is left as it was")
 
     -- F fits the view to the chosen node: node A's red square fills its middle, at a greater zoom
