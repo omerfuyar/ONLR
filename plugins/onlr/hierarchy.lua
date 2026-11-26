@@ -28,11 +28,6 @@ local STATE_VERSION = 1
 local Hierarchy = {}
 Hierarchy.__index = Hierarchy
 
--- the events whose change the panel shows (DESIGN 13.1)
-local EVENTS = {
-  "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.state", "onlr.running:tree",
-  "onlr.settings:hidden", "onlr.settings:locked",
-}
 
 local function say(_, message)
   if message then
@@ -499,7 +494,6 @@ function Hierarchy.create(panel, saved, version)
   if version == STATE_VERSION and type(saved) == "table" then
     self.open, self.openFile = saved.open or {}, saved.file
   end
-  shared.follow(panel, EVENTS)
   panel:acceptDrops({ "onlr.node", "file-list" })
   return self
 end
@@ -532,13 +526,16 @@ function Hierarchy:saveState()
 end
 
 function Hierarchy:destroy()
-  shared.forget(self.panel)
   ui.forget(self.panel)
 end
 
 ecs.panel.registerType({
   name = "hierarchy",
   title = "Node Hierarchy",
+  -- the events whose change the panel shows (DESIGN 13.1)
+  redrawOn = {
+    "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.state", "onlr.runningTree", "onlr.settings", "onlr.shown",
+  },
   stateVersion = STATE_VERSION,
   create = Hierarchy.create,
   draw = Hierarchy.draw,

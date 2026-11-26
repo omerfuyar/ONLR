@@ -843,6 +843,15 @@ return {
     save()
     check(read("nodes/start.lua") == start, "Pick and a click in the node hierarchy set it back:\n" .. read("nodes/start.lua"))
     test.match(chosen(), { "aaaaaa" }, "and A is still chosen")
+    -- Escape ends a pick in every panel of ONLR's: with the Transform bar focused, a click on A afterwards only chooses it (DESIGN 13.4)
+    test.click(inspected("aaaaaa:thing:target:pick", 0.5))
+    local bar = test.rect(panelOf(test, "onlr.transform"))
+    test.click(bar.x + bar.width - 10, bar.y + bar.height / 2)
+    test.key("Escape")
+    test.click(px, py)
+    test.wait(0.2)
+    save()
+    check(read("nodes/start.lua") == start, "Escape in the Transform bar ends the pick:\n" .. read("nodes/start.lua"))
 
     -- Add component, at the inspector's end, shows the types in folders by their names' dots, a folder at a time: onlr's folder
     -- first, then marker, the project's script. Return opens onlr in place, Left goes back, and Down and Return add marker.

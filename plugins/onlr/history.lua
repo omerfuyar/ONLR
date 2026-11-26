@@ -5,7 +5,6 @@
 local ecs = require("ecs")
 local ui = require("ui")
 local project = require("project")
-local shared = require("shared")
 
 local STYLES = ui.styles()
 
@@ -50,8 +49,6 @@ function History:draw(surface)
 end
 
 function History.create(panel)
-  -- the list follows every change and choice, every undo and redo, and the project that opens or closes
-  shared.follow(panel, { "onlr.changed", "onlr.chosen", "onlr.opened", "onlr.closed" })
   return setmetatable({ panel = panel }, History)
 end
 
@@ -65,13 +62,14 @@ function History:saveState()
 end
 
 function History:destroy()
-  shared.forget(self.panel)
   ui.forget(self.panel)
 end
 
 ecs.panel.registerType({
   name = "history",
   title = "History",
+  -- the list follows every change and choice, every undo and redo, and the project that opens or closes
+  redrawOn = { "onlr.changed", "onlr.chosen", "onlr.opened", "onlr.closed" },
   create = History.create,
   draw = History.draw,
   event = History.event,

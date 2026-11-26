@@ -115,8 +115,8 @@ local open = {} ---@type table<ecs.Panel, true> the open Project panels
 ecs.panel.registerType({
   name = "settings",
   title = "Project",
+  redrawOn = { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.saved", "onlr.settings" },
   create = function(panel)
-    shared.follow(panel, { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.saved", "onlr.settings" })
     open[panel] = true
     return { panel = panel }
   end,
@@ -126,7 +126,6 @@ ecs.panel.registerType({
   end,
   destroy = function(state)
     open[state.panel] = nil
-    shared.forget(state.panel)
     ui.forget(state.panel)
   end,
 })
