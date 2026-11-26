@@ -585,7 +585,13 @@ local function drawGroup(group)
         love.graphics.push()
         love.graphics.applyTransform(r.node:_drawTransform(life.drawing))
         life.current = r
+        -- a draw that set a shader and did not set it back shades nothing after it; the shader is set only when it differs, since
+        -- setting one ends a batch of LÖVE's draws (DESIGN 6.3)
+        local shader = love.graphics.getShader()
         r.component:draw()
+        if love.graphics.getShader() ~= shader then
+          love.graphics.setShader(shader)
+        end
         love.graphics.pop()
       end
     else

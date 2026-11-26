@@ -3,6 +3,7 @@
 
 local data = require("onlr.library.data")
 local life = require("onlr.library.life")
+local shaders = require("onlr.library.shader")
 local tree = require("onlr.library.tree")
 
 ---@class onlr.loop
@@ -52,10 +53,12 @@ function loop.update(dt)
   end
   life.call("update", dt)
   life.call("lateUpdate", dt)
+  shaders.advance(dt)
 end
 
 ---Calls the components' draw in the order of drawing, and each group's drawTree in its place. Called before love.draw.
 function loop.draw()
+  shaders.sendTime()
   life.draw()
 end
 

@@ -116,6 +116,7 @@ local PATTERNS = {
   sound = "wav;ogg;oga;ogv;mp3;flac;abc;mod;s3m;xm;it",
   font = "ttf;otf;fnt",
   nodeFile = "lua",
+  shader = "glsl",
 }
 
 -- A path that the dialog gave or the user typed, from the project's folder. A game reads only its own folder (DESIGN 3.1),
@@ -252,7 +253,7 @@ function Inspector:control(subject, id, decl, value, set)
           write(path, on)
         end }),
     })
-  elseif kind == "image" or kind == "file" or kind == "nodeFile" then
+  elseif kind == "image" or kind == "shader" or kind == "file" or kind == "nodeFile" then
     -- A file is set by dragging it from the files panel onto the row, by the system's dialog, or by typing its path.
     local known = value == nil or value == MIXED or value == "" or fs.info(project.folder() .. tostring(value)) ~= nil
     self.drops[#self.drops + 1] = { id = id, type = "file-list", set = set, extensions = options.extensions, nodeFile = kind == "nodeFile" }

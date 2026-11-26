@@ -147,9 +147,9 @@ local function need(path)
 end
 
 ---A loaded file, by its kind, and the key under which it is held.
----kind is "image", "font", "sound" or "node". A sound is the source that each component clones,
----a font is a path and a size, and a node file is its table.
----@param kind "image"|"font"|"sound"|"node"
+---kind is "image", "font", "sound", "shader" or "node". A sound is the source that each component clones,
+---a font is a path and a size, a shader is a GLSL file, compiled (DESIGN 6.7), and a node file is its table.
+---@param kind "image"|"font"|"sound"|"shader"|"node"
 ---@param path string? nil only for a font
 ---@param option any the font's size, or whether a sound streams
 ---@return any value
@@ -179,13 +179,18 @@ function data.load(kind, path, option)
     entry = loaded[key] or (need(path) or get(key, function()
       return love.audio.newSource(path --[[@as string]], option and "stream" or "static")
     end))
+  elseif kind == "shader" then
+    key = "shader:" .. tostring(path)
+    entry = loaded[key] or (need(path) or get(key, function()
+      return require("onlr.library.shader").load(path --[[@as string]])
+    end))
   else
     key = "node:" .. tostring(path)
     entry = loaded[key] or get(key, function()
       return data.read(path --[[@as string]])
     end)
   end
-  if kind == "image" or kind == "sound" then
+  if kind == "image" or kind == "sound" or kind == "shader" then
     data.paths[entry.value] = path
   elseif kind == "font" and not data.paths[entry.value] then
     data.paths[entry.value] = { path = path, size = option }

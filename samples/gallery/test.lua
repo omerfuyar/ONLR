@@ -17,7 +17,7 @@ check.run(function()
   local gallery = assert(tree.findComponent("gallery"))
   local title = assert(tree.find("Title")).components.suit.label
   check.frames(2)
-  check.ok(#gallery.rooms >= 15, "the gallery finds its rooms: " .. #gallery.rooms)
+  check.ok(#gallery.rooms >= 16, "the gallery finds its rooms: " .. #gallery.rooms)
   check.ok(title.text:find("^1 of %d+   Nodes and drawing"), "the bar names the first room: " .. title.text)
 
   -- Each room in turn, by the bar's button: it loads, runs, and its root has a room component with a title.
@@ -75,6 +75,9 @@ check.run(function()
       check.equal(tree.find("Shown").components.onlr.shape.radius, 50, "the slider sizes the circle")
       tree.find("Field"):send("submitted", "Hi")
       check.equal(tree.find("Shown").components.onlr.text.text, "Hi", "the field's text is shown")
+    elseif root.name == "Shaders" then
+      check.ok(tree.find("Flash").components.onlr.shader.shader ~= nil, "a node draws through its shader")
+      check.equal(tree.find("Wave").components.onlr.shader.covers, "picture", "and a group as one picture")
     elseif root.name == "Effects" then
       tree.find("CRT"):send("changed", false)
       check.equal(root.components.moonshine.effect.crt:isEnabled(), false, "a checkbox turns an effect off")

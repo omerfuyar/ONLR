@@ -16,7 +16,7 @@ This guide shows how to make a game with ONLR, step by step. It is written for s
 3. A first game
 4. Scripts
 5. Node files and instances
-6. The camera and the window
+6. The camera, the window and shaders
 7. Packages
 8. Playing and fixing
 9. Export
@@ -336,7 +336,7 @@ Nodes have no tags: a type is one. An empty script `enemy` on every enemy, and `
 - An instance changes values and adds components and children. It removes nothing: turn off what it does not want, with the node's **Active** or the component's **Enabled**.
 - A script makes an instance with `onlr.tree.spawn`, as a gun makes a bullet. A `nodeFile` property with `preload = true` loads the node file with the level, so the first spawn does not wait for the disk.
 
-## 6. The camera and the window
+## 6. The camera, the window and shaders
 
 ### 6.1 A camera
 
@@ -357,6 +357,37 @@ A game made for 640 by 360 shows at 640 by 360 pixels, whatever the window's siz
 Then turn on **Resizable** or **Fullscreen**. In `push.screen`, **Pixel perfect** scales by whole numbers only and **Canvas** draws the game into a picture of its own size first, as pixel art needs (DESIGN 11.10). A camera under the screen names the game's size in its **Width** and **Height**.
 
 **Window**, in the **Game** bar, plays the game in another size, such as a phone's, without changing the project, so you see how the game looks on a screen that it was not made on.
+
+### 6.3 Shaders
+
+A shader changes the colour of each pixel that is drawn: a flash when the player is hit, a level in gray, or water that ripples. ONLR takes shaders in LÖVE's own form, as `love.graphics.newShader` does.
+
+1. Write a `.glsl` file in your code editor, in any folder, such as `effects/flash.glsl`:
+
+   ``` glsl
+   extern number amount;
+   extern vec4 tint;
+
+   vec4 effect(vec4 color, Image tex, vec2 uv, vec2 screen) {
+     vec4 c = Texel(tex, uv) * color;
+     c.rgb = mix(c.rgb, tint.rgb, amount);
+     return c;
+   }
+   ```
+
+2. Give the node the component `onlr.shader`, and drag the file onto its **Shader**, or type its path. The node and all under it draw through it.
+3. **Covers** says how. **draws** shades each thing that is drawn on its own, as a flash needs. **picture** draws the nodes into one picture first, and shades the picture, as a ripple over a whole level needs.
+4. A script sets the shader's values, the `extern`s of its file, by their names, and the shader gets them before it draws:
+
+   ``` lua
+   self.node.components.onlr.shader.values.amount = 1
+   ```
+
+   An image's path among them, such as `"images/noise.png"`, gives that image.
+
+A shader's `extern number time` gets the seconds that the game has run, so a shader moves without a script. A shader that does not compile stops the game with its file and its line, as an error of a script does. The gallery's room Shaders shows all three.
+
+For now, the inspector shows the values as "(a table)", and the node view draws the nodes without the shader: both come next (DESIGN 6.7).
 
 ## 7. Packages
 
