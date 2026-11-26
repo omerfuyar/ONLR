@@ -865,6 +865,30 @@ return {
     fold("aaaaaa:onlr.shape")
     fold("aaaaaa:onlr.paint")
 
+    -- a folder that goes and comes back, as git does when it changes branches, is watched again: a script written into it
+    -- afterwards is a type that Add component offers (DESIGN 13.6)
+    local function addLabels()
+      test.click(inspected("aaaaaa:addComponent"))
+      local labels = {}
+      for i, entry in ipairs(test.menu() or {}) do
+        labels[i] = entry.label
+      end
+      test.key("Escape")
+      return table.concat(labels, " ")
+    end
+    os.execute("mkdir components/extra && printf 'return {}\\n' > components/extra/one.lua")
+    test.wait(1)
+    check(addLabels():find("extra", 1, true), "a new folder's script is offered: " .. addLabels())
+    os.execute("rm -rf components/extra")
+    test.wait(1)
+    os.execute("mkdir components/extra")
+    test.wait(1)
+    os.execute("printf 'return {}\\n' > components/extra/two.lua")
+    test.wait(1)
+    check(addLabels():find("extra", 1, true), "a script in a folder that came back is offered: " .. addLabels())
+    os.execute("rm -rf components/extra")
+    test.wait(2)
+
     -- a property with when shows only while the property that it names has one of its values: a rectangle shows its width,
     -- and a circle its radius in its place (DESIGN 6.2)
     local panelState = test.panel(panelOf(test, "onlr.inspector")).state

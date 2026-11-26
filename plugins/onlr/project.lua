@@ -705,20 +705,41 @@ local function diskChanged()
   ecs.event.emit("onlr.disk", { kind = "files" })
 end
 
+-- Watches a folder and the folders in it that are not watched yet. A watch whose folder goes, such as one that git removes, is
+-- forgotten and its parent read again, so the folder is watched again when it comes back; one that lost changes reads its folder
+-- again (OpenECS-std DESIGN 20).
 function watchFolder(dir)
   local p = assert(P)
-  if p.watches[dir] then
-    return
+  if p.watches[dir] == nil then
+    local watch, err = fs.watch(absolute(dir), function(_, name, change)
+      if name == "" then
+        if change == "gone" then
+          p.watches[dir] = nil
+          if dir ~= "" then
+            pending[dir:match("^(.*)/[^/]*$") or ""] = "changed"
+          end
+        elseif change == "overflow" then
+          pending[dir] = "changed"
+          for _, entry in ipairs(fs.list(absolute(dir), "") or {}) do
+            if entry.type == "file" and entry.name:sub(1, 1) ~= "." then
+              pending[dir == "" and entry.name or (dir .. "/" .. entry.name)] = "changed"
+            end
+          end
+        end
+      elseif name:sub(1, 1) == "." or name:match("%.new$") then
+        return
+      else
+        pending[dir == "" and name or (dir .. "/" .. name)] = change
+      end
+      if not pendingTimer then
+        pendingTimer = ecs.timer.start(0.05, false, diskChanged)
+      end
+    end)
+    if not watch then
+      say(("The editor does not see changes in %s: %s"):format(dir == "" and "the project's folder" or dir, tostring(err)))
+    end
+    p.watches[dir] = watch or false
   end
-  p.watches[dir] = fs.watch(absolute(dir), function(_, name, change)
-    if name:sub(1, 1) == "." or name:match("%.new$") then
-      return
-    end
-    pending[dir == "" and name or (dir .. "/" .. name)] = change
-    if not pendingTimer then
-      pendingTimer = ecs.timer.start(0.05, false, diskChanged)
-    end
-  end) or true
   for _, entry in ipairs(fs.list(absolute(dir), "") or {}) do
     if entry.type == "folder" and entry.name:sub(1, 1) ~= "." then
       watchFolder(dir == "" and entry.name or (dir .. "/" .. entry.name))
@@ -810,7 +831,7 @@ local function close()
     end
   end
   for _, watch in pairs(p.watches) do
-    if watch ~= true then
+    if watch then
       watch:stop()
     end
   end

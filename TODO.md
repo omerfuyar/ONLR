@@ -172,7 +172,7 @@ What the owner wants worked on, in this order.
   - Still open from OpenECS's updates of 2026-11-15 to 18: the console's double click goes to a file and line, so the game's errors and `print`s name the project's file from the project's folder, `components/player.lua:12:` (DESIGN 12.2), to check with a stack's lines; the key list shows ONLR's functions by their names, so each name says what it does to a user; `ui.graph` could show the running game's frame times, sent through the link, for later.
 - **What OpenECS-std needs.** The editor needs these of the standard plugins, which do not have them yet. ONLR's work makes them there, as CLAUDE.md says, when that is better than working around them:
   - fs: a file's permissions. Until it tells them, the Linux build marks as programs LÖVE's launcher, the files of `bin/` and the libraries.
-  - fs: watching the folders inside a folder, for the project's folder, which also follows a folder that is removed and made again, as a checkout of git does, and reads a folder again after an overflow. The editor's own watching misses both (see [Review](#review), Editor), and the files panel watches the same folders.
+  - fs: watching the folders inside a folder, for the project's folder, which also follows a folder that is removed and made again, as a checkout of git does, and reads a folder again after an overflow. The editor follows both itself, with a watch for each folder (DESIGN 13.6), and the files panel watches the same folders.
   - The files panel: another plugin says how a kind of file opens, such as a node file in a node view, which new files it makes, such as a script from a template, and hears what it renames, moves and deletes, so the editor changes the paths that name them (DESIGN 13.7).
   - fs: moving a file to the system's trash, for the files panel.
   - video: Ogg Theora, which LÖVE plays, for later (see [Editor](#editor)).
@@ -221,7 +221,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Editor**
 
-- **P2 · The project's watching misses folders that go and come back.** `project.lua:640-659` std's `fs` reports `gone` and `overflow` with an empty name (OpenECS-std DESIGN 20); the editor takes them for a change of a file named `dir/`, keeps the folder's watch forever, and so never watches a folder that git removed and made again, and reads nothing again after an overflow. A watch that failed is hidden by `or true` (`:576-638`). Forget the watch on `gone` and read its parent again; read the folder again on `overflow`. Better, as the files panel watches the same folders: a watch of a folder and the folders in it in std's `fs` (see [Tasks](#tasks), "What OpenECS-std needs"). Size: M.
 - **P3 · Delete runs `gio trash` and waits, on Linux only.** `project.lua:1887` On Windows and macOS a file goes to `.onlr/trash/`, though they have a trash (DESIGN 13.7). A trash in std's `fs` (see [Tasks](#tasks), "What OpenECS-std needs"). Size: S.
 - **P3 · A tooltip and a comment name the wrong keys and tools.** `tools.lua:79-83` The tooltips of Play, Pause, Step and Stop name F5 to F8 and Shift+F5, which only the node view binds (`nodeview.lua:1665-1675`). `project.lua:2040` lists the tools as move, turn, scale or shape, without `rect`. Size: S.
 
