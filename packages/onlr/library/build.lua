@@ -130,6 +130,15 @@ local function preload(path, ctx, name, seen)
     elseif kind == "font" then
       property.load(ctx, name, "font", type(value) == "table" and value.path or nil,
         type(value) == "table" and value.size or decl.options.size or 12)
+    elseif kind == "shader" and value then
+      property.load(ctx, name, "shader", value)
+    elseif kind == "values" and type(value) == "table" then
+      -- a text among a shader's values is an image's path
+      for _, item in pairs(value) do
+        if type(item) == "string" then
+          property.load(ctx, name, "image", item)
+        end
+      end
     elseif kind == "nodeFile" and value and decl.options.preload then
       preload(value, ctx, name, seen)
     end

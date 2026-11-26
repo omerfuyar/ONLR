@@ -406,6 +406,7 @@ return Player
 | `list`                      | Rows of one kind, which the user adds and removes. | A list of what that kind gives.             |
 
 - A kind is a value or a reference. A value is held in the node file as it is: `bool`, `integer`, `number`, `string`, `choice`, `color`, `vector`, `group` and `list`. A reference names something else of the project: `image`, `sound`, `font`, `shader`, `file`, `nodeFile`, `node` and `component`.
+- `onlr.property.values` is the kind of `onlr.shader`'s `values` (10): a table of a shader's values by their names, which a node file keeps as it is, but for a text, which is an image's path, and the component gets that image. An instance's change lays its fields over the base's one by one, as a `group`'s are (9). A script draws through a shader with its own properties and needs no such kind.
 - `group` and `list` take other properties: `onlr.property.group({ width = onlr.property.number(32), height = onlr.property.number(32) })` is read as `self.box.width`, and `onlr.property.list(onlr.property.image())` as `self.frames[1]`.
 - The options:
 
@@ -549,6 +550,13 @@ vec4 effect(vec4 color, Image tex, vec2 uv, vec2 screen) {
 - The limits:
   - A GLSL file's value cannot say its range, its default, or that it is a colour: a `vec4` shows as four numbers, and starts at 0. An ira-shader's properties say all three.
   - On a phone whose pixel shaders lack high precision, `time` holds fewer digits as it grows, so a shader that moves with it gets coarse after some minutes of play.
+- What is built, as of the first of the milestones in TODO.md, "Shaders and graphs": the engine's part, `library/shader.lua` and `onlr.shader`. Not yet:
+  - An ira-shader: a `shader` property that names one is an error, which says that it cannot be drawn yet.
+  - The check as GLSL ES, its warning in the console, and an export's refusal: a shader that a phone cannot run is not found.
+  - The inspector's rows of a shader's values: `values` shows as "(a table)". A node file that the user's code editor changes, or a script, sets them.
+  - `drawTreeEditor` and `time` in the node view: there the nodes under `onlr.shader` draw without the shader.
+- The engine reads a GLSL file's values from its text, with its comments, its lines of `#`, such as `#define`, and its functions' bodies left out. So a value that a `#define` names or makes is not found; LÖVE takes it all the same, and a script sends it.
+- LÖVE leaves a value out of a shader when its code does not use it, so the engine sends a value only when `Shader:hasUniform` finds it, and asks once for each name. A value that the code does not use is not an error.
 
 ### 6.8 Graphs
 
@@ -975,6 +983,7 @@ Their properties use LÖVE's names wherever LÖVE has one:
   - Each `draws` sets its shader twice, and each set ends a batch of LÖVE's draws. So many nodes with a shader each cost many draws; one shader on their parent shades them all at the cost of one.
   - Shaders under a `draws` do not add up, as above.
   - A `picture` costs a canvas of the screen's size.
+  - In the node view it draws without its shader, as yet (6.7).
 - A sprite, a text, a shape, a camera's view and its limits have `bounds` and `drawEditor` (6.3). `onlr.paint` has `drawEditor` only, and its node is chosen by its shape's bounds; the camera's follow draws its deadzone and has no `bounds`, and its shake shows nothing. A camera's `drawEditor` draws the frame of what it shows, in blue and 3 pixels wide, named "Camera" inside its top left, at the same size at any zoom.
 - The camera's helpers are components beside `onlr.camera.view` on its node, which need it (6.6), and a game takes those that it wants. They change the camera's own properties, so a script can do all that they do, and they leave it to one when it sets the camera itself.
   - `onlr.camera.follow` moves the camera's `posX` and `posY` in `lateUpdate` (6.4), after the scripts and the physics moved its target. Its smoothing is the same at any frame rate. `snap()` puts the camera on its target at once, as when the follow starts, a level begins, or the player is put elsewhere.

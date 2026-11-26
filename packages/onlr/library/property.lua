@@ -80,7 +80,7 @@ local TAKEN = {
 }
 
 -- The kinds that name something else of the project (DESIGN 6.2).
-property.REFERENCES = { image = true, sound = true, font = true, file = true, nodeFile = true, node = true, component = true }
+property.REFERENCES = { image = true, sound = true, font = true, shader = true, file = true, nodeFile = true, node = true, component = true }
 
 local function fail(message)
   error(message, 4)
@@ -252,6 +252,23 @@ function property.font(options)
   return declare("font", nil, options)
 end
 
+---A shader of the project: a GLSL file, in LÖVE's own form (DESIGN 6.7). The component gets a LÖVE shader, which every component
+---that names the file shares; a script that draws through it calls love.graphics.setShader and shader:send itself.
+---@param options? onlr.PropertyOptions
+---@return love.Shader?
+function property.shader(options)
+  return declare("shader", nil, options)
+end
+
+---The values of a shader, by their names: the engine's own kind, which onlr.shader holds (DESIGN 10). A node file keeps those
+---that the user set, as { amount = 0.5 }, and an instance's change lays them over name by name. A number, a bool and a list of
+---numbers are kept as they are, and a text is an image file of the project, which the component gets as a LÖVE image.
+---@param options? onlr.PropertyOptions
+---@return table<string, any>
+function property.values(options)
+  return declare("values", {}, options)
+end
+
 ---A file of the project. The component gets its path.
 ---@param options? onlr.FileOptions
 ---@return string? path
@@ -342,7 +359,7 @@ property.copy = copyValue
 
 local LUA_TYPES = {
   bool = "boolean", integer = "number", number = "number", string = "string", choice = "string",
-  color = "table", vector = "table", list = "table", group = "table",
+  color = "table", vector = "table", list = "table", group = "table", values = "table",
 }
 
 local function problem(ctx, name, message)
@@ -358,7 +375,7 @@ end
 ---Loads a file for a component, and holds it in the component's name.
 ---@param ctx onlr.ValueContext
 ---@param name string the property's name, for errors
----@param kind "image"|"font"|"sound"|"node"
+---@param kind "image"|"font"|"sound"|"shader"|"node"
 ---@param path string?
 ---@param option any
 ---@return any
@@ -405,8 +422,22 @@ function property.convert(decl, value, ctx, name, resolve)
     return group
   elseif kind == "color" or kind == "vector" then
     return copyValue(value)
+  elseif kind == "values" then
+    local values = {}
+    for field, v in pairs(value) do
+      if type(v) == "string" then
+        values[field] = property.load(ctx, name .. "." .. tostring(field), "image", v)
+      elseif type(v) == "table" then
+        values[field] = copyValue(v)
+      else
+        values[field] = v
+      end
+    end
+    return values
   elseif kind == "image" then
     return value and property.load(ctx, name, "image", value)
+  elseif kind == "shader" then
+    return value and property.load(ctx, name, "shader", value)
   elseif kind == "sound" then
     local path, stream = property.soundOf(decl, value)
     local source = path and property.load(ctx, name, "sound", path, stream)
@@ -482,6 +513,18 @@ function property.merge(decl, layers, ctx, name)
       end
     end
     return group, true
+  end
+  if decl.kind == "values" then
+    -- laid over name by name, as a group's fields are, but the names are the node file's
+    local merged = {}
+    for _, layer in ipairs(layers) do
+      if type(layer.value) == "table" then
+        for field, v in pairs(layer.value) do
+          merged[field] = v
+        end
+      end
+    end
+    return property.convert(decl, merged, ctx, name, function() return nil end), true
   end
   local last = layers[#layers]
   if last then
