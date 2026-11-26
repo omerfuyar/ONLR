@@ -219,9 +219,6 @@ What the owner wants worked on, in this order.
 
 Recommendations from the review of 2026-11-24, by area, the most important first. P1 is a bug, or a design flaw that gets harder to fix with each feature; P2 is worth doing before ONLR's first release; P3 when the code is touched. Each was checked at the lines it names. Times are of OpenECS's Release build and LÖVE 11.5, run offscreen. Measured and fine: `samples/speed`'s 5000 sprites draw in one batched draw call, 2.81 ms a frame, with 0.79 ms of update.
 
-**Engine**
-
-
 **Runner and link**
 
 - **P3 · The preview makes much at each draw.** `preview.lua:49-68` `ordered()` makes a table for each node and sorts with a closure at each draw, twice when bounds are due (`:124`, `:178`); each node's parents are walked for the hidden ones (`:181-185`); a frame's header is joined to its whole block of pixels, another 8 MB copy for each frame (`:220`). Keep the order until the nodes change, and send the header and the block apart. Not measured. Size: S.
