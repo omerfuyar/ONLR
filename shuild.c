@@ -4,6 +4,8 @@
 #define SHU_IMPLEMENTATION
 #include "dependencies/shuild/shuild.h"
 
+#include <time.h>
+
 #pragma region Setup
 
 /// @brief What the build does, in groups, as OpenECS's shuild.c keeps it.
@@ -292,15 +294,24 @@ static void PrintLogEnd(const char *text)
     printf("%s\n", start);
 }
 
-/// @brief Counts a test, and prints pass or FAIL for it, with the lines that it reports with "report: ", or the end of its log.
-static void NoteTest(const char *name, const char *kind, bool passed, const char *log)
+/// @brief The seconds since a fixed point, to time the tests.
+static double Now(void)
+{
+    struct timespec now;
+    timespec_get(&now, TIME_UTC);
+    return (double)now.tv_sec + (double)now.tv_nsec / 1e9;
+}
+
+/// @brief Counts a test, and prints pass or FAIL for it with the seconds that it took, then the lines that it reports with "report: ",
+/// or the end of its log.
+static void NoteTest(const char *name, const char *kind, bool passed, double seconds, const char *log)
 {
     SHUSlice output = SHU_UtilReadFile(log);
     CONFIG.TESTS.run++;
 
     if (passed)
     {
-        printf("pass %s%s\n", name, kind);
+        printf("pass %s%s (%.1f s)\n", name, kind, seconds);
 
         for (const char *line = output.data; line != NULL && *line != '\0'; line = strchr(line, '\n') != NULL ? strchr(line, '\n') + 1 : NULL)
         {
@@ -314,7 +325,7 @@ static void NoteTest(const char *name, const char *kind, bool passed, const char
     else
     {
         CONFIG.TESTS.failed++;
-        printf("FAIL %s%s\n", name, kind);
+        printf("FAIL %s%s (%.1f s)\n", name, kind, seconds);
         PrintLogEnd(output.data);
     }
 
@@ -375,16 +386,18 @@ static void TestSample(const char *path, SHUFileType type, void *data)
             CopyFolder(path, work);
             // What the editor kept for the sample on this computer, such as snapping, is not the sample's.
             SHU_UtilDeleteFile(SHU_UtilFormat("%s.onlr/", work));
+            double start = Now();
             bool passed = SHU_UtilRunTry("cd \"%s\" && %s \"%s\" --test editortest.lua > \"%s\" 2>&1", SHU_UtilGetPath(work), settings, openecs, SHU_UtilGetPath(log)) == 0;
-            NoteTest(name, ", the editor's test", passed, log);
+            NoteTest(name, ", the editor's test", passed, Now() - start, log);
         }
     }
 
     if (SHU_UtilFileExists(SHU_UtilFormat("%stest.lua", path)) == SHUFileType_Regular)
     {
         char *log = SHU_UtilFormat("build/tests/%s.log", name);
+        double start = Now();
         bool passed = SHU_UtilRunTry("%s \"%s\" \"%s\" --test > \"%s\" 2>&1", settings, CONFIG.FLAGS.love, SHU_UtilGetPath(path), SHU_UtilGetPath(log)) == 0;
-        NoteTest(name, "", passed, log);
+        NoteTest(name, "", passed, Now() - start, log);
     }
 }
 

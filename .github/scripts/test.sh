@@ -2,6 +2,7 @@
 # Runs the samples' tests with shuild's --test: every sample's, or those of the samples named after it, such as coinrun.
 # The samples are ONLR's tests (DESIGN.md, section 16), and shuild.c says how each runs. LOVE names LÖVE's executable, love if it is not set.
 # The editor's tests need OpenECS laid out as a release in OpenECS/, which git ignores. Without it, they are skipped.
+# build/tests/tests.log holds each test's pass or FAIL with the seconds that it took.
 # It prints the lines that a sample reports, such as the frame time of samples/speed, and the log's end of each test that fails.
 set -u
 cd "$(dirname "$0")/../.." || exit 2
