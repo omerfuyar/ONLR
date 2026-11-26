@@ -1492,7 +1492,7 @@ end
 ### 12.2 The link
 
 - The link is a TCP connection on this computer: the editor listens on a free port of `127.0.0.1`, and the engine connects to it with LuaSocket, which LÖVE ships. Each player has a link of its own.
-- A message is a Lua table written as text, and may carry a block of bytes after it, such as a frame's pixels. Each message starts with a line of the sizes of both, in bytes: `52 0`, then the text, then the block.
+- A message is a Lua table written as text, and may carry a block of bytes after it, such as a frame's pixels. Each message starts with a line of the sizes of both, in bytes: `52 0`, then the text, then the block. Both ends write and read messages with one file, `plugins/onlr/runner/wire.lua`, which the runner loads as one of its parts and the editor with `loadfile`, so they cannot drift apart; it requires nothing.
 - The editor adds what arrives to one buffer of the runner's, a `string.buffer`, and reads each message where it lies in it: a block is given to its handler as an array of the buffer's bytes, read during the call only, so a frame is copied once on its way to the graphics card, into the buffer. The node view takes a frame only when its block holds 4 bytes for each pixel of its size.
 - A message's `type` names it. The tables below give each message's type, and the runner's files document its fields.
 - When a runner has connected, it sends `hello`, with its mode and the engine's version.

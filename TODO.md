@@ -216,7 +216,6 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 
 **Runner and link**
 
-- **P2 · The two ends write the link's messages each in its own way.** `plugins/onlr/runner/link.lua:159` and `plugins/onlr/link.lua:13` already differ (`%d` and `%.0f`). One file that both load, with the module of instances under Editor. Size: S.
 - **P3 · The preview makes much at each draw.** `preview.lua:49-68` `ordered()` makes a table for each node and sorts with a closure at each draw, twice when bounds are due (`:124`, `:178`); each node's parents are walked for the hidden ones (`:181-185`); a frame's header is joined to its whole block of pixels, another 8 MB copy for each frame (`:220`). Keep the order until the nodes change, and send the header and the block apart. Not measured. Size: S.
 - **P3 · A drag still waits on the preview's bounds and an undo makes the tree again.** After the edit of 2026-11-25 (DESIGN 13.1, 12.2), a drag of one node of `samples/speed`'s 5000 takes about 70 ms (Release, middle of three; 178 ms before). Most of the rest is the preview's `bounds` of all 5000 nodes, read as Lua text by `load` (`link.lua`'s `unpack`), and the wait for the rest of a frame (`runners.lua`'s `read`); an undo reads its text back and makes the file's tree again. Send only the bounds that changed, and keep the tree that an undo of an edit in place gives. Size: M.
 

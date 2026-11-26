@@ -47,6 +47,13 @@ return {
       check((manifest.library ~= nil) == wraps, name .. (wraps and " names its library" or " names no library"))
       check(not wraps or (manifest.library.version and manifest.library.source and manifest.library.license), name .. "'s library")
     end
+    -- the link's two ends write and read messages with one file, runner/wire.lua, so they never write them each in its own way
+    -- (DESIGN 12.2)
+    for _, name in ipairs({ "link.lua", "runner/link.lua" }) do
+      local text = read("../../../../plugins/onlr/" .. name)
+      check(text:find("wire.lua", 1, true) or text:find('part("wire")', 1, true), name .. " loads wire.lua")
+      check(not text:find("function link.write", 1, true) and not text:find('"^(%d+) (%d+)', 1, true), name .. " writes no message itself")
+    end
     local view = test.rect(panelOf(test, "onlr.view"))
     -- A node view starts with the world's point -40, -40 at its top left, at a zoom of 1.
     local function at(x, y)
