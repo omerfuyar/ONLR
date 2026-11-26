@@ -22,7 +22,7 @@ Lamp.blur = onlr.property.bool(true, { description = "Soft edges of its shadows,
 Lamp.sizeRadius = onlr.property.number(10, { min = 0, description = "How large the light's source is: larger softens far shadows more" })
 
 function Lamp:enable()
-  self.world = World.find(self)
+  self.world = World.find(self, "shadows.light")
   self.light = Light:new(self.world:_world(), self.radius)
   self.world:_add(self)
   self:_sync()

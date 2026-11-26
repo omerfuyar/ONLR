@@ -97,10 +97,11 @@ function World:get()
 end
 
 -- The shadows.world on a node or the nearest above it, for a light or a caster. When there is none, one is added to the root,
--- as a body of physics or of bump adds its world (DESIGN 11.3).
+-- as a body of physics or of bump adds its world (DESIGN 11.3). While the top node loads there is no root, and that is an error.
 ---@param component onlr.Component
+---@param type string the component's type, for the error
 ---@return shadows.world
-function World.find(component)
+function World.find(component, type)
   local node = component.node ---@type onlr.Node?
   while node do
     local world = node.components.shadows.world
@@ -108,6 +109,11 @@ function World.find(component)
       return world
     end
     node = node:getParent()
+  end
+  -- while the top node loads, there is no root yet (DESIGN 5)
+  if not onlr.tree.root then
+    error(("%s on %s finds no shadows.world on its node or above it, and there is no root to add one to while the top node "
+      .. "loads: put a shadows.world on the top node"):format(type, component.node.name), 0)
   end
   return onlr.tree.root:addComponent("shadows.world")
 end

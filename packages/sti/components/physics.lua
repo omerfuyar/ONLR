@@ -18,7 +18,16 @@ Physics.sensor = onlr.property.bool(false, { description = "Bodies pass through 
 
 -- Once: finds the root's one physics.world, and adds one to the root when the tree has none, as physics.body does.
 function Physics:load()
-  self.world = onlr.tree.findComponent("physics.world") or onlr.tree.root:addComponent("physics.world")
+  local world = onlr.tree.findComponent("physics.world")
+  if not world then
+    -- while the top node loads, there is no root yet (DESIGN 5)
+    if not onlr.tree.root then
+      error(("sti.physics on %s finds no physics.world, and there is no root to add one to while the top node loads: put a physics.world on the top node")
+        :format(self.node.name), 0)
+    end
+    world = onlr.tree.root:addComponent("physics.world")
+  end
+  self.world = world
 end
 
 -- Each time it starts to run: a static body at the node's place and angle, and a rectangle for each tile, scaled as the node.

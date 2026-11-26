@@ -18,7 +18,7 @@ local Caster = {}
 Caster.needs = { "onlr.shape" }
 
 function Caster:enable()
-  self.world = World.find(self)
+  self.world = World.find(self, "shadows.caster")
   self.world:_add(self)
   self:_sync()
 end
@@ -39,60 +39,96 @@ function Caster:disable()
   self.world = nil
 end
 
--- The outline's points that the shadow is made of, in its node's space: a rectangle's corners, a circle's middle and a point
--- on its edge across, so a scale of the node reaches the radius, or a polygon's corners; nil for what casts nothing.
-local function points(o)
-  if o.kind == "rectangle" then
-    local x, y, w, h = o.x, o.y, o.width, o.height
-    return { x, y, x + w, y, x + w, y + h, x, y + h }
-  elseif o.kind == "circle" then
-    return { o.x, o.y, o.x + o.radius, o.y }
-  elseif o.kind == "polygon" and #o.points >= 6 then
-    return o.points
+-- How many of the outline's points the shadow is made of: a rectangle's 4 corners, a circle's middle and a point on its edge
+-- across, so a scale of the node reaches the radius, or a polygon's corners; 0 for what casts nothing.
+---@param shape onlr.shape
+---@return integer
+local function count(shape)
+  local kind = shape.kind
+  if kind == "rectangle" then
+    return 4
+  elseif kind == "circle" then
+    return 2
+  elseif kind == "polygon" and #shape.points >= 3 then
+    return #shape.points
   end
+  return 0
+end
+
+-- The outline's point i in its node's space, read from the shape's values as its outline() does, without the outline's
+-- tables, as the world asks for them at each frame.
+---@param shape onlr.shape
+---@param i integer
+---@return number x, number y
+local function point(shape, i)
+  local kind = shape.kind
+  if kind == "polygon" then
+    local p = shape.points[i]
+    return p.x, p.y
+  end
+  local x, y = -shape.origin.x, -shape.origin.y
+  if kind == "circle" then
+    return i == 1 and x or x + shape.radius, y
+  end
+  local w, h = shape.width, shape.height
+  if i == 1 then
+    return x, y
+  elseif i == 2 then
+    return x + w, y
+  elseif i == 3 then
+    return x + w, y + h
+  end
+  return x, y + h
 end
 
 -- The world calls it before it draws: the shadow is made again when the shape's kind changed, and moves only when its points in
--- the world changed, as Shädows makes its shadows again for a shape that moved.
+-- the world changed, as Shädows makes its shadows again for a shape that moved. The points are compared in place with those
+-- given last, in one list that it keeps, so a frame in which nothing moved makes no garbage.
 function Caster:_sync()
-  local o = self.node.components.onlr.shape:outline()
-  local own = points(o)
-  if not own then
+  local shape = self.node.components.onlr.shape --[[@as onlr.shape]]
+  local n = count(shape)
+  if n == 0 then
     self:_clear()
     return
   end
-  local world = {}
-  for i = 1, #own, 2 do
-    world[i], world[i + 1] = self.node:toWorld(own[i], own[i + 1])
+  local kind = shape.kind == "circle" and "circle" or "polygon"
+  local placed = self.placed
+  -- after _clear, which ends placed and kind together, the shadow is made again
+  local remake = not placed or kind ~= self.kind or (kind == "polygon" and #placed ~= 2 * n)
+  local moved = remake
+  placed = placed or {}
+  local node = self.node
+  for i = 1, n do
+    local x, y = node:toWorld(point(shape, i))
+    local j = 2 * i - 1
+    if placed[j] ~= x or placed[j + 1] ~= y then
+      placed[j], placed[j + 1] = x, y
+      moved = true
+    end
   end
-  local kind = o.kind == "circle" and "circle" or "polygon"
-  if kind ~= self.kind or (kind == "polygon" and self.placed and #self.placed ~= #world) then
+  for i = #placed, 2 * n + 1, -1 do
+    placed[i] = nil
+  end
+  if not moved then
+    return
+  end
+  if remake then
     self:_clear()
     self.body = Body:new(self.world:_world())
     if kind == "circle" then
       self.shadow = CircleShadow:new(self.body, 0, 0, 1)
     else
-      self.shadow = PolygonShadow:new(self.body, unpack(world))
+      self.shadow = PolygonShadow:new(self.body, unpack(placed))
     end
     self.kind = kind
   end
-  local placed = self.placed
-  if placed and #placed == #world then
-    local same = true
-    for i = 1, #world do
-      same = same and placed[i] == world[i]
-    end
-    if same then
-      return
-    end
-  end
-  self.placed = world
+  self.placed = placed
   if kind == "circle" then
-    local x, y, ex, ey = world[1], world[2], world[3], world[4]
+    local x, y, ex, ey = placed[1], placed[2], placed[3], placed[4]
     self.body:SetPosition(x, y)
     self.shadow:SetRadius(math.sqrt((ex - x) ^ 2 + (ey - y) ^ 2))
   else
-    self.shadow:SetVertices(unpack(world))
+    self.shadow:SetVertices(unpack(placed))
   end
 end
 

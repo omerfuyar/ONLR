@@ -13,20 +13,30 @@ Body.needs = { "onlr.shape" }
 Body.solid = onlr.property.bool(true, { description = "Other bodies stop at it. They pass through one that is not solid, and are still told of the contact" })
 
 -- Once: finds the tree's one world. It is a component of the root, found by its type.
--- When the tree has none, the body adds one to the root.
+-- When the tree has none, the body adds one to the root. While the top node loads there is none, and that is an error.
 function Body:load()
-  local world = onlr.tree.findComponent("bump.world") or onlr.tree.root:addComponent("bump.world")
+  local world = onlr.tree.findComponent("bump.world")
+  if not world then
+    -- while the top node loads, there is no root yet (DESIGN 5)
+    if not onlr.tree.root then
+      error(("bump.body on %s finds no bump.world, and there is no root to add one to while the top node loads: put a bump.world on the top node")
+        :format(self.node.name), 0)
+    end
+    world = onlr.tree.root:addComponent("bump.world")
+  end
   self.world = world:get()
 end
 
 -- The box from the node's place, as the shape's rectangle gives it: its corner and its size. A shape of another kind is an error
--- that names the node, as bump has boxes only.
+-- that names the node, as bump has boxes only. It reads the shape's values as its outline() does, without the outline's
+-- tables, as update calls it at each frame.
 function Body:_box()
-  local o = self.node.components.onlr.shape:outline()
-  if o.kind ~= "rectangle" then
-    error(("bump.body on %s takes a rectangle, and its onlr.shape is a %s"):format(self.node.name, o.kind), 0)
+  local shape = self.node.components.onlr.shape --[[@as onlr.shape]]
+  if shape.kind ~= "rectangle" then
+    error(("bump.body on %s takes a rectangle, and its onlr.shape is a %s"):format(self.node.name, shape.kind), 0)
   end
-  return o.x, o.y, o.width, o.height
+  local origin = shape.origin
+  return -origin.x, -origin.y, shape.width, shape.height
 end
 
 -- Each time the body starts to run: after load, and when it or its node is turned on again.

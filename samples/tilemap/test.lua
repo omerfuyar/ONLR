@@ -109,4 +109,15 @@ check.run(function()
   component:drawEditor(true)
   love.graphics.pop()
   check.ok(component.shown ~= nil and component.shown ~= map, "the node view draws a map of its own")
+
+  -- While the top node loads, there is no root to add a world to: a map's tiles that find none say so (DESIGN 11.7).
+  for _, type in ipairs({ "bump", "physics" }) do
+    local early = onlr.tree.newNode("Early", onlr.tree.top)
+    early:addComponent("sti.map", { map = "maps/level.lua" })
+    check.fails(function()
+      check.whileTopLoads(function() early:addComponent("sti." .. type) end)
+    end, "while the top node loads: put a " .. type .. ".world on the top node", "sti." .. type .. " on the top node without a world")
+    early:destroy()
+  end
+  check.frames(1)
 end)
