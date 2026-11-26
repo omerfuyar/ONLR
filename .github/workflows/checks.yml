@@ -1,6 +1,7 @@
 # Checks every change to dev and main: the Lua annotations of every Lua file, and the samples' tests.
 # The samples are the tests (DESIGN.md, section 16): a sample's test of the engine runs it in LÖVE with SDL's offscreen driver,
-# and its test of the editor is an OpenECS test, which a Debug build of OpenECS runs.
+# and its test of the editor is an OpenECS test, which a Debug build of OpenECS runs: of its dev, or of a pull request's branch of the same name, when there is one.
+# A change of documents alone, the .md files, skips them all; a run by hand runs everything.
 name: Checks
 
 on:
@@ -19,14 +20,40 @@ permissions:
   contents: read
 
 jobs:
-  # OpenECS, built in Debug from its dev and laid out as a release has it: the editor's tests run in it, and the Lua check reads its definitions
+  # tells the other jobs whether a file other than a document changed, as a change of documents alone skips the build and the checks,
+  # and, for a pull request, whether OpenECS has a branch of the same name, which is built in place of its dev
+  changes:
+    name: Changes
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+      openecs: ${{ steps.changes.outputs.openecs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Name what changed
+        id: changes
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: .github/scripts/changes.sh openecs=OpenECS
+
+  # OpenECS, built in Debug from its dev, or a pull request's branch of the same name, and laid out as a release has it:
+  # the editor's tests run in it, and the Lua check reads its definitions
   openecs:
     name: OpenECS
     runs-on: ubuntu-24.04
+    needs: changes
+    # skipped when only documents changed; it runs when the job changes gives no answer
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    env:
+      BRANCH: ${{ needs.changes.outputs.openecs || 'dev' }}
     steps:
+      # the cache is kept for each commit of OpenECS
       - name: Name OpenECS's commit
         id: commit
-        run: echo "sha=$(git ls-remote https://github.com/omerfuyar/OpenECS refs/heads/dev | cut -f1)" >> "$GITHUB_OUTPUT"
+        run: echo "sha=$(git ls-remote https://github.com/omerfuyar/OpenECS "refs/heads/$BRANCH" | cut -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Restore OpenECS
         id: cache
@@ -73,7 +100,10 @@ jobs:
   test-linux:
     name: Test (Linux)
     runs-on: ubuntu-24.04
-    needs: openecs
+    needs: [changes, openecs]
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    env:
+      BRANCH: ${{ needs.changes.outputs.openecs || 'dev' }}
     steps:
       # shuild, which runs the tests, is a submodule
       - uses: actions/checkout@v4
@@ -88,7 +118,7 @@ jobs:
       - name: Unpack OpenECS
         run: |
           tar -xzf openecs.tar.gz
-          git clone -q --depth 1 https://github.com/omerfuyar/OpenECS "$RUNNER_TEMP/openecs-source"
+          git clone -q --depth 1 --branch "$BRANCH" https://github.com/omerfuyar/OpenECS "$RUNNER_TEMP/openecs-source"
           "$RUNNER_TEMP/openecs-source/.github/scripts/install-linux.sh"
 
       # EGL, with Mesa drawing in software, lets LÖVE draw with SDL's offscreen driver on a runner without a graphics card
@@ -109,7 +139,8 @@ jobs:
   lua:
     name: Lua (LuaLS)
     runs-on: ubuntu-24.04
-    needs: openecs
+    needs: [changes, openecs]
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     env:
       LUALS_VERSION: 3.19.2
     steps:

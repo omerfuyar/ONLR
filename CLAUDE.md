@@ -45,7 +45,7 @@ The plan is done, and the implementation has started. Build it in small mileston
 - OpenECS, OpenECS-std and OpenECS-examples are the owner's too. When a fix or a feature belongs in one of them, make it there instead of working around it in ONLR:
   - Work in `../OpenECS`, with its `std/` and `examples/`, on a branch of that repository named as OpenECS's file says. OpenECS's CLAUDE.md and its skills apply there: pull-requests, interface-change for a change to the plugin interface, submodule-bump for moving `std/` and `examples/`, and a feature that works from C and from Lua alike.
   - A change to the core or a standard plugin gets a test in OpenECS-examples, in the same piece of work.
-  - Merge it into OpenECS's `dev`, then build OpenECS again and lay out `OpenECS/` from it (Checks), before ONLR relies on it.
+  - Land it in the order of OpenECS's pull-requests skill, with ONLR's branch of the same name, whose checks build OpenECS's branch; ONLR's pull request merges last. Build OpenECS from that branch and lay out `OpenECS/` from it (Checks) before ONLR relies on it.
   - Write nothing of ONLR's into OpenECS's documents.
   - Ask first when the change is a matter of taste for other tools, such as a new look or a default; note it in TODO.md, Tasks, until the owner answers.
 - The user of ONLR knows LÖVE, or learns it. Keep LÖVE's names and ways, so what they know stays true. They never see OpenECS's internals.
