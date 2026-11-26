@@ -170,7 +170,6 @@ What the owner wants worked on, in this order.
   3. Report everything that it prints, any error, and whether anything showed: a window, a flash, or a button in the task bar, even for a moment.
 - **What OpenECS's dev of 2026-11-24 gives the editor.** OpenECS #276 to #320 and OpenECS-std up to f29a872 changed much that the editor stands on: Lua is LuaJIT 2.1 in place of Lua 5.5, C functions are called through LuaJIT's FFI, handles and structs are cdata, the title bar has menus, plugins add their own entries to a menu Tools and their own keys after the prefix, std's `keys` lists those keys, and the theme has new colours, JetBrains Mono at 13 and denser controls. The editor works on it; what it should use of it, each with its OpenECS section:
   - To use what it gives, most useful first:
-    - **Panel types as classes** (OpenECS DESIGN 1.1, and its plugin skill). The node hierarchy, the search and the three bars are classes; the inspector, the node view, the project settings and export still return plain tables with closures from `create` (`inspector.lua`, `nodeview.lua`, `settings.lua:118`, `export.lua:273`). Size: S.
     - **The link's bytes.** Each frame of the preview joins the chunks it read, cuts each block out with `sub`, and gives `gpu.texture` another copy (`runners.lua:528-553`, `link.lua:61-85`, `nodeview.lua:785`). A `string.buffer` reads the blocks in place, and a buffer may be a `string.buffer` or cdata (OpenECS DESIGN 10.7). Measure first. Size: M.
     - **The tests' checks.** `test.errors()` at the test's end checks that no plugin reported an error; `test.titleBar()` checks the title bar's menus once they are ONLR's (OpenECS DESIGN 17.5). Size: S.
     - **The profiler's functions.** `ecs.profile` now names the Lua functions that take the most time, in the profiler's Functions tab (OpenECS DESIGN 3.5): a check of the editor on a large node file needs no code. Size: S.
@@ -204,6 +203,7 @@ What the owner wants worked on, in this order.
   - The OpenECS job takes about 3.4 minutes when OpenECS changed, with ccache's files of the last build, 7.7 without them, and 12 seconds when its archive is kept.
   - The Wayland tests of OpenECS run one at a time (OpenECS's TODO).
 - **The editor's test still waits fixed times after clicks.** Its checks wait for what they check (DESIGN 16), but about 130 waits of 0.2 and 0.3 seconds after clicks and keys remain, some 30 of its 76 seconds. Some keep two clicks from being a double click, and some likely wait for the preview; which are needed was not tried. Measured on 2026-11-27 with a copy of the test that times each of its calls.
+- **A component whose `load` fails stays in the tree.** It keeps getting `update` and the other functions, as found on 2026-11-27 when a check in `samples/coinrun` made a `bump.body` fail as the top node loads; that test now destroys its node at its end. Open: whether the engine should leave such a component out, as the editor's node view marks it (DESIGN 6.4).
 - **The editor on Windows is not tested.** The paths, the rename over a file when a data file is saved, and starting the runners were written on Linux.
 - **What the editor does not do yet.** Offering to move a project that names another version of LÖVE (DESIGN 15.1) is not written.
 - **The tests on Windows.** `shuild.c` runs them on Linux only: they need SDL's offscreen driver, and set variables as a POSIX shell does.
@@ -231,8 +231,3 @@ Recommendations from the review of 2026-11-24, by area, the most important first
 **Export**
 
 - **P3 · Export holds the whole project in memory, on the editor's thread.** `export.lua:107`, `:189-216` The editor stops while it writes. OpenECS's workers now take buffers (OpenECS DESIGN 3.3), so an export can run beside the editor. Size: M.
-
-**Packages**
-
-- **P3 · bump's body and shadows' caster make outlines at each frame.** `bump/components/body.lua:75` and `shadows/components/caster.lua:256-262` call `onlr.shape:outline()`, which makes tables, at each frame, as physics did before 2026-11-25. Compare the shape's values in place, as `physics/find.lua`'s `start`, `note` and `finish` do. Not measured. Size: S.
-- **P3 · Packages fail on the top node while it loads.** `bump/components/body.lua:18`, `physics/components/body.lua:38`, `shadows/components/world.lua:112` add their world to `onlr.tree.root`, nil then (DESIGN 5). Say it in DESIGN 11.3, or check it. Size: S.
