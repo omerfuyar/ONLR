@@ -55,12 +55,15 @@ jobs:
         id: commit
         run: echo "sha=$(git ls-remote https://github.com/omerfuyar/OpenECS "refs/heads/$BRANCH" | cut -f1)" >> "$GITHUB_OUTPUT"
 
+      # the build, and the packages whose libraries it needs, which the tests install
       - name: Restore OpenECS
         id: cache
         uses: actions/cache@v4
         with:
-          path: OpenECS
-          key: openecs-debug-linux-${{ steps.commit.outputs.sha }}
+          path: |
+            OpenECS
+            packages.txt
+          key: openecs-2-debug-linux-${{ steps.commit.outputs.sha }}
 
       - uses: actions/checkout@v4
         if: steps.cache.outputs.cache-hit != 'true'
@@ -70,14 +73,58 @@ jobs:
           submodules: recursive
           path: source
 
+      - name: Install the build tools
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          source/.github/scripts/install-linux.sh
+          sudo apt-get install -y ccache
+
+      # OpenECS's dependencies, such as SDL, change rarely, so their build is kept apart from OpenECS's commits, as the template keeps it
+      - name: Name the dependencies' versions
+        id: dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: source
+        run: echo "key=$( (git submodule status --recursive; sha256sum shuild.c dependencies/other/*/*) | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the built dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: source/.shu/Debug/dependencies
+          key: debug-linux-${{ steps.dependencies.outputs.key }}
+
+      # std builds glslang and SPIRV-Cross with CMake only when their archives are missing
+      - name: Name the C++ libraries' versions
+        id: cpp
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: source
+        run: echo "key=$( (git -C std submodule status dependencies/glslang dependencies/SPIRV-Cross; sha256sum std/shuild.c) | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the C++ libraries
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: source/std/.shu/Debug/cmake
+          key: cpp-debug-linux-${{ steps.cpp.outputs.key }}
+
+      # ccache keeps what each C file compiled to, so a new commit of OpenECS compiles only the files it changed; the newest cache is restored
+      - name: Restore the compiled files
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-debug-linux-${{ steps.commit.outputs.sha }}
+          restore-keys: ccache-debug-linux-
+
       - name: Build OpenECS
         if: steps.cache.outputs.cache-hit != 'true'
         working-directory: source
         run: |
-          .github/scripts/install-linux.sh
+          export PATH="/usr/lib/ccache:$PATH"
           gcc shuild.c -o shuild.ignore -O3 -Wno-format-truncation
           ./shuild.ignore -b debug > build.log 2>&1 || true
           test -x build/Debug/bin/OpenECS || (tail -n 40 build.log && exit 1)
+          ccache -s | head -n 8
 
       # the program writes include/ as a release has it: the plugin interface and the standard plugins' definitions
       - name: Lay out OpenECS as a release
@@ -87,9 +134,17 @@ jobs:
           cp -r source/build/Debug/bin/. OpenECS/
           OpenECS/OpenECS --definitions OpenECS/include > definitions.log 2>&1 || (cat definitions.log && exit 1)
 
+      # the packages of the system libraries that the program and its plugins link to, so the tests install those alone, not the build tools
+      - name: List the libraries' packages
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          find OpenECS -type f \( -name '*.so*' -o -name OpenECS \) -exec ldd {} + 2>/dev/null | awk '/=> \// { print $3 }' | sort -u \
+            | xargs -r realpath | xargs -r dpkg -S 2>/dev/null | cut -d: -f1 | sort -u > packages.txt
+          cat packages.txt
+
       # a tar keeps the files' permissions, which an artifact does not
       - name: Pack OpenECS
-        run: tar -czf openecs.tar.gz OpenECS
+        run: tar -czf openecs.tar.gz OpenECS packages.txt
 
       - uses: actions/upload-artifact@v4
         with:
@@ -102,8 +157,6 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [changes, openecs]
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
-    env:
-      BRANCH: ${{ needs.changes.outputs.openecs || 'dev' }}
     steps:
       # shuild, which runs the tests, is a submodule
       - uses: actions/checkout@v4
@@ -114,16 +167,13 @@ jobs:
         with:
           name: openecs
 
-      # OpenECS needs the libraries that its build's packages bring, such as those of SDL
+      # OpenECS needs the system libraries that its build linked to, which the job OpenECS listed; and EGL, with Mesa drawing in software,
+      # lets OpenECS and LÖVE draw with SDL's offscreen driver on a runner without a graphics card
       - name: Unpack OpenECS
         run: |
           tar -xzf openecs.tar.gz
-          git clone -q --depth 1 --branch "$BRANCH" https://github.com/omerfuyar/OpenECS "$RUNNER_TEMP/openecs-source"
-          "$RUNNER_TEMP/openecs-source/.github/scripts/install-linux.sh"
-
-      # EGL, with Mesa drawing in software, lets LÖVE draw with SDL's offscreen driver on a runner without a graphics card
-      - name: Install EGL
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libegl-mesa0 libgl1-mesa-dri
+          sudo apt-get update
+          xargs -a packages.txt sudo apt-get install -y --no-install-recommends libegl1 libegl-mesa0 libgl1-mesa-dri
 
       # LÖVE's AppImage, unpacked, as ONLR's archive holds it (DESIGN.md, section 15.2)
       - name: Install LÖVE
