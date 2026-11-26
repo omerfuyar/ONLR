@@ -157,6 +157,9 @@ function tree.findAllComponents(type)
 end
 
 local function parentOf(parent, what)
+  if parent == nil and tree.root == nil then
+    error(what .. ": the root is not loaded yet, so give a parent, such as onlr.tree.top", 3)
+  end
   parent = parent or tree.root
   if not nodes.isNode(parent) or parent._gone then
     error(what .. ": the parent is no node of the tree", 3)

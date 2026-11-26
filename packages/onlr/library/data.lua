@@ -118,6 +118,28 @@ function data.exists(path)
   return type(path) == "string" and love.filesystem.getInfo(path, "file") ~= nil
 end
 
+-- The keys of fonts, by their path, "" for LÖVE's own, and their size: made once, so a font that onlr.font asks for at each
+-- draw makes no string.
+---@type table<string, table<any, string>>
+local fontKeys = {}
+
+local function fontKey(path, size)
+  local sizes = fontKeys[path or ""]
+  if not sizes then
+    sizes = {}
+    fontKeys[path or ""] = sizes
+  end
+  if size == nil then
+    return "font:" .. (path or "") .. ":nil"
+  end
+  local key = sizes[size]
+  if not key then
+    key = "font:" .. (path or "") .. ":" .. tostring(size)
+    sizes[size] = key
+  end
+  return key
+end
+
 local function need(path)
   if not data.exists(path) then
     error(tostring(path) .. ": no such file", 0)
@@ -141,11 +163,12 @@ function data.load(kind, path, option)
       return love.graphics.newImage(path --[[@as string]])
     end))
   elseif kind == "font" then
-    key = "font:" .. (path or "") .. ":" .. tostring(option)
-    if path then
+    key = fontKey(path, option)
+    entry = loaded[key]
+    if path and not entry then
       need(path)
     end
-    entry = get(key, function()
+    entry = entry or get(key, function()
       if path then
         return love.graphics.newFont(path, option)
       end
@@ -164,7 +187,7 @@ function data.load(kind, path, option)
   end
   if kind == "image" or kind == "sound" then
     data.paths[entry.value] = path
-  elseif kind == "font" then
+  elseif kind == "font" and not data.paths[entry.value] then
     data.paths[entry.value] = { path = path, size = option }
   end
   return entry.value, key
