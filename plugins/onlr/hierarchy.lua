@@ -160,6 +160,41 @@ end
 
 local IMAGES = { png = true, jpg = true, jpeg = true, bmp = true, tga = true }
 
+-- The nodes that a drag of a node moves: the chosen ones when the dragged one is chosen, or else the dragged one, as a set of paths.
+local function movingOf(file, value)
+  local paths = { value.path }
+  for _, path in ipairs(project.chosen().file == file and project.chosen().paths or {}) do
+    if path == value.path then
+      paths = project.chosen().paths
+    end
+  end
+  local moving = {}
+  for _, path in ipairs(paths) do
+    moving[path] = true
+  end
+  return paths, moving
+end
+
+-- Whether dragged nodes may land on a node, which the tree asks at each move, so it marks only a landing that a drop takes: a node never
+-- lands on itself or inside itself, nor in another node file (DESIGN 13.4).
+local function lands(file, id, dataType, value)
+  if dataType ~= "onlr.node" then
+    return true
+  end
+  if type(value) ~= "table" or value.file ~= file then
+    return false
+  end
+  local _, moving = movingOf(file, value)
+  local node = id and project.tree(file).index[id]
+  while node do
+    if moving[node.path] then
+      return false
+    end
+    node = node.parent
+  end
+  return true
+end
+
 -- A drop on the tree (DESIGN 13.4). Dragged nodes move before, into or after the node that they land on: the chosen nodes when the dragged
 -- one is chosen, or else the dragged one. A node file or an image from the files panel becomes a child of the node, as in the node view.
 local function dropped(file, id, where, dataType, value)
@@ -192,17 +227,8 @@ local function dropped(file, id, where, dataType, value)
   if dataType ~= "onlr.node" or value.file ~= file then
     return
   end
-  local paths = { value.path }
-  for _, path in ipairs(project.chosen().file == file and project.chosen().paths or {}) do
-    if path == value.path then
-      paths = project.chosen().paths
-    end
-  end
-  local moving = {}
-  for _, path in ipairs(paths) do
-    moving[path] = true
-  end
-  if moving[target.path] then
+  local paths, moving = movingOf(file, value)
+  if moving[target.path] or not lands(file, id, dataType, value) then
     return
   end
   if where == "into" or not id or not target.parent then
@@ -451,6 +477,9 @@ function Hierarchy:fileTree(file, children)
     -- a node is dragged to another place in the tree, or to a reference's row of the inspector (DESIGN 13.4)
     onDrag = function(id)
       return "onlr.node", { file = file, path = id }
+    end,
+    onDragOver = function(id, _, dataType, value)
+      return lands(file, id, dataType, value)
     end,
     onDrop = function(id, where, dataType, value)
       dropped(file, id, where, dataType, value)

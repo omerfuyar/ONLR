@@ -998,6 +998,32 @@ return {
     save()
     check(read("nodes/start.lua") == start, "the move into B is undone")
 
+    -- while a node is dragged, the tree marks where it lands, and never a landing inside the node itself: B held over A's middle draws a
+    -- box around A, and Start held there, A's parent, draws none, so A's row differs between the two; it would be the same with a box in
+    -- both (DESIGN 13.4)
+    local ax, ay = row(2)
+    local function held(i)
+      local hx, hy = row(i)
+      test.press(hx, hy)
+      test.move(hx, hy + 12)
+      test.move(ax, ay)
+      local pixels = {}
+      for x = tree.x + 2, tree.x + tree.width - 2 do
+        pixels[#pixels + 1] = test.pixel(x, ay)
+      end
+      test.key("Escape")
+      test.release(ax, ay)
+      return pixels
+    end
+    local boxed, refused = held(3), held(1)
+    local differs = false
+    for i, pixel in ipairs(boxed) do
+      differs = differs or pixel ~= refused[i]
+    end
+    check(differs, "a node held over its own child draws no box, as one held over another node does")
+    save()
+    check(read("nodes/start.lua") == start, "a drag that Escape ends moves nothing")
+
     -- a deleted base breaks only its instance: the rest of the file still shows in the node hierarchy, and A is chosen there; the base back
     -- gives the instance back (DESIGN 9)
     local partText = read("nodes/part.lua")

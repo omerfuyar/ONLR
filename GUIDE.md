@@ -340,7 +340,7 @@ Nodes have no tags: a type is one. An empty script `enemy` on every enemy, and `
 
 ### 6.1 A camera
 
-1. Put the level's nodes under one node, such as `World`, by dragging them onto it in the node hierarchy.
+1. Put the level's nodes under one node, such as `World`, by dragging them onto it in the node hierarchy. A line between rows shows where a node will go before or after, and a box around a row shows it will go inside; a node never shows a place inside itself.
 2. Give `World` the component `onlr.camera.view`. It shows the nodes under it, moved so that the middle of the window shows its point.
 3. Give it `onlr.camera.follow` too, and drag the Player onto its **Target**. The camera follows the player, smoothly.
 
