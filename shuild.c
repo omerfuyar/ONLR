@@ -354,10 +354,10 @@ static void TestSample(const char *path, SHUFileType type, void *data)
     // The user's folders of data, settings and state are build/tests/home/'s, so a test reads nothing of this computer's, such as
     // ONLR's runtimes or OpenECS's settings, and writes nothing there. ONLR_RUNTIMES names the file that the editor's test writes, so
     // LÖVE's runtimes are downloaded from the test's own server, not from LÖVE's releases (DESIGN 15.2, 16).
-    // A test that never ends is stopped after two minutes
+    // A test that never ends is stopped after four minutes: the editor's test takes almost two on a computer of the checks
     const char *home = SHU_UtilGetPath("build/tests/home/");
     const char *settings = SHU_UtilFormat("LOVE=\"%s\" XDG_DATA_HOME=\"%sdata\" XDG_CONFIG_HOME=\"%sconfig\" XDG_STATE_HOME=\"%sstate\" "
-                                          "ONLR_RUNTIMES=\"%sruntimes.lua\" SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 120",
+                                          "ONLR_RUNTIMES=\"%sruntimes.lua\" SDL_VIDEODRIVER=offscreen ALSOFT_DRIVERS=null timeout 240",
                                           CONFIG.FLAGS.love, home, home, home, home);
 
     if (SHU_UtilFileExists(SHU_UtilFormat("%seditortest.lua", path)) == SHUFileType_Regular)

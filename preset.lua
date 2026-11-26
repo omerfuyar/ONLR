@@ -11,10 +11,10 @@ return {
   -- a project's folder, or a file in it, named on the command line opens the project (DESIGN 13.2)
   open = "onlr.openPath",
   -- the search over everything, from any panel, on Unity's key for it (DESIGN 13.8), the game's functions, which the Game bar and
-  -- the title bar show, and undo, redo and save, which act on the whole project (DESIGN 13.1)
+  -- the title bar show, and save, which acts on the whole project; the core binds undo and redo to OpenECS-std's history (DESIGN 13.1)
   keys = {
     ["Ctrl+K"] = "onlr.search",
-    ["Ctrl+Z"] = "onlr.undo", ["Ctrl+Y"] = "onlr.redo", ["Ctrl+Shift+Z"] = "onlr.redo", ["Ctrl+S"] = "onlr.save",
+    ["Ctrl+S"] = "onlr.save",
     F5 = "onlr.play", F6 = "onlr.playFile", F7 = "onlr.pause", F8 = "onlr.step", ["Shift+F5"] = "onlr.stop",
   },
   settings = {
@@ -28,7 +28,7 @@ return {
       { label = "File", "onlr.newProject", "onlr.openProject", "onlr.save", { "ecs.app.quit", label = "Quit" } },
       {
         label = "Edit",
-        "onlr.undo", "onlr.redo",
+        "history.undo", "history.redo",
         { "onlr.copyChosen", label = "Copy" }, { "onlr.pasteChosen", label = "Paste" },
         { "onlr.duplicateChosen", label = "Duplicate" }, { "onlr.deleteChosen", label = "Delete" },
         { "onlr.selectAll", label = "Select All" }, { "onlr.selectWithChildren", label = "Select Children" },
@@ -79,7 +79,7 @@ return {
                   { share = 1, panels = { { type = "onlr.view" } } },
                 },
               },
-              { share = 2, panels = { { type = "console.log" }, { type = "files.tree" }, { type = "onlr.history" } } },
+              { share = 2, panels = { { type = "console.log" }, { type = "files.tree" }, { type = "history.list" } } },
             },
             {
               size = 340,
