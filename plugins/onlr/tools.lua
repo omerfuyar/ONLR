@@ -15,34 +15,24 @@ local PIVOT_INDEX = { own = 1, bounds = 2, selection = 3 }
 -- A bar is one row that wraps, so a narrow panel takes the rest to the next line and every control stays visible.
 local BAR = { style = STYLES.bar, gap = 8, align = "center", wrap = true, grow = 1 }
 
--- What every bar does with its panel: it gives ui its events, and forgets the panel at the end.
-local function barEvent(self, event)
-  ui.event(self.panel, event)
-end
-
-local function barDestroy(self)
-  ui.forget(self.panel)
-end
-
 ---Transform: the tool, the pivot, snapping and the grid.
 ---@class onlr.editor.Transform
 ---@field panel ecs.Panel
 local Transform = {}
 Transform.__index = Transform
-Transform.event, Transform.destroy = barEvent, barDestroy
 
 function Transform.create(panel)
   return setmetatable({ panel = panel }, Transform)
 end
 
-function Transform:draw(surface)
+function Transform:view()
   local selected = 1
   for i, tool in ipairs(TOOLS) do
     if tool == project.tool() then
       selected = i
     end
   end
-  ui.show(self.panel, surface, ui.row(BAR, {
+  return ui.row(BAR, {
     ui.selector(selected, { "Move", "Turn", "Scale", "Rect", "Shape" }, {
       id = "tool", keys = "W, E, R, T, Y",
       tooltip = "What a drag on a node does. Rect sizes a node by its corners and edges; Shape drags a shape's corners and edges and the points of a property",
@@ -63,7 +53,7 @@ function Transform:draw(surface)
     ui.number(project.setting("grid") or 32, { id = "grid", width = 70, min = 1, tooltip = "The grid's size", onSubmit = function(value)
       project.setSetting("grid", value)
     end }),
-  }))
+  })
 end
 
 -- The game's count: frames a second, and the time of update and draw, which a game with its own love.run does not send.
@@ -96,16 +86,15 @@ end
 ---@field panel ecs.Panel
 local Game = {}
 Game.__index = Game
-Game.event, Game.destroy = barEvent, barDestroy
 
 function Game.create(panel)
   return setmetatable({ panel = panel }, Game)
 end
 
-function Game:draw(surface)
+function Game:view()
   local running = nodeview.running()
   local note = running.playing and (running.halted and "Stopped at an error: its nodes show as it left them" or running.paused and "Paused" or "Playing") or ""
-  ui.show(self.panel, surface, ui.row(BAR, {
+  return ui.row(BAR, {
     ui.button("Play", { id = "play", tooltip = "Play the game from its start node", keys = "F5", onClick = nodeview.play }),
     ui.button("Play this file", { id = "playFile", tooltip = "Play the focused node file as the start node", keys = "F6", onClick = nodeview.playFile }),
     ui.button(running.paused and "Resume" or "Pause", { id = "pause", tooltip = "Pause or resume the game", keys = "F7", onClick = nodeview.pause }),
@@ -119,7 +108,7 @@ function Game:draw(surface)
     running.playing and running.stats and ui.text(stats(running.stats), {
       id = "stats", style = STYLES.note, tooltip = "The game's frames a second, and the time that a frame spends in update and in draw",
     }) or false,
-  }))
+  })
 end
 
 function Game:saveState()
@@ -132,38 +121,37 @@ end
 ---@field panel ecs.Panel
 local Action = {}
 Action.__index = Action
-Action.event, Action.destroy = barEvent, barDestroy
 
 function Action.create(panel)
   return setmetatable({ panel = panel }, Action)
 end
 
-function Action:draw(surface)
+function Action:view()
   local history = project.historyState()
-  ui.show(self.panel, surface, ui.row(BAR, {
+  return ui.row(BAR, {
     ui.button("Undo", { id = "undo", tooltip = "Take back the last change or choice", keys = "Ctrl+Z", onClick = project.undo }),
     ui.button("Redo", { id = "redo", tooltip = "Do again what Undo took back", keys = "Ctrl+Y", onClick = project.redo }),
     ui.button("Save", { id = "save", tooltip = "Save every changed file", keys = "Ctrl+S", onClick = project.save }),
     ui.text(("%d of %d changes%s"):format(history.position, history.count, project.isDirty() and ", not saved" or ""), { id = "count", style = STYLES.note }),
-  }))
+  })
 end
 
 -- Each bar redraws at the events that change what it shows (DESIGN 13.1).
-ecs.panel.registerType({
+ecs.panel.registerType(ui.panelType({
   name = "transform",
   title = "Transform",
   redrawOn = { "onlr.opened", "onlr.closed", "onlr.tool", "onlr.settings" },
-  create = Transform.create, draw = Transform.draw, event = Transform.event, destroy = Transform.destroy,
-})
-ecs.panel.registerType({
+  create = Transform.create, view = Transform.view,
+}))
+ecs.panel.registerType(ui.panelType({
   name = "game",
   title = "Game",
   redrawOn = { "onlr.opened", "onlr.closed", "onlr.state", "onlr.runningStats", "onlr.settings" },
-  create = Game.create, draw = Game.draw, event = Game.event, saveState = Game.saveState, destroy = Game.destroy,
-})
-ecs.panel.registerType({
+  create = Game.create, view = Game.view, saveState = Game.saveState,
+}))
+ecs.panel.registerType(ui.panelType({
   name = "action",
   title = "Action",
   redrawOn = { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.saved" },
-  create = Action.create, draw = Action.draw, event = Action.event, destroy = Action.destroy,
-})
+  create = Action.create, view = Action.view,
+}))

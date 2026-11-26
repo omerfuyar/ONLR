@@ -23,7 +23,7 @@ local function textOf(record)
   return record.label .. (#names > 0 and ("   " .. table.concat(names, ", ")) or "")
 end
 
-function History:draw(surface)
+function History:view()
   local children = {}
   if project.folder() == "" then
     children[1] = ui.text("No project is open.", { style = STYLES.note })
@@ -45,15 +45,11 @@ function History:draw(surface)
       end,
     }, rows)
   end
-  ui.show(self.panel, surface, ui.column({ padding = 8, gap = 6, grow = 1 }, children))
+  return ui.column({ padding = 8, gap = 6, grow = 1 }, children)
 end
 
 function History.create(panel)
   return setmetatable({ panel = panel }, History)
-end
-
-function History:event(event)
-  ui.event(self.panel, event)
 end
 
 function History:saveState()
@@ -61,20 +57,14 @@ function History:saveState()
   return { position = project.history().position }
 end
 
-function History:destroy()
-  ui.forget(self.panel)
-end
-
-ecs.panel.registerType({
+ecs.panel.registerType(ui.panelType({
   name = "history",
   title = "History",
   -- the list follows every change and choice, every undo and redo, and the project that opens or closes
   redrawOn = { "onlr.changed", "onlr.chosen", "onlr.opened", "onlr.closed" },
   create = History.create,
-  draw = History.draw,
-  event = History.event,
+  view = History.view,
   saveState = History.saveState,
-  destroy = History.destroy,
-})
+}))
 
 return {}

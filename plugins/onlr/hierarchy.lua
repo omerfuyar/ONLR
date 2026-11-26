@@ -487,7 +487,7 @@ function Hierarchy:fileTree(file, children)
   })
 end
 
-function Hierarchy:draw(surface)
+function Hierarchy:view()
   local file = shared.file()
   local running = nodeview.running()
   local children = {}
@@ -515,7 +515,7 @@ function Hierarchy:draw(surface)
   else
     self:fileTree(file, children)
   end
-  ui.show(self.panel, surface, ui.column({ padding = 8, gap = 6 }, children))
+  return ui.column({ padding = 8, gap = 6 }, children)
 end
 
 function Hierarchy.create(panel, saved, version)
@@ -536,8 +536,9 @@ function Hierarchy:event(event)
       return
     end
   end
-  -- Ctrl+A chooses every node, unless a field being edited takes it to select its text: a binding would win over the field
-  if not ui.event(self.panel, event) and event.type == "keyDown" and event.key == "A" and event.ctrl and not event.shift then
+  -- Ctrl+A chooses every node, unless a field being edited takes it to select its text, as ui takes it first: a binding would win over
+  -- the field
+  if event.type == "keyDown" and event.key == "A" and event.ctrl and not event.shift then
     nodeview.selectAll()
   end
 end
@@ -554,11 +555,7 @@ function Hierarchy:saveState()
   return { open = self.open, file = self.openFile, chosen = chosen.file == self.openFile and chosen.paths or {}, marks = marks }
 end
 
-function Hierarchy:destroy()
-  ui.forget(self.panel)
-end
-
-ecs.panel.registerType({
+ecs.panel.registerType(ui.panelType({
   name = "hierarchy",
   title = "Node Hierarchy",
   -- the events whose change the panel shows (DESIGN 13.1)
@@ -567,8 +564,7 @@ ecs.panel.registerType({
   },
   stateVersion = STATE_VERSION,
   create = Hierarchy.create,
-  draw = Hierarchy.draw,
+  view = Hierarchy.view,
   event = Hierarchy.event,
   saveState = Hierarchy.saveState,
-  destroy = Hierarchy.destroy,
-})
+}))

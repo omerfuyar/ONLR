@@ -13,7 +13,7 @@ local function label(text)
   return ui.text(text, { width = 110 })
 end
 
-local function draw(state, surface)
+local function view(state)
   local out = {}
   local manifest = project.folder() ~= "" and project.manifest()
   out[#out + 1] = ui.row({ gap = 8 }, {
@@ -107,12 +107,12 @@ local function draw(state, surface)
     })
     number("fixedRate", "Fixed rate", manifest.fixedRate or 60, 1)
   end
-  ui.show(state.panel, surface, ui.scroll({ id = "settings", padding = 8, gap = 6 }, out))
+  return ui.scroll({ id = "settings", padding = 8, gap = 6 }, out)
 end
 
 local open = {} ---@type table<ecs.Panel, true> the open Project panels
 
-ecs.panel.registerType({
+ecs.panel.registerType(ui.panelType({
   name = "settings",
   title = "Project",
   redrawOn = { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.saved", "onlr.settings" },
@@ -120,15 +120,11 @@ ecs.panel.registerType({
     open[panel] = true
     return { panel = panel }
   end,
-  draw = draw,
-  event = function(state, event)
-    ui.event(state.panel, event)
-  end,
+  view = view,
   destroy = function(state)
     open[state.panel] = nil
-    ui.forget(state.panel)
   end,
-})
+}))
 
 -- The editor that starts with no project shows the Project panel, which lists the projects opened last (DESIGN 13.2).
 ecs.timer.start(0, false, function()
