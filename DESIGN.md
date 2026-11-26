@@ -1596,7 +1596,7 @@ ONLR's own panels and functions are one plugin, `onlr`, whose names all start wi
 | `runner/`                               | The runner's files (12.1), which the editor names to LÖVE and never loads itself.              |
 
 - The parts call each other's functions as Lua functions, and other plugins call them as `onlr.*`.
-- Each panel type is a class, as OpenECS's Lua panels are (OpenECS DESIGN 1.1): the node hierarchy's is `Hierarchy`, and its panels' states are objects of it, whose methods draw them and take their events.
+- Each panel type is a class, as OpenECS's Lua panels are (OpenECS DESIGN 1.1), such as the node hierarchy's `Hierarchy`, the inspector's `Inspector` and the node view's `View`: its panels' states are objects of it, whose methods draw them and take their events.
 - The panels built with ui are `ui.panelType`'s (OpenECS-std DESIGN 5): their `view` gives the elements, and ui draws them, gives them the events first and forgets the panel when it closes; a type's own `event` gets only the events that no element took, such as the node hierarchy's F2 and Ctrl+A, or a drop on the inspector outside its elements. The node view draws its own GPU surface, so it registers its functions itself.
 
 - The project's data lives in `project.lua`, not in a panel (OpenECS DESIGN 10). Panels show it, change it through its functions, and hear of changes through its events.
