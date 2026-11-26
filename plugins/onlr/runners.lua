@@ -63,7 +63,11 @@ runners.running = { playing = false, paused = false, tree = nil, values = nil }
 runners.onView = function() end
 
 ecs.event.declare("state", "A runner started, ended, paused or went on")
-ecs.event.declare("running", "The game sent the running tree, or the watched nodes' values")
+-- What the running game sent, an event for each, so a panel redraws only on what it shows: the node hierarchy on the tree, and not on
+-- the watched values, which come ten times a second, or on the frames a second
+ecs.event.declare("runningTree", "The game sent the running tree")
+ecs.event.declare("runningStats", "The game sent its frames a second")
+ecs.event.declare("runningValues", "The game sent the watched nodes' values")
 
 ecs.setting.declare({
   name = "playTint",
@@ -452,18 +456,18 @@ end
 
 function fromGame.tree(message)
   runners.running.tree = message.nodes
-  ecs.event.emit("onlr.running", "tree")
+  ecs.event.emit("onlr.runningTree")
 end
 
 -- The frames a second and the time of update and draw, twice a second.
 function fromGame.stats(message)
   runners.running.stats = { fps = message.fps, update = message.update, draw = message.draw }
-  ecs.event.emit("onlr.running", "stats")
+  ecs.event.emit("onlr.runningStats")
 end
 
 function fromGame.values(message)
   runners.running.values = message.nodes
-  ecs.event.emit("onlr.running", "values")
+  ecs.event.emit("onlr.runningValues")
 end
 
 -- The game stopped at an error, and LÖVE shows it; its running tree and values still answer, until Stop (DESIGN 12.6).
@@ -630,7 +634,7 @@ local function poll()
       game = nil
       runners.running = { playing = false, paused = false }
       ecs.event.emit("onlr.state")
-      ecs.event.emit("onlr.running", "tree")
+      ecs.event.emit("onlr.runningTree")
     end
   end
 end

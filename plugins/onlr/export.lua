@@ -11,15 +11,15 @@ local runtimes = require("runtimes")
 
 local STYLES = ui.styles()
 
-local panels = {} ---@type table<ecs.Panel, table>
+local open = {} ---@type table<ecs.Panel, true> the open Export panels
 local status = "" -- what the last export did
+
+ecs.event.declare("exported", "The export says what it did, which the Export panel shows")
 
 local function say(text, isError)
   status = text
   console.add(text, isError and "error" or "info", nil, "export")
-  for panel in pairs(panels) do
-    panel:redraw()
-  end
+  ecs.event.emit("onlr.exported", text)
 end
 
 local function read(path)
@@ -327,10 +327,10 @@ end
 ecs.panel.registerType({
   name = "export",
   title = "Export",
+  redrawOn = { "onlr.opened", "onlr.closed", "onlr.settings", "onlr.exported" },
   create = function(panel)
-    local state = { panel = panel }
-    panels[panel] = state
-    return state
+    open[panel] = true
+    return { panel = panel }
   end,
   draw = function(state, surface)
     local children = {}
@@ -356,21 +356,13 @@ ecs.panel.registerType({
   end,
   destroy = function(state)
     ui.forget(state.panel)
-    panels[state.panel] = nil
+    open[state.panel] = nil
   end,
 })
 
-for _, name in ipairs({ "onlr.opened", "onlr.closed", "onlr.settings" }) do
-  ecs.event.subscribe(name, function()
-    for panel in pairs(panels) do
-      panel:redraw()
-    end
-  end)
-end
-
 local functions = {
   showExport = { sig = "void()", doc = "Show the Export panel", fn = function()
-    shared.show("onlr.export", panels)
+    shared.show("onlr.export", open)
   end },
   exportLove = { sig = "void()", doc = "Export the .love file", fn = function()
     exportLove()

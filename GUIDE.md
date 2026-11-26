@@ -297,7 +297,7 @@ A property is a value that the inspector shows and that each node sets (DESIGN 6
 | `group`, `list` | Properties together, or rows of one kind | A table, or a list          |
 
 - A file is set by dragging it from the files panel onto the property, or with the property's button. A file from outside the project is copied into it first, since a LÖVE game reads only its own folder.
-- A node is set by dragging it from the node hierarchy or the node view onto the property, or with **Pick** and a click on the node.
+- A node is set by dragging it from the node hierarchy or the node view onto the property, or with **Pick** and a click on the node. Escape, in any of ONLR's panels, ends a pick without setting anything.
 - `description` is shown as the property's tooltip, `heading` puts a title above it, and `when` shows it only while another property has a value, as `{ kind = "circle" }`.
 - `handles = true` on a `vector`, or a list of them, lets the Shape tool drag the points in the node view, as a patrol path's.
 - `angle = true` on a `number` makes it an angle: the inspector shows and takes degrees, and the script gets radians, which LÖVE's functions take, as a node's `rot` is. `angle = { kind = "hinge" }` makes it an angle only while `kind` is `hinge`.

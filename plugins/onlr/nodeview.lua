@@ -1378,6 +1378,8 @@ ecs.panel.registerType({
   name = "view",
   title = "Node view",
   surface = "gpu",
+  -- the tool and the settings, such as the grid, change every view; other events draw again only the views of their file
+  redrawOn = { "onlr.tool", "onlr.settings" },
   stateVersion = STATE_VERSION,
   create = function(panel, saved, version)
     nextId = nextId + 1
@@ -1518,16 +1520,14 @@ ecs.event.subscribe("onlr.chosen", function(_, chosen)
   end
 end)
 
-for _, name in ipairs({ "onlr.tool", "onlr.settings" }) do
-  ecs.event.subscribe(name, function(_, setting)
+-- A node hidden or shown again changes what each view draws; the views draw again after, at the setting (redrawOn).
+ecs.event.subscribe("onlr.settings", function(_, setting)
+  if setting == "hidden" then
     for _, view in pairs(views) do
-      if setting == "hidden" then
-        sync(view)
-      end
-      view.panel:redraw()
+      sync(view)
     end
-  end)
-end
+  end
+end)
 
 ecs.event.subscribe("onlr.disk", function(_, value)
   if value.kind == "code" then
@@ -1700,7 +1700,7 @@ for key, name in pairs({
   ["Delete"] = "onlr.deleteChosen", ["Ctrl+D"] = "onlr.duplicateChosen", ["Ctrl+C"] = "onlr.copyChosen",
   ["Ctrl+V"] = "onlr.pasteChosen", ["W"] = "onlr.toolMove", ["E"] = "onlr.toolTurn",
   ["R"] = "onlr.toolScale", ["T"] = "onlr.toolRect", ["Y"] = "onlr.toolShape", ["F"] = "onlr.frame", ["H"] = "onlr.hideChosen",
-  ["L"] = "onlr.lockChosen", ["Escape"] = "onlr.cancelPick", ["Ctrl+A"] = "onlr.selectAll", ["Shift+A"] = "onlr.selectWithChildren",
+  ["L"] = "onlr.lockChosen", ["Ctrl+A"] = "onlr.selectAll", ["Shift+A"] = "onlr.selectWithChildren",
 }) do
   ecs.key.bind("onlr.view", key, name)
 end

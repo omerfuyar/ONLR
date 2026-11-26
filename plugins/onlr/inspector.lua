@@ -879,15 +879,15 @@ local function drop(state, event)
   end
 end
 
--- A row's Pick shows that it waits, and the waiting ends when a node is clicked.
-ecs.event.subscribe("onlr.picking", function()
-  shared.redraw()
-end)
-
 ecs.panel.registerType({
   name = "inspector",
   title = "Inspector",
   stateVersion = STATE_VERSION,
+  -- the events whose change the panel shows (DESIGN 13.1); a row's Pick shows that it waits, until a node is clicked (onlr.picking)
+  redrawOn = {
+    "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.tool", "onlr.types", "onlr.saved", "onlr.settings", "onlr.state",
+    "onlr.runningTree", "onlr.runningValues", "onlr.picking", "onlr.shown",
+  },
   create = function(panel, saved, version)
     local state = { panel = panel, folded = {}, drops = {}, scale = 1 }
     shared.inspectors[panel] = true
@@ -896,10 +896,6 @@ ecs.panel.registerType({
       state.lock = type(saved.lock) == "table" and type(saved.lock.file) == "string" and type(saved.lock.paths) == "table" and saved.lock or nil
     end
     panel:acceptDrops({ "file-list", "onlr.node" })
-    shared.follow(panel, {
-      "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.tool", "onlr.types", "onlr.saved", "onlr.settings", "onlr.state",
-      "onlr.running:tree", "onlr.running:values",
-    })
     return state
   end,
   draw = draw,
@@ -916,7 +912,6 @@ ecs.panel.registerType({
   end,
   destroy = function(state)
     shared.inspectors[state.panel] = nil
-    shared.forget(state.panel)
     ui.forget(state.panel)
   end,
 })

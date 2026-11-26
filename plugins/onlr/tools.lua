@@ -6,7 +6,6 @@ local ui = require("ui")
 local project = require("project")
 local nodeview = require("nodeview")
 local runners = require("runners")
-local shared = require("shared")
 
 local STYLES = ui.styles()
 local TOOLS = { "move", "turn", "scale", "rect", "shape" }
@@ -22,7 +21,6 @@ local function barEvent(self, event)
 end
 
 local function barDestroy(self)
-  shared.forget(self.panel)
   ui.forget(self.panel)
 end
 
@@ -34,7 +32,6 @@ Transform.__index = Transform
 Transform.event, Transform.destroy = barEvent, barDestroy
 
 function Transform.create(panel)
-  shared.follow(panel, { "onlr.opened", "onlr.closed", "onlr.tool", "onlr.settings:pivot", "onlr.settings:snap", "onlr.settings:grid" })
   return setmetatable({ panel = panel }, Transform)
 end
 
@@ -102,7 +99,6 @@ Game.__index = Game
 Game.event, Game.destroy = barEvent, barDestroy
 
 function Game.create(panel)
-  shared.follow(panel, { "onlr.opened", "onlr.closed", "onlr.state", "onlr.running:stats", "onlr.settings:playSize" })
   return setmetatable({ panel = panel }, Game)
 end
 
@@ -139,7 +135,6 @@ Action.__index = Action
 Action.event, Action.destroy = barEvent, barDestroy
 
 function Action.create(panel)
-  shared.follow(panel, { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.saved" })
   return setmetatable({ panel = panel }, Action)
 end
 
@@ -153,6 +148,22 @@ function Action:draw(surface)
   }))
 end
 
-ecs.panel.registerType({ name = "transform", title = "Transform", create = Transform.create, draw = Transform.draw, event = Transform.event, destroy = Transform.destroy })
-ecs.panel.registerType({ name = "game", title = "Game", create = Game.create, draw = Game.draw, event = Game.event, saveState = Game.saveState, destroy = Game.destroy })
-ecs.panel.registerType({ name = "action", title = "Action", create = Action.create, draw = Action.draw, event = Action.event, destroy = Action.destroy })
+-- Each bar redraws at the events that change what it shows (DESIGN 13.1).
+ecs.panel.registerType({
+  name = "transform",
+  title = "Transform",
+  redrawOn = { "onlr.opened", "onlr.closed", "onlr.tool", "onlr.settings" },
+  create = Transform.create, draw = Transform.draw, event = Transform.event, destroy = Transform.destroy,
+})
+ecs.panel.registerType({
+  name = "game",
+  title = "Game",
+  redrawOn = { "onlr.opened", "onlr.closed", "onlr.state", "onlr.runningStats", "onlr.settings" },
+  create = Game.create, draw = Game.draw, event = Game.event, saveState = Game.saveState, destroy = Game.destroy,
+})
+ecs.panel.registerType({
+  name = "action",
+  title = "Action",
+  redrawOn = { "onlr.opened", "onlr.closed", "onlr.changed", "onlr.chosen", "onlr.saved" },
+  create = Action.create, draw = Action.draw, event = Action.event, destroy = Action.destroy,
+})
