@@ -324,36 +324,48 @@ local function chooseFolder()
   end)
 end
 
+---An Export panel.
+---@class onlr.editor.Export
+---@field panel ecs.Panel
+local Export = {}
+Export.__index = Export
+
+function Export.create(panel)
+  open[panel] = true
+  return setmetatable({ panel = panel }, Export)
+end
+
+function Export:view()
+  local children = {}
+  if project.folder() == "" then
+    children[1] = ui.text("No project is open.", { style = STYLES.note })
+  else
+    children = {
+      ui.text("The folder that exports are written to", { style = STYLES.heading }),
+      ui.path(tostring(project.setting("exportFolder") or ""), { id = "folder", stretch = true, dialog = "openFolder",
+        tooltip = "The folder that exports go to: Return keeps a typed one, and the button chooses one in the system's dialog", onSubmit = function(text)
+          project.setSetting("exportFolder", text)
+        end }),
+      ui.button("Export the .love file", { id = "love", tooltip = "The game as one file, which LÖVE runs anywhere", onClick = exportLove }),
+      ui.button("Export a Linux build", { id = "linux", tooltip = "The game with LÖVE's files, in a .tar.gz with a launcher named after the game", onClick = exportLinux }),
+      ui.button("Export a Windows build", { id = "windows", tooltip = "The game with LÖVE, as a folder and a .zip", onClick = exportWindows }),
+      ui.text(status, { wrap = true }),
+    }
+  end
+  return ui.column({ padding = 8, gap = 8 }, children)
+end
+
+function Export:destroy()
+  open[self.panel] = nil
+end
+
 ecs.panel.registerType(ui.panelType({
   name = "export",
   title = "Export",
   redrawOn = { "onlr.opened", "onlr.closed", "onlr.settings", "onlr.exported" },
-  create = function(panel)
-    open[panel] = true
-    return { panel = panel }
-  end,
-  view = function()
-    local children = {}
-    if project.folder() == "" then
-      children[1] = ui.text("No project is open.", { style = STYLES.note })
-    else
-      children = {
-        ui.text("The folder that exports are written to", { style = STYLES.heading }),
-        ui.path(tostring(project.setting("exportFolder") or ""), { id = "folder", stretch = true, dialog = "openFolder",
-          tooltip = "The folder that exports go to: Return keeps a typed one, and the button chooses one in the system's dialog", onSubmit = function(text)
-            project.setSetting("exportFolder", text)
-          end }),
-        ui.button("Export the .love file", { id = "love", tooltip = "The game as one file, which LÖVE runs anywhere", onClick = exportLove }),
-        ui.button("Export a Linux build", { id = "linux", tooltip = "The game with LÖVE's files, in a .tar.gz with a launcher named after the game", onClick = exportLinux }),
-        ui.button("Export a Windows build", { id = "windows", tooltip = "The game with LÖVE, as a folder and a .zip", onClick = exportWindows }),
-        ui.text(status, { wrap = true }),
-      }
-    end
-    return ui.column({ padding = 8, gap = 8 }, children)
-  end,
-  destroy = function(state)
-    open[state.panel] = nil
-  end,
+  create = Export.create,
+  view = Export.view,
+  destroy = Export.destroy,
 }))
 
 local functions = {
