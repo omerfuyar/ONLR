@@ -10,6 +10,7 @@ local console = require("console")
 local shared = require("shared")
 local format = require("format")
 local resolve = require("resolve")
+local runners = require("runners")
 
 local STYLES = ui.styles()
 local STATE_VERSION = 1
@@ -328,11 +329,23 @@ function Inspector:rows(subject, out, id, decl, value, set, title, mark)
         if fieldValue == nil then
           fieldValue = field.default
         end
-        self:rows(subject, inner, id .. "." .. field.name, field, fieldValue, function(new)
+        local function setField(new)
           local whole = copy(group)
           whole[field.name] = new
           set(whole)
-        end)
+        end
+        if field.kind == "values" then
+          -- a shader's values are those that the group's shader declares (DESIGN 6.7)
+          local shaderPath
+          for _, other in ipairs(decl.fields) do
+            if other.kind == "shader" and type(group[other.name]) == "string" then
+              shaderPath = group[other.name]
+            end
+          end
+          self:shaderValues(subject, inner, id .. "." .. field.name, shaderPath, fieldValue, setField)
+        else
+          self:rows(subject, inner, id .. "." .. field.name, field, fieldValue, setField)
+        end
       end
     else
       local list = type(value) == "table" and value or {}
@@ -373,6 +386,101 @@ function Inspector:rows(subject, out, id, decl, value, set, title, mark)
       self:control(subject, id, decl, value, set),
       mark,
     })
+  end
+end
+
+-- The vector types of GLSL, by the count of their numbers.
+local SIZES = { vec2 = 2, vec3 = 3, vec4 = 4 }
+
+-- A value's own declaration, as a property's, from what the preview read of its shader (DESIGN 6.7): its note's range and
+-- description; a colour of a vec3 or vec4 with color; an image of a sampler.
+local function valueDecl(v)
+  local options = { min = v.min, max = v.max, description = v.description }
+  if v.type == "bool" then
+    return { name = v.name, kind = "bool", options = options }
+  elseif v.type == "int" then
+    return { name = v.name, kind = "integer", options = options }
+  elseif v.type == "float" or v.type == "number" then
+    return { name = v.name, kind = "number", options = options }
+  elseif v.type == "Image" or v.type == "sampler2D" then
+    return { name = v.name, kind = "image", options = options }
+  elseif v.color then
+    return { name = v.name, kind = "color", options = options }
+  end
+  return { name = v.name, kind = "numbers", size = SIZES[v.type], options = options }
+end
+
+-- What a value starts with when the node file sets none, as the engine's shader.start gives it.
+local function startOf(v)
+  if v.default ~= nil then
+    return copy(v.default)
+  end
+  local size = SIZES[v.type]
+  if size then
+    local list = {}
+    for i = 1, size do
+      list[i] = v.color and 1 or 0
+    end
+    return list
+  end
+  return v.type == "bool" and false or (v.type == "Image" or v.type == "sampler2D") and nil or 0
+end
+
+-- The rows of a shader's values: one for each value that its file declares, as the preview read them, with its note's range,
+-- colour and default. The node file keeps the values that the user set; the others show what they start with.
+function Inspector:shaderValues(subject, out, id, path, values, set)
+  if not path then
+    return
+  end
+  local info = project.shaderInfo(path)
+  if not info then
+    runners.askShader(path)
+    out[#out + 1] = ui.text("Reading the shader...", { style = STYLES.note })
+    return
+  end
+  if info.error then
+    out[#out + 1] = ui.text(info.error, { id = id .. ":error", color = "error", wrap = true })
+  elseif info.warning then
+    out[#out + 1] = ui.text(info.warning, { id = id .. ":warning", color = "warning", wrap = true })
+  end
+  local own = values ~= MIXED and type(values) == "table" and values or {}
+  for _, v in ipairs(info.values or {}) do
+    local decl = valueDecl(v)
+    ---@type any
+    local value = values == MIXED and MIXED or own[v.name]
+    if value == nil then
+      value = startOf(v)
+    end
+    local function setValue(new)
+      local whole = copy(own)
+      whole[v.name] = new
+      set(whole)
+    end
+    local name = shared.words(v.name)
+    local control
+    if decl.kind == "numbers" then
+      local parts = {}
+      for i = 1, decl.size do
+        parts[i] = number(id .. "." .. v.name .. ":" .. i, value ~= MIXED and type(value) == "table" and (value[i] or 0) or MIXED, function(n)
+          local list = type(value) == "table" and copy(value) or {}
+          for j = 1, decl.size do
+            list[j] = list[j] or 0
+          end
+          list[i] = n
+          setValue(list)
+        end)
+      end
+      control = ui.row({ gap = 4, grow = 1 }, parts)
+    elseif decl.kind == "color" and v.type == "vec3" then
+      -- a vec3's colour has no alpha: the colour's control shows it as 1, and the file keeps three numbers
+      local four = type(value) == "table" and { value[1], value[2], value[3], 1 } or value
+      control = self:control(subject, id .. "." .. v.name, decl, four, function(new)
+        setValue({ new[1], new[2], new[3] })
+      end)
+    else
+      control = self:control(subject, id .. "." .. v.name, decl, value, setValue)
+    end
+    out[#out + 1] = ui.row({ gap = 6, align = "center" }, { label(name, v.description), control })
   end
 end
 

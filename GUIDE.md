@@ -362,11 +362,11 @@ Then turn on **Resizable** or **Fullscreen**. In `push.screen`, **Pixel perfect*
 
 A shader changes the colour of each pixel that is drawn: a flash when the player is hit, a level in gray, or water that ripples. ONLR takes shaders in LÖVE's own form, as `love.graphics.newShader` does.
 
-1. Write a `.glsl` file in your code editor, in any folder, such as `effects/flash.glsl`:
+1. Write a `.glsl` file in your code editor, in any folder, such as `effects/flash.glsl`. A double click on it in the files panel opens it there.
 
    ``` glsl
-   extern number amount;
-   extern vec4 tint;
+   extern number amount; // 0 to 1, default 0.5: how much of the colour
+   extern vec4 tint;     // color, default 1 1 1 1
 
    vec4 effect(vec4 color, Image tex, vec2 uv, vec2 screen) {
      vec4 c = Texel(tex, uv) * color;
@@ -375,19 +375,32 @@ A shader changes the colour of each pixel that is drawn: a flash when the player
    }
    ```
 
-2. Give the node the component `onlr.shader`, and drag the file onto its **Shader**, or type its path. The node and all under it draw through it.
-3. **Covers** says how. **draws** shades each thing that is drawn on its own, as a flash needs. **picture** draws the nodes into one picture first, and shades the picture, as a ripple over a whole level needs.
-4. A script sets the shader's values, the `extern`s of its file, by their names, and the shader gets them before it draws:
+2. Give the node the component `onlr.shader`. Under **Passes**, press **Add**, and drag the file onto the pass's **Shader**, or type its path. The node and all under it draw through it, in the node view as in the game.
+3. The inspector shows a row for each of the file's values, its `extern`s, under the pass. Change them there: the node file keeps what you set, and the others start as the file says.
+4. **Covers** says how the first pass shades. **draws** shades each thing that is drawn on its own, as a flash needs. **picture** draws the nodes into one picture first, and shades the picture, as a ripple over a whole level needs.
 
-   ``` lua
-   self.node.components.onlr.shader.values.amount = 1
-   ```
+**Notes.** The comment at the end of a value's line tells the inspector what GLSL cannot:
 
-   An image's path among them, such as `"images/noise.png"`, gives that image.
+| Write          | For                      | The inspector shows                               |
+| -------------- | ------------------------ | ------------------------------------------------- |
+| `0 to 1`       | a number or an `int`     | a slider from 0 to 1                              |
+| `color`        | a `vec3` or a `vec4`     | a colour, which starts white                      |
+| `default 0.5`  | any value but an image   | the value it starts with; for a vector, its numbers parted by spaces: `default 1 0 0 1` |
+| `: some text`  | any value                | the text, when the pointer rests on the value's name |
 
-A shader's `extern number time` gets the seconds that the game has run, so a shader moves without a script. A shader that does not compile stops the game with its file and its line, as an error of a script does. The gallery's room Shaders shows all three.
+Part the words with commas: `// 0 to 1, default 0.5: how much of the colour`. A comment without any of the words is the value's text, so a plain comment works as it always did. Without a note, a number starts at 0, and a vector at 0 in each part.
 
-For now, the inspector shows the values as "(a table)", and the node view draws the nodes without the shader: both come next (DESIGN 6.7).
+**Passes.** Add more passes to shade one after another. With **draws**, the first pass shades each sprite, and each later pass shades the whole picture that the one before made: a flash on each enemy, then the room in gray. With **picture**, every pass shades the picture.
+
+**From a script.** A script sets a value of a pass by its name, and the shader gets it before it draws:
+
+``` lua
+self.node.components.onlr.shader.passes[1].values.amount = 1
+```
+
+An image's path among the values, such as `"images/noise.png"`, gives that image.
+
+A shader's `extern number time` gets the seconds that the game has run, so a shader moves without a script; in the node view it moves while its node is chosen. A shader that does not compile stops the game with its file and its line, as an error of a script does, and the inspector shows the error above the values. One that a phone could not run works on your computer: the console and the inspector warn of it. The gallery's room Shaders shows a flash, a gray, and a banner that bends and grays in two passes.
 
 ## 7. Packages
 

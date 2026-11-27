@@ -308,6 +308,18 @@ local function ask(name)
   end
 end
 
+---Asks the preview for a shader's values and its check as GLSL ES (DESIGN 12.5), once until it answers; project.shaderInfo then
+---holds the answer.
+---@param path string
+function runners.askShader(path)
+  local key = "shader:" .. path
+  if preview and preview.ready and not preview.owed[key] then
+    send(preview, { type = "question", shader = path })
+    preview.owed[key] = true
+    preview.since = clock
+  end
+end
+
 ---Starts the preview, when a project is open and none runs.
 function runners.ensurePreview()
   if preview or blocked or project.folder() == "" then
@@ -371,6 +383,10 @@ end
 ---A file that is not Lua changed on disk, such as an image.
 ---@param path string
 function runners.reload(path)
+  -- a shader's values and its check are asked again, when the inspector shows it
+  if path:match("%.glsl$") and project.shaderInfo(path) then
+    project.setShaderInfo(path, nil)
+  end
   if preview and preview.ready then
     send(preview, { type = "reload", path = path })
     oweFrames()
@@ -409,6 +425,8 @@ function fromPreview.hello(message)
   for _, name in ipairs(project.typeNames()) do
     ask(name)
   end
+  -- what an earlier preview answered of the shaders is asked again, when the inspector shows them
+  project.forgetShaders()
   ecs.event.emit("onlr.state")
 end
 
@@ -431,6 +449,15 @@ function fromPreview.answer(message)
   if message.error then
     sayError("preview", tostring(message.error))
   end
+end
+
+-- A shader's values, and its error, or its warning when it fails as GLSL ES, which a phone runs (DESIGN 6.7).
+function fromPreview.shaderAnswer(message)
+  assert(preview).owed["shader:" .. message.path] = nil
+  if message.warning then
+    console.add(message.warning, "warn", nil, "preview")
+  end
+  project.setShaderInfo(message.path, { values = message.values or {}, error = message.error, warning = message.warning })
 end
 
 function fromPreview.error(message)
@@ -649,5 +676,18 @@ function runners.previewReady()
 end
 
 -- A runner ends by itself when the editor is gone: its link closes.
+
+-- The editor forgets what the preview answered of the types when their list may have changed, such as after a rename or a
+-- package copied in; each type that has no answer is asked again, so the inspector does not wait for the preview's next start.
+ecs.event.subscribe("onlr.types", function()
+  if not (preview and preview.ready) then
+    return
+  end
+  for _, name in ipairs(project.typeNames()) do
+    if not project.typeInfo(name) and not preview.owed[name] then
+      ask(name)
+    end
+  end
+end)
 
 return runners

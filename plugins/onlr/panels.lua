@@ -46,11 +46,12 @@ files.setHandlers({
     viewer.show(project.folder() .. path)
     shared.chooseFile(path)
   end,
-  -- A double click opens it: a node file in a node view, a script in the user's code editor, and any other file in the asset viewer.
+  -- A double click opens it: a node file in a node view, a script or a GLSL file in the user's code editor, and any other file in
+  -- the asset viewer.
   open = function(path)
     if path:match("^nodes/.+%.lua$") then
       nodeview.openFile(path)
-    elseif path:match("%.lua$") then
+    elseif path:match("%.lua$") or path:match("%.glsl$") then
       console.open(path, 1)
     else
       viewer.open(project.folder() .. path)

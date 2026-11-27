@@ -1441,6 +1441,35 @@ return {
     test.click(view.x + 5, view.y + view.height - 5)
     test.wait(0.2)
 
+    -- a shader's values (DESIGN 6.7, 12.5): the inspector shows a row for each value that the GLSL file declares, as the preview
+    -- read it: amount a number with a slider, of its note's range, and tint a colour, by its note. The file works on a computer
+    -- and fails as GLSL ES, so the rows show a warning. A typed value goes into the node file, and an undo takes it out
+    local shaded = read("nodes/shaded.lua")
+    test.key("Ctrl+K")
+    test.wait(0.2)
+    test.key("Ctrl+A")
+    test.text("shaded")
+    test.wait(0.2)
+    test.key("Return")
+    test.wait(0.3)
+    test.match(chosen(), { "sh4d00" }, "the search chooses Shaded")
+    local values = "sh4d00:onlr.shader:passes.1.values"
+    local function shown(id)
+      return test.panel(panelOf(test, "onlr.inspector")).state.rects[id] ~= nil
+    end
+    check(waitUntil(function()
+      return shown(values .. ".amount")
+    end), "the inspector shows the shader's values")
+    check(shown(values .. ".amount:slide") and shown(values .. ".tint:pick"), "amount has a slider, and tint a colour")
+    check(shown(values .. ":warning"), "a shader that fails as GLSL ES shows a warning")
+    typeInto(values .. ".amount", "0.25")
+    check(read("nodes/shaded.lua"):find("amount = 0.25,", 1, true), "a typed value goes into the node file:\n" .. read("nodes/shaded.lua"))
+    test.key("Ctrl+Z")
+    save()
+    check(read("nodes/shaded.lua") == shaded, "and its undo takes it out")
+    test.call("ecs.layout.close")
+    test.wait(0.2)
+
 
     -- the Game bar's Window chooses the game's size for Play, such as a phone's; the manifest keeps its own
     local game = test.rect(panelOf(test, "onlr.game"))
