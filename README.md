@@ -1,24 +1,42 @@
-# ONLR
+# ONLR Not Love Runtime
 
-ONLR is an editor and an engine for 2D games that run on [LÖVE](https://love2d.org). Its engine is a Lua library that gives a LÖVE game nodes and components. Its editor is where you arrange them, run the game and export it.
+ONLR is an editor and an engine layer for 2D games that run on [LÖVE 11.5](https://love2d.org) built with [OpenECS](https://github.com/omerfuyar/OpenECS). Its engine is a Lua library that gives a LÖVE game nodes and components. Its editor is where you arrange them, run the game and export it. It also ships useful, already existing Lua libraries built for LÖVE.
 
-ONLR means "ONLR Not Love Runtime": LÖVE stays the runtime, unchanged. A game made with ONLR is a `.love` file that any LÖVE runs.
+Libraries used in ONLR named packages. Like onlr (engine itself), bump (for box collision), moonshine (for post processing) etc. You can add any package by yourself if it doesn't ship with ONLR.
 
-ONLR is being built. The engine, the editor and export work on Linux. Windows is not tested yet.
+LÖVE stays unchanged as the runtime for every exported game built with ONLR. You can export `.love` files that any LÖVE runs, or ship LÖVE together with that file as single native executable.
 
 ## Using it
 
-Download the archive for your platform from the [releases](https://github.com/omerfuyar/ONLR/releases), unpack it anywhere, and run `ONLR`, or `ONLR.cmd` on Windows. It holds the editor, the engine and LÖVE 11.5: nothing else is installed. `ONLR gallery` opens a project that shows what ONLR does, and [GUIDE.md](GUIDE.md) shows how to make a game. This GUIDE.md describes the newest work, on `dev`; the archive holds the guide of its own release, which is the one to follow with it.
+Download the archive for your platform from the [releases](https://github.com/omerfuyar/ONLR/releases), unpack it anywhere, and run `ONLR` (`ONLR.cmd` on Windows) script. It holds the editor (OpenECS), LÖVE 11.5 and included packages.
 
-## Cloning
+See `ONLR gallery` for an example project that shows what ONLR does. Presented as different scenes.
 
-``` sh
+See [GUIDE.md](GUIDE.md) to learn how to use ONLR.
+
+## Development
+
+ONLR Uses the most recent code (dev branch) of OpenECS. So see the 
+
+### Cloning
+
+``` shell
 git clone --recurse-submodules https://github.com/omerfuyar/ONLR
+git clone --recurse-submodules https://github.com/omerfuyar/OpenECS
 ```
 
-## Running
+### Building
 
-ONLR needs [LÖVE 11.5](https://love2d.org) as `love`, and is built with [shuild](https://github.com/omerfuyar/shuild), as OpenECS is. Compile the build script once:
+``` shell
+cd OpenECS
+gcc shuild.c -o shuild.ignore -O3
+./shuild.ignore -b release
+
+```
+
+### Running
+
+ONLR needs [LÖVE 11.5](https://love2d.org) as `love`, and is built with [shuild](https://github.com/omerfuyar/shuild), like OpenECS. Compile the build script once:
 
 ``` sh
 cc shuild.c -o shuild
