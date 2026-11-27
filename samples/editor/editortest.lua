@@ -1570,10 +1570,54 @@ return {
       .. " && for f in love.exe love.dll license.txt; do echo $f > win/love-11.5-win64/$f; done"
       .. " && for f in AppRun bin/love license.txt; do echo $f > linux/$f; done"
       .. " && (cd win && zip -qr ../win.zip love-11.5-win64) && tar -czf linux.tar.gz -C linux AppRun bin license.txt")
-    os.execute("cd " .. server .. " && (timeout 120 python3 -u -c 'import http.server, os; "
-      .. 's = http.server.ThreadingHTTPServer((\"127.0.0.1\", 0), http.server.SimpleHTTPRequestHandler); '
-      .. 'open(\"pid\", \"w\").write(str(os.getpid())); open(\"port\", \"w\").write(str(s.server_port)); s.serve_forever()'
-      .. "' > log.txt 2>&1 &)")
+    -- the server is a LÖVE program of no modules, which answers each GET with the file of its folder that it names, one at a
+    -- time, with LÖVE's LuaSocket. It writes its port when it listens, and each request to log.txt; its pid is timeout's,
+    -- which passes on the kill
+    file = assert(io.open(server .. "conf.lua", "wb"))
+    file:write([[
+function love.conf(t)
+  t.window = false
+  for name in pairs(t.modules) do
+    t.modules[name] = false
+  end
+end
+]])
+    file:close()
+    file = assert(io.open(server .. "main.lua", "wb"))
+    file:write([==[
+local socket = require("socket")
+io.stdout:setvbuf("line")
+local listener = assert(socket.bind("127.0.0.1", 0))
+local port = assert(io.open("port.part", "wb"))
+port:write((select(2, listener:getsockname())))
+port:close()
+os.rename("port.part", "port")
+while true do
+  local client = listener:accept()
+  client:settimeout(5)
+  local line = client:receive("*l") or ""
+  repeat
+    local header = client:receive("*l")
+  until not header or header == ""
+  print(line)
+  local path = line:match("^GET /([%w%-%._/]*) HTTP/1%.[01]$")
+  local found = path and not path:find("..", 1, true) and io.open(path, "rb")
+  local body = found and found:read("*a") or "not found\n"
+  if found then
+    found:close()
+  end
+  local response = ("HTTP/1.1 %s\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s"):format(
+    found and "200 OK" or "404 Not Found", #body, body)
+  local sent, done, err = 0, nil, "timeout"
+  while not done and err == "timeout" do
+    done, err, sent = client:send(response, sent + 1)
+    sent = done or sent
+  end
+  client:close()
+end
+]==])
+    file:close()
+    os.execute("cd " .. server .. ' && (sh -c \'echo $$ > pid; exec timeout 120 "$LOVE" .\' > log.txt 2>&1 &)')
     for _ = 1, 50 do
       if read(server .. "port") ~= "" then
         break
