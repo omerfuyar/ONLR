@@ -159,10 +159,12 @@ jobs:
 
       # OpenECS needs only the runtime libraries, not its build tools; SDL opens most of them when it runs, so a list of what the program
       # links to misses them. EGL and Vulkan, with Mesa drawing in software, let OpenECS and LÖVE draw with SDL's offscreen driver on a
-      # runner without a graphics card: without Vulkan's driver, the editor's tests that drag a node in the preview fail
+      # runner without a graphics card: without Vulkan's driver, the editor's tests that drag a node in the preview fail. The runner's
+      # image lists Microsoft's packages too, which the tests need none of, and whose server has refused the update with 403: it is left out
       - name: Unpack OpenECS
         run: |
           tar -xzf openecs.tar.gz
+          sudo grep -rl packages.microsoft.com /etc/apt/sources.list.d | xargs -r sudo rm -f
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libegl1 libegl-mesa0 libgl1-mesa-dri libvulkan1 mesa-vulkan-drivers
 
