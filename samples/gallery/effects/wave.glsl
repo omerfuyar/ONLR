@@ -1,6 +1,6 @@
 // Bends the picture in waves that move with the engine's time: each row of pixels moves sideways by its own amount.
 extern number time;
-extern number height;
+extern number height; // 0 to 20, default 6: how far a wave moves a row, in pixels
 
 vec4 effect(vec4 color, Image tex, vec2 uv, vec2 screen) {
   float shift = sin(screen.y / 12.0 + time * 4.0) * height;

@@ -406,7 +406,7 @@ return Player
 | `list`                      | Rows of one kind, which the user adds and removes. | A list of what that kind gives.             |
 
 - A kind is a value or a reference. A value is held in the node file as it is: `bool`, `integer`, `number`, `string`, `choice`, `color`, `vector`, `group` and `list`. A reference names something else of the project: `image`, `sound`, `font`, `shader`, `file`, `nodeFile`, `node` and `component`.
-- `onlr.property.values` is the kind of `onlr.shader`'s `values` (10): a table of a shader's values by their names, which a node file keeps as it is, but for a text, which is an image's path, and the component gets that image. An instance's change lays its fields over the base's one by one, as a `group`'s are (9). A script draws through a shader with its own properties and needs no such kind.
+- `onlr.property.values` is the kind of the `values` of each of `onlr.shader`'s passes (10): a table of a shader's values by their names, which a node file keeps as it is, but for a text, which is an image's path, and the component gets that image. The inspector shows a row for each value that the shader of the same `group` declares, as the preview read it (6.7, 12.5). An instance's change lays its fields over the base's one by one, as a `group`'s are (9). A script draws through a shader with its own properties and needs no such kind.
 - `group` and `list` take other properties: `onlr.property.group({ width = onlr.property.number(32), height = onlr.property.number(32) })` is read as `self.box.width`, and `onlr.property.list(onlr.property.image())` as `self.frames[1]`.
 - The options:
 
@@ -530,31 +530,49 @@ vec4 effect(vec4 color, Image tex, vec2 uv, vec2 screen) {
   | An ira-shader | A Lua file in `ira-shaders/`: a graph whose blocks make a colour (6.8).                          | The editor, in the graph panel (13.9). |
 
 - The `shader` property takes either, and gives a LÖVE shader (6.2). The engine loads each file once, and the components that name it share it, as they share an image. So `onlr.shader` (10) and a script's own property use the same files.
-- A shader's values are its `extern`s, LÖVE's word for GLSL's `uniform`, which it takes too. An ira-shader's are its properties, with their defaults and options (6.8). A GLSL file's are read from its text: each `extern` or `uniform` outside its functions, of a type of this table. They start at 0, false or white, since GLSL ES gives a value no default:
+- A shader's values are its `extern`s, LÖVE's word for GLSL's `uniform`, which it takes too. An ira-shader's are its properties, with their defaults and options (6.8). A GLSL file's are read from its text: each `extern` or `uniform` outside its functions, of a type of this table:
 
-  | Its type in GLSL           | The inspector shows                                                   |
-  | -------------------------- | --------------------------------------------------------------------- |
-  | `float`, LÖVE's `number`   | A number field.                                                       |
-  | `int`                      | A number field of whole numbers.                                      |
-  | `bool`                     | A toggle.                                                             |
-  | `vec2`                     | Two number fields in one row, as a `vector`.                          |
-  | `vec3`, `vec4`             | Three or four number fields in one row; an ira-shader's colour, a colour. |
-  | `Image`, `sampler2D`       | An image of the project. Without one, a white pixel.                  |
+  | Its type in GLSL           | The inspector shows                                                   | It starts at |
+  | -------------------------- | --------------------------------------------------------------------- | ------------ |
+  | `float`, LÖVE's `number`   | A number field, and a slider beside it with a range.                  | 0            |
+  | `int`                      | A number field of whole numbers, and a slider beside it with a range. | 0            |
+  | `bool`                     | A toggle.                                                             | false        |
+  | `vec2`, `vec3`, `vec4`     | Two, three or four number fields in one row; with `color`, a colour.  | 0 each; with `color`, white |
+  | `Image`, `sampler2D`       | An image of the project.                                              | A white pixel |
 
   A value of another type, such as a matrix or a list, is not shown, and a script sends it itself.
+- **Notes.** A comment at the end of a value's line is its note, which tells the inspector and the engine what GLSL cannot say: a range, a colour, a default, and what the value is for.
+
+  ``` glsl
+  extern number amount; // 0 to 1, default 0.5: how much of the colour
+  extern vec4 tint;     // color, default 1 0 0 1
+  extern int steps;     // 1 to 8, default 4
+  extern bool on;       // default true
+  extern number speed;  // how fast it moves
+  ```
+
+  | A note's word | Taken by                      | Says                                                                                     |
+  | ------------- | ----------------------------- | ---------------------------------------------------------------------------------------- |
+  | `A to B`      | `float`, `number`, `int`      | The least and the most value: the inspector shows a slider between them, and keeps a typed value inside them, as `min` and `max` do (6.2). |
+  | `color`       | `vec3`, `vec4`                | The value is a colour: the inspector shows a colour, and it starts white. A `vec3`'s colour has no alpha, so the file keeps three numbers. |
+  | `default V`   | Every type but an image       | What the value starts with. A vector's default is its numbers, parted by spaces, such as `default 1 0 0 1`; a `bool`'s is `true` or `false`. |
+
+  - The words are parted by commas, in any order. After a colon comes the note's text, which the inspector shows when the pointer rests on the value's name.
+  - A note that has none of the words is all text, so a plain comment, such as `// how fast it moves`, is the value's description, and changes nothing else.
+  - A word that the value's type does not take, a default of the wrong count of numbers, and a word that ONLR does not know are passed over, without an error: the note is a comment, and LÖVE never reads it.
+  - A note names every value of its line, so `extern number a, b; // 0 to 1` gives both the range.
+- A value that the node file does not set starts as the table and the note say, on every draw: components that name one file share its shader (6.2), so the engine sends every value of the file before each draw, the component's own or its start, and one component's value never stays for the next.
 - `time` is the engine's: a shader's `extern number time` gets the seconds that the game has run, the sum of its frames' `dt`, before each frame draws. The inspector does not show it, and a value of the user's own cannot have its name. So a game that the editor pauses stands still, and Step moves it by one step (12.1). In the node view it is 0, and moves while the node of the shader's component is chosen (6.5). LÖVE's own values, such as `love_ScreenSize`, work as in LÖVE.
 - A shader that does not compile is an error in the game, which names its file, its line, and the node and the property that name it, as a path that names no file is (6.2). In the node view, the node is marked and draws without the shader, and the inspector marks the shader's row with LÖVE's message.
 - LÖVE compiles a shader as GLSL on a computer and as GLSL ES on a phone, which is stricter: a number such as `1` must be `1.0` where a decimal is meant. The preview checks every shader as GLSL ES too, with `love.graphics.validateShader` (12.5). A shader that fails there still works on the computer: the console warns, with its file and its line, and the inspector marks the row. An export for Android or iOS refuses it, and names it.
 - A shader that starts with LÖVE's `#pragma language glsl3` asks for newer GLSL, which the check takes as GLSL ES 3.00; its warning says that a phone without OpenGL ES 3 cannot run it. The GLSL that an ira-shader builds is LÖVE's default, GLSL ES 1.00 on a phone, which every phone that LÖVE runs on takes.
 - A script may draw through a shader itself, as in LÖVE: it declares `onlr.property.shader()`, and calls `love.graphics.setShader` and `shader:send` in its `draw`. The engine sets the shader back after the `draw` (6.3).
 - The limits:
-  - A GLSL file's value cannot say its range, its default, or that it is a colour: a `vec4` shows as four numbers, and starts at 0. An ira-shader's properties say all three.
+  - A note is read from the line of its value only: a note on the line above, or on a line of its own, is not one.
   - On a phone whose pixel shaders lack high precision, `time` holds fewer digits as it grows, so a shader that moves with it gets coarse after some minutes of play.
-- What is built, as of the first of the milestones in TODO.md, "Shaders and graphs": the engine's part, `library/shader.lua` and `onlr.shader`. Not yet:
+- What is built, as of the second of the milestones in TODO.md, "Shaders and graphs": the engine's part, `library/shader.lua` and `onlr.shader`, and the editor's: the preview's answers, the check as GLSL ES, the inspector's rows, and the shader in the node view. Not yet:
   - An ira-shader: a `shader` property that names one is an error, which says that it cannot be drawn yet.
-  - The check as GLSL ES, its warning in the console, and an export's refusal: a shader that a phone cannot run is not found.
-  - The inspector's rows of a shader's values: `values` shows as "(a table)". A node file that the user's code editor changes, or a script, sets them.
-  - `drawTreeEditor` and `time` in the node view: there the nodes under `onlr.shader` draw without the shader.
+  - An export's refusal of a shader that fails as GLSL ES, which waits for the export for Android and iOS.
 - The engine reads a GLSL file's values from its text, with its comments, its lines of `#`, such as `#define`, and its functions' bodies left out. So a value that a `#define` names or makes is not found; LÖVE takes it all the same, and a script sends it.
 - LÖVE leaves a value out of a shader when its code does not use it, so the engine sends a value only when `Shader:hasUniform` finds it, and asks once for each name. A value that the code does not use is not an error.
 
@@ -917,7 +935,7 @@ The engine has nine component types: `onlr.shape`, a node's outline, three that 
 | `onlr.text`   | A text in a font.                                                                                   |
 | `onlr.shape`  | A node's outline: a rectangle, a circle, a polygon or a line. It draws nothing in the game.          |
 | `onlr.paint`  | Draws its node's `onlr.shape`, filled or as an outline, in a colour.                                 |
-| `onlr.shader` | Draws its node and all under it through a shader (6.7): each draw alone, or all of them as one picture. |
+| `onlr.shader` | Draws its node and all under it through shaders, in passes (6.7): the first on each draw alone or on all of them as one picture, and each later one on the picture. |
 | `onlr.camera.view` | A view: it draws its node and all under it as a group (5), moved, turned and zoomed so that the middle of its screen shows its point. |
 | `onlr.camera.follow` | Moves its node's camera to follow a node, smoothly, with a deadzone.                          |
 | `onlr.camera.limits` | Keeps what its node's camera shows inside a rectangle, such as a level's edges.               |
@@ -951,8 +969,8 @@ Their properties use LÖVE's names wherever LÖVE has one:
 | `onlr.paint`  | `mode`            | `choice` of fill and line                     | fill       | Filled, or as an outline. A line shape is a line in either.                                      |
 |               | `lineWidth`       | `number`                                      | 1          | The width of a line and of an outline, as `love.graphics.setLineWidth`.                          |
 |               | `color`           | `color`                                       | white      | The shape's colour.                                                                              |
-| `onlr.shader` | `shader`          | `shader`                                      |            | The shader: a GLSL file or an ira-shader.                                                       |
-|               | `covers`          | `choice` of draws and picture                 | draws      | `draws`: each draw of its nodes goes through the shader alone, as a hit's flash or an outline needs. `picture`: its nodes draw into one picture, which then draws through the shader, as a blur or a ripple over a whole level needs. |
+| `onlr.shader` | `covers`          | `choice` of draws and picture                 | draws      | How the first pass shades. `draws`: each draw of its nodes goes through the shader alone, as a hit's flash or an outline needs. `picture`: its nodes draw into one picture, which then draws through the shader, as a blur or a ripple over a whole level needs. |
+|               | `passes`          | `list` of a `group`: `shader`, and `values` (6.2) | empty   | The shaders, in the order that they shade, each with its values: a GLSL file or an ira-shader. |
 | `onlr.camera.view` | `posX`, `posY`    | `number`                                      | 0          | The point, in its node's space, that the middle of its screen shows.                             |
 |               | `rot`             | `number`                                      | 0          | Its angle, clockwise. What it shows turns the other way.                                         |
 |               | `zoom`            | `number`                                      | 1          | How large the camera shows its nodes: 2 is twice as large.                                       |
@@ -976,14 +994,17 @@ Their properties use LÖVE's names wherever LÖVE has one:
 - One value has one owner (OVERVIEW 11): `onlr.shape` holds a node's outline, and what uses an outline reads it there, each time it uses it. `onlr.paint` draws it, `physics.fixture` collides with it (11.4), a shadow caster casts a shadow of it (11.14), and `bump.body` takes its rectangle (11.3). So the user sizes a wall once, and its look, its collision and its shadow follow. Each needs `onlr.shape` (6.6).
 - `shape:outline()` gives the shape in its node's space, the origin taken off a rectangle and a circle, as LÖVE's functions take it: a rectangle's `x`, `y`, `width` and `height`, a circle's `x`, `y` and `radius`, or the `points` as one list, x, y, x, y. `shape:drawShape(mode)` draws it with LÖVE in the colour that is set; a polygon of fewer than 3 corners, or a line of fewer than 2 points, draws nothing. `outline` makes a new table at each call, for what reads the shape now and then, such as a body when it starts; `drawShape`, which draws at each frame, makes none: a rectangle and a circle draw from the shape's values, and a polygon's or a line's points go into one list that the shape keeps and fills again.
 - In the node view, an outline that no `onlr.paint` draws shows as a thin green line of one pixel at any zoom, as a collider's does in Unity, so a node of a shape alone is seen and chosen; on a node that paints it, the line shows when the node is chosen.
-- `onlr.shader` holds the shader's values (6.7) in `values`, a table with a field for each. The inspector shows them under its properties, one row each, and a node file keeps those that the user set, as `values = { amount = 0.5 }`. A script sets one as a field, `shader.values.amount = 1`, and the shader gets it before the next draw. Components that name one file share its shader, so each sends its values before it draws.
-- `onlr.shader` is a group (5). With `draws`, it sets its shader, sends its values, draws its nodes, and sets back the shader that was set before it. LÖVE has one shader at a time, so a shader under it replaces it for the nodes under that one: a player's flash and its level's tint do not add up. With `picture`, it draws its nodes into a canvas of the size of what it draws into, the window or push's canvas (11.10), at the screen's pixel density, so it stays sharp on a phone. It clears the canvas to transparent, draws its nodes with the drawing's place, then draws the canvas through the shader with none, as `moonshine.chain` does (11.11). So what drew before its node shows where its nodes draw nothing, and a `picture` above other shaders takes in what they drew.
+- Each pass holds its shader's values (6.7) in `values`, a table with a field for each. The inspector shows them under the pass's shader, one row each, as the file and its notes declare them, and a node file keeps those that the user set, as `passes = { { shader = "effects/flash.glsl", values = { amount = 0.5 } } }`. A script sets one as a field, `shader.passes[1].values.amount = 1`, and the shader gets it before the next draw. Components that name one file share its shader, so each pass sends all of its file's values before it draws (6.7).
+- `onlr.shader` is a group (5). With `draws`, it sets its shader, sends its values, draws its nodes, and sets back the shader that was set before it. LÖVE has one shader at a time, so a shader under it replaces it for the nodes under that one: a player's flash and its level's tint do not add up. Shaders add up in passes, which shade one after another, or under a `picture`, which shades what the shaders under it drew. With `picture`, it draws its nodes into a canvas of the size of what it draws into, the window or push's canvas (11.10), at the screen's pixel density, so it stays sharp on a phone. It clears the canvas to transparent, draws its nodes with the drawing's place, then draws the canvas through the shader with none, as `moonshine.chain` does (11.11). So what drew before its node shows where its nodes draw nothing, and a `picture` above other shaders takes in what they drew.
+- With more than one pass, the nodes draw into a picture: through the first pass's shader with `draws`, or as they are with `picture`, when the first pass shades the picture too. Each later pass draws the picture before it through its shader into another picture, and the last into what the drawing goes into. So a flash on each sprite and a ripple over the group are one component of two passes, and three passes cost three pictures' drawing but only two canvases, which they take in turn. A pass without a shader is passed over, and with no pass the nodes draw as if there were no component.
+- A picture is drawn through its shader with LÖVE's own blending, as `moonshine.chain` draws its effects: a shader that gives a colour to a transparent pixel, as a tint does, leaves it transparent.
 - In the node view, `onlr.shader` draws as in the game, through `drawTreeEditor` (6.5), with `time` at 0. While its node is chosen, its `updateEditor` moves `time`, so a shader that moves with it plays, as an animation does.
 - The limits of `onlr.shader`, as they are now:
   - Each `draws` sets its shader twice, and each set ends a batch of LÖVE's draws. So many nodes with a shader each cost many draws; one shader on their parent shades them all at the cost of one.
-  - Shaders under a `draws` do not add up, as above.
-  - A `picture` costs a canvas of the screen's size.
-  - In the node view it draws without its shader, as yet (6.7).
+  - Shaders under a `draws` do not add up, as above; passes do.
+  - A `picture`, and each pass after the first, costs a canvas of the screen's size: two at most.
+  - A picture holds colours multiplied by their alpha, and LÖVE's blending multiplies them again, so a half-transparent edge, such as an image's soft border, darkens a little in a picture. A shader that knows it divides its colour by its alpha first.
+  - An instance's change to one pass's value is a change of the whole list of passes, as a `list`'s change is (9): the instance keeps every pass as it was then, and a later change of its base's passes does not reach it.
 - A sprite, a text, a shape, a camera's view and its limits have `bounds` and `drawEditor` (6.3). `onlr.paint` has `drawEditor` only, and its node is chosen by its shape's bounds; the camera's follow draws its deadzone and has no `bounds`, and its shake shows nothing. A camera's `drawEditor` draws the frame of what it shows, in blue and 3 pixels wide, named "Camera" inside its top left, at the same size at any zoom.
 - The camera's helpers are components beside `onlr.camera.view` on its node, which need it (6.6), and a game takes those that it wants. They change the camera's own properties, so a script can do all that they do, and they leave it to one when it sets the camera itself.
   - `onlr.camera.follow` moves the camera's `posX` and `posY` in `lateUpdate` (6.4), after the scripts and the physics moved its target. Its smoothing is the same at any frame rate. `snap()` puts the camera on its target at once, as when the follow starts, a level begins, or the player is put elsewhere.
@@ -1567,7 +1588,8 @@ end
 
 - The editor never loads a script. To show a type's properties, it asks the preview, which loads the file as the game would and answers with the type's properties (6.2): their names, kinds, defaults and options, in their order. It answers with the types that the type needs too (6.6).
 - When a Lua file of the project other than a node file changes on disk, such as a script or the manifest, the editor starts the preview again, which takes about a tenth of a second, and asks again. So nothing of the old code stays in it.
-- The editor does not read a shader or build a graph either. It asks the preview for a shader's values (6.7), which the preview reads from a GLSL file's text or an ira-shader's properties, with the result of checking the shader as GLSL ES: so the inspector shows `onlr.shader`'s rows, and the console warns of a shader that a phone cannot run. It asks again when the file changes, or when the editor's copy of a graph does. It asks once for the types of blocks (6.8), which the graph panel's list offers, and asks for a graph's built code when the user copies it (13.9).
+- The editor does not read a shader or build a graph either. It asks the preview for a shader's values (6.7), which the preview reads from a GLSL file's text or an ira-shader's properties, with the result of checking the shader as GLSL ES: so the inspector shows `onlr.shader`'s rows, and the console warns of a shader that a phone cannot run. It asks again when the file changes, or when the editor's copy of a graph does, and asks for each shader only when the inspector shows it. The answer holds the values with their notes, the error of a shader that does not compile, or the warning of one that fails as GLSL ES, which the inspector shows above the values' rows. It asks once for the types of blocks (6.8), which the graph panel's list offers, and asks for a graph's built code when the user copies it (13.9).
+- When the editor forgets what the preview answered of the types, as after a rename in the files panel or a package copied in, which may change their names, it asks the preview for each type that has no answer, without starting it again.
 - While the preview is down, such as after an error in `main.lua`, the node view shows the error, and the inspector shows the values that the node file holds, without their kinds.
 
 ### 12.6 The running game

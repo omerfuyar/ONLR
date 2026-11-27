@@ -46,6 +46,7 @@ local history = require("history")
 ---@field typeNames string[]
 ---@field typeFiles table<string, string>
 ---@field types table<string, table> what the preview answered of each type
+---@field shaders table<string, table> what the preview answered of each shader, by its path (DESIGN 12.5)
 ---@field trees table<string, onlr.editor.Tree> the trees made since their files last changed
 ---@field nodeFiles string[]? the paths of the node files, in order, until a file under nodes/ comes or goes
 ---@field watch fs.watch? the watch of the project's folder and the folders in it
@@ -896,7 +897,7 @@ local function open(folder)
 
   P = {
     folder = folder, files = {}, history = history.open("onlr"), chosen = { paths = {} }, tool = "move", settings = {},
-    space = {}, typeNames = {}, typeFiles = {}, types = {}, trees = {},
+    space = {}, typeNames = {}, typeFiles = {}, types = {}, shaders = {}, trees = {},
   }
   -- Ctrl+Z acts on the project's history in every panel, the console's and the files' too (DESIGN 13.6)
   history.useDefault(P.history)
@@ -2185,6 +2186,21 @@ local functions = {
   end },
   typeInfo = { sig = "value(string type)", doc = "What the preview answered of a type: its properties, or nil", fn = function(name)
     return P and P.types[name]
+  end },
+  shaderInfo = { sig = "value(string path)", doc = "What the preview answered of a shader: its values, and its error or warning; nil until it answers", fn = function(path)
+    return P and P.shaders[path]
+  end },
+  setShaderInfo = { sig = "void(string path, value info)", doc = "Keep what the preview answered of a shader; nil forgets it, so it is asked again", fn = function(path, info)
+    if P then
+      P.shaders[path] = info
+      ecs.event.emit("onlr.types")
+    end
+  end },
+  forgetShaders = { sig = "void()", doc = "Forget what the preview answered of every shader, so each is asked again", fn = function()
+    if P then
+      P.shaders = {}
+      ecs.event.emit("onlr.types")
+    end
   end },
   setTypeInfo = { sig = "void(string type, value info)", doc = "Keep what the preview answered of a type", fn = function(name, info)
     if P then

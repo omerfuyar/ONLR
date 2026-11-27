@@ -7,7 +7,7 @@ return {
   components = {
     onlr = {
       shader = {
-        shader = "effects/broken.glsl",
+        passes = { { shader = "effects/broken.glsl" } },
       },
     },
   },

@@ -6,7 +6,7 @@ return {
   name = "Shaders",
   components = {
     room = {
-      about = "onlr.shader draws a node and its children through a GLSL file, with the values that the inspector gives. Flash and Gray shade each draw; Wave bends its coins as one picture.",
+      about = "onlr.shader draws a node and its children through a GLSL file, with the values that the inspector gives. Flash and Gray shade each draw; Wave bends its banner as one picture, then a second pass grays it. A GLSL file's notes give each value its range and start.",
       title = "Shaders (onlr.shader)",
     },
   },
@@ -20,7 +20,7 @@ return {
       sclY = 2,
       components = {
         onlr = {
-          shader = { shader = "effects/flash.glsl", values = { speed = 6, tint = { 1, 1, 1, 1 } } },
+          shader = { passes = { { shader = "effects/flash.glsl" } } },
           sprite = { image = "images/player.png", origin = { x = 16, y = 24 } },
         },
       },
@@ -33,7 +33,7 @@ return {
       components = {
         onlr = {
           paint = { color = { 0.9, 0.3, 0.3, 1 } },
-          shader = { shader = "effects/gray.glsl", values = { amount = 1 } },
+          shader = { passes = { { shader = "effects/gray.glsl", values = { amount = 1 } } } },
           shape = { kind = "circle", radius = 40 },
         },
       },
@@ -45,7 +45,7 @@ return {
       posY = 140,
       components = {
         onlr = {
-          shader = { covers = "picture", shader = "effects/wave.glsl", values = { height = 6 } },
+          shader = { covers = "picture", passes = { { shader = "effects/wave.glsl" }, { shader = "effects/gray.glsl", values = { amount = 0.7 } } } },
         },
       },
       children = {

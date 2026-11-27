@@ -34,9 +34,20 @@ check.run(function()
   check.equal(at(18, 18), "255 0 0", "a shader's values from the node file tint its square")
   check.equal(at(48, 18), "0 255 0", "another node of the same file draws with its own values")
   check.equal(at(5, 5), "0 0 0", "nothing beside the squares")
-  local tinted = assert(tree.find("Tinted")).components.onlr.shader
-  local again = assert(tree.find("Tinted again")).components.onlr.shader
+  local tinted = assert(tree.find("Tinted")).components.onlr.shader.passes[1]
+  local again = assert(tree.find("Tinted again")).components.onlr.shader.passes[1]
   check.equal(tinted.shader, again.shader, "two components that name one file share its shader")
+
+  -- a node of the same file that sets no values gets what the file's notes start them with, half of blue, and not the
+  -- values of the node drawn before it, which shares its shader
+  local defaulted = at(78, 18)
+  check.ok(defaulted == "128 128 255" or defaulted == "127 127 255", "values that a node does not set start as the notes say: " .. defaulted)
+
+  -- passes: draws tints the square red, and the second pass moves the picture; three passes move it twice
+  check.equal(at(23, 53), "255 0 0", "a second pass shades what the first drew")
+  check.equal(at(12, 53), "0 0 0", "and moves it from where it was")
+  check.equal(at(123, 53), "0 255 0", "three passes, each on the picture of the one before")
+  check.equal(at(113, 53), "0 0 0", "the third moved it again")
 
   -- picture: the nodes draw into one picture, which the shader moves to the right as a whole; draws could not move a shape
   check.equal(at(113, 14), "255 255 255", "picture moves what its nodes drew")
@@ -47,7 +58,7 @@ check.run(function()
   check.equal(at(212, 18), "255 255 255", "the node drawn after it is not shaded: the engine set the shader back")
 
   -- a text among the values is an image of the project
-  local masked = assert(tree.find("Masked")).components.onlr.shader
+  local masked = assert(tree.find("Masked")).components.onlr.shader.passes[1]
   check.equal(masked.values.pattern and masked.values.pattern:type(), "Image", "an image's path in values gives an image")
   check.equal(at(238, 18), "0 0 255", "which the shader draws with")
 
@@ -72,10 +83,28 @@ check.run(function()
     listed[#listed + 1] = value.name .. ":" .. value.type
   end
   check.equal(table.concat(listed, " "), "amount:number tint:vec4", "a GLSL file's values")
+  -- the notes at the ends of their lines
+  local notes = shaders.values(table.concat({
+    "extern number amount; // 0 to 1, default 0.5: how much of the colour",
+    "extern vec4 tint;     // color, default 0 0 1 1",
+    "extern vec3 glow;     // color",
+    "extern int steps;     // 1 to 8, default 4",
+    "extern bool on;       // default true",
+    "extern number speed;  // how fast it moves",
+    "extern vec2 wind;     // default 1 2 3",
+  }, "\n"))
+  local a, t, g, st, on, sp, w = unpack(notes)
+  check.ok(a.min == 0 and a.max == 1 and a.default == 0.5 and a.description == "how much of the colour", "a range, a default and a description")
+  check.ok(t.color and t.default[3] == 1 and t.description == nil, "a colour and its default")
+  check.equal(table.concat(shaders.start(g), " "), "1 1 1", "a colour without a default starts white")
+  check.ok(st.min == 1 and st.max == 8 and st.default == 4, "an int's range")
+  check.equal(on.default, true, "a bool's default")
+  check.ok(sp.description == "how fast it moves" and sp.min == nil, "a note of no word of its own is a description")
+  check.ok(w.default == nil and table.concat(shaders.start(w), " ") == "0 0", "a default of the wrong size is passed over")
   check.equal(#shaders.values(assert(love.filesystem.read("effects/clock.glsl"))), 0, "time is not a value of the user's")
 
   -- a shader that does not compile is an error that names its file and line, and the node and the property that name it
   check.fails(function()
     tree.spawn("nodes/broken.lua")
-  end, "nodes/broken.lua, node Broken, property shader: effects/broken.glsl:4: ", "a shader that does not compile")
+  end, "nodes/broken.lua, node Broken, property passes[1].shader: effects/broken.glsl:4: ", "a shader that does not compile")
 end)

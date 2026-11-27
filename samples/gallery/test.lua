@@ -76,7 +76,7 @@ check.run(function()
       tree.find("Field"):send("submitted", "Hi")
       check.equal(tree.find("Shown").components.onlr.text.text, "Hi", "the field's text is shown")
     elseif root.name == "Shaders" then
-      check.ok(tree.find("Flash").components.onlr.shader.shader ~= nil, "a node draws through its shader")
+      check.ok(tree.find("Flash").components.onlr.shader.passes[1].shader ~= nil, "a node draws through its shader")
       check.equal(tree.find("Wave").components.onlr.shader.covers, "picture", "and a group as one picture")
     elseif root.name == "Effects" then
       tree.find("CRT"):send("changed", false)

@@ -10,6 +10,7 @@ local data = require("onlr.library.data")
 local life = require("onlr.library.life")
 local build = require("onlr.library.build")
 local component = require("onlr.library.component")
+local shaders = require("onlr.library.shader")
 
 local preview = {}
 
@@ -47,19 +48,39 @@ local function send(message, block)
   link.send(message, block)
 end
 
--- The nodes of a view in the order of drawing: by z, and in the tree's order within one z (DESIGN 5).
-local function ordered(root)
+-- The component of a node that draws it and all under it as a group in the node view, by its drawTreeEditor (DESIGN 6.5).
+local function groupOf(node)
+  for _, r in ipairs(node._records) do
+    if r.enabled and r.component.drawTreeEditor then
+      return r.component
+    end
+  end
+  return nil
+end
+
+-- The nodes of a view in the order of drawing: by z, and in the tree's order within one z (DESIGN 5). With groups, a node whose
+-- component draws a group stands for itself and all under it, with group set; inside lists a group's own nodes from its node.
+local function ordered(root, groups, inside)
   local list, seq = {}, 0
-  local function walk(node, z, active)
+  local function walk(node, z, active, first)
     z = z + node._z
     active = active and node._active
     seq = seq + 1
-    list[#list + 1] = { node = node, z = z, seq = seq, active = active }
-    for _, child in ipairs(node._children) do
-      walk(child, z, active)
+    local group = groups and not (inside and first) and groupOf(node) or nil
+    list[#list + 1] = { node = node, z = z, seq = seq, active = active, group = group }
+    if not group then
+      for _, child in ipairs(node._children) do
+        walk(child, z, active, false)
+      end
     end
   end
-  walk(root, 0, true)
+  local z = 0
+  local above = root._parent
+  while inside and above do
+    z = z + above._z
+    above = above._parent
+  end
+  walk(root, z, true, true)
   table.sort(list, function(a, b)
     if a.z ~= b.z then
       return a.z < b.z
@@ -189,7 +210,9 @@ local function draw(view)
   love.graphics.scale(view.zoom)
   love.graphics.translate(-view.x, -view.y)
   local failed = false
-  for _, entry in ipairs(view.root and ordered(view.root) or {}) do
+  local drawList
+  -- Draws a node's drawEditor, or its group through the group's drawTreeEditor, which draws the group's nodes in their order.
+  local function drawEntry(entry)
     local node = entry.node
     local hidden = false
     local above = node
@@ -197,25 +220,47 @@ local function draw(view)
       hidden = view.hidden[above._path] == true
       above = above._parent
     end
-    if entry.active and not hidden then
-      for _, r in ipairs(node._records) do
-        local c = r.component
-        if r.enabled and c.drawEditor then
-          -- All of LÖVE's drawing state is saved before each drawEditor and restored after (DESIGN 6.5).
-          local depth = love.graphics.getStackDepth()
-          love.graphics.push("all")
-          love.graphics.applyTransform(node:_drawTransform())
-          local ok, err = pcall(c.drawEditor, c, view.chosen[node._path] == true)
-          while love.graphics.getStackDepth() > depth do
-            love.graphics.pop()
-          end
-          if not ok and mark(node, tostring(err)) then
-            failed = true
-          end
+    if not entry.active or hidden then
+      return
+    end
+    if entry.group then
+      -- All of LÖVE's drawing state is saved before drawTreeEditor and restored after, as for drawEditor (DESIGN 6.5).
+      local depth = love.graphics.getStackDepth()
+      love.graphics.push("all")
+      local ok, err = pcall(entry.group.drawTreeEditor, entry.group, function()
+        drawList(ordered(node, true, true))
+      end)
+      while love.graphics.getStackDepth() > depth do
+        love.graphics.pop()
+      end
+      if not ok and mark(node, tostring(err)) then
+        failed = true
+      end
+      return
+    end
+    for _, r in ipairs(node._records) do
+      local c = r.component
+      if r.enabled and c.drawEditor then
+        -- All of LÖVE's drawing state is saved before each drawEditor and restored after (DESIGN 6.5).
+        local depth = love.graphics.getStackDepth()
+        love.graphics.push("all")
+        love.graphics.applyTransform(node:_drawTransform())
+        local ok, err = pcall(c.drawEditor, c, view.chosen[node._path] == true)
+        while love.graphics.getStackDepth() > depth do
+          love.graphics.pop()
+        end
+        if not ok and mark(node, tostring(err)) then
+          failed = true
         end
       end
     end
   end
+  function drawList(list)
+    for _, entry in ipairs(list) do
+      drawEntry(entry)
+    end
+  end
+  drawList(view.root and ordered(view.root, true) or {})
 
   love.graphics.reset()
   love.graphics.setCanvas(view.swapped)
@@ -274,6 +319,31 @@ local function answer(name)
     needs = info.needs,
     shows = info.table.drawEditor ~= nil,
   })
+end
+
+-- What the editor asks of a shader (DESIGN 6.7, 12.5): the values that its text declares, with their notes; the error of a
+-- shader that does not compile; and a warning when it fails as GLSL ES, which a phone runs, or asks for GLSL 3.
+local function answerShader(path)
+  local out = { type = "shaderAnswer", path = path, values = {} }
+  local text = love.filesystem.read(path)
+  if not text then
+    out.error = path .. ": no such file"
+    send(out)
+    return
+  end
+  out.values = shaders.values(text)
+  local ok, err = pcall(love.graphics.newShader, text)
+  if not ok then
+    out.error = shaders.message(path, err)
+  else
+    local phone, why = love.graphics.validateShader(true, text)
+    if not phone then
+      out.warning = shaders.message(path, why) .. " (as GLSL ES, which a phone runs; it works on a computer)"
+    elseif text:find("#pragma%s+language%s+glsl3") then
+      out.warning = path .. ": asks for GLSL 3, which a phone without OpenGL ES 3 cannot run"
+    end
+  end
+  send(out)
 end
 
 local FIELDS = { name = true, posX = true, posY = true, rot = true, sclX = true, sclY = true }
@@ -368,7 +438,11 @@ function handlers.shown(message)
 end
 
 function handlers.question(message)
-  answer(message.name)
+  if message.shader then
+    answerShader(message.shader)
+  else
+    answer(message.name)
+  end
 end
 
 -- A file of the project that is not Lua changed, such as an image.
