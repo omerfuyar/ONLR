@@ -153,9 +153,9 @@ What the owner wants worked on, in this order.
 - **The owner's measure of ui on the GPU, in a real window.** Offscreen, the core copies each GPU panel back after its draw, so the tests' numbers make the GPU look slower than it is ("Shaders and graphs" 4). In `../OpenECS`, on its `dev`:
   1. Build Release: `.github/scripts/build.sh R`.
   2. Start the controls on pixels: `build/Release/bin/OpenECS --fresh --preset build/Release/bin/examples/c3_ui/preset.lua`.
-  3. Open the profiler with Alt+W, then F. Move the pointer back and forth between Click me and the Name field for about ten seconds, then read the time of the panel `button.panel` in the profiler.
+  3. Open the profiler with Alt+W, then F, turn its Measure switch on, and choose its Panels tab. Move the pointer back and forth between Click me and the Name field for about ten seconds, then press Pause and Copy report.
   4. Close the tool, and do steps 2 and 3 again with `preset_gpu.lua` in place of `preset.lua`.
-  5. Report both times, and your graphics card.
+  5. Send both reports, and the name of your graphics card.
 - **Adding packages in the editor.** DESIGN 11.2 says that the editor copies a package into a project when the user adds it, offers a newer version, and deletes it when the user removes it. Only Scale to the window copies one, `push` (DESIGN 11.10); the user's guide, [GUIDE.md](GUIDE.md) 7, tells the user to copy a package's folder by hand. Open: where the list of packages shows, such as a panel of its own or a section of the project settings.
 - **The preview's hidden window on Windows is not tested.** `plugins/onlr/runner/preview.lua` hides LÖVE's window with `SDL_HideWindow` through LuaJIT's FFI, as DESIGN 12.1 says. It was written on Linux, where the offscreen driver is used, and never run on Windows.
 - **The Windows experiment.** It tells whether the preview's window can open on Windows without showing for a moment (see [Runner and link](#runner-and-link)). The owner runs it in the command prompt:
